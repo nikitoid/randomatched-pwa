@@ -11,7 +11,12 @@
         "
       >
         <div class="flex items-center gap-2">
-          <USelectMenu v-model="value" :items="items" class="w-48" />
+          <USelectMenu
+            v-model="value"
+            :items="items"
+            :search-input="false"
+            class="w-48"
+          />
           <UButton
             icon="i-heroicons-cog-6-tooth"
             color="neutral"
@@ -30,6 +35,8 @@
           label="Сгенерировать команды"
         />
       </div>
+
+      <CacheStatus />
 
       <!-- PWA Install Prompt -->
       <PWAInstallPrompt />
