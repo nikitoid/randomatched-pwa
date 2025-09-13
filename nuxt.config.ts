@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { defineNuxtConfig } from "nuxt/config";
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
@@ -12,27 +14,18 @@ export default defineNuxtConfig({
       name: "Randomatched",
       short_name: "RM App",
       description: "Приложение для игры Unmatched",
-      theme_color: "#000000",
+      theme_color: "#ffffff",
       background_color: "#ffffff",
       display: "standalone",
-      scope: "/",
       start_url: "/",
+      lang: "ru",
       icons: [
-        {
-          src: "/icons/icon-192.png",
-          sizes: "192x192",
-          type: "image/png",
-        },
+        { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
         {
           src: "/icons/icon-512.png",
           sizes: "512x512",
           type: "image/png",
-        },
-        {
-          src: "/icons/icon-512.png",
-          sizes: "512x512",
-          type: "image/png",
-          purpose: "any maskable",
+          purpose: "maskable",
         },
       ],
       shortcuts: [
@@ -40,81 +33,111 @@ export default defineNuxtConfig({
           name: "Сгенерировать",
           url: "/",
           description: "Быстрая генерация",
+          icons: [
+            {
+              src: "/icons/icon-96.png",
+              sizes: "96x96",
+              type: "image/png",
+            },
+          ],
         },
       ],
     },
 
     // ⚙️ Настройки сервис-воркера
     workbox: {
-      // Глобальные настройки кэширования
-      navigateFallback: "/", // 🔑 Если запрос на HTML — возвращаем кэшированную версию
-
-      // 📦 Глобальное кэширование всех статических файлов через CacheFirst
+      // 📦 Глобальное кэширование всех статических файлов
       globPatterns: [
         "**/*.{js,css,html,json,ico,png,jpg,jpeg,gif,svg,webp,woff,woff2,ttf,eot}",
       ],
 
-      // ⚙️ Стратегия CacheFirst — основной принцип оффлайн-работы
+      // 🔧 Дополнительные настройки для SPA
+      navigateFallback: "/",
+      navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
+
+      // 🚀 Настройки runtime кэширования
       runtimeCaching: [
+        // Главная страница и навигация - NetworkFirst
         {
-          urlPattern: ({ url }) => url.origin === self.location.origin,
+          urlPattern: /^\/$/,
+          handler: "NetworkFirst",
+          options: {
+            cacheName: "pages-cache",
+            expiration: {
+              maxEntries: 10,
+              maxAgeSeconds: 24 * 60 * 60, // 1 день
+            },
+            networkTimeoutSeconds: 3,
+          },
+        },
+        // Статические ресурсы (изображения) - CacheFirst
+        {
+          urlPattern: /\.(?:png|jpg|jpeg|gif|svg|webp|ico)$/,
           handler: "CacheFirst",
           options: {
-            cacheName: "static-assets-v1", // Уникальное имя — важно для обновлений
+            cacheName: "images-cache",
             expiration: {
-              maxEntries: 200, // Максимум 200 файлов в кэше
-              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 год — очень долго!
+              maxEntries: 100,
+              maxAgeSeconds: 30 * 24 * 60 * 60, // 30 дней
             },
-            cacheableResponse: {
-              statuses: [0, 200], // Разрешить кэшировать ответы с кодами 0 (cors) и 200
+          },
+        },
+        // CSS и JS файлы - CacheFirst
+        {
+          urlPattern: /\.(?:css|js)$/,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "static-resources-cache",
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 7 * 24 * 60 * 60, // 7 дней
             },
-            // Автоматически добавлять хеш к URL для корректного обновления
-            // Это работает благодаря Vite и его хешированию имен файлов
+          },
+        },
+        // Шрифты - CacheFirst
+        {
+          urlPattern: /\.(?:woff|woff2|ttf|eot)$/,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "fonts-cache",
+            expiration: {
+              maxEntries: 20,
+              maxAgeSeconds: 365 * 24 * 60 * 60, // 1 год
+            },
+          },
+        },
+        // API запросы - StaleWhileRevalidate
+        {
+          urlPattern: /^https:\/\/api\./,
+          handler: "StaleWhileRevalidate",
+          options: {
+            cacheName: "api-cache",
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 5 * 60, // 5 минут
+            },
           },
         },
       ],
-
-      // 🛠 Дополнительно: кэширование API (если есть)
-      // Если у тебя есть статичные данные (например, /api/posts), можно кэшировать их
-      /*
-      runtimeCaching: [
-        {
-          urlPattern: ({ url }) => url.origin === self.location.origin,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'static-assets-v1',
-            expiration: { maxEntries: 200, maxAgeSeconds: 31536000 },
-            cacheableResponse: { statuses: [0, 200] }
-          }
-        },
-        {
-          urlPattern: /^https:\/\/your-api\.com\/api\//,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'api-data-v1',
-            expiration: { maxEntries: 50, maxAgeSeconds: 86400 }, // 1 день
-            cacheableResponse: { statuses: [0, 200] }
-          }
-        }
-      ]
-      */
     },
 
     // 🔔 Включить автоматический prompt установки
     registerType: "autoUpdate",
+    injectRegister: "auto",
+
+    // 🔧 Дополнительные настройки
+    strategies: "generateSW",
     devOptions: {
-      enabled: true, // Отключить в dev-режиме (не нужно)
-      suppressWarnings: true,
+      enabled: true,
+      type: "module",
     },
 
-    // 📁 Путь к иконкам — они будут сгенерированы автоматически, если лежат в /public/icons/
+    // 📱 Дополнительные настройки для офлайн работы
     client: {
-      installPrompt: true, // 🔑 Включить prompt установки
-      // Можно добавить кастомный обработчик, если нужна сложная логика
-      // onRegister: async (register) => {
-      //   console.log('Service worker registered:', register)
-      // }
+      installPrompt: true,
+      periodicSyncForUpdates: 20,
     },
+    includeAssets: ["favicon.ico", "icons/*.png", "manifest.webmanifest"],
   },
 
   // 🌐 Для лучшей совместимости с мобильными устройствами
@@ -125,7 +148,10 @@ export default defineNuxtConfig({
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         { name: "description", content: "Мое PWA приложение" },
       ],
-      link: [{ rel: "icon", type: "image/x-icon", href: "/favicon.ico" }],
+      link: [
+        { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
+        { rel: "manifest", href: "/manifest.webmanifest" },
+      ],
     },
   },
 });
