@@ -39,7 +39,7 @@
       <CacheStatus />
 
       <!-- PWA Install Prompt -->
-      <PWAInstallPrompt />
+      <!-- <PWAInstallPrompt /> -->
     </div>
   </UApp>
 </template>

@@ -47,7 +47,7 @@ export default defineNuxtConfig({
     // ⚙️ Настройки сервис-воркера
     workbox: {
       // Глобальные настройки кэширования
-      navigateFallback: "/index.html", // 🔑 Если запрос на HTML — возвращаем кэшированную версию
+      navigateFallback: "/", // 🔑 Если запрос на HTML — возвращаем кэшированную версию
 
       // 📦 Глобальное кэширование всех статических файлов через CacheFirst
       globPatterns: [
