@@ -1,0 +1,5 @@
+{
+  "name": "Randomatched",
+  "description": "Генератор команд 2 на 2 для настольной игры Unmatched с удобным интерфейсом.",
+  "requestFramePermissions": []
+}
