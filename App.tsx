@@ -12,6 +12,7 @@ import { ToastContainer } from './components/Toast';
 import { AssignedPlayer, GenerationMode, Hero, HeroList } from './types';
 import { RANKS } from './constants';
 import { Dice5, Shuffle, Settings, History, RotateCcw, Loader2, Download, X, WifiOff, Layers, ChevronDown, LogOut, User, Users, Clock, Trash2, Check, Cloud, Database, Filter, SquareStack, BarChart3 } from 'lucide-react';
+import { logger } from './utils/logger';
 
 const STORAGE_KEY_ASSIGNMENTS = 'randomatched_last_session_v1';
 const STORAGE_KEY_PLAYER_NAMES = 'randomatched_player_names_v1';
@@ -129,8 +130,8 @@ const App: React.FC = () => {
   // Stats Modal
   const [isGroupStatsOpen, setIsGroupStatsOpen] = useState(false);
 
-  // Debug Console Logs
-  const [consoleLogs, setConsoleLogs] = useState<{type: string, args: string[]}[]>([]);
+  // Debug Console Logs - Synced via global logger
+  const [consoleLogs, setConsoleLogs] = useState<{type: string, args: string[], time?: string}[]>([]);
 
   const historyScrollRef = useRef<HTMLDivElement>(null);
   const [isHistoryDragging, setIsHistoryDragging] = useState(false);
@@ -141,32 +142,12 @@ const App: React.FC = () => {
   // Double back press logic
   const lastBackPressTime = useRef<number>(0);
 
+  // Subscribe to Logger
   useEffect(() => {
-    // Capture logs for Debug Mode
-    const origLog = console.log;
-    const origWarn = console.warn;
-    const origError = console.error;
-
-    const handleLog = (type: string, ...args: any[]) => {
-         setConsoleLogs(prev => {
-             const newLog = { type, args: args.map(a => {
-                 try {
-                     return typeof a === 'object' ? JSON.stringify(a) : String(a);
-                 } catch { return String(a); }
-             }) };
-             return [...prev, newLog].slice(-200); // Limit to 200 lines
-         });
-    };
-
-    console.log = (...args) => { handleLog('log', ...args); origLog(...args); };
-    console.warn = (...args) => { handleLog('warn', ...args); origWarn(...args); };
-    console.error = (...args) => { handleLog('error', ...args); origError(...args); };
-
-    return () => {
-        console.log = origLog;
-        console.warn = origWarn;
-        console.error = origError;
-    };
+      return logger.subscribe((logs) => {
+          // Map to format expected by SettingsOverlay if types differ slightly
+          setConsoleLogs(logs);
+      });
   }, []);
 
   // Initialize history state

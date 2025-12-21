@@ -1141,8 +1141,51 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         onTouchStart={handleTouchStart} 
         onTouchEnd={handleTouchEnd}
       >
+        {/* ... CONTENT ... */}
         
-        <div 
+        {activeTab === 'debug' && isDebugMode && (
+            <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#161b22]">
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2 font-mono"><Terminal size={16} /> TERMINAL</h3>
+                    <button onClick={handleDebugOff} className="p-2 hover:bg-red-900/30 text-red-400 rounded-lg transition-colors"><Power size={16} /></button>
+                </div>
+                
+                <div className="flex items-center gap-1 p-2 bg-[#0d1117] border-b border-gray-800 overflow-x-auto no-scrollbar">
+                    <button onClick={() => setDebugFilter('all')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'all' ? 'bg-gray-800 text-white border-gray-600' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}>ALL</button>
+                    <button onClick={() => setDebugFilter('log')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'log' ? 'bg-blue-900/30 text-blue-400 border-blue-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><Info size={10} /> LOG</button>
+                    <button onClick={() => setDebugFilter('warn')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'warn' ? 'bg-yellow-900/30 text-yellow-400 border-yellow-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><AlertTriangle size={10} /> WARN</button>
+                    <button onClick={() => setDebugFilter('error')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'error' ? 'bg-red-900/30 text-red-400 border-red-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><Bug size={10} /> ERROR</button>
+                    <div className="flex-1" />
+                    <div className="text-[10px] text-gray-600 font-mono px-2">{filteredLogs.length} items</div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed">
+                    {filteredLogs.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-gray-700 gap-2">
+                            <Terminal size={32} className="opacity-20" />
+                            <span>No output to display</span>
+                        </div>
+                    ) : (
+                        filteredLogs.map((log, i) => (
+                            <div key={i} className={`mb-2 font-mono break-all flex gap-2 group ${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : 'text-gray-300'}`}>
+                                <div className="shrink-0 flex items-start gap-2 select-none opacity-50 group-hover:opacity-100 transition-opacity">
+                                    <span className="w-6 text-right text-gray-600">{i + 1}</span>
+                                    <span className="text-[10px] text-gray-600 pt-0.5 min-w-[45px]">{log.time}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="opacity-90 whitespace-pre-wrap">{log.args.join(' ')}</div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        )}
+      </div>
+      
+      {/* ... PORTALS ... */}
+      
+      <div 
             ref={listContainerRef} 
             onTouchMove={handleTouchMove}
             className={`absolute inset-0 overflow-y-auto no-scrollbar transition-transform duration-300 ease-out 
@@ -1283,138 +1326,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                  </div>
               </div>
             )}
-
-            {activeTab === 'debug' && isDebugMode && (
-                <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#161b22]">
-                        <h3 className="text-sm font-bold text-white flex items-center gap-2 font-mono"><Terminal size={16} /> TERMINAL</h3>
-                        <button onClick={handleDebugOff} className="p-2 hover:bg-red-900/30 text-red-400 rounded-lg transition-colors"><Power size={16} /></button>
-                    </div>
-                    
-                    <div className="flex items-center gap-1 p-2 bg-[#0d1117] border-b border-gray-800 overflow-x-auto no-scrollbar">
-                        <button onClick={() => setDebugFilter('all')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'all' ? 'bg-gray-800 text-white border-gray-600' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}>ALL</button>
-                        <button onClick={() => setDebugFilter('log')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'log' ? 'bg-blue-900/30 text-blue-400 border-blue-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><Info size={10} /> LOG</button>
-                        <button onClick={() => setDebugFilter('warn')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'warn' ? 'bg-yellow-900/30 text-yellow-400 border-yellow-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><AlertTriangle size={10} /> WARN</button>
-                        <button onClick={() => setDebugFilter('error')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'error' ? 'bg-red-900/30 text-red-400 border-red-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><Bug size={10} /> ERROR</button>
-                        <div className="flex-1" />
-                        <div className="text-[10px] text-gray-600 font-mono px-2">{filteredLogs.length} items</div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed">
-                        {filteredLogs.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-gray-700 gap-2">
-                                <Terminal size={32} className="opacity-20" />
-                                <span>No output to display</span>
-                            </div>
-                        ) : (
-                            filteredLogs.map((log, i) => (
-                                <div key={i} className={`mb-2 font-mono break-all flex gap-3 group ${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : 'text-gray-300'}`}>
-                                    <span className="text-gray-600 shrink-0 select-none w-8 text-right opacity-50 group-hover:opacity-100 transition-opacity">{i + 1}</span>
-                                    <div className="flex-1">
-                                        <div className="opacity-80">{log.args.join(' ')}</div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-            )}
           </div>
         </div>
-
-        <div 
-            className={`absolute inset-0 overflow-y-auto no-scrollbar bg-slate-50 dark:bg-slate-950 transition-transform duration-300 ease-out ${editingListId ? 'translate-x-0' : 'translate-x-full'}`}
-            style={{ 
-                transform: focusedRowIndex !== null ? 'none' : undefined,
-                transition: focusedRowIndex !== null ? 'none' : undefined
-            }}
-        >
-           <div className="p-4 pb-safe-area-bottom min-h-full flex flex-col">
-              
-              <div className="space-y-1.5 pb-20 mt-2">
-                  {editorHeroes.map((hero, idx) => {
-                      const isLast = idx === editorHeroes.length - 1;
-                      const isEmpty = hero.name.trim() === '' && hero.rank === '';
-                      const showDelete = (!isLast || !isEmpty) && !isReadOnly;
-
-                      // Check cloud updates
-                      const updatedFields = editingListId && updatedHeroIds ? updatedHeroIds.get(editingListId) : undefined;
-                      const isNameUpdated = updatedFields ? updatedFields.has(`${hero.id}:name`) : false;
-                      const isRankUpdated = (updatedFields ? updatedFields.has(`${hero.id}:rank`) : false) || localHeroUpdates.has(`${hero.id}:rank`);
-                      
-                      const isRowFocused = focusedRowIndex === idx;
-                      const isAnyMenuOpen = focusedRowIndex !== null;
-
-                      // Check for duplicates
-                      const normalizedName = hero.name.trim().toLowerCase();
-                      const isDuplicate = normalizedName !== '' && editorHeroes.filter(h => h.name.trim().toLowerCase() === normalizedName).length > 1;
-
-                      return (
-                      <div key={hero.id} className={`flex gap-2 items-center animate-fade-in relative transition-[transform,box-shadow] duration-200 ${isRowFocused ? 'z-50 scale-[1.02]' : 'z-auto'}`}>
-                          <div className="flex-1 relative">
-                              {isNameUpdated && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full z-20 ring-2 ring-white dark:ring-slate-950" />}
-                              <input 
-                                  type="text" 
-                                  value={hero.name}
-                                  onChange={(e) => handleHeroChange(idx, 'name', e.target.value)}
-                                  placeholder={isLast ? "Добавить героя..." : "Имя героя"}
-                                  disabled={isReadOnly || isAnyMenuOpen}
-                                  readOnly={isRowFocused}
-                                  className={`w-full h-[38px] px-4 text-sm rounded-xl border outline-none select-text transition-all
-                                    ${isReadOnly ? 'bg-slate-100 dark:bg-slate-900 border-transparent text-slate-600 dark:text-slate-300' : 
-                                    isLast 
-                                        ? 'bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 placeholder:text-slate-400 italic focus:bg-white dark:focus:bg-slate-900 focus:border-solid focus:not-italic focus:text-slate-900 dark:focus:text-white'
-                                        : 'bg-white dark:bg-slate-900 border-solid border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white'
-                                    }
-                                    ${!isReadOnly && isRowFocused 
-                                        ? `border-primary-500 ring-2 ring-primary-500/20 shadow-lg z-10 ${isLast ? 'bg-white dark:bg-slate-900 border-solid not-italic text-slate-900 dark:text-white' : ''}`
-                                        : !isReadOnly && isDuplicate 
-                                            ? 'border-red-500 text-red-600 bg-red-50 dark:bg-red-900/10 dark:text-red-200 focus:ring-2 focus:ring-red-500' 
-                                            : !isReadOnly ? 'focus:ring-2 focus:ring-primary-500' : ''
-                                    }
-                                  `}
-                              />
-                          </div>
-                          <div className="w-20 h-[38px] shrink-0 relative z-30">
-                              {isRankUpdated && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full z-20 ring-2 ring-white dark:ring-slate-950 pointer-events-none" />}
-                              <RankSelect 
-                                value={hero.rank}
-                                onChange={(val) => handleHeroChange(idx, 'rank', val)}
-                                isOpen={isRowFocused}
-                                onOpen={() => setFocusedRowIndex(idx)}
-                                onClose={() => setFocusedRowIndex(null)}
-                                disabled={isReadOnly || (isAnyMenuOpen && !isRowFocused)}
-                              />
-                          </div>
-                          {!isReadOnly ? (
-                              <div className="w-10 flex items-center justify-center">
-                                  {showDelete && (
-                                    <button 
-                                        onClick={() => handleRemoveHero(idx)}
-                                        disabled={isRowFocused || isAnyMenuOpen}
-                                        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all
-                                            ${isRowFocused
-                                                ? 'opacity-0 pointer-events-none'
-                                                : 'text-red-300 md:hover:text-red-500 md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:text-red-500'
-                                            }
-                                        `}
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
-                                  )}
-                              </div>
-                          ) : (
-                              // Placeholder to maintain layout consistency in readonly mode
-                              <div className="w-0" />
-                          )}
-                      </div>
-                  )})}
-              </div>
-
-           </div>
-        </div>
-
-      </div>
 
       {/* Editor Menu Portal */}
       {isEditorMenuOpen && editorMenuRect && createPortal(

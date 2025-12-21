@@ -38,11 +38,18 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: '/screenshots/mobile.jpg',
-            sizes: '419x854',
+            src: '/screenshots/mobile-home.jpg',
+            sizes: '412x915',
             type: 'image/jpeg',
             form_factor: 'narrow',
-            label: 'Mobile Screen'
+            label: 'Mobile Home Screen'
+          },
+          {
+            src: '/screenshots/mobile-result.jpg',
+            sizes: '412x915',
+            type: 'image/jpeg',
+            form_factor: 'narrow',
+            label: 'Mobile Result Screen'
           },
           {
             src: '/screenshots/desktop.jpg',
