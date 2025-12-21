@@ -97,7 +97,7 @@ export const useHeroLists = (
     if (!navigator.onLine) return false;
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout for quick fail
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // Short 2s timeout
 
     try {
         await fetch(`https://www.google.com/favicon.ico?_=${Date.now()}`, { 
@@ -114,27 +114,25 @@ export const useHeroLists = (
   };
 
   useEffect(() => {
-    const handleOnline = async () => {
-        setIsOnline(true); // Optimistically set true immediately
-        const verified = await checkConnectivity();
-        setIsOnline(verified);
-        if (verified) {
-            // Trigger sync cleanly without causing loop
-            // We can't call syncWithCloud directly here easily due to dependency cycles if not careful,
-            // but since isOnline changed, we can rely on manual sync or auto-sync logic elsewhere if needed.
-            // For now, we just ensure state is correct.
-        }
+    const handleOnline = () => {
+        // Optimistic update immediately
+        setIsOnline(true);
+        // Verify actual internet access
+        checkConnectivity().then(hasAccess => {
+            if (!hasAccess) setIsOnline(false);
+        });
     };
     
     const handleOffline = () => {
+        // Immediate UI update
         setIsOnline(false);
-        setIsSyncing(false); // Stop any spinning sync indicators immediately
+        setIsSyncing(false);
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Initial check
+    // Initial check on mount
     checkConnectivity().then(setIsOnline);
 
     return () => {
@@ -146,7 +144,6 @@ export const useHeroLists = (
   const syncWithCloud = async () => {
     if (!isLoaded) return;
     
-    // Immediate check using navigator first for UI responsiveness
     if (!navigator.onLine) {
         setIsOnline(false);
         addToast("Нет подключения к сети", "error");
@@ -155,17 +152,19 @@ export const useHeroLists = (
 
     setIsSyncing(true);
     
+    // Check real connectivity before attempting DB
     const hasInternet = await checkConnectivity();
-    setIsOnline(hasInternet);
-
     if (!hasInternet) {
+      setIsOnline(false);
       setIsSyncing(false);
       addToast("Не удалось подключиться к серверу", "error");
       return;
     }
+    
+    // Ensure state is true if check passed
+    setIsOnline(true);
 
     try {
-      // Use a timeout for the DB connection as well
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
       const snapshotPromise = db.collection("lists").get();
       
@@ -276,7 +275,6 @@ export const useHeroLists = (
 
     } catch (error) {
       console.error("Error syncing with Firestore:", error);
-      // Don't show toast for timeout if it was an auto-sync attempt, but here it is manual usually
       if (isOnline) addToast("Ошибка синхронизации с облаком", "error");
     } finally {
       setIsSyncing(false);
@@ -357,7 +355,6 @@ export const useHeroLists = (
                 }, { merge: true });
             } catch (e) {
                 console.error("Failed to update cloud list", e);
-                // Silent fail for auto-updates often, or rely on next sync
             }
         }
     }

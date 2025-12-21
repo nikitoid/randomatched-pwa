@@ -56,7 +56,8 @@ const App: React.FC = () => {
       showUpdateBanner,
       setShowUpdateBanner,
       handleUpdateApp,
-      handleOpenUpdateBanner
+      handleOpenUpdateBanner,
+      checkUpdate
   } = usePWA(addToast);
   
   const [selectedListId, setSelectedListId] = useState<string>('');
@@ -718,23 +719,23 @@ const App: React.FC = () => {
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       <header className="px-6 pt-safe-area-top pt-6 mt-2 pb-2 flex justify-between items-center z-10 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/20">
+        <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+          <div className="bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/20 shrink-0">
              <Dice5 className="text-white w-6 h-6" />
           </div>
-          <div>
-            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
+          <div className="min-w-0">
+            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-none truncate">
               Random<span className="text-primary-600 dark:text-primary-400">atched</span>
             </h1>
-            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 tracking-wide mt-0.5">GENERATOR</p>
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 tracking-wide mt-0.5 truncate">GENERATOR</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-            {!isOnline && <div className="p-2 text-slate-400 bg-white/50 dark:bg-slate-800/50 rounded-full backdrop-blur-sm transition-all duration-300"><WifiOff size={18} /></div>}
+        <div className="flex items-center gap-2 shrink-0">
+            {!isOnline && <div className="p-2 text-slate-400 bg-white/50 dark:bg-slate-800/50 rounded-full backdrop-blur-sm transition-all duration-300 animate-in fade-in zoom-in"><WifiOff size={18} /></div>}
             {isCheckingUpdate && (
-                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full pl-2 pr-3 py-1">
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full pl-2 pr-2 sm:pr-3 py-1 transition-all duration-300">
                     <Loader2 size={16} className="text-primary-500 animate-spin" />
-                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Обновление...</span>
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 hidden sm:block">Проверка...</span>
                 </div>
             )}
             {!isCheckingUpdate && isUpdateAvailable && (
@@ -747,6 +748,7 @@ const App: React.FC = () => {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative z-0 overflow-y-auto no-scrollbar">
+        {/* Main content omitted for brevity as no changes required here */}
         
         <div 
           className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 transition-all duration-300 ${isListSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
@@ -811,8 +813,7 @@ const App: React.FC = () => {
              </button>
 
              <div className={`absolute top-full left-0 w-full bg-white dark:bg-slate-900 border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl overflow-hidden transition-all duration-300 origin-top flex flex-col max-h-[360px] ${isListSelectorOpen ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
-                 
-                 {/* Tabs Switcher */}
+                 {/* List selection content same as before */}
                  <div className="px-5 pt-4 pb-2">
                      <div className="flex gap-2">
                          <div className="flex-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
@@ -843,9 +844,7 @@ const App: React.FC = () => {
                  </div>
 
                  <div className="overflow-y-auto no-scrollbar py-2 flex-1">
-                    {/* Render lists based on mode */}
                     {!isGroupMode ? (
-                        // SINGLE MODE
                         lists.map(list => {
                             const isSelected = list.id === selectedListId;
                             const isOfflineCloud = list.isCloud && !isOnline;
@@ -891,7 +890,6 @@ const App: React.FC = () => {
                             );
                         })
                     ) : (
-                        // GROUP MODE
                         <>
                            <div className="px-5 pb-2 text-xs text-slate-400 text-center">
                                Выберите списки для объединения.
@@ -1130,8 +1128,11 @@ const App: React.FC = () => {
         isDebugMode={isDebugMode}
         onEnableDebug={() => setIsDebugMode(true)}
         debugLogs={debugLogs}
+        onCheckUpdate={checkUpdate}
+        isCheckingUpdate={isCheckingUpdate}
       />
 
+      {/* Modals omitted for brevity - no changes */}
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
            <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-transform duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isResetConfirmOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
               <div className="flex flex-col items-center text-center mb-6">
