@@ -275,7 +275,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {!isFloating && (
                 <h2 
                     key={player.hero?.id || 'unknown'}
-                    className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-xs sm:text-xs' : heroName.length > 35 ? 'text-xs sm:text-sm' : 'text-sm sm:text-xl'}`}
+                    className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-xs sm:text-xs' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-base sm:text-2xl'}`}
                 >
                     {hasHero ? heroName : <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>}
                 </h2>
@@ -302,11 +302,14 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const isDraggingThis = activeDrag?.id === position;
     const isHoveredTarget = hoveredTarget === position;
 
-    // Center-relative positioning with fixed gaps
-    // Center button is roughly 6rem (96px). Radius 48px. Gap 8px. Total offset ~56px.
-    // We use a bit more for safe spacing.
+    // Center-relative positioning logic
+    // We use distinct offsets for horizontal vs vertical to allow "nesting" or specific spacing
     let positionStyle: React.CSSProperties = {};
-    const offset = '4.5rem'; // ~72px from center
+    
+    // Closer to center for sides (Left/Right)
+    const horizontalOffset = '3rem'; 
+    // Further from center for vertical (Top/Bottom) to avoid overlap and create the "cross" shape
+    const verticalOffset = '8.5rem';
 
     switch (position) {
         case 'top':
@@ -314,7 +317,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 position: 'absolute', 
                 bottom: '50%', 
                 left: '50%', 
-                marginBottom: offset, 
+                marginBottom: verticalOffset, 
                 transform: 'translate(-50%, 0) rotate(180deg)',
                 transformOrigin: 'center'
             };
@@ -324,7 +327,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 position: 'absolute', 
                 top: '50%', 
                 left: '50%', 
-                marginTop: offset, 
+                marginTop: verticalOffset, 
                 transform: 'translate(-50%, 0)',
                 transformOrigin: 'center'
             };
@@ -334,7 +337,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 position: 'absolute', 
                 right: '50%', 
                 top: '50%', 
-                marginRight: offset, 
+                marginRight: horizontalOffset, 
                 transform: 'translate(0, -50%) rotate(90deg)',
                 transformOrigin: 'center'
             };
@@ -344,7 +347,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 position: 'absolute', 
                 left: '50%', 
                 top: '50%', 
-                marginLeft: offset, 
+                marginLeft: horizontalOffset, 
                 transform: 'translate(0, -50%) rotate(-90deg)',
                 transformOrigin: 'center'
             };

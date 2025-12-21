@@ -18,6 +18,7 @@ const STORAGE_KEY_PLAYER_NAMES = 'randomatched_player_names_v1';
 const STORAGE_KEY_SAVED_TEAMS = 'randomatched_saved_teams_v1';
 const STORAGE_KEY_GROUP_MODE = 'randomatched_group_mode_v1';
 const STORAGE_KEY_SELECTED_GROUP = 'randomatched_selected_group_v1';
+const STORAGE_KEY_DEBUG_MODE = 'randomatched_debug_mode_v1';
 
 const App: React.FC = () => {
   const { theme, toggleTheme, colorScheme, setColorScheme } = useTheme();
@@ -106,6 +107,13 @@ const App: React.FC = () => {
       } catch {
           return [];
       }
+  });
+
+  // Debug Mode State - Persisted
+  const [isDebugMode, setIsDebugMode] = useState<boolean>(() => {
+      try {
+          return localStorage.getItem(STORAGE_KEY_DEBUG_MODE) === 'true';
+      } catch { return false; }
   });
   
   const [deleteHistoryConfirm, setDeleteHistoryConfirm] = useState<number | null>(null);
@@ -240,6 +248,10 @@ const App: React.FC = () => {
   useEffect(() => {
       localStorage.setItem(STORAGE_KEY_SAVED_TEAMS, JSON.stringify(savedTeams));
   }, [savedTeams]);
+  
+  useEffect(() => {
+      localStorage.setItem(STORAGE_KEY_DEBUG_MODE, String(isDebugMode));
+  }, [isDebugMode]);
 
   // Click outside listener for History Delete Confirmation
   useEffect(() => {
@@ -1135,6 +1147,8 @@ const App: React.FC = () => {
         isCheckingUpdate={isCheckingUpdate}
         isUpdateAvailable={isUpdateAvailable}
         onUpdateApp={handleUpdateApp}
+        isDebugMode={isDebugMode}
+        onToggleDebug={setIsDebugMode}
       />
 
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>

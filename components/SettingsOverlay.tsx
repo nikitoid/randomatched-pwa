@@ -36,6 +36,8 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     isCheckingUpdate?: boolean;
     isUpdateAvailable?: boolean;
     onUpdateApp?: () => void;
+    isDebugMode?: boolean;
+    onToggleDebug?: (val: boolean) => void;
 }
 
 type TabType = 'lists' | 'app' | 'appearance' | 'debug';
@@ -67,7 +69,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   checkForUpdate,
   isCheckingUpdate = false,
   isUpdateAvailable = false,
-  onUpdateApp
+  onUpdateApp,
+  isDebugMode = false,
+  onToggleDebug
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('lists');
   const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -122,9 +126,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   const [editorHeroes, setEditorHeroes] = useState<Hero[]>([]);
   const [editorIsGroupable, setEditorIsGroupable] = useState(false);
 
-  // Debug Mode State
+  // Debug Mode Click Counter
   const [debugClicks, setDebugClicks] = useState(0);
-  const [isDebugMode, setIsDebugMode] = useState(false);
 
   // Drag/Scroll refs
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -832,7 +835,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
       setDebugClicks(prev => {
           const next = prev + 1;
           if (next >= 10) {
-              setIsDebugMode(true);
+              if (onToggleDebug) onToggleDebug(true);
               return 10;
           }
           return next;
@@ -844,7 +847,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   };
   
   const confirmDebugOff = () => {
-      setIsDebugMode(false);
+      if (onToggleDebug) onToggleDebug(false);
       setDebugClicks(0);
       setActiveTab('lists');
       setIsDebugExitModalOpen(false);
@@ -1243,7 +1246,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                  
                  <div onClick={handleVersionClick} className="relative cursor-pointer inline-block mb-8">
                      <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.2.1</p>
-                     {debugClicks > 5 && debugClicks < 10 && (
+                     {!isDebugMode && debugClicks > 5 && debugClicks < 10 && (
                          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-slate-400">
                              Debug через {10 - debugClicks}...
                          </div>
