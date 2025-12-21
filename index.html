@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru">
   <head>
@@ -8,29 +7,6 @@
     <meta name="description" content="Unmatched Генератор команд 2 на 2" />
     <meta name="theme-color" content="#059669" />
     <!-- Manifest will be generated/injected by Vite PWA plugin -->
-    <script>
-      (function() {
-        window.__earlyLogs = [];
-        var methods = ['log', 'warn', 'error', 'info', 'debug'];
-        methods.forEach(function(type) {
-          var orig = console[type];
-          console[type] = function() {
-            if (window.__earlyLogs) {
-              var args = Array.from(arguments);
-              var time = new Date().toLocaleTimeString('ru-RU', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-              window.__earlyLogs.push({ type: type, args: args, time: time });
-            }
-            if (orig) orig.apply(console, arguments);
-          };
-        });
-        window.addEventListener('error', function(e) {
-           if (window.__earlyLogs) {
-             var time = new Date().toLocaleTimeString('ru-RU', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-             window.__earlyLogs.push({ type: 'error', args: [e.message || 'Unknown Error'], time: time });
-           }
-        });
-      })();
-    </script>
   <script type="importmap">
 {
   "imports": {
