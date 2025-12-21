@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, Terminal, RefreshCw } from 'lucide-react';
+import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, Terminal, RefreshCw, Power } from 'lucide-react';
 import { HeroList, Hero, ColorScheme } from '../types';
 import { RANKS, COLOR_SCHEMES_DATA } from '../constants';
 import { RankSelect } from './RankSelect';
@@ -33,6 +33,7 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     setColorScheme?: (scheme: ColorScheme) => void;
     logs?: {type: string, args: string[]}[];
     checkForUpdate?: () => void;
+    isCheckingUpdate?: boolean;
 }
 
 type TabType = 'lists' | 'app' | 'appearance' | 'debug';
@@ -61,7 +62,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   colorScheme = 'emerald',
   setColorScheme,
   logs = [],
-  checkForUpdate
+  checkForUpdate,
+  isCheckingUpdate = false
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('lists');
   const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   const [listToDelete, setListToDelete] = useState<HeroList | null>(null);
   const [isDeleteCloud, setIsDeleteCloud] = useState(false);
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [isDebugExitModalOpen, setIsDebugExitModalOpen] = useState(false);
   
   // Import/Export States
   const [importMode, setImportMode] = useState<ImportMode>('none');
@@ -121,6 +124,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [isDragScroll, setIsDragScroll] = useState(false);
+
+  // Swipe State
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   // List DND refs
   const dragItem = useRef<number | null>(null);
@@ -227,7 +234,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
              return;
         }
 
-        if (isNameModalOpen || listToDelete || isDiscardModalOpen || isStatsModalOpen || importMode !== 'none') {
+        if (isNameModalOpen || listToDelete || isDiscardModalOpen || isStatsModalOpen || importMode !== 'none' || isDebugExitModalOpen) {
             // Restore appropriate state depending on where we are
             if (editingListId) {
                  window.history.pushState({ overlay: 'settings-editor' }, '');
@@ -240,6 +247,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             setDiscardModalOpen(false);
             setIsStatsModalOpen(false);
             setImportMode('none');
+            setIsDebugExitModalOpen(false);
             return;
         }
 
@@ -271,13 +279,14 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
              setDiscardModalOpen(false);
              setIsStatsModalOpen(false);
              setImportMode('none');
+             setIsDebugExitModalOpen(false);
         }
       };
 
       window.addEventListener('popstate', handlePopState);
       return () => window.removeEventListener('popstate', handlePopState);
     }
-  }, [isOpen, editingListId, isNameModalOpen, listToDelete, isDiscardModalOpen, isStatsModalOpen, onDismissHeroUpdates, focusedRowIndex, importMode]);
+  }, [isOpen, editingListId, isNameModalOpen, listToDelete, isDiscardModalOpen, isStatsModalOpen, onDismissHeroUpdates, focusedRowIndex, importMode, isDebugExitModalOpen]);
 
   const manualGoBack = () => window.history.back();
 
@@ -816,11 +825,14 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   };
 
   const handleDebugOff = () => {
-      if (confirm('Отключить режим отладки?')) {
-          setIsDebugMode(false);
-          setDebugClicks(0);
-          setActiveTab('lists');
-      }
+      setIsDebugExitModalOpen(true);
+  };
+  
+  const confirmDebugOff = () => {
+      setIsDebugMode(false);
+      setDebugClicks(0);
+      setActiveTab('lists');
+      setIsDebugExitModalOpen(false);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -835,6 +847,38 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     const x = e.pageX - tabsContainerRef.current.offsetLeft;
     if (Math.abs((x - startX) * 2) > 5) setIsDragScroll(true);
     tabsContainerRef.current.scrollLeft = scrollLeft - (x - startX) * 2;
+  };
+
+  // Swipe Navigation Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+      touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+      if (editingListId || isListDragging) return;
+      touchEndX.current = e.changedTouches[0].clientX;
+      handleSwipe();
+  };
+
+  const handleSwipe = () => {
+      const SWIPE_THRESHOLD = 60;
+      const diff = touchStartX.current - touchEndX.current;
+      
+      const tabs: TabType[] = isDebugMode 
+          ? ['lists', 'appearance', 'app', 'debug'] 
+          : ['lists', 'appearance', 'app'];
+      
+      const currentIndex = tabs.indexOf(activeTab);
+
+      if (Math.abs(diff) > SWIPE_THRESHOLD) {
+          if (diff > 0 && currentIndex < tabs.length - 1) {
+              // Swipe Left -> Next Tab
+              setActiveTab(tabs[currentIndex + 1]);
+          } else if (diff < 0 && currentIndex > 0) {
+              // Swipe Right -> Prev Tab
+              setActiveTab(tabs[currentIndex - 1]);
+          }
+      }
   };
 
   const renderTabButton = (id: TabType, label: string, icon: React.ReactNode) => (
@@ -969,7 +1013,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             <div className="flex flex-col w-full pb-1">
                  {/* Top Row: Back, Title, Menu */}
                  <div className="flex items-center justify-between min-h-[44px]">
-                    <button onClick={handleCancelEditor} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-white">
+                    <button onClick={handleCancelEditor} className="p-2 -ml-2 rounded-full md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 text-slate-900 dark:text-white">
                         <ChevronLeft size={24} />
                     </button>
                     
@@ -981,7 +1025,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     {!currentList?.isTemporary && (
                         <button 
                             onClick={handleToggleEditorMenu}
-                            className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                            className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
                         >
                             <MoreVertical size={24} />
                         </button>
@@ -1033,7 +1077,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             <div className="relative flex items-center justify-center w-full min-h-[44px]">
               <button 
                 onClick={manualGoBack} 
-                className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
               >
                 <ChevronLeft size={24} />
               </button>
@@ -1056,7 +1100,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         )}
       </div>
 
-      <div className="flex-1 relative overflow-hidden">
+      <div 
+        className="flex-1 relative overflow-hidden" 
+        onTouchStart={handleTouchStart} 
+        onTouchEnd={handleTouchEnd}
+      >
         
         <div 
             ref={listContainerRef} 
@@ -1122,7 +1170,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                     className={`relative flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95
                                         ${isSelected 
                                             ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-md ring-2 ring-primary-500/20' 
-                                            : 'border-transparent bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                            : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800'
                                         }
                                     `}
                                 >
@@ -1182,10 +1230,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                  {checkForUpdate && (
                      <button 
                         onClick={checkForUpdate}
-                        disabled={!isOnline}
-                        className="mb-8 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        disabled={!isOnline || isCheckingUpdate}
+                        className="mb-8 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                      >
-                        <RefreshCw size={14} /> Проверить обновления
+                        <RefreshCw size={14} className={isCheckingUpdate ? 'animate-spin' : ''} /> 
+                        {isCheckingUpdate ? 'Проверка...' : 'Проверить обновления'}
                      </button>
                  )}
                  
@@ -1202,11 +1251,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2"><Terminal size={20} /> Console Logs</h3>
                         <button onClick={handleDebugOff} className="px-3 py-1 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-xs font-bold">Выключить</button>
                     </div>
-                    <div className="flex-1 bg-slate-900 rounded-xl p-3 overflow-y-auto font-mono text-xs text-slate-300 break-all border border-slate-700 shadow-inner">
-                        {logs.length === 0 ? <div className="text-slate-500 italic">No logs...</div> : logs.map((log, i) => (
-                            <div key={i} className={`mb-1 border-b border-slate-800 pb-1 ${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : ''}`}>
-                                <span className="opacity-50 mr-2 uppercase text-[10px]">{log.type}</span>
-                                {log.args.join(' ')}
+                    <div className="flex-1 bg-[#1e1e1e] rounded-xl p-3 overflow-y-auto font-mono text-[10px] sm:text-xs text-gray-300 break-all border border-slate-700 shadow-inner leading-relaxed">
+                        {logs.length === 0 ? <div className="text-gray-500 italic">No logs...</div> : logs.map((log, i) => (
+                            <div key={i} className={`mb-1 pb-1 border-b border-gray-800/50 flex gap-2 ${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : ''}`}>
+                                <span className={`uppercase font-bold shrink-0 w-8 ${log.type === 'log' ? 'text-blue-400' : 'opacity-80'}`}>{log.type}</span>
+                                <span>{log.args.join(' ')}</span>
                             </div>
                         ))}
                     </div>
@@ -1251,6 +1300,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                   onChange={(e) => handleHeroChange(idx, 'name', e.target.value)}
                                   placeholder={isLast ? "Добавить героя..." : "Имя героя"}
                                   disabled={isReadOnly}
+                                  readOnly={isRowFocused}
                                   className={`w-full h-[38px] px-4 text-sm rounded-xl border outline-none select-text transition-all
                                     ${isReadOnly ? 'bg-slate-100 dark:bg-slate-900 border-transparent text-slate-600 dark:text-slate-300' : 
                                     isLast 
@@ -1277,22 +1327,24 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 disabled={isReadOnly}
                               />
                           </div>
-                          <div className="w-10 flex items-center justify-center">
-                              {showDelete && (
-                                <button 
-                                    onClick={() => handleRemoveHero(idx)}
-                                    disabled={isRowFocused}
-                                    className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all
-                                        ${isRowFocused
-                                            ? 'opacity-0 pointer-events-none'
-                                            : 'text-red-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                        }
-                                    `}
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                              )}
-                          </div>
+                          {!isReadOnly && (
+                              <div className="w-10 flex items-center justify-center">
+                                  {showDelete && (
+                                    <button 
+                                        onClick={() => handleRemoveHero(idx)}
+                                        disabled={isRowFocused}
+                                        className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all
+                                            ${isRowFocused
+                                                ? 'opacity-0 pointer-events-none'
+                                                : 'text-red-300 md:hover:text-red-500 md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:text-red-500'
+                                            }
+                                        `}
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                  )}
+                              </div>
+                          )}
                       </div>
                   )})}
               </div>
@@ -1316,27 +1368,27 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     right: window.innerWidth - editorMenuRect.right,
                 }}
              >
-                <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                     <FileJson size={16} /> Экспорт в файл
                 </button>
                 {!isReadOnly && !currentList?.isTemporary && (
                     <>
-                        <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                        <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                             <Upload size={16} /> Импорт из файла
                         </button>
                     </>
                 )}
                 <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
-                <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                     <Copy size={16} /> Экспорт (Текст)
                 </button>
                 {!isReadOnly && !currentList?.isTemporary && (
                     <>
-                        <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                        <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                             <FileText size={16} /> Импорт (Текст)
                         </button>
                         <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
-                        <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium">
+                        <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium">
                             <ArrowLeftRight size={16} /> Импорт рангов
                         </button>
                     </>
@@ -1400,21 +1452,21 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     <button 
                         onClick={(e) => { e.stopPropagation(); handleUpload(activeListForMenu.id); }} 
                         disabled={!isOnline} 
-                        className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium border-b border-slate-50 dark:border-slate-700/50 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400'}`}
+                        className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium border-b border-slate-50 dark:border-slate-700/50 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-sky-600 dark:text-sky-400'}`}
                     >
                         <UploadCloud size={16} /> Выгрузить в облако
                     </button>
                 )}
-                <button onClick={(e) => { e.stopPropagation(); if (!activeListForMenu.isTemporary) handleOpenRename(activeListForMenu); }} disabled={activeListForMenu.isTemporary || (!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isTemporary || (!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`}>
+                <button onClick={(e) => { e.stopPropagation(); if (!activeListForMenu.isTemporary) handleOpenRename(activeListForMenu); }} disabled={activeListForMenu.isTemporary || (!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isTemporary || (!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`}>
                 <Edit2 size={16} /> Переименовать
                 </button>
                 
-                <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}>
+                <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}>
                     <Copy size={16} /> Экспорт (Текст)
                 </button>
 
                 {!activeListForMenu.isTemporary && (
-                    <button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}>
+                    <button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}>
                         <FileJson size={16} /> Экспорт в файл
                     </button>
                 )}
@@ -1422,7 +1474,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 <button 
                     onClick={(e) => { e.stopPropagation(); handleDeleteClick(activeListForMenu); }} 
                     disabled={activeListForMenu.isCloud && !isOnline}
-                    className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isCloud && !isOnline ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400'}`}
+                    className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isCloud && !isOnline ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 text-red-600 dark:text-red-400'}`}
                 >
                     <Trash2 size={16} /> {activeListForMenu.isCloud ? 'Удалить из облака' : 'Удалить'}
                 </button>
@@ -1444,7 +1496,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                               <span className="text-[10px] uppercase text-slate-400 font-bold">Или</span>
                               <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800"></div>
                           </div>
-                          <button type="button" onClick={triggerCreateListFileUpload} className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                          <button type="button" onClick={triggerCreateListFileUpload} className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold border border-slate-200 dark:border-slate-700 md:hover:bg-slate-100 dark:md:hover:bg-slate-700 transition-colors">
                               <Upload size={16} /> Загрузить из файла
                           </button>
                           <input 
@@ -1555,7 +1607,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                   setRankSourceListId(list.id);
                                                   setIsRankSourceDropdownOpen(false);
                                               }}
-                                              className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center justify-between ${rankSourceListId === list.id ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                                              className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center justify-between ${rankSourceListId === list.id ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-slate-200 md:hover:bg-slate-50 dark:md:hover:bg-slate-700'}`}
                                           >
                                               <span className="truncate">{list.name}</span>
                                               {rankSourceListId === list.id && <Check size={14} className="text-violet-500" />}
@@ -1605,7 +1657,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                       </div>
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white">Баланс героев</h3>
                   </div>
-                  <button onClick={() => setIsStatsModalOpen(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full">
+                  <button onClick={() => setIsStatsModalOpen(false)} className="p-2 -mr-2 text-slate-400 md:hover:text-slate-900 dark:md:hover:text-white rounded-full">
                       <X size={20} />
                   </button>
               </div>
@@ -1660,6 +1712,20 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
               <div className="grid grid-cols-2 gap-3">
                   <button onClick={handleDiscardCancel} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
                   <button onClick={handleDiscardConfirm} className="py-3 font-bold text-white bg-slate-900 dark:bg-primary-600 rounded-xl">Выйти</button>
+              </div>
+          </div>
+      </div>
+
+      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isDebugExitModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+          <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isDebugExitModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+              <div className="flex flex-col items-center text-center mb-6">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mb-4"><Power size={24} /></div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Отключить Debug?</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Режим отладки будет скрыт.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setIsDebugExitModalOpen(false)} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
+                  <button onClick={confirmDebugOff} className="py-3 font-bold text-white bg-red-500 rounded-xl">Отключить</button>
               </div>
           </div>
       </div>

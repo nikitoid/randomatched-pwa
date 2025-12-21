@@ -130,6 +130,9 @@ const App: React.FC = () => {
   const [historyScrollLeft, setHistoryScrollLeft] = useState(0);
   const [isHistoryDragScroll, setIsHistoryDragScroll] = useState(false);
   
+  // Double back press logic
+  const lastBackPressTime = useRef<number>(0);
+
   useEffect(() => {
     // Capture logs for Debug Mode
     const origLog = console.log;
@@ -158,36 +161,54 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Initialize history state
+  useEffect(() => {
+      window.history.replaceState({ view: 'root' }, '');
+  }, []);
+
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
         if (isSettingsOpen) {
+            // Settings handles its own history
             return;
         }
 
         const state = event.state;
         
-        if (isResetConfirmOpen || showResult || isGroupStatsOpen) {
-            window.history.pushState({ view: 'app' }, '');
-            if (isGroupStatsOpen) setIsGroupStatsOpen(false);
-            return;
-        }
-        
-        if (isNamesOpen) {
-            setIsNamesOpen(false);
-            window.history.pushState({ view: 'app' }, ''); 
+        // Handle Result Overlay Back
+        if (showResult) {
+            setShowResult(false);
             return;
         }
 
-        if (isListSelectorOpen) {
-            setIsListSelectorOpen(false);
-            window.history.pushState({ view: 'app' }, '');
+        if (isResetConfirmOpen || isGroupStatsOpen || isNamesOpen || isListSelectorOpen) {
+            if (isResetConfirmOpen) setIsResetConfirmOpen(false);
+            if (isGroupStatsOpen) setIsGroupStatsOpen(false);
+            if (isNamesOpen) setIsNamesOpen(false);
+            if (isListSelectorOpen) setIsListSelectorOpen(false);
+            
+            // Ensure we stay on root if we just closed a modal that wasn't settings
+            if (window.history.state?.view !== 'root') {
+                 window.history.replaceState({ view: 'root' }, '');
+            }
             return;
+        }
+
+        // Handle Root Back Press (Exit app logic)
+        const now = Date.now();
+        if (now - lastBackPressTime.current < 2000) {
+            // Allow default back (exit)
+        } else {
+            // Trap back button
+            window.history.pushState({ view: 'root' }, '');
+            lastBackPressTime.current = now;
+            addToast("Нажмите еще раз для выхода", "info", 2000);
         }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [isSettingsOpen, isResetConfirmOpen, showResult, isNamesOpen, isListSelectorOpen, isGroupStatsOpen]);
+  }, [isSettingsOpen, isResetConfirmOpen, showResult, isNamesOpen, isListSelectorOpen, isGroupStatsOpen, addToast]);
 
   useEffect(() => {
     if (isLoaded && lists.length > 0) {
@@ -362,6 +383,7 @@ const App: React.FC = () => {
 
       setAssignments(newAssignments);
       setIsAnimating(false);
+      window.history.pushState({ view: 'result' }, '');
       setShowResult(true);
     }, 400);
   };
@@ -397,6 +419,7 @@ const App: React.FC = () => {
 
   const handleShowLastResult = () => {
     if (assignments.length > 0) {
+      window.history.pushState({ view: 'result' }, '');
       setShowResult(true);
     }
   };
@@ -787,13 +810,13 @@ const App: React.FC = () => {
                          <div className="flex-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
                              <button 
                                 onClick={() => setIsGroupMode(false)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${!isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${!isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 md:hover:text-slate-700 dark:md:hover:text-slate-300 active:text-slate-700'}`}
                              >
                                  <Layers size={16} /> Один
                              </button>
                              <button 
                                 onClick={() => setIsGroupMode(true)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400 md:hover:text-slate-700 dark:md:hover:text-slate-300 active:text-slate-700'}`}
                              >
                                  <SquareStack size={16} /> Группа
                              </button>
@@ -841,7 +864,7 @@ const App: React.FC = () => {
                                 <button
                                     key={list.id}
                                     onClick={() => handleSelectList(list.id)}
-                                    className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-slate-50 dark:bg-slate-800/50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                    className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-slate-50 dark:bg-slate-800/50' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:bg-slate-50 dark:active:bg-slate-800'}`}
                                 >
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
                                         <Icon size={18} />
@@ -889,7 +912,7 @@ const App: React.FC = () => {
                                     <button
                                         key={list.id}
                                         onClick={() => handleToggleGroupItem(list.id)}
-                                        className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                        className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/10' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:bg-slate-50 dark:active:bg-slate-800'}`}
                                     >
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-primary-500 text-white' : `${iconBg} ${iconColor}`}`}>
                                             {isSelected ? <Check size={18} /> : <Icon size={18} />}
@@ -974,7 +997,7 @@ const App: React.FC = () => {
                                                 className={`pl-3 pr-8 py-2 rounded-xl text-xs font-medium transition-colors border select-none
                                                     ${isConfirmingDelete 
                                                         ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border-red-200 dark:border-red-900/50' 
-                                                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-transparent active:border-primary-500'
+                                                        : 'bg-slate-100 dark:bg-slate-800 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 text-slate-600 dark:text-slate-300 border-transparent active:border-primary-500'
                                                     }
                                                 `}
                                                 style={{ pointerEvents: 'auto' }}
@@ -985,8 +1008,8 @@ const App: React.FC = () => {
                                                 onClick={(e) => handleDeleteHistoryItem(e, idx)}
                                                 className={`absolute right-1 p-1.5 rounded-lg transition-colors
                                                     ${isConfirmingDelete 
-                                                        ? 'text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/40' 
-                                                        : 'text-slate-400 hover:text-red-500 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                        ? 'text-red-600 md:hover:bg-red-100 dark:text-red-400 dark:md:hover:bg-red-900/40 active:bg-red-100' 
+                                                        : 'text-slate-400 md:hover:text-red-500 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:text-red-500 active:bg-slate-200'
                                                     }
                                                 `}
                                             >
@@ -1024,10 +1047,10 @@ const App: React.FC = () => {
               onClick={handleGenerate}
               disabled={isAnimating || lists.length === 0}
               className={`w-full relative group overflow-hidden rounded-3xl p-1 transition-all duration-200 active:scale-[0.98]
-                ${isAnimating || lists.length === 0 ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-2xl hover:shadow-primary-500/30'}
+                ${isAnimating || lists.length === 0 ? 'opacity-70 cursor-not-allowed' : 'md:hover:shadow-2xl md:hover:shadow-primary-500/30'}
               `}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 transition-all duration-300 ${isAnimating ? 'opacity-80' : 'group-hover:scale-105'}`} />
+              <div className={`absolute inset-0 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 transition-all duration-300 ${isAnimating ? 'opacity-80' : 'md:group-hover:scale-105'}`} />
               <div className="relative bg-primary-600/10 backdrop-blur-[1px] rounded-[20px] py-6 flex flex-col items-center justify-center border border-white/10">
                   {isAnimating ? <Dice5 size={48} className="text-white/90 animate-spin mb-2" /> : <Shuffle size={48} className="text-white mb-2 drop-shadow-md" />}
                   <span className="text-2xl font-black text-white tracking-wide drop-shadow-sm">{isAnimating ? 'ГЕНЕРАЦИЯ...' : 'ГЕНЕРИРОВАТЬ'}</span>
@@ -1038,7 +1061,7 @@ const App: React.FC = () => {
 
         <div className="h-8 mt-6 flex items-center justify-center relative z-0">
             {canReset && (
-            <button onClick={handleResetSessionClick} className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 dark:bg-red-900/10 text-red-500 dark:text-red-400 text-xs font-bold uppercase tracking-wider hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors">
+            <button onClick={handleResetSessionClick} className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 dark:bg-red-900/10 text-red-500 dark:text-red-400 text-xs font-bold uppercase tracking-wider md:hover:bg-red-100 dark:md:hover:bg-red-900/20 active:bg-red-100 transition-colors">
                 <RotateCcw size={14} /> Сбросить сессию
             </button>
             )}
@@ -1051,7 +1074,7 @@ const App: React.FC = () => {
                 <History size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">История</span>
             </button>
             <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
-            <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
                 <Settings size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">Настройки</span>
             </button>
          </div>
@@ -1098,6 +1121,7 @@ const App: React.FC = () => {
         setColorScheme={setColorScheme}
         logs={consoleLogs}
         checkForUpdate={checkForUpdate}
+        isCheckingUpdate={isCheckingUpdate}
       />
 
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
@@ -1123,7 +1147,7 @@ const App: React.FC = () => {
                       </div>
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white">Баланс героев</h3>
                   </div>
-                  <button onClick={() => setIsGroupStatsOpen(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full">
+                  <button onClick={() => setIsGroupStatsOpen(false)} className="p-2 -mr-2 text-slate-400 md:hover:text-slate-900 dark:md:hover:text-white active:text-slate-900 rounded-full">
                       <X size={20} />
                   </button>
               </div>

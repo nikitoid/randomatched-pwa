@@ -115,19 +115,19 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
 
-      // To capture by the central lower part (bottom center of the floating card aligns with cursor):
-      // Floating card has translate(-50%, -50%).
-      // We want visual Bottom Center to be at Mouse Position.
-      // Top/Left of element needs to be (MouseY - Height/2) and MouseX.
-      // So relative offset from "center" to mouse needs to correspond to Bottom-Center.
-      // Bottom Center relative to Center is (0, Height/2).
+      // To capture the floating card directly under the cursor, regardless of rotation:
+      // The floating card is positioned at top/left, translated -50%.
+      // So if currX/Y matches mouseX/Y, the center of the card is at mouse.
+      // We calculate offset from center to grab point to keep relative position.
+      const offsetX = e.clientX - centerX;
+      const offsetY = e.clientY - centerY;
       
       setActiveDrag({
           id: position,
-          offsetX: 0, 
-          offsetY: rect.height / 2, // Grab at bottom
-          currX: e.clientX,
-          currY: e.clientY - (rect.height / 2)
+          offsetX, 
+          offsetY, 
+          currX: e.clientX - offsetX,
+          currY: e.clientY - offsetY
       });
   };
 
@@ -243,7 +243,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         ? "bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white shadow-[0_0_25px_rgba(var(--secondary-500)/0.4)] border border-secondary-200/30"
         : "bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white shadow-[0_0_25px_rgba(var(--primary-500)/0.4)] border border-primary-200/30";
 
-      const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 hover:from-white/30 hover:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
+      const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 md:hover:from-white/30 md:hover:to-white/10 active:from-white/30 active:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
 
       // If floating, we remove transitions on transform to prevent lag/jelly effect
       const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
@@ -371,7 +371,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     {/* Trigger Button */}
                     <button 
                         onClick={() => setIsModeSelectorOpen(!isModeSelectorOpen)}
-                        className="relative h-full flex items-center pl-2 pr-3 gap-2 outline-none cursor-pointer rounded-l-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                        className="relative h-full flex items-center pl-2 pr-3 gap-2 outline-none cursor-pointer rounded-l-2xl md:hover:bg-slate-50 dark:md:hover:bg-slate-700/50 active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
                     >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${currentMode.bg} ${currentMode.color}`}>
                             <currentMode.icon size={16} />
@@ -389,7 +389,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                  <button
                                     key={mode.id}
                                     onClick={() => { setGenerationMode(mode.id as GenerationMode); setIsModeSelectorOpen(false); }}
-                                    className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors ${generationMode === mode.id ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                    className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors ${generationMode === mode.id ? 'bg-slate-100 dark:bg-slate-800' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:bg-slate-50 dark:active:bg-slate-800'}`}
                                  >
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${generationMode === mode.id ? 'bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5' : 'bg-slate-50 dark:bg-slate-800'} ${mode.color}`}>
                                         <mode.icon size={20} />
@@ -415,7 +415,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         <div className="w-1" />
                     )}
 
-                    <button onClick={() => setShowInfo(true)} className="mr-1 p-2 rounded-full text-slate-400 hover:text-primary-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><HelpCircle size={20} /></button>
+                    <button onClick={() => setShowInfo(true)} className="mr-1 p-2 rounded-full text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-100 dark:md:hover:bg-slate-700 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"><HelpCircle size={20} /></button>
                 </div>
             )}
             <button onClick={onClose} className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative z-50"><X size={24} /></button>
@@ -459,8 +459,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 disabled={isDragMode}
                 className={`w-24 h-24 rounded-full flex items-center justify-center text-white active:scale-95 transition-all border-4 shadow-[0_0_40px_rgba(0,0,0,0.3)]
                     ${isDragMode ? 'opacity-20 grayscale cursor-not-allowed bg-slate-500 border-slate-400' : 
-                      isRerollConfirm ? 'bg-red-500 border-red-300 hover:bg-red-600 shadow-[0_0_50px_rgba(239,68,68,0.8)]' 
-                        : 'bg-primary-600 border-primary-400/50 hover:bg-primary-500 shadow-[0_0_40px_rgba(var(--primary-500)/0.6)] hover:shadow-[0_0_50px_rgba(var(--primary-500)/0.8)]'}`}
+                      isRerollConfirm ? 'bg-red-500 border-red-300 md:hover:bg-red-600 shadow-[0_0_50px_rgba(239,68,68,0.8)]' 
+                        : 'bg-primary-600 border-primary-400/50 md:hover:bg-primary-500 shadow-[0_0_40px_rgba(var(--primary-500)/0.6)] md:hover:shadow-[0_0_50px_rgba(var(--primary-500)/0.8)]'}`}
               >
                   <div className="flex flex-col items-center">
                     {heroesRevealed ? (isRerollConfirm ? <Check size={32} className="mb-1 animate-pulse" /> : <RefreshCw size={32} className="mb-1" />) : <Dice5 size={32} className="mb-1" />}
@@ -478,18 +478,18 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
           
           {hasCustomNames && (
               <>
-                  <button onClick={() => setIsDragMode(!isDragMode)} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${isDragMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-2 ring-primary-500 dark:ring-primary-400 shadow-inner' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                  <button onClick={() => setIsDragMode(!isDragMode)} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${isDragMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-2 ring-primary-500 dark:ring-primary-400 shadow-inner' : 'md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                       <Move size={20} className="mb-1" /> <span className="text-[10px] font-bold">Двигать</span>
                   </button>
                   <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
               </>
           )}
           
-          <button onClick={onShuffleTeams} disabled={heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+          <button onClick={onShuffleTeams} disabled={heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
               <Shuffle size={20} className="mb-1" /> <span className="text-[10px] font-bold">Команды</span>
           </button>
           <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
-          <button onClick={() => setConfirmModal({ type: 'ban_all' })} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500'}`}>
+          <button onClick={() => setConfirmModal({ type: 'ban_all' })} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
               <Trash2 size={20} className="mb-1" /> <span className="text-[10px] font-bold">Сброс</span>
           </button>
         </div>

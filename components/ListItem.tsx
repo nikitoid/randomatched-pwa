@@ -128,7 +128,7 @@ export const ListItem: React.FC<ListItemProps> = ({
             className={`p-2.5 rounded-xl transition-colors shrink-0 ${
                 isMenuOpen 
                 ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300' 
-                : 'text-slate-400 hover:text-primary-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+                : 'text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:text-primary-500 active:bg-slate-50 dark:active:bg-slate-800'
             }`}
         >
             <MoreVertical size={20} />
