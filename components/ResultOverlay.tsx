@@ -108,8 +108,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
       if (!isDragMode) return;
       e.preventDefault();
       
-      // Calculate offset so floating element bottom-center aligns with pointer
-      const FLOATING_HALF_HEIGHT = 48; // half of 96px
+      const FLOATING_HALF_HEIGHT = 48; 
       
       setActiveDrag({
           id: position,
@@ -225,17 +224,18 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
       const isTeamOdd = player.team === 'Odd';
       
-      // Dynamic Gradients using Primary and Secondary palettes
-      // Even (Primary): 500 -> 700 (Depth)
-      // Odd (Secondary): 500 -> 700 (Depth)
       const gradient = isTeamOdd 
         ? "bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white shadow-[0_0_25px_rgba(var(--secondary-500)/0.4)] border border-secondary-200/30"
         : "bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white shadow-[0_0_25px_rgba(var(--primary-500)/0.4)] border border-primary-200/30";
 
       const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 md:hover:from-white/30 md:hover:to-white/10 active:from-white/30 active:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
 
-      // If floating, we remove transitions on transform to prevent lag/jelly effect
       const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
+
+      // Dynamic sizing based on vmin to ensure fit
+      const cardSizeClass = isFloating 
+        ? 'w-32 h-20' 
+        : 'w-[60vmin] h-[34vmin] max-w-[320px] max-h-[190px]';
 
       return (
         <div 
@@ -243,8 +243,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 relative flex flex-col items-center justify-center p-3 backdrop-blur-md select-none ${transitionClass}
                 ${gradient}
                 ${isFloating 
-                    ? 'w-24 h-24 rounded-3xl shadow-2xl ring-4 ring-white/50 z-[100]' 
-                    : 'w-40 h-24 sm:w-60 sm:h-32 rounded-2xl'}
+                    ? `${cardSizeClass} rounded-2xl shadow-2xl ring-4 ring-white/50 z-[100]` 
+                    : `${cardSizeClass} rounded-3xl`}
                 ${isHoveredTarget ? 'scale-90 opacity-80 ring-4 ring-white/50' : ''}
                 ${isDragMode && !isFloating ? 'cursor-grab active:cursor-grabbing hover:scale-105 animate-pulse ring-2 ring-white ring-offset-2 ring-offset-slate-200 dark:ring-offset-slate-900' : ''}
             `}
@@ -266,7 +266,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             {/* Rank Badge */}
             {hasHero && heroRank && !isDragMode && !isFloating && (
                 <div className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-fade-in">
-                    <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[8px] sm:text-[10px] font-bold tracking-widest text-white/90">{heroRank}</div>
+                    <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[10px] sm:text-[11px] font-bold tracking-widest text-white/90">{heroRank}</div>
                 </div>
             )}
 
@@ -275,7 +275,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {!isFloating && (
                 <h2 
                     key={player.hero?.id || 'unknown'}
-                    className={`font-black text-center leading-tight drop-shadow-md px-2 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-xs sm:text-xs' : heroName.length > 35 ? 'text-xs sm:text-sm' : 'text-sm sm:text-xl'}`}
+                    className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-xs sm:text-xs' : heroName.length > 35 ? 'text-xs sm:text-sm' : 'text-sm sm:text-xl'}`}
                 >
                     {hasHero ? heroName : <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>}
                 </h2>
@@ -285,36 +285,84 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     <div className="text-3xl font-bold opacity-90 drop-shadow-md">{displayName.charAt(0).toUpperCase() || <Users size={32} />}</div>
                 )}
 
-                <div className={`flex items-center gap-2 opacity-90 z-10 transition-all duration-300 ${isFloating ? 'mt-0' : 'absolute bottom-2'}`}>
+                <div className={`flex items-center gap-2 opacity-90 z-10 transition-all duration-300 ${isFloating ? 'mt-0' : 'absolute bottom-3'}`}>
                     {!isFloating && !showNumberBadge && <Users size={14} />}
                     {showNumberBadge && !isFloating && (
                         <div className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 text-[10px] sm:text-xs font-black shadow-sm border border-white/10">{player.playerNumber}</div>
                     )}
-                    <span className="font-bold text-[10px] sm:text-xs tracking-widest uppercase truncate max-w-[100px] sm:max-w-[120px] drop-shadow-sm">{displayName}</span>
+                    <span className="font-bold text-[10px] sm:text-xs tracking-widest uppercase truncate max-w-[120px] drop-shadow-sm">{displayName}</span>
                 </div>
             </div>
         </div>
       );
   };
 
-  const renderCardContainer = (player: AssignedPlayer, rotationClass: string, isVertical: boolean) => {
+  const renderCardContainer = (player: AssignedPlayer) => {
     const position = player.position;
     const isDraggingThis = activeDrag?.id === position;
     const isHoveredTarget = hoveredTarget === position;
 
+    // Center-relative positioning with fixed gaps
+    // Center button is roughly 6rem (96px). Radius 48px. Gap 8px. Total offset ~56px.
+    // We use a bit more for safe spacing.
+    let positionStyle: React.CSSProperties = {};
+    const offset = '4.5rem'; // ~72px from center
+
+    switch (position) {
+        case 'top':
+            positionStyle = { 
+                position: 'absolute', 
+                bottom: '50%', 
+                left: '50%', 
+                marginBottom: offset, 
+                transform: 'translate(-50%, 0) rotate(180deg)',
+                transformOrigin: 'center'
+            };
+            break;
+        case 'bottom':
+            positionStyle = { 
+                position: 'absolute', 
+                top: '50%', 
+                left: '50%', 
+                marginTop: offset, 
+                transform: 'translate(-50%, 0)',
+                transformOrigin: 'center'
+            };
+            break;
+        case 'left':
+            positionStyle = { 
+                position: 'absolute', 
+                right: '50%', 
+                top: '50%', 
+                marginRight: offset, 
+                transform: 'translate(0, -50%) rotate(90deg)',
+                transformOrigin: 'center'
+            };
+            break;
+        case 'right':
+            positionStyle = { 
+                position: 'absolute', 
+                left: '50%', 
+                top: '50%', 
+                marginLeft: offset, 
+                transform: 'translate(0, -50%) rotate(-90deg)',
+                transformOrigin: 'center'
+            };
+            break;
+    }
+
     return (
         <div 
             ref={(el) => { cardRefs.current[position] = el; }}
-            className={`${rotationClass} ${isVertical ? 'rotate-90' : ''} relative z-10`}
+            className="z-10"
+            style={{ ...positionStyle, touchAction: 'none' }}
             onPointerDown={(e) => handlePointerDown(e, position)}
-            style={{ touchAction: 'none' }} 
         >
-            {/* Placeholder when dragging - visible dash */}
+            {/* Placeholder when dragging */}
             {isDraggingThis && (
-                <div className="absolute inset-0 w-40 h-24 sm:w-60 sm:h-32 rounded-2xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
+                <div className="absolute inset-0 w-[60vmin] h-[34vmin] max-w-[320px] max-h-[190px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
             )}
             
-            {/* The actual card (Make invisible but keep layout flow, instead of w-0 h-0) */}
             <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
                 {renderCardContent(player, false, isDraggingThis, isHoveredTarget)}
             </div>
@@ -341,7 +389,6 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
   };
 
   const showModal = !!confirmModal;
-
   const currentMode = GENERATION_MODES.find(m => m.id === generationMode) || GENERATION_MODES[0];
 
   return (
@@ -354,12 +401,11 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             onClick={() => setIsModeSelectorOpen(false)}
         />
 
-        {/* Controls Bar - Removed parent z-index to allow children to interleave with backdrop */}
+        {/* Controls Bar */}
         <div className="absolute top-0 left-0 w-full px-4 pt-safe-area-top pt-6 mt-2 flex justify-between items-center pointer-events-none">
             {setGenerationMode && (
                 <div className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen ? 'z-[61] ring-2 ring-primary-500/50' : 'z-50'}`}>
                     
-                    {/* Trigger Button */}
                     <button 
                         onClick={() => setIsModeSelectorOpen(!isModeSelectorOpen)}
                         className="relative h-full flex items-center pl-2 pr-3 gap-2 outline-none cursor-pointer rounded-l-2xl md:hover:bg-slate-50 dark:md:hover:bg-slate-700/50 active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
@@ -373,7 +419,6 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         <ChevronDown size={16} className={`text-slate-400 transition-transform duration-300 ${isModeSelectorOpen ? 'rotate-180' : ''}`} />
                     </button>
 
-                    {/* Dropdown Panel */}
                     <div className={`absolute top-[calc(100%+8px)] left-0 w-[240px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 origin-top-left ${isModeSelectorOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'}`}>
                         <div className="p-1.5 flex flex-col gap-0.5">
                              {GENERATION_MODES.map(mode => (
@@ -412,28 +457,13 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             <button onClick={onClose} className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative z-50"><X size={24} /></button>
         </div>
 
-        {/* Board Container - Absolute Layout */}
-        <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none">
-          {getPlayer('top') && (
-              <div className="absolute top-[14%] left-1/2 -translate-x-1/2 z-10 pointer-events-auto origin-center">
-                  {renderCardContainer(getPlayer('top')!, "rotate-180", false)}
-              </div>
-          )}
-          {getPlayer('bottom') && (
-              <div className="absolute bottom-[14%] left-1/2 -translate-x-1/2 z-10 pointer-events-auto origin-center">
-                  {renderCardContainer(getPlayer('bottom')!, "", false)}
-              </div>
-          )}
-          {getPlayer('left') && (
-              <div className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 pointer-events-auto origin-center">
-                  {renderCardContainer(getPlayer('left')!, "", true)}
-              </div>
-          )}
-          {getPlayer('right') && (
-              <div className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 pointer-events-auto origin-center -rotate-180">
-                  {renderCardContainer(getPlayer('right')!, "", true)}
-              </div>
-          )}
+        {/* Board Container */}
+        <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none flex items-center justify-center">
+          
+          {getPlayer('top') && renderCardContainer(getPlayer('top')!)}
+          {getPlayer('bottom') && renderCardContainer(getPlayer('bottom')!)}
+          {getPlayer('left') && renderCardContainer(getPlayer('left')!)}
+          {getPlayer('right') && renderCardContainer(getPlayer('right')!)}
 
           {/* Invisible Backdrop for Reroll Confirm */}
           {isRerollConfirm && <div className="fixed inset-0 z-40 bg-transparent cursor-default pointer-events-auto" onClick={() => setIsRerollConfirm(false)} />}
@@ -461,7 +491,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
           </div>
         </div>
 
-        {/* Floating Clone (Rendered at root to avoid parent transforms) */}
+        {/* Floating Clone */}
         {renderFloatingClone()}
 
         {/* Bottom Dock */}
