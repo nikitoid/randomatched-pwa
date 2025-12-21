@@ -1066,7 +1066,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         <button 
                             onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)}
                             disabled={isReadOnly}
-                            className={`flex-1 min-w-0 mr-2 flex items-center gap-2 px-2 py-2 sm:px-3 rounded-xl text-[10px] sm:text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
+                            className={`mr-2 flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
                         >
                             <SquareStack size={14} className="shrink-0" />
                             <span className="truncate">{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
@@ -1085,8 +1085,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             {heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}
                         </button>
                         {!isReadOnly && (
-                            <button onClick={handleSaveEditor} className="h-8 sm:h-9 w-8 sm:w-auto sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform">
-                               <Save size={16} /> <span className="hidden sm:inline">Сохранить</span>
+                            <button onClick={handleSaveEditor} className="h-8 sm:h-9 px-3 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform">
+                               <Save size={16} /> <span>Сохранить</span>
                             </button>
                         )}
                     </div>
