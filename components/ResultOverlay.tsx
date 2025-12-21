@@ -244,7 +244,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 ${gradient}
                 ${isFloating 
                     ? 'w-24 h-24 rounded-3xl shadow-2xl ring-4 ring-white/50 z-[100]' 
-                    : 'w-40 h-24 sm:w-60 sm:h-32 rounded-2xl'}
+                    : 'w-32 h-20 xs:w-40 xs:h-24 sm:w-60 sm:h-32 rounded-2xl'}
                 ${isHoveredTarget ? 'scale-90 opacity-80 ring-4 ring-white/50' : ''}
                 ${isDragMode && !isFloating ? 'cursor-grab active:cursor-grabbing hover:scale-105 animate-pulse ring-2 ring-white ring-offset-2 ring-offset-slate-200 dark:ring-offset-slate-900' : ''}
             `}
@@ -257,15 +257,15 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             } : undefined}
         >
             {!isFloating && hasHero && !isDragMode && (
-                <div className="absolute top-0 left-0 w-full flex justify-between p-2 animate-fade-in z-20">
-                    <button onClick={(e) => handleBanClick(e, player)} className={buttonStyle}><Ban size={14} /></button>
-                    <button onClick={(e) => { e.stopPropagation(); onRerollSpecific(player.playerNumber); }} className={buttonStyle}><RefreshCw size={14} /></button>
+                <div className="absolute top-0 left-0 w-full flex justify-between p-1.5 xs:p-2 animate-fade-in z-20">
+                    <button onClick={(e) => handleBanClick(e, player)} className={`${buttonStyle} w-6 h-6 xs:w-7 xs:h-7`}><Ban size={12} className="xs:w-[14px] xs:h-[14px]" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onRerollSpecific(player.playerNumber); }} className={`${buttonStyle} w-6 h-6 xs:w-7 xs:h-7`}><RefreshCw size={12} className="xs:w-[14px] xs:h-[14px]" /></button>
                 </div>
             )}
 
             {/* Rank Badge */}
             {hasHero && heroRank && !isDragMode && !isFloating && (
-                <div className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-fade-in">
+                <div className="absolute top-1 xs:top-2 right-1/2 translate-x-1/2 z-10 animate-fade-in">
                     <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[8px] sm:text-[10px] font-bold tracking-widest text-white/90">{heroRank}</div>
                 </div>
             )}
@@ -275,7 +275,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {!isFloating && (
                 <h2 
                     key={player.hero?.id || 'unknown'}
-                    className={`font-black text-center leading-tight drop-shadow-md px-2 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-xs sm:text-xs' : heroName.length > 35 ? 'text-xs sm:text-sm' : 'text-sm sm:text-xl'}`}
+                    className={`font-black text-center leading-tight drop-shadow-md px-1 xs:px-2 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-[10px] xs:text-xs sm:text-xs' : heroName.length > 35 ? 'text-[10px] xs:text-xs sm:text-sm' : 'text-xs xs:text-sm sm:text-xl'}`}
                 >
                     {hasHero ? heroName : <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>}
                 </h2>
@@ -285,12 +285,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     <div className="text-3xl font-bold opacity-90 drop-shadow-md">{displayName.charAt(0).toUpperCase() || <Users size={32} />}</div>
                 )}
 
-                <div className={`flex items-center gap-2 opacity-90 z-10 transition-all duration-300 ${isFloating ? 'mt-0' : 'absolute bottom-2'}`}>
-                    {!isFloating && !showNumberBadge && <Users size={14} />}
+                <div className={`flex items-center gap-1 xs:gap-2 opacity-90 z-10 transition-all duration-300 ${isFloating ? 'mt-0' : 'absolute bottom-1 xs:bottom-2'}`}>
+                    {!isFloating && !showNumberBadge && <Users size={12} className="xs:w-[14px] xs:h-[14px]" />}
                     {showNumberBadge && !isFloating && (
-                        <div className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 text-[10px] sm:text-xs font-black shadow-sm border border-white/10">{player.playerNumber}</div>
+                        <div className="flex items-center justify-center w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 text-[9px] xs:text-[10px] sm:text-xs font-black shadow-sm border border-white/10">{player.playerNumber}</div>
                     )}
-                    <span className="font-bold text-[10px] sm:text-xs tracking-widest uppercase truncate max-w-[100px] sm:max-w-[120px] drop-shadow-sm">{displayName}</span>
+                    <span className="font-bold text-[8px] xs:text-[10px] sm:text-xs tracking-widest uppercase truncate max-w-[80px] xs:max-w-[100px] sm:max-w-[120px] drop-shadow-sm">{displayName}</span>
                 </div>
             </div>
         </div>
@@ -311,7 +311,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         >
             {/* Placeholder when dragging - visible dash */}
             {isDraggingThis && (
-                <div className="absolute inset-0 w-40 h-24 sm:w-60 sm:h-32 rounded-2xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
+                <div className="absolute inset-0 w-32 h-20 xs:w-40 xs:h-24 sm:w-60 sm:h-32 rounded-2xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
             )}
             
             {/* The actual card (Make invisible but keep layout flow, instead of w-0 h-0) */}
@@ -448,14 +448,14 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     else setIsRerollConfirm(true);
                 }}
                 disabled={isDragMode}
-                className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white active:scale-95 transition-all border-4 shadow-[0_0_40px_rgba(0,0,0,0.3)]
+                className={`w-16 h-16 xs:w-20 xs:h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white active:scale-95 transition-all border-4 shadow-[0_0_40px_rgba(0,0,0,0.3)]
                     ${isDragMode ? 'opacity-20 grayscale cursor-not-allowed bg-slate-500 border-slate-400' : 
                       isRerollConfirm ? 'bg-red-500 border-red-300 md:hover:bg-red-600 shadow-[0_0_50px_rgba(239,68,68,0.8)]' 
                         : 'bg-primary-600 border-primary-400/50 md:hover:bg-primary-500 shadow-[0_0_40px_rgba(var(--primary-500)/0.6)] md:hover:shadow-[0_0_50px_rgba(var(--primary-500)/0.8)]'}`}
               >
                   <div className="flex flex-col items-center">
-                    {heroesRevealed ? (isRerollConfirm ? <Check size={28} className="mb-1 animate-pulse" /> : <RefreshCw size={28} className="mb-1" />) : <Dice5 size={28} className="mb-1" />}
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{!heroesRevealed ? 'Герои' : isRerollConfirm ? 'Точно?' : 'Реролл'}</span>
+                    {heroesRevealed ? (isRerollConfirm ? <Check size={24} className="mb-1 animate-pulse xs:w-7 xs:h-7" /> : <RefreshCw size={24} className="mb-1 xs:w-7 xs:h-7" />) : <Dice5 size={24} className="mb-1 xs:w-7 xs:h-7" />}
+                    <span className="text-[8px] xs:text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{!heroesRevealed ? 'Герои' : isRerollConfirm ? 'Точно?' : 'Реролл'}</span>
                   </div>
               </button>
           </div>

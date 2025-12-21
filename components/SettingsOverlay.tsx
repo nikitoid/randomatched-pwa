@@ -1066,7 +1066,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         <button 
                             onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)}
                             disabled={isReadOnly}
-                            className={`flex-1 min-w-0 mr-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
+                            className={`flex-1 min-w-0 mr-2 flex items-center gap-2 px-2 py-2 sm:px-3 rounded-xl text-[10px] sm:text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
                         >
                             <SquareStack size={14} className="shrink-0" />
                             <span className="truncate">{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
@@ -1078,14 +1078,14 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     )}
 
                     <div className="flex gap-2 shrink-0">
-                        <button onClick={() => setIsStatsModalOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
+                        <button onClick={() => setIsStatsModalOpen(true)} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
                             <BarChart3 size={18} />
                         </button>
-                        <button onClick={handleSortEditorHeroes} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
+                        <button onClick={handleSortEditorHeroes} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
                             {heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}
                         </button>
                         {!isReadOnly && (
-                            <button onClick={handleSaveEditor} className="h-9 w-9 sm:w-auto sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform">
+                            <button onClick={handleSaveEditor} className="h-8 sm:h-9 w-8 sm:w-auto sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform">
                                <Save size={16} /> <span className="hidden sm:inline">Сохранить</span>
                             </button>
                         )}
@@ -1699,74 +1699,6 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
               <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => { setImportMode('none'); setPendingFileHeroes(null); }} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
                   <button onClick={confirmFileImport} className="py-3 font-bold text-white bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20">Заменить</button>
-              </div>
-          </div>
-      </div>
-
-      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isStatsModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setIsStatsModalOpen(false)}>
-          <div className={`bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 max-h-[90dvh] flex flex-col ${isStatsModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
-                          <BarChart3 size={20} />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">Баланс героев</h3>
-                  </div>
-                  <button onClick={() => setIsStatsModalOpen(false)} className="p-2 -mr-2 text-slate-400 md:hover:text-slate-900 dark:md:hover:text-white rounded-full">
-                      <X size={20} />
-                  </button>
-              </div>
-              
-              <div className="overflow-y-auto no-scrollbar flex-1 -mr-2 pr-2">
-                 {(() => {
-                    const { counts, max, total } = getStats();
-                    return (
-                        <>
-                            <div className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-4 text-center">
-                                Всего героев: <span className="text-slate-900 dark:text-white font-bold">{total}</span>
-                            </div>
-                            {RANKS.map((rank, idx) => {
-                                const count = counts[rank] || 0;
-                                const percent = (count / max) * 100;
-                                const colorClass = getRankBarColor(rank);
-                                
-                                return (
-                                    <div key={rank} className="mb-2 last:mb-0">
-                                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
-                                            <span>{rank}</span>
-                                            <span>{count}</span>
-                                        </div>
-                                        <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                            <div 
-                                                className={`h-full rounded-full transition-all duration-1000 ease-out ${colorClass} ${percent === 0 ? 'opacity-0' : 'opacity-100'}`}
-                                                style={{ 
-                                                    width: isStatsModalOpen ? `${percent}%` : '0%',
-                                                    transitionDelay: `${idx * 50}ms`
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </>
-                    );
-                 })()}
-              </div>
-          </div>
-      </div>
-      
-      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isDiscardModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-          <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isDiscardModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-              <div className="flex flex-col items-center text-center mb-6">
-                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-full flex items-center justify-center mb-4">
-                      <AlertCircle size={24} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Несохраненные изменения</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Если выйти сейчас, все изменения будут потеряны.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                  <button onClick={handleDiscardCancel} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
-                  <button onClick={handleDiscardConfirm} className="py-3 font-bold text-white bg-slate-900 dark:bg-primary-600 rounded-xl">Выйти</button>
               </div>
           </div>
       </div>
