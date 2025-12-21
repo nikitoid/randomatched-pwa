@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, Terminal } from 'lucide-react';
+import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, Terminal, Power } from 'lucide-react';
 import { HeroList, Hero, ColorScheme } from '../types';
 import { RANKS, COLOR_SCHEMES_DATA } from '../constants';
 import { RankSelect } from './RankSelect';
@@ -37,6 +37,7 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     debugLogs?: LogEntry[];
     onCheckUpdate?: () => void;
     isCheckingUpdate?: boolean;
+    onDisableDebug?: () => void;
 }
 
 type TabType = 'lists' | 'app' | 'appearance' | 'debug';
@@ -68,7 +69,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   onEnableDebug,
   debugLogs = [],
   onCheckUpdate,
-  isCheckingUpdate
+  isCheckingUpdate,
+  onDisableDebug
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('lists');
   const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -1196,10 +1198,17 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 bg-slate-900 text-slate-300 font-mono text-[10px]">
                     <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-800">
                         <span className="font-bold text-white">Console Logs</span>
-                        <div className="flex gap-2">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-700 text-blue-400">{debugLogs.filter(l => l.type === 'log').length}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-slate-700 text-yellow-400">{debugLogs.filter(l => l.type === 'warn').length}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-slate-700 text-red-400">{debugLogs.filter(l => l.type === 'error').length}</span>
+                        <div className="flex items-center gap-3">
+                            <div className="flex gap-2">
+                                <span className="px-1.5 py-0.5 rounded bg-slate-700 text-blue-400">{debugLogs.filter(l => l.type === 'log').length}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-slate-700 text-yellow-400">{debugLogs.filter(l => l.type === 'warn').length}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-slate-700 text-red-400">{debugLogs.filter(l => l.type === 'error').length}</span>
+                            </div>
+                            {onDisableDebug && (
+                                <button onClick={() => { setActiveTab('app'); onDisableDebug(); }} className="p-1.5 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors">
+                                    <Power size={14} />
+                                </button>
+                            )}
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -1483,59 +1492,6 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
           </div>
       </div>
 
-      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isStatsModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setIsStatsModalOpen(false)}>
-          {/* Stats content same as before - no change needed */}
-          <div className={`bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 max-h-[90dvh] flex flex-col ${isStatsModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
-                          <BarChart3 size={20} />
-                      </div>
-                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">Баланс героев</h3>
-                  </div>
-                  <button onClick={() => setIsStatsModalOpen(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full">
-                      <X size={20} />
-                  </button>
-              </div>
-              
-              <div className="overflow-y-auto no-scrollbar flex-1 -mr-2 pr-2">
-                 {(() => {
-                    const { counts, max, total } = getStats();
-                    return (
-                        <>
-                            <div className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-4 text-center">
-                                Всего героев: <span className="text-slate-900 dark:text-white font-bold">{total}</span>
-                            </div>
-                            {RANKS.map((rank, idx) => {
-                                const count = counts[rank] || 0;
-                                const percent = (count / max) * 100;
-                                const colorClass = getRankBarColor(rank);
-                                
-                                return (
-                                    <div key={rank} className="mb-2 last:mb-0">
-                                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
-                                            <span>{rank}</span>
-                                            <span>{count}</span>
-                                        </div>
-                                        <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                            <div 
-                                                className={`h-full rounded-full transition-all duration-1000 ease-out ${colorClass} ${percent === 0 ? 'opacity-0' : 'opacity-100'}`}
-                                                style={{ 
-                                                    width: isStatsModalOpen ? `${percent}%` : '0%',
-                                                    transitionDelay: `${idx * 50}ms`
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </>
-                    );
-                 })()}
-              </div>
-          </div>
-      </div>
-      
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isDiscardModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
           <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isDiscardModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
               <div className="flex flex-col items-center text-center mb-6">

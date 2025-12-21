@@ -12,13 +12,14 @@ import { SettingsOverlay } from './components/SettingsOverlay';
 import { ToastContainer } from './components/Toast';
 import { AssignedPlayer, GenerationMode, Hero, HeroList } from './types';
 import { RANKS } from './constants';
-import { Dice5, Shuffle, Settings, History, RotateCcw, Loader2, Download, X, WifiOff, Layers, ChevronDown, LogOut, User, Users, Clock, Trash2, Check, Cloud, Database, Filter, SquareStack, BarChart3 } from 'lucide-react';
+import { Dice5, Shuffle, Settings, History, RotateCcw, Loader2, Download, X, Layers, ChevronDown, LogOut, User, Users, Clock, Trash2, Check, Cloud, Database, Filter, SquareStack, BarChart3 } from 'lucide-react';
 
 const STORAGE_KEY_ASSIGNMENTS = 'randomatched_last_session_v1';
 const STORAGE_KEY_PLAYER_NAMES = 'randomatched_player_names_v1';
 const STORAGE_KEY_SAVED_TEAMS = 'randomatched_saved_teams_v1';
 const STORAGE_KEY_GROUP_MODE = 'randomatched_group_mode_v1';
 const STORAGE_KEY_SELECTED_GROUP = 'randomatched_selected_group_v1';
+const STORAGE_KEY_DEBUG_MODE = 'randomatched_debug_mode_v1';
 
 const App: React.FC = () => {
   const { theme, toggleTheme, colorScheme, setColorScheme } = useTheme();
@@ -26,7 +27,16 @@ const App: React.FC = () => {
   
   // Debug mode logs capture
   const debugLogs = useConsoleCapture();
-  const [isDebugMode, setIsDebugMode] = useState(false);
+  const [isDebugMode, setIsDebugMode] = useState(() => {
+      try {
+          return localStorage.getItem(STORAGE_KEY_DEBUG_MODE) === 'true';
+      } catch { return false; }
+  });
+
+  const handleSetDebugMode = (value: boolean) => {
+      setIsDebugMode(value);
+      localStorage.setItem(STORAGE_KEY_DEBUG_MODE, String(value));
+  };
 
   const { 
     lists, 
@@ -731,7 +741,6 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-            {!isOnline && <div className="p-2 text-slate-400 bg-white/50 dark:bg-slate-800/50 rounded-full backdrop-blur-sm transition-all duration-300 animate-in fade-in zoom-in"><WifiOff size={18} /></div>}
             {isCheckingUpdate && (
                 <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full pl-2 pr-2 sm:pr-3 py-1 transition-all duration-300">
                     <Loader2 size={16} className="text-primary-500 animate-spin" />
@@ -1126,10 +1135,11 @@ const App: React.FC = () => {
         colorScheme={colorScheme}
         setColorScheme={setColorScheme}
         isDebugMode={isDebugMode}
-        onEnableDebug={() => setIsDebugMode(true)}
+        onEnableDebug={() => handleSetDebugMode(true)}
         debugLogs={debugLogs}
         onCheckUpdate={checkUpdate}
         isCheckingUpdate={isCheckingUpdate}
+        onDisableDebug={() => handleSetDebugMode(false)}
       />
 
       {/* Modals omitted for brevity - no changes */}

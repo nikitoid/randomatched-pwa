@@ -15,20 +15,9 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info') => void
     onRegistered(r: ServiceWorkerRegistration) {
       if (r) {
         setSwRegistration(r);
-        // Initial check simulation/trigger
-        setIsCheckingUpdate(true);
-        
-        // Force an update check immediately on load
-        r.update().then(() => {
-            console.log('Initial SW update check completed');
-        }).finally(() => {
-            setTimeout(() => setIsCheckingUpdate(false), 800);
-        });
-
-        // Periodic check
-        setInterval(() => {
-          r.update();
-        }, 60 * 60 * 1000); 
+        console.log('SW Registered');
+        // Automatic update checks disabled per user request.
+        // Updates will only be checked when manually triggered via Settings -> Info.
       }
     },
     onRegisterError(error: any) {
@@ -63,8 +52,8 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info') => void
           setIsCheckingUpdate(true);
           try {
               await swRegistration.update();
-              // If no update found, just stop spinning. 
-              // If update found, needRefresh effect will trigger.
+              // If no update found, just stop spinning after a delay. 
+              // If update found, needRefresh effect will trigger automatically.
               setTimeout(() => {
                   if (!needRefresh) {
                       addToast("У вас установлена последняя версия", "info");
@@ -74,13 +63,14 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info') => void
           } catch (e) {
               console.error("Manual update check failed", e);
               setIsCheckingUpdate(false);
+              addToast("Ошибка проверки обновления", "info");
           }
       } else {
           // Fallback if SW not supported or ready
           setIsCheckingUpdate(true);
           setTimeout(() => {
               setIsCheckingUpdate(false);
-              addToast("Service Worker не активен", "info");
+              addToast("Service Worker не активен (Dev режим?)", "info");
           }, 1000);
       }
   }, [swRegistration, needRefresh, addToast]);

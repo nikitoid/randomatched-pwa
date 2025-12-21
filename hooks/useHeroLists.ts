@@ -115,9 +115,9 @@ export const useHeroLists = (
 
   useEffect(() => {
     const handleOnline = () => {
-        // Optimistic update immediately
+        // Optimistic update immediately for better UI response
         setIsOnline(true);
-        // Verify actual internet access
+        // Then verify actual internet access
         checkConnectivity().then(hasAccess => {
             if (!hasAccess) setIsOnline(false);
         });
@@ -129,8 +129,23 @@ export const useHeroLists = (
         setIsSyncing(false);
     };
 
+    // Re-check when app comes to foreground (handles wifi toggles in system tray)
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            if (navigator.onLine) {
+                setIsOnline(true);
+                checkConnectivity().then(hasAccess => {
+                    if (!hasAccess) setIsOnline(false);
+                });
+            } else {
+                setIsOnline(false);
+            }
+        }
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Initial check on mount
     checkConnectivity().then(setIsOnline);
@@ -138,6 +153,7 @@ export const useHeroLists = (
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
