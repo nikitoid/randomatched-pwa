@@ -115,37 +115,28 @@ export const useHeroLists = (
 
   useEffect(() => {
     const handleOnline = () => {
-        // Optimistic update immediately for better UI response
         setIsOnline(true);
-        // Then verify actual internet access
+        // We set true immediately for responsiveness, then verify silently
         checkConnectivity().then(hasAccess => {
             if (!hasAccess) setIsOnline(false);
         });
     };
     
     const handleOffline = () => {
-        // Immediate UI update
         setIsOnline(false);
         setIsSyncing(false);
     };
 
-    // Re-check when app comes to foreground (handles wifi toggles in system tray)
-    const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-            if (navigator.onLine) {
-                setIsOnline(true);
-                checkConnectivity().then(hasAccess => {
-                    if (!hasAccess) setIsOnline(false);
-                });
-            } else {
-                setIsOnline(false);
-            }
+    // Polling is required because sometimes browser events don't fire reliably 
+    // in PWA split-screen mode or when toggling via quick settings on Android
+    const intervalId = setInterval(() => {
+        if (navigator.onLine !== isOnline) {
+            setIsOnline(navigator.onLine);
         }
-    };
+    }, 2000);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Initial check on mount
     checkConnectivity().then(setIsOnline);
@@ -153,9 +144,9 @@ export const useHeroLists = (
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(intervalId);
     };
-  }, []);
+  }, [isOnline]); // Depend on isOnline to avoid stale closure in interval if logic changes
 
   const syncWithCloud = async () => {
     if (!isLoaded) return;
@@ -173,7 +164,7 @@ export const useHeroLists = (
     if (!hasInternet) {
       setIsOnline(false);
       setIsSyncing(false);
-      addToast("Не удалось подключиться к серверу", "error");
+      // Silent fail preferred by user request when switching offline
       return;
     }
     
