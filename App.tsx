@@ -185,11 +185,28 @@ const App: React.FC = () => {
   const handleExitConfirm = () => {
       isExitingRef.current = true;
       try {
+          window.opener = null;
+          window.open('', '_self');
           window.close();
       } catch (e) {
           // Ignore
       }
-      window.history.back();
+      
+      // Since window.close() is often blocked by browsers (especially iOS/Chrome mobile),
+      // we check if we are still here and show a toast.
+      setTimeout(() => {
+          if (!document.hidden) {
+              addToast("Браузер не разрешает закрыть приложение. Пожалуйста, закройте вкладку или сверните приложение вручную.", "warning", 4000);
+              isExitingRef.current = false; // Reset if failed
+          }
+      }, 300);
+      
+      // Attempt back navigation as fallback for some PWA wrappers
+      try {
+          if (window.history.length > 0) {
+              window.history.back();
+          }
+      } catch (e) {}
   };
 
   useEffect(() => {
@@ -691,11 +708,11 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative h-screen w-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+    <div className="relative h-[100svh] w-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300 overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary-50/50 to-transparent dark:from-primary-950/20 pointer-events-none" />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <header className="px-6 pt-safe-area-top pt-6 mt-2 pb-2 flex justify-between items-center z-10">
+      <header className="px-6 pt-safe-area-top pt-6 mt-2 pb-2 flex justify-between items-center z-10 shrink-0">
         <div className="flex items-center gap-3">
           <div className="bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/20">
              <Dice5 className="text-white w-6 h-6" />
@@ -719,7 +736,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative z-0">
+      <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative z-0 overflow-y-auto no-scrollbar">
         
         <div 
           className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 transition-all duration-300 ${isListSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
@@ -1049,7 +1066,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <nav className="px-6 pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+      <nav className="px-6 pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
          <div className="flex items-center justify-around max-w-lg mx-auto h-16">
             <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                 <Settings size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">Настройки</span>

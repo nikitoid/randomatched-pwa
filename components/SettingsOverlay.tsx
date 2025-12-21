@@ -943,14 +943,19 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         {isReadOnly && <span className="ml-2 text-xs font-normal opacity-60">(Только чтение)</span>}
                     </h2>
 
-                    {!currentList?.isTemporary && (
-                        <button 
-                            onClick={handleToggleEditorMenu}
-                            className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
-                        >
-                            <MoreVertical size={24} />
-                        </button>
-                    )}
+                    <button 
+                        onClick={handleToggleEditorMenu}
+                        disabled={!!currentList?.isTemporary}
+                        className={`p-2 -mr-2 rounded-full transition-colors ${
+                            currentList?.isTemporary 
+                                ? 'invisible pointer-events-none' 
+                                : isEditorMenuOpen 
+                                    ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' 
+                                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
+                        }`}
+                    >
+                        <MoreVertical size={24} />
+                    </button>
                  </div>
 
                  {/* Second Row: Group Toggle and Actions */}
