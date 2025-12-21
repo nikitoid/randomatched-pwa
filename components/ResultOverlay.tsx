@@ -1,123 +1,518 @@
-import React from 'react';
-import { X, Users } from 'lucide-react';
-import { AssignedPlayer } from '../types';
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { AssignedPlayer, GenerationMode } from '../types';
 
 interface ResultOverlayProps {
   isOpen: boolean;
   onClose: () => void;
   assignments: AssignedPlayer[];
+  onRerollSpecific: (playerNumber: number) => void;
+  onRerollAllHeroes: () => void;
+  onShuffleTeams: () => void;
+  onBanSpecific: (playerNumber: number) => void;
+  onBanAll: () => void;
+  onRevealHeroes: () => void;
+  generationMode?: GenerationMode;
+  setGenerationMode?: (mode: GenerationMode) => void;
+  balanceThreshold?: number;
+  setBalanceThreshold?: (val: number) => void;
+  playerNames?: string[];
+  onSwapPositions?: (pos1: 'top'|'bottom'|'left'|'right', pos2: 'top'|'bottom'|'left'|'right') => void;
 }
 
-export const ResultOverlay: React.FC<ResultOverlayProps> = ({ isOpen, onClose, assignments }) => {
-  if (!assignments.length) return null;
+type Position = 'top' | 'bottom' | 'left' | 'right';
 
-  // Helper to find player by position
-  const getPlayer = (pos: 'top' | 'bottom' | 'left' | 'right') => 
-    assignments.find(p => p.position === pos);
+const GENERATION_MODES = [
+  { id: 'random', label: 'Рандом', desc: 'Полный хаос', icon: Dice5, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' },
+  { id: 'balanced', label: 'Баланс', desc: 'Умный подбор', icon: Sparkles, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-900/20' },
+  { id: 'strict', label: 'Лимит', desc: 'Настраиваемый', icon: SlidersHorizontal, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' }
+] as const;
 
-  const top = getPlayer('top');
-  const bottom = getPlayer('bottom');
-  const left = getPlayer('left');
-  const right = getPlayer('right');
+export const ResultOverlay: React.FC<ResultOverlayProps> = ({ 
+  isOpen, 
+  onClose, 
+  assignments,
+  onRerollSpecific,
+  onRerollAllHeroes,
+  onShuffleTeams,
+  onBanSpecific,
+  onBanAll,
+  onRevealHeroes,
+  generationMode = 'random',
+  setGenerationMode,
+  balanceThreshold = 1,
+  setBalanceThreshold,
+  playerNames = [],
+  onSwapPositions
+}) => {
+  const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all'; playerNumber?: number; playerName?: string; } | null>(null);
+  const [displayModal, setDisplayModal] = useState<{ type: 'single' | 'ban_all'; playerNumber?: number; playerName?: string; } | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const [isRerollConfirm, setIsRerollConfirm] = useState(false);
+  const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false);
+  
+  // Custom DND State
+  const [isDragMode, setIsDragMode] = useState(false);
+  const [activeDrag, setActiveDrag] = useState<{
+      id: string; // position as ID
+      offsetX: number;
+      offsetY: number;
+      currX: number;
+      currY: number;
+  } | null>(null);
+  const [hoveredTarget, setHoveredTarget] = useState<Position | null>(null);
+  
+  // Refs for tracking elements positions
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Fixed sizing for uniformity: w-60 (240px) h-32 (128px)
-  const CARD_WIDTH_CLASS = "w-60";
-  const CARD_HEIGHT_CLASS = "h-32";
+  useEffect(() => {
+    if (!isOpen) {
+        setIsRerollConfirm(false);
+        setIsDragMode(false);
+        setActiveDrag(null);
+        setHoveredTarget(null);
+        setIsModeSelectorOpen(false);
+    }
+  }, [isOpen]);
 
-  const renderCard = (player: AssignedPlayer, rotationClass: string) => {
-    // Dynamic font size logic based on character count
-    // Relaxed thresholds to keep text larger for longer, relying on line-clamp-2
-    const len = player.hero.length;
-    let fontSizeClass = "text-2xl";
-    
-    if (len > 30) fontSizeClass = "text-sm";
-    else if (len > 24) fontSizeClass = "text-base";
-    else if (len > 18) fontSizeClass = "text-lg";
-    else if (len > 14) fontSizeClass = "text-xl";
-    // <= 14 chars remains text-2xl
+  useEffect(() => {
+    if (confirmModal) {
+        setDisplayModal(confirmModal);
+    }
+  }, [confirmModal]);
 
-    const isTeamOdd = player.team === 'Odd';
+  const getPlayer = (pos: Position) => assignments.find(p => p.position === pos);
+
+  const heroesRevealed = assignments.every(a => a.hero !== null);
+  const hasCustomNames = playerNames.some(n => n.trim() !== '');
+
+  const handleBanClick = (e: React.MouseEvent, player: AssignedPlayer) => {
+    e.stopPropagation();
+    if (player.hero) {
+        setConfirmModal({ type: 'single', playerNumber: player.playerNumber, playerName: player.hero.name });
+    }
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmModal?.type === 'single' && confirmModal.playerNumber !== undefined) {
+        onBanSpecific(confirmModal.playerNumber);
+    } else if (confirmModal?.type === 'ban_all') {
+        onBanAll();
+    }
+    setConfirmModal(null);
+  };
+
+  // --- CUSTOM DND HANDLERS ---
+  const handlePointerDown = (e: React.PointerEvent, position: Position) => {
+      if (!isDragMode) return;
+      e.preventDefault();
+      
+      const el = cardRefs.current[position];
+      if (!el) return;
+      
+      const rect = el.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      setActiveDrag({
+          id: position,
+          offsetX: e.clientX - centerX,
+          offsetY: e.clientY - centerY,
+          currX: centerX,
+          currY: centerY
+      });
+  };
+
+  // Global listeners attached to window to prevent sticking
+  useEffect(() => {
+      if (!activeDrag) return;
+
+      const handlePointerMove = (e: PointerEvent) => {
+          e.preventDefault();
+          
+          setActiveDrag(prev => {
+              if (!prev) return null;
+              return {
+                  ...prev,
+                  currX: e.clientX - prev.offsetX,
+                  currY: e.clientY - prev.offsetY
+              };
+          });
+
+          // Hit Test logic
+          const targets: Position[] = ['top', 'bottom', 'left', 'right'];
+          let found: Position | null = null;
+          
+          for (const pos of targets) {
+              if (pos === activeDrag.id) continue;
+              const el = cardRefs.current[pos];
+              if (el) {
+                  const rect = el.getBoundingClientRect();
+                  if (
+                      e.clientX >= rect.left && 
+                      e.clientX <= rect.right && 
+                      e.clientY >= rect.top && 
+                      e.clientY <= rect.bottom
+                  ) {
+                      found = pos;
+                      break;
+                  }
+              }
+          }
+          setHoveredTarget(found);
+      };
+
+      const handlePointerUp = (e: PointerEvent) => {
+          e.preventDefault();
+          
+          const targets: Position[] = ['top', 'bottom', 'left', 'right'];
+          let finalTarget: Position | null = null;
+          
+          for (const pos of targets) {
+              if (pos === activeDrag.id) continue;
+              const el = cardRefs.current[pos];
+              if (el) {
+                  const rect = el.getBoundingClientRect();
+                  if (
+                      e.clientX >= rect.left && 
+                      e.clientX <= rect.right && 
+                      e.clientY >= rect.top && 
+                      e.clientY <= rect.bottom
+                  ) {
+                      finalTarget = pos;
+                      break;
+                  }
+              }
+          }
+
+          if (finalTarget && onSwapPositions) {
+              onSwapPositions(activeDrag.id as Position, finalTarget);
+          }
+          
+          setActiveDrag(null);
+          setHoveredTarget(null);
+      };
+
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', handlePointerUp);
+      window.addEventListener('pointercancel', handlePointerUp);
+
+      return () => {
+          window.removeEventListener('pointermove', handlePointerMove);
+          window.removeEventListener('pointerup', handlePointerUp);
+          window.removeEventListener('pointercancel', handlePointerUp);
+      };
+  }, [activeDrag, onSwapPositions]);
+
+
+  // Helper to render card CONTENT only (reused for normal and floating)
+  const renderCardContent = (player: AssignedPlayer, isFloating: boolean, isDraggingThis: boolean, isHoveredTarget: boolean) => {
+      const position = player.position;
+      const hasHero = player.hero !== null;
+      const heroName = player.hero?.name || "";
+      const heroRank = player.hero?.rank || "";
+      
+      let displayName = "";
+      let showNumberBadge = false;
+
+      if (hasCustomNames) {
+          const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+          const index = positionToIndex[position];
+          const customName = playerNames[index]?.trim();
+          displayName = customName || `Игрок ${index + 1}`;
+          showNumberBadge = true; 
+      } else {
+          displayName = `Игрок ${player.playerNumber}`;
+          showNumberBadge = false; 
+      }
+
+      const isTeamOdd = player.team === 'Odd';
+      
+      // Dynamic Gradients using Primary and Secondary palettes
+      // Even (Primary): 500 -> 700 (Depth)
+      // Odd (Secondary): 500 -> 700 (Depth)
+      const gradient = isTeamOdd 
+        ? "bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white shadow-[0_0_25px_rgba(var(--secondary-500)/0.4)] border border-secondary-200/30"
+        : "bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white shadow-[0_0_25px_rgba(var(--primary-500)/0.4)] border border-primary-200/30";
+
+      const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 hover:from-white/30 hover:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
+
+      // If floating, we remove transitions on transform to prevent lag/jelly effect
+      const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
+
+      return (
+        <div 
+            className={`
+                relative flex flex-col items-center justify-center p-3 backdrop-blur-md select-none ${transitionClass}
+                ${gradient}
+                ${isFloating ? 'w-24 h-24 rounded-3xl shadow-2xl ring-4 ring-white/50 z-[100]' : 'w-60 h-32 rounded-2xl'}
+                ${isHoveredTarget ? 'scale-90 opacity-80 ring-4 ring-white/50' : ''}
+                ${isDragMode && !isFloating ? 'cursor-grab active:cursor-grabbing hover:scale-105 animate-pulse ring-2 ring-white ring-offset-2 ring-offset-slate-200 dark:ring-offset-slate-900' : ''}
+            `}
+            style={isFloating ? {
+                position: 'fixed',
+                left: activeDrag!.currX,
+                top: activeDrag!.currY,
+                transform: 'translate(-50%, -50%) rotate(0deg)',
+                pointerEvents: 'none',
+            } : undefined}
+        >
+            {!isFloating && hasHero && !isDragMode && (
+                <div className="absolute top-0 left-0 w-full flex justify-between p-2 animate-fade-in z-20">
+                    <button onClick={(e) => handleBanClick(e, player)} className={buttonStyle}><Ban size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onRerollSpecific(player.playerNumber); }} className={buttonStyle}><RefreshCw size={14} /></button>
+                </div>
+            )}
+
+            {/* Rank Badge */}
+            {hasHero && heroRank && !isDragMode && !isFloating && (
+                <div className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-fade-in">
+                    <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[10px] font-bold tracking-widest text-white/90">{heroRank}</div>
+                </div>
+            )}
+
+            {/* Main Content */}
+            <div className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${isFloating ? 'scale-75' : ''}`}>
+                {!isFloating && (
+                <h2 
+                    key={player.hero?.id || 'unknown'}
+                    className={`font-black text-center leading-tight drop-shadow-md px-2 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-xs' : heroName.length > 35 ? 'text-sm' : 'text-xl'}`}
+                >
+                    {hasHero ? heroName : <span className="opacity-50 text-3xl font-bold animate-pulse-soft">?</span>}
+                </h2>
+                )}
+                
+                {isFloating && (
+                    <div className="text-3xl font-bold opacity-90 drop-shadow-md">{displayName.charAt(0).toUpperCase() || <Users size={32} />}</div>
+                )}
+
+                <div className={`flex items-center gap-2 opacity-90 z-10 transition-all duration-300 ${isFloating ? 'mt-0' : 'absolute bottom-2'}`}>
+                    {!isFloating && !showNumberBadge && <Users size={14} />}
+                    {showNumberBadge && !isFloating && (
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white/20 text-xs font-black shadow-sm border border-white/10">{player.playerNumber}</div>
+                    )}
+                    <span className="font-bold text-xs tracking-widest uppercase truncate max-w-[120px] drop-shadow-sm">{displayName}</span>
+                </div>
+            </div>
+        </div>
+      );
+  };
+
+  const renderCardContainer = (player: AssignedPlayer, rotationClass: string, isVertical: boolean) => {
+    const position = player.position;
+    const isDraggingThis = activeDrag?.id === position;
+    const isHoveredTarget = hoveredTarget === position;
 
     return (
-      <div 
-        className={`${rotationClass} ${CARD_WIDTH_CLASS} ${CARD_HEIGHT_CLASS} flex flex-col items-center justify-center p-1 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 pointer-events-auto transition-transform select-none`}
-      >
-        <h2 className={`${fontSizeClass} font-bold text-center text-slate-800 dark:text-slate-100 leading-tight px-1 w-full line-clamp-2 break-words`}>
-          {player.hero}
-        </h2>
-        <div className="flex items-center gap-1.5 mt-1.5 text-slate-500 dark:text-slate-400">
-          <Users size={14} />
-          <span className="font-medium text-sm">Игрок {player.playerNumber}</span>
+        <div 
+            ref={(el) => { cardRefs.current[position] = el; }}
+            className={`${rotationClass} ${isVertical ? 'rotate-90' : ''} relative z-10`}
+            onPointerDown={(e) => handlePointerDown(e, position)}
+            style={{ touchAction: 'none' }} 
+        >
+            {/* Placeholder when dragging - visible dash */}
+            {isDraggingThis && (
+                <div className="absolute inset-0 w-60 h-32 rounded-2xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
+            )}
+            
+            {/* The actual card (Make invisible but keep layout flow, instead of w-0 h-0) */}
+            <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
+                {renderCardContent(player, false, isDraggingThis, isHoveredTarget)}
+            </div>
         </div>
-        <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full mt-1 ${
-          isTeamOdd 
-            ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' 
-            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-        }`}>
-          Команда {isTeamOdd ? '1' : '2'}
-        </span>
-      </div>
     );
   };
 
+  const renderFloatingClone = () => {
+      if (!activeDrag) return null;
+      const player = getPlayer(activeDrag.id as Position);
+      if (!player) return null;
+      
+      return renderCardContent(player, true, true, false);
+  };
+
+  const getModalTitle = () => displayModal?.type === 'single' ? 'Забанить героя?' : displayModal?.type === 'ban_all' ? 'Исключить всех?' : 'Подтверждение';
+  const getModalDescription = () => displayModal?.type === 'single' ? `"${displayModal.playerName}" будет убран из списка.` : displayModal?.type === 'ban_all' ? 'Все текущие герои будут убраны из списка.' : 'Вы уверены?';
+  
+  const getModeTitle = () => generationMode === 'random' ? 'Полный рандом' : generationMode === 'balanced' ? 'Умный баланс' : 'Настраиваемый';
+  const getModeDescription = () => {
+    if (generationMode === 'random') return 'Полный хаос. Герои выбираются случайно, никакого баланса.';
+    if (generationMode === 'balanced') return 'Алгоритм генерирует случайный состав, а затем точечно меняет героев (макс. 2), чтобы выровнять силы команд. Это обеспечивает честный баланс (разница ≤ 1), сохраняя эффект неожиданности и разнообразие.';
+    return 'Вы сами задаете допустимую разницу в силе (±). Система подберет случайных героев, которые вписываются в этот диапазон, сохраняя вариативность.';
+  };
+
+  const showModal = !!confirmModal;
+
+  const currentMode = GENERATION_MODES.find(m => m.id === generationMode) || GENERATION_MODES[0];
+
   return (
-    <div 
-      className={`fixed inset-0 z-50 bg-slate-100/95 dark:bg-slate-950/95 backdrop-blur-sm transition-all duration-500 ease-in-out flex flex-col ${
-        isOpen ? 'opacity-100 pointer-events-auto scale-100 visible' : 'opacity-0 pointer-events-none scale-95 invisible'
-      }`}
-    >
-      {/* Center Close Button / Hub */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-        <button 
-          onClick={onClose}
-          className="pointer-events-auto w-16 h-16 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-xl transition-transform hover:rotate-90 active:scale-90"
-        >
-          <X size={32} />
-        </button>
-      </div>
-
-      {/* Grid Layout for the Cross */}
-      <div className="flex-1 w-full h-full relative p-2 overflow-hidden">
+    <>
+      <div className={`fixed inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
         
-        {/* TOP SECTION (Rotated 180deg) */}
-        {top && (
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full flex justify-center pt-8 pointer-events-none z-10">
-            {renderCard(top, "rotate-180")}
-          </div>
-        )}
+        {/* Backdrop for Mode Selector */}
+        <div 
+            className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-all duration-300 ${isModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+            onClick={() => setIsModeSelectorOpen(false)}
+        />
 
-        {/* BOTTOM SECTION */}
-        {bottom && (
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full flex justify-center pb-8 pointer-events-none z-10">
-            {renderCard(bottom, "")}
-          </div>
-        )}
+        {/* Controls Bar - Removed parent z-index to allow children to interleave with backdrop */}
+        <div className="absolute top-0 left-0 w-full px-4 pt-safe-area-top pt-6 mt-2 flex justify-between items-center pointer-events-none">
+            {setGenerationMode && (
+                <div className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen ? 'z-[61] ring-2 ring-primary-500/50' : 'z-50'}`}>
+                    
+                    {/* Trigger Button */}
+                    <button 
+                        onClick={() => setIsModeSelectorOpen(!isModeSelectorOpen)}
+                        className="relative h-full flex items-center pl-2 pr-3 gap-2 outline-none cursor-pointer rounded-l-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                    >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${currentMode.bg} ${currentMode.color}`}>
+                            <currentMode.icon size={16} />
+                        </div>
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200 min-w-[60px] text-left">
+                            {currentMode.label}
+                        </span>
+                        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-300 ${isModeSelectorOpen ? 'rotate-180' : ''}`} />
+                    </button>
 
-        {/* LEFT SECTION (Rotated 90deg) */}
-        {left && (
-          <div className="absolute top-1/2 left-0 -translate-y-1/2 h-full flex items-center justify-start pl-4 pointer-events-none z-0">
-             {/* Offset logic: 
-                 Card width is 240px. Center of rotation is center of box.
-                 When rotated 90deg, the visual left edge (which is the bottom of the card) 
-                 is at x = width/2 - height/2 = 120 - 64 = 56px from the pivot center.
-                 We want to pull it closer to the screen edge.
-                 -ml-14 (3.5rem = 56px) pulls the element left by 56px.
-             */}
-             <div className="pointer-events-auto -ml-14"> 
-                {renderCard(left, "rotate-90")}
-             </div>
-          </div>
-        )}
+                    {/* Dropdown Panel */}
+                    <div className={`absolute top-[calc(100%+8px)] left-0 w-[240px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 origin-top-left ${isModeSelectorOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'}`}>
+                        <div className="p-1.5 flex flex-col gap-0.5">
+                             {GENERATION_MODES.map(mode => (
+                                 <button
+                                    key={mode.id}
+                                    onClick={() => { setGenerationMode(mode.id as GenerationMode); setIsModeSelectorOpen(false); }}
+                                    className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors ${generationMode === mode.id ? 'bg-slate-100 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                 >
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${generationMode === mode.id ? 'bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5' : 'bg-slate-50 dark:bg-slate-800'} ${mode.color}`}>
+                                        <mode.icon size={20} />
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <div className={`text-sm font-bold ${generationMode === mode.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{mode.label}</div>
+                                        <div className="text-[10px] text-slate-400">{mode.desc}</div>
+                                    </div>
+                                    {generationMode === mode.id && <Check size={16} className="text-primary-500" />}
+                                 </button>
+                             ))}
+                        </div>
+                    </div>
+                    
+                    <div className="w-px h-6 bg-slate-100 dark:bg-slate-700" />
+                    
+                    {generationMode === 'strict' && setBalanceThreshold ? (
+                        <div className="flex items-center gap-1 pl-2 pr-2 animate-in fade-in slide-in-from-left-2">
+                             <span className="text-[10px] font-bold text-slate-400">±</span>
+                             <input type="number" min="0" max="10" step="1" inputMode="numeric" value={balanceThreshold} onChange={(e) => setBalanceThreshold(parseInt(e.target.value) || 0)} className="w-10 py-1 bg-slate-100 dark:bg-slate-700 rounded-md text-center text-sm font-bold outline-none focus:ring-1 focus:ring-primary-500 select-text" />
+                        </div>
+                    ) : (
+                        <div className="w-1" />
+                    )}
 
-        {/* RIGHT SECTION (Rotated -90deg) */}
-        {right && (
-          <div className="absolute top-1/2 right-0 -translate-y-1/2 h-full flex items-center justify-end pr-4 pointer-events-none z-0">
-             <div className="pointer-events-auto -mr-14">
-                {renderCard(right, "-rotate-90")}
-             </div>
+                    <button onClick={() => setShowInfo(true)} className="mr-1 p-2 rounded-full text-slate-400 hover:text-primary-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><HelpCircle size={20} /></button>
+                </div>
+            )}
+            <button onClick={onClose} className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative z-50"><X size={24} /></button>
+        </div>
+
+        {/* Board Container - Absolute Layout */}
+        <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none">
+          {getPlayer('top') && (
+              <div className="absolute top-[14%] left-1/2 -translate-x-1/2 z-10 pointer-events-auto origin-center">
+                  {renderCardContainer(getPlayer('top')!, "rotate-180", false)}
+              </div>
+          )}
+          {getPlayer('bottom') && (
+              <div className="absolute bottom-[14%] left-1/2 -translate-x-1/2 z-10 pointer-events-auto origin-center">
+                  {renderCardContainer(getPlayer('bottom')!, "", false)}
+              </div>
+          )}
+          {getPlayer('left') && (
+              <div className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 pointer-events-auto origin-center">
+                  {renderCardContainer(getPlayer('left')!, "", true)}
+              </div>
+          )}
+          {getPlayer('right') && (
+              <div className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 pointer-events-auto origin-center -rotate-180">
+                  {renderCardContainer(getPlayer('right')!, "", true)}
+              </div>
+          )}
+
+          {/* Invisible Backdrop for Reroll Confirm */}
+          {isRerollConfirm && <div className="fixed inset-0 z-40 bg-transparent cursor-default pointer-events-auto" onClick={() => setIsRerollConfirm(false)} />}
+
+          {/* CENTER ACTION BUTTON */}
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto animate-fade-in ${isRerollConfirm ? 'z-50' : 'z-30'}`}>
+              <button 
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (!heroesRevealed) onRevealHeroes();
+                    else if (isRerollConfirm) { onRerollAllHeroes(); setIsRerollConfirm(false); }
+                    else setIsRerollConfirm(true);
+                }}
+                disabled={isDragMode}
+                className={`w-24 h-24 rounded-full flex items-center justify-center text-white active:scale-95 transition-all border-4 shadow-[0_0_40px_rgba(0,0,0,0.3)]
+                    ${isDragMode ? 'opacity-20 grayscale cursor-not-allowed bg-slate-500 border-slate-400' : 
+                      isRerollConfirm ? 'bg-red-500 border-red-300 hover:bg-red-600 shadow-[0_0_50px_rgba(239,68,68,0.8)]' 
+                        : 'bg-primary-600 border-primary-400/50 hover:bg-primary-500 shadow-[0_0_40px_rgba(var(--primary-500)/0.6)] hover:shadow-[0_0_50px_rgba(var(--primary-500)/0.8)]'}`}
+              >
+                  <div className="flex flex-col items-center">
+                    {heroesRevealed ? (isRerollConfirm ? <Check size={32} className="mb-1 animate-pulse" /> : <RefreshCw size={32} className="mb-1" />) : <Dice5 size={32} className="mb-1" />}
+                    <span className="text-[10px] font-bold uppercase tracking-widest">{!heroesRevealed ? 'Герои' : isRerollConfirm ? 'Точно?' : 'Реролл'}</span>
+                  </div>
+              </button>
           </div>
-        )}
+        </div>
+
+        {/* Floating Clone (Rendered at root to avoid parent transforms) */}
+        {renderFloatingClone()}
+
+        {/* Bottom Dock */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 dark:border-slate-800 transition-all duration-500">
+          
+          {hasCustomNames && (
+              <>
+                  <button onClick={() => setIsDragMode(!isDragMode)} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${isDragMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-2 ring-primary-500 dark:ring-primary-400 shadow-inner' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                      <Move size={20} className="mb-1" /> <span className="text-[10px] font-bold">Двигать</span>
+                  </button>
+                  <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
+              </>
+          )}
+          
+          <button onClick={onShuffleTeams} disabled={heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+              <Shuffle size={20} className="mb-1" /> <span className="text-[10px] font-bold">Команды</span>
+          </button>
+          <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
+          <button onClick={() => setConfirmModal({ type: 'ban_all' })} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500'}`}>
+              <Trash2 size={20} className="mb-1" /> <span className="text-[10px] font-bold">Сброс</span>
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Confirmation Modal */}
+      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${showModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+           <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showModal ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+              <div className="flex flex-col items-center text-center">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{getModalTitle()}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{getModalDescription()}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                 <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Нет</button>
+                 <button onClick={handleConfirmAction} className="py-3 font-bold text-white bg-red-500 rounded-xl">Да</button>
+              </div>
+           </div>
+      </div>
+
+      {/* INFO Modal */}
+      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${showInfo ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+           <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showInfo ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+              <div className="flex flex-col items-center text-center mb-4">
+                  <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center mb-4"><Info size={24} /></div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{getModeTitle()}</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{getModeDescription()}</p>
+              </div>
+              <button onClick={() => setShowInfo(false)} className="w-full py-3 font-bold text-white bg-primary-600 rounded-xl">Понятно</button>
+           </div>
+      </div>
+    </>
   );
 };
