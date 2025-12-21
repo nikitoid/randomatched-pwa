@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, Terminal, RefreshCw, Power } from 'lucide-react';
+import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, Terminal, RefreshCw, Power, Bug, Trash, Info } from 'lucide-react';
 import { HeroList, Hero, ColorScheme } from '../types';
 import { RANKS, COLOR_SCHEMES_DATA } from '../constants';
 import { RankSelect } from './RankSelect';
@@ -31,7 +31,7 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onDismissHeroUpdates?: (listId: string) => void;
     colorScheme?: ColorScheme;
     setColorScheme?: (scheme: ColorScheme) => void;
-    logs?: {type: string, args: string[]}[];
+    logs?: {type: string, args: string[], time?: string}[];
     checkForUpdate?: () => void;
     isCheckingUpdate?: boolean;
 }
@@ -68,6 +68,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   const [activeTab, setActiveTab] = useState<TabType>('lists');
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('custom');
+  
+  // Debug Filter State
+  const [debugFilter, setDebugFilter] = useState<'all' | 'log' | 'warn' | 'error'>('all');
   
   // Hero sorting inside editor: null = unsorted/default, 'asc' = A-Z, 'desc' = Z-A
   const [heroSortDirection, setHeroSortDirection] = useState<'asc' | 'desc' | null>(null);
@@ -993,6 +996,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     }
   };
 
+  const filteredLogs = useMemo(() => {
+      if (debugFilter === 'all') return logs;
+      return logs.filter(l => l.type === debugFilter);
+  }, [logs, debugFilter]);
+
   return (
     <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
       
@@ -1246,18 +1254,37 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             )}
 
             {activeTab === 'debug' && isDebugMode && (
-                <div className="flex flex-col h-full p-4 animate-in fade-in slide-in-from-bottom-2">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2"><Terminal size={20} /> Console Logs</h3>
-                        <button onClick={handleDebugOff} className="px-3 py-1 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-xs font-bold">Выключить</button>
+                <div className="flex flex-col h-full bg-[#0d1117] text-gray-300 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-[#161b22]">
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2 font-mono"><Terminal size={16} /> TERMINAL</h3>
+                        <button onClick={handleDebugOff} className="p-2 hover:bg-red-900/30 text-red-400 rounded-lg transition-colors"><Power size={16} /></button>
                     </div>
-                    <div className="flex-1 bg-[#1e1e1e] rounded-xl p-3 overflow-y-auto font-mono text-[10px] sm:text-xs text-gray-300 break-all border border-slate-700 shadow-inner leading-relaxed">
-                        {logs.length === 0 ? <div className="text-gray-500 italic">No logs...</div> : logs.map((log, i) => (
-                            <div key={i} className={`mb-1 pb-1 border-b border-gray-800/50 flex gap-2 ${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : ''}`}>
-                                <span className={`uppercase font-bold shrink-0 w-8 ${log.type === 'log' ? 'text-blue-400' : 'opacity-80'}`}>{log.type}</span>
-                                <span>{log.args.join(' ')}</span>
+                    
+                    <div className="flex items-center gap-1 p-2 bg-[#0d1117] border-b border-gray-800 overflow-x-auto no-scrollbar">
+                        <button onClick={() => setDebugFilter('all')} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'all' ? 'bg-gray-800 text-white border-gray-600' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}>ALL</button>
+                        <button onClick={() => setDebugFilter('log')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'log' ? 'bg-blue-900/30 text-blue-400 border-blue-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><Info size={10} /> LOG</button>
+                        <button onClick={() => setDebugFilter('warn')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'warn' ? 'bg-yellow-900/30 text-yellow-400 border-yellow-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><AlertTriangle size={10} /> WARN</button>
+                        <button onClick={() => setDebugFilter('error')} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold font-mono transition-colors border ${debugFilter === 'error' ? 'bg-red-900/30 text-red-400 border-red-900' : 'text-gray-500 border-transparent hover:bg-gray-900'}`}><Bug size={10} /> ERROR</button>
+                        <div className="flex-1" />
+                        <div className="text-[10px] text-gray-600 font-mono px-2">{filteredLogs.length} items</div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed">
+                        {filteredLogs.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-700 gap-2">
+                                <Terminal size={32} className="opacity-20" />
+                                <span>No output to display</span>
                             </div>
-                        ))}
+                        ) : (
+                            filteredLogs.map((log, i) => (
+                                <div key={i} className={`mb-2 font-mono break-all flex gap-3 group ${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : 'text-gray-300'}`}>
+                                    <span className="text-gray-600 shrink-0 select-none w-8 text-right opacity-50 group-hover:opacity-100 transition-opacity">{i + 1}</span>
+                                    <div className="flex-1">
+                                        <div className="opacity-80">{log.args.join(' ')}</div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             )}
@@ -1285,6 +1312,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                       const isRankUpdated = (updatedFields ? updatedFields.has(`${hero.id}:rank`) : false) || localHeroUpdates.has(`${hero.id}:rank`);
                       
                       const isRowFocused = focusedRowIndex === idx;
+                      const isAnyMenuOpen = focusedRowIndex !== null;
 
                       // Check for duplicates
                       const normalizedName = hero.name.trim().toLowerCase();
@@ -1299,7 +1327,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                   value={hero.name}
                                   onChange={(e) => handleHeroChange(idx, 'name', e.target.value)}
                                   placeholder={isLast ? "Добавить героя..." : "Имя героя"}
-                                  disabled={isReadOnly}
+                                  disabled={isReadOnly || isAnyMenuOpen}
                                   readOnly={isRowFocused}
                                   className={`w-full h-[38px] px-4 text-sm rounded-xl border outline-none select-text transition-all
                                     ${isReadOnly ? 'bg-slate-100 dark:bg-slate-900 border-transparent text-slate-600 dark:text-slate-300' : 
@@ -1324,15 +1352,15 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 isOpen={isRowFocused}
                                 onOpen={() => setFocusedRowIndex(idx)}
                                 onClose={() => setFocusedRowIndex(null)}
-                                disabled={isReadOnly}
+                                disabled={isReadOnly || (isAnyMenuOpen && !isRowFocused)}
                               />
                           </div>
-                          {!isReadOnly && (
+                          {!isReadOnly ? (
                               <div className="w-10 flex items-center justify-center">
                                   {showDelete && (
                                     <button 
                                         onClick={() => handleRemoveHero(idx)}
-                                        disabled={isRowFocused}
+                                        disabled={isRowFocused || isAnyMenuOpen}
                                         className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all
                                             ${isRowFocused
                                                 ? 'opacity-0 pointer-events-none'
@@ -1344,6 +1372,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                     </button>
                                   )}
                               </div>
+                          ) : (
+                              // Placeholder to maintain layout consistency in readonly mode
+                              <div className="w-0" />
                           )}
                       </div>
                   )})}

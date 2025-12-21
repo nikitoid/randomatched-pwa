@@ -108,26 +108,22 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
       if (!isDragMode) return;
       e.preventDefault();
       
-      const el = cardRefs.current[position];
-      if (!el) return;
+      // Calculate offset so floating element bottom-center aligns with pointer
+      // Floating element is 96px (6rem) square = w-24 h-24
+      // translate(-50%, -50%) centers it. 
+      // So visual bottom relative to center is +48px.
+      // We want PointerY = CenterY + 48.
+      // So CenterY = PointerY - 48.
+      // OffsetY needs to be 48.
       
-      const rect = el.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      // To capture the floating card directly under the cursor, regardless of rotation:
-      // The floating card is positioned at top/left, translated -50%.
-      // So if currX/Y matches mouseX/Y, the center of the card is at mouse.
-      // We calculate offset from center to grab point to keep relative position.
-      const offsetX = e.clientX - centerX;
-      const offsetY = e.clientY - centerY;
+      const FLOATING_HALF_HEIGHT = 48; // half of 96px
       
       setActiveDrag({
           id: position,
-          offsetX, 
-          offsetY, 
-          currX: e.clientX - offsetX,
-          currY: e.clientY - offsetY
+          offsetX: 0, 
+          offsetY: FLOATING_HALF_HEIGHT, 
+          currX: e.clientX,
+          currY: e.clientY - FLOATING_HALF_HEIGHT
       });
   };
 

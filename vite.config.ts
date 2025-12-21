@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig({
   plugins: [
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt', // Changed from autoUpdate to prompt
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'Randomatched: Unmatched Team Generator',
@@ -28,11 +28,8 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Кэшируем все статические ресурсы для работы без интернета
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        // Fallback для SPA роутинга в оффлайне
         navigateFallback: '/index.html',
-        // Увеличиваем лимит размера кэша для JS бандлов
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024
       }
     })
