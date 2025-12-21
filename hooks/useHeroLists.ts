@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { HeroList, Hero, ToastType } from '../types';
 import { db } from '../firebase';
 
@@ -11,17 +10,11 @@ export const useHeroLists = (
 ) => {
   const [lists, setLists] = useState<HeroList[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  
-  // Initialize simply with navigator, but verify immediately in useEffect
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   
   const [updatedListIds, setUpdatedListIds] = useState<Set<string>>(new Set());
   const [updatedHeroIds, setUpdatedHeroIds] = useState<Map<string, Set<string>>>(new Map());
-
-  // Ref to track latest status to avoid closure staleness in intervals
-  const isOnlineRef = useRef(isOnline);
-  useEffect(() => { isOnlineRef.current = isOnline; }, [isOnline]);
 
   const markListAsSeen = useCallback((id: string) => {
     setUpdatedListIds(prev => {
@@ -99,104 +92,43 @@ export const useHeroLists = (
     }
   }, [lists, isLoaded]);
 
-  // Robust connectivity check
-  const checkConnectivity = useCallback(async (): Promise<boolean> => {
-    // 1. Basic check: if navigator says offline, we are definitely offline
-    if (!navigator.onLine) return false;
-
-    // 2. Advanced check: try to fetch a tiny resource
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1500); // Fast 1.5s timeout
-
-    try {
-        // Use generate_204 which returns 204 No Content (very fast)
-        // Add random param to prevent caching
-        await fetch(`https://www.google.com/generate_204?_=${Date.now()}`, { 
-            mode: 'no-cors', 
-            cache: 'no-store',
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        return true;
-    } catch (e) {
-        clearTimeout(timeoutId);
-        return false;
-    }
-  }, []);
-
-  // Update status wrapper to handle state updates efficiently
-  const updateOnlineStatus = useCallback(async () => {
-      const status = await checkConnectivity();
-      if (isOnlineRef.current !== status) {
-          setIsOnline(status);
-      }
-  }, [checkConnectivity]);
-
   useEffect(() => {
-    // Immediate check on mount
-    updateOnlineStatus();
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
 
-    const handleOnlineEvent = () => {
-        // Even if browser says online, verify it (captive portals, ghost wifi)
-        updateOnlineStatus();
-    };
-    
-    const handleOfflineEvent = () => {
-        // If browser says offline, trust it immediately for responsiveness
-        setIsOnline(false);
-        setIsSyncing(false);
-    };
-
-    const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-            updateOnlineStatus();
-        }
-    };
-
-    window.addEventListener('online', handleOnlineEvent);
-    window.addEventListener('offline', handleOfflineEvent);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Polling interval (every 2s) for fast reaction
-    const intervalId = setInterval(() => {
-        updateOnlineStatus();
-    }, 2000);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnlineEvent);
-      window.removeEventListener('offline', handleOfflineEvent);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(intervalId);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
-  }, [updateOnlineStatus]);
+  }, []);
+
+  const checkConnectivity = async (): Promise<boolean> => {
+    if (!navigator.onLine) return false;
+    try {
+        await fetch(`https://www.google.com/favicon.ico?_=${Date.now()}`, { mode: 'no-cors', cache: 'no-store' });
+        return true;
+    } catch (e) {
+        return false;
+    }
+  };
 
   const syncWithCloud = async () => {
     if (!isLoaded) return;
-    
-    // Quick pre-check
-    if (!isOnlineRef.current) {
-        return;
-    }
-
     setIsSyncing(true);
     
-    // Double check strictly before operation
     const hasInternet = await checkConnectivity();
+    setIsOnline(hasInternet);
+
     if (!hasInternet) {
-      setIsOnline(false);
       setIsSyncing(false);
       return;
     }
-    
-    // Ensure state is synced
-    if (!isOnline) setIsOnline(true);
 
     try {
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
-      const snapshotPromise = db.collection("lists").get();
-      
-      const querySnapshot: any = await Promise.race([snapshotPromise, timeoutPromise]);
-      
+      const querySnapshot = await db.collection("lists").get();
       const cloudListsMap = new Map<string, HeroList>();
       
       querySnapshot.forEach((docSnap: any) => {
@@ -302,7 +234,7 @@ export const useHeroLists = (
 
     } catch (error) {
       console.error("Error syncing with Firestore:", error);
-      // Silent error on sync fail
+      addToast("Ошибка синхронизации с облаком", "error");
     } finally {
       setIsSyncing(false);
     }
@@ -327,7 +259,6 @@ export const useHeroLists = (
     const hasInternet = await checkConnectivity();
     if (!hasInternet) {
         addToast("Нет подключения к интернету. Операция отменена.", "error");
-        setIsOnline(false);
         return;
     }
 
@@ -382,6 +313,7 @@ export const useHeroLists = (
                 }, { merge: true });
             } catch (e) {
                 console.error("Failed to update cloud list", e);
+                addToast("Не удалось сохранить изменения в облаке", "error");
             }
         }
     }
@@ -395,7 +327,6 @@ export const useHeroLists = (
         const hasInternet = await checkConnectivity();
         if (!hasInternet) {
             addToast("Нет сети. Невозможно удалить из облака.", "error");
-            setIsOnline(false);
             return;
         }
 

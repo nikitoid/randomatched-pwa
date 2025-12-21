@@ -4,7 +4,6 @@ import { useTheme } from './hooks/useTheme';
 import { useHeroLists } from './hooks/useHeroLists';
 import { useToast } from './hooks/useToast';
 import { usePWA } from './hooks/usePWA';
-import { useConsoleCapture, LogEntry } from './hooks/useConsoleCapture';
 import { generateAssignmentsWithMode, getHeroWeight, getBestPermutation, getUniqueHeroesFromLists } from './utils/generator';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ResultOverlay } from './components/ResultOverlay';
@@ -12,32 +11,18 @@ import { SettingsOverlay } from './components/SettingsOverlay';
 import { ToastContainer } from './components/Toast';
 import { AssignedPlayer, GenerationMode, Hero, HeroList } from './types';
 import { RANKS } from './constants';
-import { Dice5, Shuffle, Settings, History, RotateCcw, Loader2, Download, X, Layers, ChevronDown, LogOut, User, Users, Clock, Trash2, Check, Cloud, Database, Filter, SquareStack, BarChart3 } from 'lucide-react';
+import { Dice5, Shuffle, Settings, History, RotateCcw, Loader2, Download, X, WifiOff, Layers, ChevronDown, LogOut, User, Users, Clock, Trash2, Check, Cloud, Database, Filter, SquareStack, BarChart3 } from 'lucide-react';
 
 const STORAGE_KEY_ASSIGNMENTS = 'randomatched_last_session_v1';
 const STORAGE_KEY_PLAYER_NAMES = 'randomatched_player_names_v1';
 const STORAGE_KEY_SAVED_TEAMS = 'randomatched_saved_teams_v1';
 const STORAGE_KEY_GROUP_MODE = 'randomatched_group_mode_v1';
 const STORAGE_KEY_SELECTED_GROUP = 'randomatched_selected_group_v1';
-const STORAGE_KEY_DEBUG_MODE = 'randomatched_debug_mode_v1';
 
 const App: React.FC = () => {
   const { theme, toggleTheme, colorScheme, setColorScheme } = useTheme();
   const { toasts, addToast, removeToast } = useToast();
   
-  // Debug mode logs capture
-  const debugLogs = useConsoleCapture();
-  const [isDebugMode, setIsDebugMode] = useState(() => {
-      try {
-          return localStorage.getItem(STORAGE_KEY_DEBUG_MODE) === 'true';
-      } catch { return false; }
-  });
-
-  const handleSetDebugMode = (value: boolean) => {
-      setIsDebugMode(value);
-      localStorage.setItem(STORAGE_KEY_DEBUG_MODE, String(value));
-  };
-
   const { 
     lists, 
     addList, 
@@ -66,8 +51,7 @@ const App: React.FC = () => {
       showUpdateBanner,
       setShowUpdateBanner,
       handleUpdateApp,
-      handleOpenUpdateBanner,
-      checkUpdate
+      handleOpenUpdateBanner
   } = usePWA(addToast);
   
   const [selectedListId, setSelectedListId] = useState<string>('');
@@ -201,28 +185,11 @@ const App: React.FC = () => {
   const handleExitConfirm = () => {
       isExitingRef.current = true;
       try {
-          window.opener = null;
-          window.open('', '_self');
           window.close();
       } catch (e) {
           // Ignore
       }
-      
-      // Since window.close() is often blocked by browsers (especially iOS/Chrome mobile),
-      // we check if we are still here and show a toast.
-      setTimeout(() => {
-          if (!document.hidden) {
-              addToast("Браузер не разрешает закрыть приложение. Пожалуйста, закройте вкладку или сверните приложение вручную.", "warning", 4000);
-              isExitingRef.current = false; // Reset if failed
-          }
-      }, 300);
-      
-      // Attempt back navigation as fallback for some PWA wrappers
-      try {
-          if (window.history.length > 0) {
-              window.history.back();
-          }
-      } catch (e) {}
+      window.history.back();
   };
 
   useEffect(() => {
@@ -724,29 +691,25 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative h-[100svh] w-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300 overflow-hidden">
+    <div className="relative h-screen w-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary-50/50 to-transparent dark:from-primary-950/20 pointer-events-none" />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      <header className="px-6 pt-safe-area-top pt-6 mt-2 pb-2 flex justify-between items-center z-10 shrink-0">
-        <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-          <div className="bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/20 shrink-0">
+      <header className="px-6 pt-safe-area-top pt-6 mt-2 pb-2 flex justify-between items-center z-10">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/20">
              <Dice5 className="text-white w-6 h-6" />
           </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-none truncate">
+          <div>
+            <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
               Random<span className="text-primary-600 dark:text-primary-400">atched</span>
             </h1>
-            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 tracking-wide mt-0.5 truncate">GENERATOR</p>
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500 tracking-wide mt-0.5">GENERATOR</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-            {isCheckingUpdate && (
-                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full pl-2 pr-2 sm:pr-3 py-1 transition-all duration-300">
-                    <Loader2 size={16} className="text-primary-500 animate-spin" />
-                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 hidden sm:block">Проверка...</span>
-                </div>
-            )}
+        <div className="flex items-center gap-2">
+            {!isOnline && <div className="p-2 text-slate-400 bg-white/50 dark:bg-slate-800/50 rounded-full backdrop-blur-sm"><WifiOff size={18} /></div>}
+            {isCheckingUpdate && <div className="p-2 text-primary-500 animate-spin"><Loader2 size={20} /></div>}
             {!isCheckingUpdate && isUpdateAvailable && (
                 <button onClick={handleOpenUpdateBanner} className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 animate-pulse">
                     <Download size={20} />
@@ -756,8 +719,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative z-0 overflow-y-auto no-scrollbar">
-        {/* Main content omitted for brevity as no changes required here */}
+      <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative z-0">
         
         <div 
           className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 transition-all duration-300 ${isListSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
@@ -822,7 +784,8 @@ const App: React.FC = () => {
              </button>
 
              <div className={`absolute top-full left-0 w-full bg-white dark:bg-slate-900 border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl overflow-hidden transition-all duration-300 origin-top flex flex-col max-h-[360px] ${isListSelectorOpen ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
-                 {/* List selection content same as before */}
+                 
+                 {/* Tabs Switcher */}
                  <div className="px-5 pt-4 pb-2">
                      <div className="flex gap-2">
                          <div className="flex-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
@@ -853,7 +816,9 @@ const App: React.FC = () => {
                  </div>
 
                  <div className="overflow-y-auto no-scrollbar py-2 flex-1">
+                    {/* Render lists based on mode */}
                     {!isGroupMode ? (
+                        // SINGLE MODE
                         lists.map(list => {
                             const isSelected = list.id === selectedListId;
                             const isOfflineCloud = list.isCloud && !isOnline;
@@ -899,6 +864,7 @@ const App: React.FC = () => {
                             );
                         })
                     ) : (
+                        // GROUP MODE
                         <>
                            <div className="px-5 pb-2 text-xs text-slate-400 text-center">
                                Выберите списки для объединения.
@@ -1083,7 +1049,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <nav className="px-6 pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
+      <nav className="px-6 pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
          <div className="flex items-center justify-around max-w-lg mx-auto h-16">
             <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                 <Settings size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">Настройки</span>
@@ -1134,15 +1100,8 @@ const App: React.FC = () => {
         onDismissHeroUpdates={dismissHeroUpdates}
         colorScheme={colorScheme}
         setColorScheme={setColorScheme}
-        isDebugMode={isDebugMode}
-        onEnableDebug={() => handleSetDebugMode(true)}
-        debugLogs={debugLogs}
-        onCheckUpdate={checkUpdate}
-        isCheckingUpdate={isCheckingUpdate}
-        onDisableDebug={() => handleSetDebugMode(false)}
       />
 
-      {/* Modals omitted for brevity - no changes */}
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
            <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-transform duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isResetConfirmOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
               <div className="flex flex-col items-center text-center mb-6">
