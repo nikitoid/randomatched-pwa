@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye } from 'lucide-react';
+import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, Terminal } from 'lucide-react';
 import { HeroList, Hero, ColorScheme } from '../types';
 import { RANKS, COLOR_SCHEMES_DATA } from '../constants';
 import { RankSelect } from './RankSelect';
 import { ListItem } from './ListItem';
+import { LogEntry } from '../hooks/useConsoleCapture';
 
 interface SettingsOverlayProps {
   isOpen: boolean;
@@ -31,9 +32,12 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onDismissHeroUpdates?: (listId: string) => void;
     colorScheme?: ColorScheme;
     setColorScheme?: (scheme: ColorScheme) => void;
+    isDebugMode?: boolean;
+    onEnableDebug?: () => void;
+    debugLogs?: LogEntry[];
 }
 
-type TabType = 'lists' | 'app' | 'appearance';
+type TabType = 'lists' | 'app' | 'appearance' | 'debug';
 type SortOrder = 'asc' | 'desc' | 'custom';
 type ImportMode = 'none' | 'text_import' | 'text_export' | 'rank_import' | 'file_import_confirm';
 
@@ -57,7 +61,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   updatedHeroIds,
   onDismissHeroUpdates,
   colorScheme = 'emerald',
-  setColorScheme
+  setColorScheme,
+  isDebugMode = false,
+  onEnableDebug,
+  debugLogs = []
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('lists');
   const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -119,6 +126,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   const dragOverItem = useRef<number | null>(null);
   const [isListDragging, setIsListDragging] = useState(false);
   const listContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Debug activation state
+  const [debugTapCount, setDebugTapCount] = useState(0);
 
   // Determine if current editor session is read-only (offline cloud list)
   const currentList = lists.find(l => l.id === editingListId);
@@ -802,6 +812,22 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     tabsContainerRef.current.scrollLeft = scrollLeft - (x - startX) * 2;
   };
 
+  const handleVersionTap = () => {
+      if (isDebugMode) return;
+      
+      const newCount = debugTapCount + 1;
+      setDebugTapCount(newCount);
+      
+      if (newCount === 10) {
+          if (onEnableDebug) onEnableDebug();
+          if (addToast) addToast("Режим отладки активирован", "success");
+          setDebugTapCount(0);
+      } else if (newCount > 5) {
+          const remaining = 10 - newCount;
+          if (addToast) addToast(`Еще ${remaining} нажатий...`, "info", 1000);
+      }
+  };
+
   const renderTabButton = (id: TabType, label: string, icon: React.ReactNode) => (
     <button
       data-tab-id={id}
@@ -1017,6 +1043,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 {renderTabButton('lists', 'Списки', <Files size={16} />)}
                 {renderTabButton('appearance', 'Внешний вид', <Palette size={16} />)}
                 {renderTabButton('app', 'Инфо', <Smartphone size={16} />)}
+                {isDebugMode && renderTabButton('debug', 'Debug', <Terminal size={16} />)}
              </div>
           </div>
         )}
@@ -1035,7 +1062,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             {activeTab === 'lists' && (
               <div className="animate-in fade-in slide-in-from-bottom-2">
                  <div className="flex items-center justify-between sticky top-0 z-30 px-4 pt-4 pb-4 bg-slate-50 dark:bg-slate-950">
-                     <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border ${isOnline ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30' : 'bg-slate-200 text-slate-500 border-slate-300'}`}>
+                     <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-all duration-300 ${isOnline ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30' : 'bg-slate-200 text-slate-500 border-slate-300'}`}>
                         {isSyncing ? <><Loader2 size={10} className="animate-spin" /> Sync</> : isOnline ? <><Wifi size={10} /> Online</> : <><WifiOff size={10} /> Offline</>}
                     </div>
                     <div className="flex gap-2">
@@ -1126,7 +1153,12 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     <Dice5 size={48} />
                  </div>
                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
-                 <p className="text-sm font-bold text-primary-500 dark:text-primary-400 mb-8 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full">v2.1.1</p>
+                 <p 
+                    onClick={handleVersionTap}
+                    className="text-sm font-bold text-primary-500 dark:text-primary-400 mb-8 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full cursor-pointer select-none active:scale-95 transition-transform"
+                 >
+                    v2.1.1
+                 </p>
                  
                  <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                     <p className="mb-3">
@@ -1142,6 +1174,30 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     <span>by Nikitoid</span>
                  </div>
               </div>
+            )}
+
+            {activeTab === 'debug' && isDebugMode && (
+                <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-2 bg-slate-900 text-slate-300 font-mono text-[10px]">
+                    <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-800">
+                        <span className="font-bold text-white">Console Logs</span>
+                        <div className="flex gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-slate-700 text-blue-400">{debugLogs.filter(l => l.type === 'log').length}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-slate-700 text-yellow-400">{debugLogs.filter(l => l.type === 'warn').length}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-slate-700 text-red-400">{debugLogs.filter(l => l.type === 'error').length}</span>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                        {debugLogs.length === 0 && <div className="text-slate-500 italic p-4 text-center">No logs yet...</div>}
+                        {debugLogs.map((log, i) => (
+                            <div key={i} className={`flex gap-2 break-all ${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : 'text-slate-300'}`}>
+                                <span className="text-slate-600 shrink-0 select-none">[{log.timestamp}]</span>
+                                <span>{log.content}</span>
+                            </div>
+                        ))}
+                        {/* Auto-scroll anchor */}
+                        <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />
+                    </div>
+                </div>
             )}
           </div>
         </div>

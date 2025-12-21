@@ -4,6 +4,7 @@ import { useTheme } from './hooks/useTheme';
 import { useHeroLists } from './hooks/useHeroLists';
 import { useToast } from './hooks/useToast';
 import { usePWA } from './hooks/usePWA';
+import { useConsoleCapture, LogEntry } from './hooks/useConsoleCapture';
 import { generateAssignmentsWithMode, getHeroWeight, getBestPermutation, getUniqueHeroesFromLists } from './utils/generator';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ResultOverlay } from './components/ResultOverlay';
@@ -23,6 +24,10 @@ const App: React.FC = () => {
   const { theme, toggleTheme, colorScheme, setColorScheme } = useTheme();
   const { toasts, addToast, removeToast } = useToast();
   
+  // Debug mode logs capture
+  const debugLogs = useConsoleCapture();
+  const [isDebugMode, setIsDebugMode] = useState(false);
+
   const { 
     lists, 
     addList, 
@@ -725,8 +730,13 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-            {!isOnline && <div className="p-2 text-slate-400 bg-white/50 dark:bg-slate-800/50 rounded-full backdrop-blur-sm"><WifiOff size={18} /></div>}
-            {isCheckingUpdate && <div className="p-2 text-primary-500 animate-spin"><Loader2 size={20} /></div>}
+            {!isOnline && <div className="p-2 text-slate-400 bg-white/50 dark:bg-slate-800/50 rounded-full backdrop-blur-sm transition-all duration-300"><WifiOff size={18} /></div>}
+            {isCheckingUpdate && (
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-full pl-2 pr-3 py-1">
+                    <Loader2 size={16} className="text-primary-500 animate-spin" />
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Обновление...</span>
+                </div>
+            )}
             {!isCheckingUpdate && isUpdateAvailable && (
                 <button onClick={handleOpenUpdateBanner} className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 animate-pulse">
                     <Download size={20} />
@@ -1117,6 +1127,9 @@ const App: React.FC = () => {
         onDismissHeroUpdates={dismissHeroUpdates}
         colorScheme={colorScheme}
         setColorScheme={setColorScheme}
+        isDebugMode={isDebugMode}
+        onEnableDebug={() => setIsDebugMode(true)}
+        debugLogs={debugLogs}
       />
 
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
