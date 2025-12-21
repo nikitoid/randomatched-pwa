@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye } from 'lucide-react';
+import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, Terminal, RefreshCw } from 'lucide-react';
 import { HeroList, Hero, ColorScheme } from '../types';
 import { RANKS, COLOR_SCHEMES_DATA } from '../constants';
 import { RankSelect } from './RankSelect';
@@ -31,9 +31,11 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onDismissHeroUpdates?: (listId: string) => void;
     colorScheme?: ColorScheme;
     setColorScheme?: (scheme: ColorScheme) => void;
+    logs?: {type: string, args: string[]}[];
+    checkForUpdate?: () => void;
 }
 
-type TabType = 'lists' | 'app' | 'appearance';
+type TabType = 'lists' | 'app' | 'appearance' | 'debug';
 type SortOrder = 'asc' | 'desc' | 'custom';
 type ImportMode = 'none' | 'text_import' | 'text_export' | 'rank_import' | 'file_import_confirm';
 
@@ -57,7 +59,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   updatedHeroIds,
   onDismissHeroUpdates,
   colorScheme = 'emerald',
-  setColorScheme
+  setColorScheme,
+  logs = [],
+  checkForUpdate
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('lists');
   const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -106,6 +110,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   // Editor State
   const [editorHeroes, setEditorHeroes] = useState<Hero[]>([]);
   const [editorIsGroupable, setEditorIsGroupable] = useState(false);
+
+  // Debug Mode State
+  const [debugClicks, setDebugClicks] = useState(0);
+  const [isDebugMode, setIsDebugMode] = useState(false);
 
   // Drag/Scroll refs
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -442,12 +450,19 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   };
 
   // 2. TEXT STRING
-  const openTextExport = () => {
-      const text = getCleanHeroes(editorHeroes)
+  const openTextExport = (list?: HeroList) => {
+      let heroesToExport = editorHeroes;
+      
+      if (list) {
+          heroesToExport = list.heroes;
+      }
+      
+      const text = getCleanHeroes(heroesToExport)
           .map(h => `${h.name}${h.rank ? `|${h.rank}` : ''}`)
           .join('\n');
       setImportTextValue(text);
       setImportMode('text_export');
+      handleCloseMenu();
   };
 
   const openTextImport = () => {
@@ -788,6 +803,26 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
       setDiscardModalOpen(false);
   };
 
+  const handleVersionClick = () => {
+      if (isDebugMode) return;
+      setDebugClicks(prev => {
+          const next = prev + 1;
+          if (next >= 10) {
+              setIsDebugMode(true);
+              return 10;
+          }
+          return next;
+      });
+  };
+
+  const handleDebugOff = () => {
+      if (confirm('Отключить режим отладки?')) {
+          setIsDebugMode(false);
+          setDebugClicks(0);
+          setActiveTab('lists');
+      }
+  };
+
   const handleMouseDown = (e: React.MouseEvent) => {
     const el = tabsContainerRef.current; if (!el) return;
     setIsDragging(true); setIsDragScroll(false); setStartX(e.pageX - el.offsetLeft); setScrollLeft(el.scrollLeft);
@@ -966,10 +1001,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             <div className={`w-2 h-2 rounded-full ml-1 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         </button>
                     ) : (
-                        <div className="flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl text-xs font-bold bg-slate-50 text-slate-400 border border-slate-200 dark:bg-slate-800/50 dark:text-slate-500 dark:border-slate-700 cursor-default opacity-70">
-                             <SquareStack size={14} />
-                             <span>Не в группе</span>
-                        </div>
+                        // Hide In Group button completely for temporary lists
+                         <div className="w-1" />
                     )}
 
                     <div className="flex gap-2">
@@ -1017,6 +1050,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 {renderTabButton('lists', 'Списки', <Files size={16} />)}
                 {renderTabButton('appearance', 'Внешний вид', <Palette size={16} />)}
                 {renderTabButton('app', 'Инфо', <Smartphone size={16} />)}
+                {isDebugMode && renderTabButton('debug', 'Debug', <Terminal size={16} />)}
              </div>
           </div>
         )}
@@ -1126,9 +1160,17 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     <Dice5 size={48} />
                  </div>
                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
-                 <p className="text-sm font-bold text-primary-500 dark:text-primary-400 mb-8 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full">v2.1.1</p>
                  
-                 <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                 <div onClick={handleVersionClick} className="relative cursor-pointer inline-block mb-8">
+                     <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.1.1</p>
+                     {debugClicks > 5 && debugClicks < 10 && (
+                         <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-slate-400">
+                             Debug через {10 - debugClicks}...
+                         </div>
+                     )}
+                 </div>
+                 
+                 <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
                     <p className="mb-3">
                         Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>.
                     </p>
@@ -1136,12 +1178,39 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей.
                     </p>
                  </div>
+
+                 {checkForUpdate && (
+                     <button 
+                        onClick={checkForUpdate}
+                        disabled={!isOnline}
+                        className="mb-8 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                     >
+                        <RefreshCw size={14} /> Проверить обновления
+                     </button>
+                 )}
                  
-                 <div className="mt-auto pt-8 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center">
+                 <div className="mt-auto pt-4 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center">
                     <span>Designed for Unmatched Fans</span>
                     <span>by Nikitoid</span>
                  </div>
               </div>
+            )}
+
+            {activeTab === 'debug' && isDebugMode && (
+                <div className="flex flex-col h-full p-4 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2"><Terminal size={20} /> Console Logs</h3>
+                        <button onClick={handleDebugOff} className="px-3 py-1 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300 rounded-lg text-xs font-bold">Выключить</button>
+                    </div>
+                    <div className="flex-1 bg-slate-900 rounded-xl p-3 overflow-y-auto font-mono text-xs text-slate-300 break-all border border-slate-700 shadow-inner">
+                        {logs.length === 0 ? <div className="text-slate-500 italic">No logs...</div> : logs.map((log, i) => (
+                            <div key={i} className={`mb-1 border-b border-slate-800 pb-1 ${log.type === 'error' ? 'text-red-400' : log.type === 'warn' ? 'text-yellow-400' : ''}`}>
+                                <span className="opacity-50 mr-2 uppercase text-[10px]">{log.type}</span>
+                                {log.args.join(' ')}
+                            </div>
+                        ))}
+                    </div>
+                </div>
             )}
           </div>
         </div>
@@ -1258,7 +1327,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     </>
                 )}
                 <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
-                <button onClick={() => handleEditorMenuAction(openTextExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                     <Copy size={16} /> Экспорт (Текст)
                 </button>
                 {!isReadOnly && !currentList?.isTemporary && (
@@ -1339,6 +1408,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 <button onClick={(e) => { e.stopPropagation(); if (!activeListForMenu.isTemporary) handleOpenRename(activeListForMenu); }} disabled={activeListForMenu.isTemporary || (!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isTemporary || (!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`}>
                 <Edit2 size={16} /> Переименовать
                 </button>
+                
+                <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}>
+                    <Copy size={16} /> Экспорт (Текст)
+                </button>
+
                 {!activeListForMenu.isTemporary && (
                     <button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}>
                         <FileJson size={16} /> Экспорт в файл

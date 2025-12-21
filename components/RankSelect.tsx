@@ -75,17 +75,23 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
         return colors;
     };
 
+    const handleClick = () => {
+        if (disabled) return;
+        if (isOpen) onClose();
+        else onOpen();
+    };
+
     return (
         <>
             <button
                 ref={buttonRef}
-                onClick={isOpen ? onClose : onOpen}
+                onClick={handleClick}
                 className={`w-full h-full flex items-center justify-center px-2 py-2 text-sm rounded-xl border transition-all outline-none font-bold select-none ${getRankStyle(value)} ${disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
             >
                 {value || <span className="text-xs font-normal opacity-70">Ранг</span>}
             </button>
 
-            {isOpen && createPortal(
+            {isOpen && !disabled && createPortal(
                 <div 
                     className={`fixed bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden z-[102] rank-select-menu
                         ${menuStyle.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-left' : 'animate-menu-in origin-top-left'}

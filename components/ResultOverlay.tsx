@@ -115,12 +115,19 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
 
+      // To capture by the central lower part (bottom center of the floating card aligns with cursor):
+      // Floating card has translate(-50%, -50%).
+      // We want visual Bottom Center to be at Mouse Position.
+      // Top/Left of element needs to be (MouseY - Height/2) and MouseX.
+      // So relative offset from "center" to mouse needs to correspond to Bottom-Center.
+      // Bottom Center relative to Center is (0, Height/2).
+      
       setActiveDrag({
           id: position,
-          offsetX: e.clientX - centerX,
-          offsetY: e.clientY - centerY,
-          currX: centerX,
-          currY: centerY
+          offsetX: 0, 
+          offsetY: rect.height / 2, // Grab at bottom
+          currX: e.clientX,
+          currY: e.clientY - (rect.height / 2)
       });
   };
 

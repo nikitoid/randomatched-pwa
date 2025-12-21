@@ -51,7 +51,8 @@ const App: React.FC = () => {
       showUpdateBanner,
       setShowUpdateBanner,
       handleUpdateApp,
-      handleOpenUpdateBanner
+      handleOpenUpdateBanner,
+      checkForUpdate
   } = usePWA(addToast);
   
   const [selectedListId, setSelectedListId] = useState<string>('');
@@ -116,10 +117,12 @@ const App: React.FC = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
-  const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
   
   // Stats Modal
   const [isGroupStatsOpen, setIsGroupStatsOpen] = useState(false);
+
+  // Debug Console Logs
+  const [consoleLogs, setConsoleLogs] = useState<{type: string, args: string[]}[]>([]);
 
   const historyScrollRef = useRef<HTMLDivElement>(null);
   const [isHistoryDragging, setIsHistoryDragging] = useState(false);
@@ -127,27 +130,42 @@ const App: React.FC = () => {
   const [historyScrollLeft, setHistoryScrollLeft] = useState(0);
   const [isHistoryDragScroll, setIsHistoryDragScroll] = useState(false);
   
-  const isExitingRef = useRef(false);
-
   useEffect(() => {
-    const state = window.history.state;
-    if (!state || (state.view !== 'app' && state.view !== 'root')) {
-        window.history.replaceState({ view: 'root' }, '');
-        window.history.pushState({ view: 'app' }, '');
-    }
+    // Capture logs for Debug Mode
+    const origLog = console.log;
+    const origWarn = console.warn;
+    const origError = console.error;
+
+    const handleLog = (type: string, ...args: any[]) => {
+         setConsoleLogs(prev => {
+             const newLog = { type, args: args.map(a => {
+                 try {
+                     return typeof a === 'object' ? JSON.stringify(a) : String(a);
+                 } catch { return String(a); }
+             }) };
+             return [...prev, newLog].slice(-200); // Limit to 200 lines
+         });
+    };
+
+    console.log = (...args) => { handleLog('log', ...args); origLog(...args); };
+    console.warn = (...args) => { handleLog('warn', ...args); origWarn(...args); };
+    console.error = (...args) => { handleLog('error', ...args); origError(...args); };
+
+    return () => {
+        console.log = origLog;
+        console.warn = origWarn;
+        console.error = origError;
+    };
   }, []);
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
-        if (isExitingRef.current) return;
-
         if (isSettingsOpen) {
             return;
         }
 
         const state = event.state;
-        const view = state?.view;
-
+        
         if (isResetConfirmOpen || showResult || isGroupStatsOpen) {
             window.history.pushState({ view: 'app' }, '');
             if (isGroupStatsOpen) setIsGroupStatsOpen(false);
@@ -165,32 +183,11 @@ const App: React.FC = () => {
             window.history.pushState({ view: 'app' }, '');
             return;
         }
-
-        if (!state || view === 'root') {
-            setIsExitConfirmOpen(true);
-        } else if (view === 'app') {
-            setIsExitConfirmOpen(false);
-        }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [isSettingsOpen, isResetConfirmOpen, showResult, isNamesOpen, isListSelectorOpen, isGroupStatsOpen]);
-
-  const handleExitCancel = () => {
-      setIsExitConfirmOpen(false);
-      window.history.pushState({ view: 'app' }, '');
-  };
-
-  const handleExitConfirm = () => {
-      isExitingRef.current = true;
-      try {
-          window.close();
-      } catch (e) {
-          // Ignore
-      }
-      window.history.back();
-  };
 
   useEffect(() => {
     if (isLoaded && lists.length > 0) {
@@ -708,7 +705,6 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-            {!isOnline && <div className="p-2 text-slate-400 bg-white/50 dark:bg-slate-800/50 rounded-full backdrop-blur-sm"><WifiOff size={18} /></div>}
             {isCheckingUpdate && <div className="p-2 text-primary-500 animate-spin"><Loader2 size={20} /></div>}
             {!isCheckingUpdate && isUpdateAvailable && (
                 <button onClick={handleOpenUpdateBanner} className="p-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 animate-pulse">
@@ -1051,12 +1047,12 @@ const App: React.FC = () => {
 
       <nav className="px-6 pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
          <div className="flex items-center justify-around max-w-lg mx-auto h-16">
-            <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                <Settings size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">Настройки</span>
-            </button>
-            <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
             <button onClick={handleShowLastResult} disabled={!hasResult} className={`flex flex-col items-center justify-center gap-1 w-20 h-full transition-colors ${hasResult ? 'text-primary-600 dark:text-primary-400' : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'}`}>
                 <History size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">История</span>
+            </button>
+            <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
+            <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                <Settings size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">Настройки</span>
             </button>
          </div>
       </nav>
@@ -1100,6 +1096,8 @@ const App: React.FC = () => {
         onDismissHeroUpdates={dismissHeroUpdates}
         colorScheme={colorScheme}
         setColorScheme={setColorScheme}
+        logs={consoleLogs}
+        checkForUpdate={checkForUpdate}
       />
 
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
@@ -1116,20 +1114,6 @@ const App: React.FC = () => {
            </div>
       </div>
       
-      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isExitConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-           <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-transform duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isExitConfirmOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-              <div className="flex flex-col items-center text-center mb-6">
-                  <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex items-center justify-center mb-4"><LogOut size={24} /></div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Выйти?</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Вы уверены, что хотите закрыть приложение?</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                 <button onClick={handleExitCancel} className="px-4 py-3.5 font-bold text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-2xl active:scale-95 transition-all">Отмена</button>
-                 <button onClick={handleExitConfirm} className="px-4 py-3.5 font-bold text-sm text-white bg-slate-900 dark:bg-primary-600 rounded-2xl active:scale-95 transition-all">Выйти</button>
-              </div>
-           </div>
-      </div>
-
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isGroupStatsOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setIsGroupStatsOpen(false)}>
           <div className={`bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 max-h-[90dvh] flex flex-col ${isGroupStatsOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">

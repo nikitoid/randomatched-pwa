@@ -47,7 +47,6 @@ export const ListItem: React.FC<ListItemProps> = ({
   };
 
   const handleEditClick = () => {
-    // Removed isCloudOffline check to allow viewing
     if (isMenuOpen) return;
     if (hasUpdate && onMarkSeen) onMarkSeen(list.id);
     onEdit(list);
@@ -79,11 +78,11 @@ export const ListItem: React.FC<ListItemProps> = ({
          className={`bg-white dark:bg-slate-900 p-4 rounded-2xl flex items-center transition-shadow relative shadow-sm border border-slate-100 dark:border-slate-800 ${isCloudOffline ? 'bg-slate-50 dark:bg-slate-900/50' : ''}`}
       >
         <div 
-            draggable={!isCloudOffline}
-            className={`mr-1 text-slate-300 dark:text-slate-700 p-1 ${!isCloudOffline ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-not-allowed opacity-50'}`}
-            onDragStart={!isCloudOffline ? handleHandleDragStart : undefined}
-            onTouchStart={!isCloudOffline ? (e) => onDragStart(e, index) : undefined}
-            onTouchEnd={!isCloudOffline ? onDragEnd : undefined}
+            draggable={true}
+            className={`mr-1 text-slate-300 dark:text-slate-700 p-1 cursor-grab active:cursor-grabbing touch-none`}
+            onDragStart={handleHandleDragStart}
+            onTouchStart={(e) => onDragStart(e, index)}
+            onTouchEnd={onDragEnd}
         >
             <GripVertical size={20} />
         </div>

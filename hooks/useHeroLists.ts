@@ -92,28 +92,47 @@ export const useHeroLists = (
     }
   }, [lists, isLoaded]);
 
+  const checkConnectivity = async (): Promise<boolean> => {
+    if (!navigator.onLine) return false;
+    try {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), 2000); // Reduced timeout to 2s
+        await fetch(`https://www.google.com/favicon.ico?_=${Date.now()}`, { 
+            mode: 'no-cors', 
+            cache: 'no-store',
+            signal: controller.signal 
+        });
+        clearTimeout(id);
+        return true;
+    } catch (e) {
+        return false;
+    }
+  };
+
+  // Real-time online/offline detection
   useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    const handleOnline = async () => {
+        // Optimistically set true, then verify
+        setIsOnline(true);
+        const verified = await checkConnectivity();
+        setIsOnline(verified);
+    };
+    
+    const handleOffline = () => {
+        setIsOnline(false);
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    // Initial check on mount
+    checkConnectivity().then(setIsOnline);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  const checkConnectivity = async (): Promise<boolean> => {
-    if (!navigator.onLine) return false;
-    try {
-        await fetch(`https://www.google.com/favicon.ico?_=${Date.now()}`, { mode: 'no-cors', cache: 'no-store' });
-        return true;
-    } catch (e) {
-        return false;
-    }
-  };
 
   const syncWithCloud = async () => {
     if (!isLoaded) return;
@@ -313,7 +332,8 @@ export const useHeroLists = (
                 }, { merge: true });
             } catch (e) {
                 console.error("Failed to update cloud list", e);
-                addToast("Не удалось сохранить изменения в облаке", "error");
+                // Silent fail or toast? Keeping silent for seamless offline editing if needed, 
+                // but strictly speaking cloud lists in offline should be read-only in this app's logic
             }
         }
     }
