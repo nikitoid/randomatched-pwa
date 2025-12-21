@@ -232,12 +232,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
       const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
-      // Optimized size for 4-way cross layout
-      // w=44vmin ensures side cards touch edge on mobile (50vw - 22vmin - 14vmin = 50-36=14 left? No. 
-      // Offset=36vmin. Edge at 36+14=50vmin. 50vmin = 50vw on mobile. Touches edge exactly.)
+      // Maximized card size for better screen usage
       const cardSizeClass = isFloating 
         ? 'w-32 h-20' 
-        : 'w-[44vmin] h-[28vmin] max-w-[260px] max-h-[170px]';
+        : 'w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px]';
 
       return (
         <div 
@@ -306,17 +304,32 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     let positionStyle: React.CSSProperties = {};
     
-    // Symmetrical Layout Calculation
-    // We calculate the offset so that the cards corners touch but do not overlap.
-    // Offset = HalfWidth (22vmin) + HalfHeight (14vmin) = 36vmin.
-    // Clamped max pixel values: HalfWidth ~130px, HalfHeight ~85px.
-    const offsetCalc = 'calc(min(22vmin, 130px) + min(14vmin, 85px))';
+    // Layout Logic:
+    // Left/Right cards hug the central button closely.
+    // Top/Bottom cards hug the *Left/Right* cards (not the button), forming a cluster.
+    
+    // Config:
+    const btnRadius = '45px'; // Central button approx radius
+    const gap = '8px'; // Very small gap
+    
+    // Half dimensions of the card (used for center-to-edge calc)
+    // Card Dimensions: 52vmin x 32vmin (Max 320x200)
+    // We use min() to ensure we respect the max-px limits in calculations
+    const halfH = 'min(16vmin, 100px)'; // Half of Short Side (Height)
+    const halfW = 'min(26vmin, 160px)'; // Half of Long Side (Width)
+
+    // Side Cards Offset: Center -> Button -> Gap -> HalfCardHeight
+    const sideOffsetFromCenter = `calc(${btnRadius} + ${gap} + ${halfH})`;
+    
+    // Top/Bottom Cards Offset: Center -> SideCardWidth (Visual Height) -> Gap -> HalfCardHeight
+    // This positions them "outside" the side cards
+    const verticalOffsetFromCenter = `calc(${halfW} + ${gap} + ${halfH})`;
 
     switch (position) {
         case 'top':
             positionStyle = { 
                 position: 'absolute', 
-                top: `calc(50% - ${offsetCalc})`, 
+                top: `calc(50% - ${verticalOffsetFromCenter})`, 
                 left: '50%', 
                 transform: 'translate(-50%, -50%) rotate(180deg)',
                 transformOrigin: 'center'
@@ -325,7 +338,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         case 'bottom':
             positionStyle = { 
                 position: 'absolute', 
-                top: `calc(50% + ${offsetCalc})`,
+                top: `calc(50% + ${verticalOffsetFromCenter})`,
                 left: '50%', 
                 transform: 'translate(-50%, -50%)',
                 transformOrigin: 'center'
@@ -334,7 +347,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         case 'left':
             positionStyle = { 
                 position: 'absolute', 
-                left: `calc(50% - ${offsetCalc})`, 
+                left: `calc(50% - ${sideOffsetFromCenter})`, 
                 top: '50%', 
                 transform: 'translate(-50%, -50%) rotate(90deg)',
                 transformOrigin: 'center'
@@ -343,7 +356,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         case 'right':
             positionStyle = { 
                 position: 'absolute', 
-                left: `calc(50% + ${offsetCalc})`,
+                left: `calc(50% + ${sideOffsetFromCenter})`,
                 top: '50%', 
                 transform: 'translate(-50%, -50%) rotate(-90deg)',
                 transformOrigin: 'center'
@@ -361,7 +374,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         >
             {/* Placeholder when dragging */}
             {isDraggingThis && (
-                <div className="absolute inset-0 w-[44vmin] h-[28vmin] max-w-[260px] max-h-[170px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
+                <div className="absolute inset-0 w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
             )}
             
             <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
