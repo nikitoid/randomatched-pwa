@@ -136,6 +136,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   // Swipe State
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
+  const touchStartY = useRef(0);
+  const touchEndY = useRef(0);
 
   // List DND refs
   const dragItem = useRef<number | null>(null);
@@ -585,7 +587,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
       setActiveItemRect(cardRect);
 
       const spaceBelow = window.innerHeight - buttonRect.bottom;
-      const minSpaceNeeded = 200;
+      const minSpaceNeeded = 280; // Increased to prevent cutoff
       const isBottom = spaceBelow < minSpaceNeeded;
 
       if (isBottom) {
@@ -865,17 +867,23 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   // Swipe Navigation Handlers
   const handleTouchStart = (e: React.TouchEvent) => {
       touchStartX.current = e.targetTouches[0].clientX;
+      touchStartY.current = e.targetTouches[0].clientY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
       if (editingListId || isListDragging) return;
       touchEndX.current = e.changedTouches[0].clientX;
+      touchEndY.current = e.changedTouches[0].clientY;
       handleSwipe();
   };
 
   const handleSwipe = () => {
       const SWIPE_THRESHOLD = 60;
-      const diff = touchStartX.current - touchEndX.current;
+      const diffX = touchStartX.current - touchEndX.current;
+      const diffY = touchStartY.current - touchEndY.current;
+
+      // Ignore if vertical swipe is significant (more than horizontal)
+      if (Math.abs(diffY) > Math.abs(diffX)) return;
       
       const tabs: TabType[] = isDebugMode 
           ? ['lists', 'appearance', 'app', 'debug'] 
@@ -883,11 +891,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
       
       const currentIndex = tabs.indexOf(activeTab);
 
-      if (Math.abs(diff) > SWIPE_THRESHOLD) {
-          if (diff > 0 && currentIndex < tabs.length - 1) {
+      if (Math.abs(diffX) > SWIPE_THRESHOLD) {
+          if (diffX > 0 && currentIndex < tabs.length - 1) {
               // Swipe Left -> Next Tab
               setActiveTab(tabs[currentIndex + 1]);
-          } else if (diff < 0 && currentIndex > 0) {
+          } else if (diffX < 0 && currentIndex > 0) {
               // Swipe Right -> Prev Tab
               setActiveTab(tabs[currentIndex - 1]);
           }
@@ -1234,7 +1242,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
                  
                  <div onClick={handleVersionClick} className="relative cursor-pointer inline-block mb-8">
-                     <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.2.0</p>
+                     <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.2.1</p>
                      {debugClicks > 5 && debugClicks < 10 && (
                          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-slate-400">
                              Debug через {10 - debugClicks}...
@@ -1251,7 +1259,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     </p>
                  </div>
 
-                 {isUpdateAvailable && onUpdateApp ? (
+                 {isUpdateAvailable && onUpdateApp && (
                     <button 
                         onClick={onUpdateApp}
                         className="mb-8 px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-transform"
@@ -1259,17 +1267,6 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         <Download size={14} /> 
                         Обновить и перезапустить
                     </button>
-                 ) : (
-                     checkForUpdate && (
-                         <button 
-                            onClick={checkForUpdate}
-                            disabled={!isOnline || isCheckingUpdate}
-                            className="mb-8 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                         >
-                            <RefreshCw size={14} className={isCheckingUpdate ? 'animate-spin' : ''} /> 
-                            {isCheckingUpdate ? 'Проверка...' : 'Проверить обновления'}
-                         </button>
-                     )
                  )}
                  
                  <div className="mt-auto pt-4 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center">
@@ -1473,7 +1470,6 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                    transformOrigin: 'center center'
                 }}
              >
-                <div className="mr-1 text-slate-300 dark:text-slate-700 p-1"><GripVertical size={20} /></div>
                 <div className="mr-4 ml-1 flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 shrink-0 border border-slate-100 dark:border-slate-700/50 relative">
                      {getListIcon(activeListForMenu)}
                      {updatedListIds && updatedListIds.has(activeListForMenu.id) && (

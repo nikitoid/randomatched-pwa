@@ -120,23 +120,25 @@ export const ListItem: React.FC<ListItemProps> = ({
             </div>
         </div>
         
-        <button 
-            onClick={(e) => { 
-                e.stopPropagation(); 
-                const buttonRect = e.currentTarget.getBoundingClientRect();
-                const cardRect = cardRef.current?.getBoundingClientRect();
-                if (cardRect) {
-                    onOpenMenu(list.id, buttonRect, cardRect);
-                }
-            }}
-            className={`p-2.5 rounded-xl transition-colors shrink-0 ${
-                isMenuOpen 
-                ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300' 
-                : 'text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:text-primary-500 active:bg-slate-50 dark:active:bg-slate-800'
-            }`}
-        >
-            <MoreVertical size={20} />
-        </button>
+        {!isReorderMode && (
+            <button 
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    const buttonRect = e.currentTarget.getBoundingClientRect();
+                    const cardRect = cardRef.current?.getBoundingClientRect();
+                    if (cardRect) {
+                        onOpenMenu(list.id, buttonRect, cardRect);
+                    }
+                }}
+                className={`p-2.5 rounded-xl transition-colors shrink-0 ${
+                    isMenuOpen 
+                    ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300' 
+                    : 'text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:text-primary-500 active:bg-slate-50 dark:active:bg-slate-800'
+                }`}
+            >
+                <MoreVertical size={20} />
+            </button>
+        )}
       </div>
     </div>
   );

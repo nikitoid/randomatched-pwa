@@ -436,7 +436,8 @@ const App: React.FC = () => {
 
   const hasTemporaryLists = lists.some(l => l.isTemporary);
   const hasResult = assignments.length > 0;
-  const canReset = hasResult || hasTemporaryLists || playerNames.some(n => n.trim());
+  // Change: Filling player names should not trigger the reset session visibility
+  const canReset = hasResult || hasTemporaryLists;
 
   // --- RE-ROLL LOGIC (UPDATED FOR GROUP) ---
   const getAvailableHeroesPool = () => {
