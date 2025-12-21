@@ -275,7 +275,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {!isFloating && (
                 <h2 
                     key={player.hero?.id || 'unknown'}
-                    className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-xs sm:text-xs' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-base sm:text-2xl'}`}
+                    className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-base sm:text-xl' : 'text-xl sm:text-3xl'}`}
                 >
                     {hasHero ? heroName : <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>}
                 </h2>
@@ -302,37 +302,34 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const isDraggingThis = activeDrag?.id === position;
     const isHoveredTarget = hoveredTarget === position;
 
-    // Center-relative positioning logic
-    // We use distinct offsets for horizontal vs vertical to allow "nesting" or specific spacing
     let positionStyle: React.CSSProperties = {};
     
     // Closer to center for sides (Left/Right)
     const horizontalOffset = '3rem'; 
-    // Further from center for vertical (Top/Bottom) to avoid overlap and create the "cross" shape
-    const verticalOffset = '8.5rem';
 
     switch (position) {
         case 'top':
+            // Docked to TOP edge
             positionStyle = { 
                 position: 'absolute', 
-                bottom: '50%', 
+                top: '4%', // Close to top safe area
                 left: '50%', 
-                marginBottom: verticalOffset, 
                 transform: 'translate(-50%, 0) rotate(180deg)',
                 transformOrigin: 'center'
             };
             break;
         case 'bottom':
+            // Docked to BOTTOM edge (above bottom bar)
             positionStyle = { 
                 position: 'absolute', 
-                top: '50%', 
+                bottom: '16%', // Clear of the bottom action bar
                 left: '50%', 
-                marginTop: verticalOffset, 
                 transform: 'translate(-50%, 0)',
                 transformOrigin: 'center'
             };
             break;
         case 'left':
+            // Docked near CENTER
             positionStyle = { 
                 position: 'absolute', 
                 right: '50%', 
@@ -343,6 +340,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             };
             break;
         case 'right':
+            // Docked near CENTER
             positionStyle = { 
                 position: 'absolute', 
                 left: '50%', 

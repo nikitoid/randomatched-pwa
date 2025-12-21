@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', '**/*.{png,jpg,jpeg,svg}'],
       manifest: {
         name: 'Randomatched: Unmatched Team Generator',
         short_name: 'Randomatched',
@@ -38,23 +38,23 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: '/screenshots/mobile.png',
-            sizes: '390x844',
-            type: 'image/png',
+            src: '/screenshots/mobile.jpg',
+            sizes: '419x854',
+            type: 'image/jpeg',
             form_factor: 'narrow',
-            label: 'Mobile Home Screen'
+            label: 'Mobile Screen'
           },
           {
-            src: '/screenshots/desktop.png',
+            src: '/screenshots/desktop.jpg',
             sizes: '1920x1080',
-            type: 'image/png',
+            type: 'image/jpeg',
             form_factor: 'wide',
-            label: 'Desktop Mode'
+            label: 'Desktop Screen'
           }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg}'],
         navigateFallback: '/index.html',
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         cleanupOutdatedCaches: true
