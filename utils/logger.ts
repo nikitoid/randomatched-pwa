@@ -1,6 +1,6 @@
 
 export interface LogEntry {
-  type: 'log' | 'warn' | 'error';
+  type: 'log' | 'warn' | 'error' | 'info' | 'debug';
   args: string[];
   time: string;
 }
@@ -17,8 +17,18 @@ class Logger {
   private init() {
     if (typeof window === 'undefined') return;
 
+    // Consuming early logs captured by index.html script
+    const earlyLogs = (window as any).__earlyLogs;
+    if (Array.isArray(earlyLogs)) {
+        earlyLogs.forEach((log: any) => {
+            this.addLog(log.type, log.args, log.time);
+        });
+        // Disable early logger by removing reference, our override below will replace it anyway
+        (window as any).__earlyLogs = null;
+    }
+
     // Capture standard console methods
-    const methods = ['log', 'warn', 'error'] as const;
+    const methods = ['log', 'warn', 'error', 'info', 'debug'] as const;
     methods.forEach((type) => {
       const original = console[type];
       console[type] = (...args: any[]) => {
@@ -46,8 +56,8 @@ class Logger {
     });
   }
 
-  private addLog(type: 'log' | 'warn' | 'error', args: any[]) {
-    const time = new Date().toLocaleTimeString('ru-RU', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  private addLog(type: 'log' | 'warn' | 'error' | 'info' | 'debug', args: any[], time?: string) {
+    const timestamp = time || new Date().toLocaleTimeString('ru-RU', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     
     const serializedArgs = args.map(arg => {
       try {
@@ -66,7 +76,7 @@ class Logger {
       }
     });
 
-    this.logs = [...this.logs, { type, args: serializedArgs, time }].slice(-this.maxLogs);
+    this.logs = [...this.logs, { type, args: serializedArgs, time: timestamp }].slice(-this.maxLogs);
     this.notify();
   }
 
