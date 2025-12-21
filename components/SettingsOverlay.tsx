@@ -173,6 +173,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
           setHeroSortDirection(null);
           setDebugTapCount(0);
           setIsDebugDisableConfirmOpen(false);
+          setIsStatsModalOpen(false);
       }
   }, [editingListId]);
 
@@ -223,28 +224,34 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         const state = event.state;
         const overlay = state?.overlay;
         
+        // Priority 1: Close active UI elements
         if (focusedRowIndex !== null) {
             setFocusedRowIndex(null);
              window.history.pushState({ overlay: 'settings-editor' }, '');
              return;
         }
 
+        // Priority 2: Close Overlays/Modals
         if (isNameModalOpen || listToDelete || isDiscardModalOpen || isStatsModalOpen || importMode !== 'none' || isDebugDisableConfirmOpen) {
+            // Restore appropriate state depending on where we are
             if (editingListId) {
                  window.history.pushState({ overlay: 'settings-editor' }, '');
             } else {
                  window.history.pushState({ overlay: 'settings' }, '');
             }
-            // Close overlays
-            setNameModalOpen(false);
-            setListToDelete(null);
-            setDiscardModalOpen(false);
-            setIsStatsModalOpen(false);
-            setIsDebugDisableConfirmOpen(false);
-            setImportMode('none');
+            
+            // Close specific overlays
+            if (isStatsModalOpen) setIsStatsModalOpen(false);
+            if (isNameModalOpen) setNameModalOpen(false);
+            if (listToDelete) setListToDelete(null);
+            if (isDiscardModalOpen) setDiscardModalOpen(false);
+            if (isDebugDisableConfirmOpen) setIsDebugDisableConfirmOpen(false);
+            if (importMode !== 'none') setImportMode('none');
+            
             return;
         }
 
+        // Priority 3: Handle Editor Navigation (Back from editor)
         if (overlay === 'settings' && editingListId) {
              if (isDirtyRef.current) {
                  window.history.pushState({ overlay: 'settings-editor' }, '');
@@ -258,10 +265,12 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
              return;
         }
 
+        // Priority 4: Prevent closing settings if we are in 'settings-editor' state but logic fell through
         if (overlay === 'settings-editor') {
              return; 
         }
 
+        // Priority 5: Close Settings Overlay
         if (overlay !== 'settings' && overlay !== 'settings-editor') {
              onClose();
              setEditingListId(null);
@@ -297,7 +306,6 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   }, [activeTab]);
 
   // --- HANDLERS ---
-  // ... (keeping all import/export/list logic unchanged)
   const validateRanks = (heroes: any[]): boolean => {
       return heroes.every(h => {
           if (!h.rank) return true;
@@ -673,13 +681,21 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
   const activeListForMenu = lists.find(l => l.id === contextMenuTargetId);
   const getListIcon = (list: HeroList) => { if (list.isTemporary) return <Filter size={22} className="text-primary-500" />; if (list.isCloud) return <Cloud size={22} className="text-sky-500" />; return <Database size={22} className="text-slate-400" />; };
-  const getStats = () => {
+  
+  // STATS CALCULATION
+  const getEditorStats = () => {
       const counts: Record<string, number> = {};
       let total = 0;
-      editorHeroes.forEach(h => { if (h.name.trim() !== '' || h.rank !== '') { if (h.rank) counts[h.rank] = (counts[h.rank] || 0) + 1; total++; } });
+      editorHeroes.forEach(h => {
+          if (h.name.trim() !== '' || h.rank !== '') {
+             if (h.rank) counts[h.rank] = (counts[h.rank] || 0) + 1;
+             total++;
+          }
+      });
       const max = Math.max(...Object.values(counts), 1);
       return { counts, max, total };
   };
+
   const getRankBarColor = (rank: string) => {
       if (rank === 'S+') return 'bg-yellow-500 dark:bg-yellow-500'; if (rank === 'S-') return 'bg-yellow-400 dark:bg-yellow-400'; if (rank.startsWith('S')) return 'bg-yellow-500 dark:bg-yellow-500';
       if (rank === 'A+') return 'bg-violet-600 dark:bg-violet-600'; if (rank === 'A-') return 'bg-violet-500 dark:bg-violet-500'; if (rank.startsWith('A')) return 'bg-violet-600 dark:bg-violet-600';
@@ -966,7 +982,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     </p>
                  </div>
                  
-                 {onCheckUpdate && (
+                 {onCheckUpdate && isOnline && (
                      <button 
                         onClick={onCheckUpdate}
                         disabled={isCheckingUpdate}
@@ -1149,11 +1165,67 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
          document.body
       )}
 
+      {/* STATS MODAL (Re-implemented for Editor) */}
+      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isStatsModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setIsStatsModalOpen(false)}>
+          <div className={`bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 max-h-[90dvh] flex flex-col ${isStatsModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                          <BarChart3 size={20} />
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-white">Баланс героев</h3>
+                  </div>
+                  <button onClick={() => setIsStatsModalOpen(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-full">
+                      <X size={20} />
+                  </button>
+              </div>
+              
+              <div className="overflow-y-auto no-scrollbar flex-1 -mr-2 pr-2">
+                 {(() => {
+                    const { counts, max, total } = getEditorStats();
+                    return (
+                        <>
+                            <div className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-4 text-center">
+                                Всего героев: <span className="text-slate-900 dark:text-white font-bold">{total}</span>
+                            </div>
+                            {RANKS.map((rank, idx) => {
+                                const count = counts[rank] || 0;
+                                const percent = (count / max) * 100;
+                                const colorClass = getRankBarColor(rank);
+                                
+                                return (
+                                    <div key={rank} className="mb-3 last:mb-0">
+                                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">
+                                            <span>{rank}</span>
+                                            <span>{count}</span>
+                                        </div>
+                                        <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full rounded-full transition-all duration-1000 ease-out ${colorClass} ${percent === 0 ? 'opacity-0' : 'opacity-100'}`}
+                                                style={{ 
+                                                    width: isStatsModalOpen ? `${percent}%` : '0%',
+                                                    transitionDelay: `${idx * 50}ms`
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </>
+                    );
+                 })()}
+              </div>
+          </div>
+      </div>
+
       {/* Confirmation Modals */}
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${listToDelete ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
           <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${listToDelete ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Удалить?</h3>
-              <p className="text-sm text-slate-500 mb-6">{isDeleteCloud ? 'Удалить из облака?' : 'Это действие необратимо.'}</p>
+              <div className="flex flex-col items-center text-center mb-6">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mb-4"><Trash2 size={24} /></div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Удалить?</h3>
+                  <p className="text-sm text-slate-500 mb-6">{isDeleteCloud ? 'Удалить из облака?' : 'Это действие необратимо.'}</p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                   <button onClick={handleCancelModal} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
                   <button onClick={confirmDelete} className="py-3 font-bold text-white bg-red-500 rounded-xl">Удалить</button>

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { HeroList, Hero, ToastType } from '../types';
 import { db } from '../firebase';
 
@@ -11,11 +11,17 @@ export const useHeroLists = (
 ) => {
   const [lists, setLists] = useState<HeroList[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Initialize simply with navigator, but verify immediately in useEffect
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
   
   const [updatedListIds, setUpdatedListIds] = useState<Set<string>>(new Set());
   const [updatedHeroIds, setUpdatedHeroIds] = useState<Map<string, Set<string>>>(new Map());
+
+  // Ref to track latest status to avoid closure staleness in intervals
+  const isOnlineRef = useRef(isOnline);
+  useEffect(() => { isOnlineRef.current = isOnline; }, [isOnline]);
 
   const markListAsSeen = useCallback((id: string) => {
     setUpdatedListIds(prev => {
@@ -93,14 +99,19 @@ export const useHeroLists = (
     }
   }, [lists, isLoaded]);
 
-  const checkConnectivity = async (): Promise<boolean> => {
+  // Robust connectivity check
+  const checkConnectivity = useCallback(async (): Promise<boolean> => {
+    // 1. Basic check: if navigator says offline, we are definitely offline
     if (!navigator.onLine) return false;
-    
+
+    // 2. Advanced check: try to fetch a tiny resource
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000); // Short 2s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
 
     try {
-        await fetch(`https://www.google.com/favicon.ico?_=${Date.now()}`, { 
+        // Use generate_204 which returns 204 No Content (very fast)
+        // Add random param to prevent caching
+        await fetch(`https://www.google.com/generate_204?_=${Date.now()}`, { 
             mode: 'no-cors', 
             cache: 'no-store',
             signal: controller.signal
@@ -111,70 +122,77 @@ export const useHeroLists = (
         clearTimeout(timeoutId);
         return false;
     }
-  };
+  }, []);
+
+  // Update status wrapper to handle state updates efficiently
+  const updateOnlineStatus = useCallback(async () => {
+      const status = await checkConnectivity();
+      if (isOnlineRef.current !== status) {
+          setIsOnline(status);
+      }
+  }, [checkConnectivity]);
 
   useEffect(() => {
-    const handleOnline = () => {
-        setIsOnline(true);
-        // We set true immediately for responsiveness, then verify silently
-        checkConnectivity().then(hasAccess => {
-            if (!hasAccess) setIsOnline(false);
-        });
+    // Immediate check on mount
+    updateOnlineStatus();
+
+    const handleOnlineEvent = () => {
+        // Even if browser says online, verify it (captive portals, ghost wifi)
+        updateOnlineStatus();
     };
     
-    const handleOffline = () => {
+    const handleOfflineEvent = () => {
+        // If browser says offline, trust it immediately for responsiveness
         setIsOnline(false);
         setIsSyncing(false);
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            updateOnlineStatus();
+        }
+    };
 
-    // Polling strictly based on navigator.onLine to catch state drift
+    window.addEventListener('online', handleOnlineEvent);
+    window.addEventListener('offline', handleOfflineEvent);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Polling interval (every 5s) to catch tricky state changes (e.g. background data toggle)
     const intervalId = setInterval(() => {
-        setIsOnline(prev => {
-            if (prev !== navigator.onLine) {
-                return navigator.onLine;
-            }
-            return prev;
-        });
-    }, 2000);
-
-    // Initial check on mount
-    checkConnectivity().then(setIsOnline);
+        updateOnlineStatus();
+    }, 5000);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnlineEvent);
+      window.removeEventListener('offline', handleOfflineEvent);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(intervalId);
     };
-  }, []); 
+  }, [updateOnlineStatus]);
 
   const syncWithCloud = async () => {
     if (!isLoaded) return;
     
-    if (!navigator.onLine) {
-        setIsOnline(false);
-        addToast("Нет подключения к сети", "error");
+    // Quick pre-check
+    if (!isOnlineRef.current) {
         return;
     }
 
     setIsSyncing(true);
     
-    // Check real connectivity before attempting DB
+    // Double check strictly before operation
     const hasInternet = await checkConnectivity();
     if (!hasInternet) {
       setIsOnline(false);
       setIsSyncing(false);
-      // Silent fail preferred by user request when switching offline
       return;
     }
     
-    // Ensure state is true if check passed
-    setIsOnline(true);
+    // Ensure state is synced
+    if (!isOnline) setIsOnline(true);
 
     try {
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 5000));
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
       const snapshotPromise = db.collection("lists").get();
       
       const querySnapshot: any = await Promise.race([snapshotPromise, timeoutPromise]);
@@ -284,7 +302,7 @@ export const useHeroLists = (
 
     } catch (error) {
       console.error("Error syncing with Firestore:", error);
-      if (isOnline) addToast("Ошибка синхронизации с облаком", "error");
+      // Silent error on sync fail
     } finally {
       setIsSyncing(false);
     }
