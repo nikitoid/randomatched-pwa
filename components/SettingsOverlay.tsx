@@ -943,25 +943,34 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         {isReadOnly && <span className="ml-2 text-xs font-normal opacity-60">(Только чтение)</span>}
                     </h2>
 
-                    <button 
-                        onClick={handleToggleEditorMenu}
-                        className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
-                    >
-                        <MoreVertical size={24} />
-                    </button>
+                    {!currentList?.isTemporary && (
+                        <button 
+                            onClick={handleToggleEditorMenu}
+                            className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                        >
+                            <MoreVertical size={24} />
+                        </button>
+                    )}
                  </div>
 
                  {/* Second Row: Group Toggle and Actions */}
                  <div className="flex items-center justify-between mt-1">
-                    <button 
-                        onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)}
-                        disabled={isReadOnly}
-                        className={`flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
-                    >
-                        <SquareStack size={14} />
-                        <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
-                        <div className={`w-2 h-2 rounded-full ml-1 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
-                    </button>
+                    {!currentList?.isTemporary ? (
+                        <button 
+                            onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)}
+                            disabled={isReadOnly}
+                            className={`flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
+                        >
+                            <SquareStack size={14} />
+                            <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
+                            <div className={`w-2 h-2 rounded-full ml-1 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl text-xs font-bold bg-slate-50 text-slate-400 border border-slate-200 dark:bg-slate-800/50 dark:text-slate-500 dark:border-slate-700 cursor-default opacity-70">
+                             <SquareStack size={14} />
+                             <span>Не в группе</span>
+                        </div>
+                    )}
 
                     <div className="flex gap-2">
                         <button onClick={() => setIsStatsModalOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
@@ -1117,7 +1126,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     <Dice5 size={48} />
                  </div>
                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
-                 <p className="text-sm font-bold text-primary-500 dark:text-primary-400 mb-8 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full">v2.1.0</p>
+                 <p className="text-sm font-bold text-primary-500 dark:text-primary-400 mb-8 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full">v2.1.1</p>
                  
                  <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
                     <p className="mb-3">
@@ -1241,7 +1250,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                     <FileJson size={16} /> Экспорт в файл
                 </button>
-                {!isReadOnly && (
+                {!isReadOnly && !currentList?.isTemporary && (
                     <>
                         <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                             <Upload size={16} /> Импорт из файла
@@ -1252,7 +1261,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 <button onClick={() => handleEditorMenuAction(openTextExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                     <Copy size={16} /> Экспорт (Текст)
                 </button>
-                {!isReadOnly && (
+                {!isReadOnly && !currentList?.isTemporary && (
                     <>
                         <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
                             <FileText size={16} /> Импорт (Текст)

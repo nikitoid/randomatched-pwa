@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useHeroLists } from './hooks/useHeroLists';
@@ -125,6 +126,8 @@ const App: React.FC = () => {
   const [historyStartX, setHistoryStartX] = useState(0);
   const [historyScrollLeft, setHistoryScrollLeft] = useState(0);
   const [isHistoryDragScroll, setIsHistoryDragScroll] = useState(false);
+  
+  const isExitingRef = useRef(false);
 
   useEffect(() => {
     const state = window.history.state;
@@ -136,6 +139,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
+        if (isExitingRef.current) return;
+
         if (isSettingsOpen) {
             return;
         }
@@ -178,6 +183,12 @@ const App: React.FC = () => {
   };
 
   const handleExitConfirm = () => {
+      isExitingRef.current = true;
+      try {
+          window.close();
+      } catch (e) {
+          // Ignore
+      }
       window.history.back();
   };
 
@@ -739,7 +750,7 @@ const App: React.FC = () => {
              >
                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-colors
                     ${isGroupMode 
-                        ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-300'
+                        ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300'
                         : activeList?.isTemporary 
                             ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300' 
                             : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
@@ -786,7 +797,7 @@ const App: React.FC = () => {
                              </button>
                              <button 
                                 onClick={() => setIsGroupMode(true)}
-                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-violet-600 dark:text-violet-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
                              >
                                  <SquareStack size={16} /> Группа
                              </button>
@@ -795,7 +806,7 @@ const App: React.FC = () => {
                             onClick={() => setIsGroupStatsOpen(true)}
                             disabled={isGroupMode ? groupTotalHeroes === 0 : !activeList || activeList.heroes.length === 0}
                             className={`w-10 h-10 my-auto rounded-xl flex items-center justify-center transition-colors border active:scale-95 ${isGroupMode 
-                                ? 'bg-violet-50 text-violet-600 border-violet-100 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800 disabled:opacity-50' 
+                                ? 'bg-primary-50 text-primary-600 border-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800 disabled:opacity-50' 
                                 : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 disabled:opacity-50'
                             }`}
                          >
@@ -882,13 +893,13 @@ const App: React.FC = () => {
                                     <button
                                         key={list.id}
                                         onClick={() => handleToggleGroupItem(list.id)}
-                                        className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-violet-50 dark:bg-violet-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                        className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                                     >
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-violet-500 text-white' : `${iconBg} ${iconColor}`}`}>
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-primary-500 text-white' : `${iconBg} ${iconColor}`}`}>
                                             {isSelected ? <Check size={18} /> : <Icon size={18} />}
                                         </div>
                                         <div className="flex-1 text-left min-w-0">
-                                            <h3 className={`text-sm font-bold truncate ${isSelected ? 'text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-slate-200'}`}>
+                                            <h3 className={`text-sm font-bold truncate ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-200'}`}>
                                                 {list.name}
                                             </h3>
                                             <div className="flex items-center gap-2">

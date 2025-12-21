@@ -3,43 +3,43 @@
 declare module '*.svg' {
   import * as React from 'react';
   export const ReactComponent: React.FunctionComponent<React.SVGProps<SVGSVGElement> & { title?: string }>;
-  const src: string;
-  export default src;
+  const svgUrl: string;
+  export default svgUrl;
 }
 
 declare module '*.jpg' {
-  const content: string;
-  export default content;
+  const jpgUrl: string;
+  export default jpgUrl;
 }
 
 declare module '*.png' {
-  const content: string;
-  export default content;
+  const pngUrl: string;
+  export default pngUrl;
 }
 
 declare module '*.jpeg' {
-  const content: string;
-  export default content;
+  const jpegUrl: string;
+  export default jpegUrl;
 }
 
 declare module '*.gif' {
-  const content: string;
-  export default content;
+  const gifUrl: string;
+  export default gifUrl;
 }
 
 declare module '*.webp' {
-  const content: string;
-  export default content;
+  const webpUrl: string;
+  export default webpUrl;
 }
 
 declare module '*.ico' {
-  const content: string;
-  export default content;
+  const icoUrl: string;
+  export default icoUrl;
 }
 
 declare module '*.bmp' {
-  const content: string;
-  export default content;
+  const bmpUrl: string;
+  export default bmpUrl;
 }
 
 declare module '*.json' {
