@@ -232,10 +232,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
       const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
-      // Size class updated for larger cards
+      // Optimized size for 4-way cross layout
+      // w=44vmin ensures side cards touch edge on mobile (50vw - 22vmin - 14vmin = 50-36=14 left? No. 
+      // Offset=36vmin. Edge at 36+14=50vmin. 50vmin = 50vw on mobile. Touches edge exactly.)
       const cardSizeClass = isFloating 
         ? 'w-32 h-20' 
-        : 'w-[50vmin] h-[30vmin] max-w-[300px] max-h-[180px]';
+        : 'w-[44vmin] h-[28vmin] max-w-[260px] max-h-[170px]';
 
       return (
         <div 
@@ -304,15 +306,17 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     let positionStyle: React.CSSProperties = {};
     
-    // Position cards relative to the center of the screen (50% 50%)
-    // Top/Bottom are centered horizontally, Top is shifted up, Bottom is shifted down
-    // Left/Right are centered vertically, Left is shifted left, Right is shifted right
-    // This creates a symmetrical cross layout around the central button
+    // Symmetrical Layout Calculation
+    // We calculate the offset so that the cards corners touch but do not overlap.
+    // Offset = HalfWidth (22vmin) + HalfHeight (14vmin) = 36vmin.
+    // Clamped max pixel values: HalfWidth ~130px, HalfHeight ~85px.
+    const offsetCalc = 'calc(min(22vmin, 130px) + min(14vmin, 85px))';
+
     switch (position) {
         case 'top':
             positionStyle = { 
                 position: 'absolute', 
-                top: '25%', 
+                top: `calc(50% - ${offsetCalc})`, 
                 left: '50%', 
                 transform: 'translate(-50%, -50%) rotate(180deg)',
                 transformOrigin: 'center'
@@ -321,16 +325,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         case 'bottom':
             positionStyle = { 
                 position: 'absolute', 
-                bottom: '25%',
+                top: `calc(50% + ${offsetCalc})`,
                 left: '50%', 
-                transform: 'translate(-50%, 50%)',
+                transform: 'translate(-50%, -50%)',
                 transformOrigin: 'center'
             };
             break;
         case 'left':
             positionStyle = { 
                 position: 'absolute', 
-                left: '12%', 
+                left: `calc(50% - ${offsetCalc})`, 
                 top: '50%', 
                 transform: 'translate(-50%, -50%) rotate(90deg)',
                 transformOrigin: 'center'
@@ -339,9 +343,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         case 'right':
             positionStyle = { 
                 position: 'absolute', 
-                right: '12%',
+                left: `calc(50% + ${offsetCalc})`,
                 top: '50%', 
-                transform: 'translate(50%, -50%) rotate(-90deg)',
+                transform: 'translate(-50%, -50%) rotate(-90deg)',
                 transformOrigin: 'center'
             };
             break;
@@ -357,7 +361,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         >
             {/* Placeholder when dragging */}
             {isDraggingThis && (
-                <div className="absolute inset-0 w-[50vmin] h-[30vmin] max-w-[300px] max-h-[180px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
+                <div className="absolute inset-0 w-[44vmin] h-[28vmin] max-w-[260px] max-h-[170px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
             )}
             
             <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
