@@ -648,7 +648,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
       setDebugTapCount(newCount);
       if (newCount === 10) {
           if (onEnableDebug) onEnableDebug();
-          if (addToast) addToast("Режим отладки активирован", "success");
+          if (addToast) addToast("Режим отладки активирован", "success", 2000);
           setDebugTapCount(0);
       }
   };
@@ -729,56 +729,108 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
       if (onDisableDebug) onDisableDebug();
       setIsDebugDisableConfirmOpen(false);
       setActiveTab('app');
-      if (addToast) addToast("Режим отладки выключен", "info");
   };
 
   return (
     <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
       
       {focusedRowIndex !== null && (
-          <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-40 animate-in fade-in duration-200" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />
+          <div 
+             className="fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-40 animate-in fade-in duration-200" 
+             onPointerDown={(e) => {
+                 e.preventDefault();
+                 e.stopPropagation();
+                 setFocusedRowIndex(null);
+             }}
+          />
       )}
       
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800">
         <div className="px-4 py-3 pt-safe-area-top">
           {editingListId ? (
             <div className="flex flex-col w-full pb-1">
+                 {/* Top Row: Back, Title, Menu */}
                  <div className="flex items-center justify-between min-h-[44px]">
                     <button onClick={handleCancelEditor} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-white">
                         <ChevronLeft size={24} />
                     </button>
+                    
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white truncate flex-1 text-center px-4">
                         {lists.find(l => l.id === editingListId)?.name}
                         {isReadOnly && <span className="ml-2 text-xs font-normal opacity-60">(Только чтение)</span>}
                     </h2>
-                    <button onClick={handleToggleEditorMenu} disabled={!!currentList?.isTemporary} className={`p-2 -mr-2 rounded-full transition-colors ${currentList?.isTemporary ? 'invisible pointer-events-none' : isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+
+                    <button 
+                        onClick={handleToggleEditorMenu}
+                        disabled={!!currentList?.isTemporary}
+                        className={`p-2 -mr-2 rounded-full transition-colors ${
+                            currentList?.isTemporary 
+                                ? 'invisible pointer-events-none' 
+                                : isEditorMenuOpen 
+                                    ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' 
+                                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
+                        }`}
+                    >
                         <MoreVertical size={24} />
                     </button>
                  </div>
+
+                 {/* Second Row: Group Toggle and Actions */}
                  <div className="flex items-center justify-between mt-1">
                     {!currentList?.isTemporary && (
-                        <button onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)} disabled={isReadOnly} className={`flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}>
-                            <SquareStack size={14} /> <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span> <div className={`w-2 h-2 rounded-full ml-1 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                        <button 
+                            onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)}
+                            disabled={isReadOnly}
+                            className={`flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
+                        >
+                            <SquareStack size={14} />
+                            <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
+                            <div className={`w-2 h-2 rounded-full ml-1 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         </button>
                     )}
+
                     <div className="flex gap-2 ml-auto">
-                        <button onClick={() => setIsStatsModalOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"><BarChart3 size={18} /></button>
-                        <button onClick={handleSortEditorHeroes} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">{heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}</button>
-                        {!isReadOnly && <button onClick={handleSaveEditor} className="h-9 px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform"><Save size={16} /> <span>Сохранить</span></button>}
+                        <button onClick={() => setIsStatsModalOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
+                            <BarChart3 size={18} />
+                        </button>
+                        <button onClick={handleSortEditorHeroes} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
+                            {heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}
+                        </button>
+                        {!isReadOnly && (
+                            <button onClick={handleSaveEditor} className="h-9 px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform">
+                               <Save size={16} /> <span>Сохранить</span>
+                            </button>
+                        )}
                     </div>
                  </div>
-                 <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
+                 
+                 {/* Hidden File Input for Import */}
+                 <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept=".json" 
+                      onChange={handleFileChange} 
+                 />
             </div>
           ) : (
             <div className="relative flex items-center justify-center w-full min-h-[44px]">
-              <button onClick={manualGoBack} className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"><ChevronLeft size={24} /></button>
+              <button 
+                onClick={manualGoBack} 
+                className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                <ChevronLeft size={24} />
+              </button>
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">Настройки</h2>
             </div>
           )}
         </div>
+
         {!editingListId && (
           <div className="px-4 pb-3">
-             <div ref={tabsContainerRef} onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} className={`flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}>
+             <div ref={tabsContainerRef} onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove}
+                className={`flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+             >
                 {renderTabButton('lists', 'Списки', <Files size={16} />)}
                 {renderTabButton('appearance', 'Внешний вид', <Palette size={16} />)}
                 {renderTabButton('app', 'Инфо', <Smartphone size={16} />)}
@@ -789,7 +841,15 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
       </div>
 
       <div className="flex-1 relative overflow-hidden">
-        <div ref={listContainerRef} onTouchMove={handleTouchMove} className={`absolute inset-0 overflow-y-auto no-scrollbar transition-transform duration-300 ease-out ${editingListId ? '-translate-x-[20%] opacity-0 pointer-events-none' : 'translate-x-0 opacity-100 pointer-events-auto'}`}>
+        {/* Lists Tab Content (omitted for brevity) */}
+        
+        <div 
+            ref={listContainerRef} 
+            onTouchMove={handleTouchMove}
+            className={`absolute inset-0 overflow-y-auto no-scrollbar transition-transform duration-300 ease-out 
+                ${editingListId ? '-translate-x-[20%] opacity-0 pointer-events-none' : 'translate-x-0 opacity-100 pointer-events-auto'}
+            `}
+        >
           <div className="pb-safe-area-bottom">
             {activeTab === 'lists' && (
               <div className="animate-in fade-in slide-in-from-bottom-2">
@@ -798,14 +858,34 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         {isSyncing ? <><Loader2 size={10} className="animate-spin" /> Sync</> : isOnline ? <><Wifi size={10} /> Online</> : <><WifiOff size={10} /> Offline</>}
                     </div>
                     <div className="flex gap-2">
-                        <button onClick={handleToggleSort} className="w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-600 dark:text-slate-300">{sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}</button>
-                        <button onClick={handleOpenCreate} className="h-9 px-4 flex items-center gap-2 bg-primary-600 text-white rounded-full shadow-md shadow-primary-600/20 active:scale-95 transition-transform"><Plus size={18} /> <span className="text-sm font-bold">Новый</span></button>
+                        <button onClick={handleToggleSort} className="w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-600 dark:text-slate-300">
+                            {sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}
+                        </button>
+                        <button onClick={handleOpenCreate} className="h-9 px-4 flex items-center gap-2 bg-primary-600 text-white rounded-full shadow-md shadow-primary-600/20 active:scale-95 transition-transform">
+                            <Plus size={18} /> <span className="text-sm font-bold">Новый</span>
+                        </button>
                     </div>
                  </div>
+                 
                  <div className="px-4 pb-4">
                     {lists.length === 0 && <div className="text-center py-20 text-slate-400">Нет списков</div>}
                     {lists.map((list, idx) => (
-                      <ListItem key={list.id} list={list} index={idx} total={lists.length} isOnline={isOnline} contextMenuTargetId={contextMenuTargetId} onOpenMenu={handleOpenMenu} onEdit={handleOpenEditor} onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} isDragging={dragItem.current === idx} hasUpdate={updatedListIds ? updatedListIds.has(list.id) : false} onMarkSeen={onMarkSeen} />
+                      <ListItem 
+                        key={list.id} 
+                        list={list} 
+                        index={idx} 
+                        total={lists.length} 
+                        isOnline={isOnline} 
+                        contextMenuTargetId={contextMenuTargetId} 
+                        onOpenMenu={handleOpenMenu} 
+                        onEdit={handleOpenEditor} 
+                        onDragStart={handleDragStart} 
+                        onDragEnter={handleDragEnter} 
+                        onDragEnd={handleDragEnd} 
+                        isDragging={dragItem.current === idx} 
+                        hasUpdate={updatedListIds ? updatedListIds.has(list.id) : false}
+                        onMarkSeen={onMarkSeen}
+                    />
                     ))}
                  </div>
               </div>
@@ -819,16 +899,41 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         {Object.entries(COLOR_SCHEMES_DATA).map(([key, data]) => {
                             const isSelected = colorScheme === key;
                             const colorValue = `rgb(${data.primary[500]})`;
+                            
                             return (
-                                <button key={key} onClick={() => setColorScheme && setColorScheme(key as any)} className={`relative flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-md ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                                    <div className="w-10 h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center" style={{ backgroundColor: colorValue }}>{isSelected && <Check size={20} className="text-white drop-shadow-md" />}</div>
-                                    <div className="text-left"><div className={`text-sm font-bold ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{data.label}</div></div>
+                                <button
+                                    key={key}
+                                    onClick={() => setColorScheme && setColorScheme(key as any)}
+                                    className={`relative flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95
+                                        ${isSelected 
+                                            ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-md ring-2 ring-primary-500/20' 
+                                            : 'border-transparent bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                        }
+                                    `}
+                                >
+                                    <div 
+                                        className="w-10 h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center"
+                                        style={{ backgroundColor: colorValue }}
+                                    >
+                                        {isSelected && <Check size={20} className="text-white drop-shadow-md" />}
+                                    </div>
+                                    <div className="text-left">
+                                        <div className={`text-sm font-bold ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
+                                            {data.label}
+                                        </div>
+                                    </div>
                                 </button>
                             );
                         })}
                     </div>
+
                     <div className="mt-8 p-4 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
-                        <div className="text-center"><div className="text-sm font-bold text-slate-900 dark:text-white mb-2">Пример кнопки</div><button className="px-6 py-2 bg-primary-600 text-white font-bold rounded-xl shadow-lg shadow-primary-600/30">Action</button></div>
+                        <div className="text-center">
+                             <div className="text-sm font-bold text-slate-900 dark:text-white mb-2">Пример кнопки</div>
+                             <button className="px-6 py-2 bg-primary-600 text-white font-bold rounded-xl shadow-lg shadow-primary-600/30">
+                                 Action
+                             </button>
+                        </div>
                     </div>
                  </div>
               </div>
@@ -836,25 +941,46 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
             {activeTab === 'app' && (
               <div className="flex flex-col items-center justify-center h-full p-6 text-center animate-in fade-in slide-in-from-bottom-2">
-                 <div className="w-24 h-24 bg-primary-100 dark:bg-primary-900/30 rounded-3xl flex items-center justify-center text-primary-600 dark:text-primary-400 mb-6 shadow-xl shadow-primary-500/10 rotate-3"><Dice5 size={48} /></div>
+                 <div className="w-24 h-24 bg-primary-100 dark:bg-primary-900/30 rounded-3xl flex items-center justify-center text-primary-600 dark:text-primary-400 mb-6 shadow-xl shadow-primary-500/10 rotate-3">
+                    <Dice5 size={48} />
+                 </div>
                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
                  <div className="flex flex-col items-center mb-8">
-                     <p onClick={handleVersionTap} className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full cursor-pointer select-none active:scale-95 transition-transform">v2.1.1</p>
+                     <p 
+                        onClick={handleVersionTap}
+                        className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full cursor-pointer select-none active:scale-95 transition-transform"
+                     >
+                        v2.1.1
+                     </p>
                      {debugTapCount > 5 && !isDebugMode && (
                          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 mt-1 animate-in fade-in">Осталось нажатий: {10 - debugTapCount}</span>
                      )}
                  </div>
+                 
                  <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                    <p className="mb-3">Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>.</p>
-                    <p>Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей.</p>
+                    <p className="mb-3">
+                        Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>.
+                    </p>
+                    <p>
+                        Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей.
+                    </p>
                  </div>
+                 
                  {onCheckUpdate && (
-                     <button onClick={onCheckUpdate} disabled={isCheckingUpdate} className="mt-6 flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl active:scale-95 transition-all hover:bg-slate-200 dark:hover:bg-slate-700">
+                     <button 
+                        onClick={onCheckUpdate}
+                        disabled={isCheckingUpdate}
+                        className="mt-6 flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl active:scale-95 transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
+                     >
                         {isCheckingUpdate ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                         <span>{isCheckingUpdate ? 'Проверка...' : 'Проверить обновление'}</span>
                      </button>
                  )}
-                 <div className="mt-auto pt-8 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center"><span>Designed for Unmatched Fans</span><span>by Nikitoid</span></div>
+                 
+                 <div className="mt-auto pt-8 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center">
+                    <span>Designed for Unmatched Fans</span>
+                    <span>by Nikitoid</span>
+                 </div>
               </div>
             )}
 
@@ -869,7 +995,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 <span className="px-1.5 py-0.5 rounded bg-slate-700 text-red-400">{debugLogs.filter(l => l.type === 'error').length}</span>
                             </div>
                             {onDisableDebug && (
-                                <button onClick={handleDisableDebugClick} className="p-1.5 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors"><Power size={14} /></button>
+                                <button onClick={handleDisableDebugClick} className="p-1.5 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors">
+                                    <Power size={14} />
+                                </button>
                             )}
                         </div>
                     </div>
@@ -881,6 +1009,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 <span>{log.content}</span>
                             </div>
                         ))}
+                        {/* Auto-scroll anchor */}
                         <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })} />
                     </div>
                 </div>
@@ -888,50 +1017,136 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
           </div>
         </div>
 
-        <div className={`absolute inset-0 overflow-y-auto no-scrollbar bg-slate-50 dark:bg-slate-950 transition-transform duration-300 ease-out ${editingListId ? 'translate-x-0' : 'translate-x-full'}`} style={{ transform: focusedRowIndex !== null ? 'none' : undefined, transition: focusedRowIndex !== null ? 'none' : undefined }}>
+        {/* Editor View (omitted for brevity - no changes) */}
+        <div 
+            className={`absolute inset-0 overflow-y-auto no-scrollbar bg-slate-50 dark:bg-slate-950 transition-transform duration-300 ease-out ${editingListId ? 'translate-x-0' : 'translate-x-full'}`}
+            style={{ 
+                transform: focusedRowIndex !== null ? 'none' : undefined,
+                transition: focusedRowIndex !== null ? 'none' : undefined
+            }}
+        >
            <div className="p-4 pb-safe-area-bottom min-h-full flex flex-col">
+              
               <div className="space-y-1.5 pb-20 mt-2">
                   {editorHeroes.map((hero, idx) => {
                       const isLast = idx === editorHeroes.length - 1;
                       const isEmpty = hero.name.trim() === '' && hero.rank === '';
                       const showDelete = (!isLast || !isEmpty) && !isReadOnly;
+
+                      // Check cloud updates
                       const updatedFields = editingListId && updatedHeroIds ? updatedHeroIds.get(editingListId) : undefined;
                       const isNameUpdated = updatedFields ? updatedFields.has(`${hero.id}:name`) : false;
                       const isRankUpdated = (updatedFields ? updatedFields.has(`${hero.id}:rank`) : false) || localHeroUpdates.has(`${hero.id}:rank`);
+                      
                       const isRowFocused = focusedRowIndex === idx;
+
+                      // Check for duplicates
                       const normalizedName = hero.name.trim().toLowerCase();
                       const isDuplicate = normalizedName !== '' && editorHeroes.filter(h => h.name.trim().toLowerCase() === normalizedName).length > 1;
+
                       return (
                       <div key={hero.id} className={`flex gap-2 items-center animate-fade-in relative transition-[transform,box-shadow] duration-200 ${isRowFocused ? 'z-50 scale-[1.02]' : 'z-auto'}`}>
                           <div className="flex-1 relative">
                               {isNameUpdated && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full z-20 ring-2 ring-white dark:ring-slate-950" />}
-                              <input type="text" value={hero.name} onChange={(e) => handleHeroChange(idx, 'name', e.target.value)} placeholder={isLast ? "Добавить героя..." : "Имя героя"} disabled={isReadOnly} className={`w-full h-[38px] px-4 text-sm rounded-xl border outline-none select-text transition-all ${isReadOnly ? 'bg-slate-100 dark:bg-slate-900 border-transparent text-slate-600 dark:text-slate-300' : isLast ? 'bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 placeholder:text-slate-400 italic focus:bg-white dark:focus:bg-slate-900 focus:border-solid focus:not-italic focus:text-slate-900 dark:focus:text-white' : 'bg-white dark:bg-slate-900 border-solid border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white'} ${!isReadOnly && isRowFocused ? `border-primary-500 ring-2 ring-primary-500/20 shadow-lg z-10 ${isLast ? 'bg-white dark:bg-slate-900 border-solid not-italic text-slate-900 dark:text-white' : ''}` : !isReadOnly && isDuplicate ? 'border-red-500 text-red-600 bg-red-50 dark:bg-red-900/10 dark:text-red-200 focus:ring-2 focus:ring-red-500' : !isReadOnly ? 'focus:ring-2 focus:ring-primary-500' : ''}`} />
+                              <input 
+                                  type="text" 
+                                  value={hero.name}
+                                  onChange={(e) => handleHeroChange(idx, 'name', e.target.value)}
+                                  placeholder={isLast ? "Добавить героя..." : "Имя героя"}
+                                  disabled={isReadOnly}
+                                  className={`w-full h-[38px] px-4 text-sm rounded-xl border outline-none select-text transition-all
+                                    ${isReadOnly ? 'bg-slate-100 dark:bg-slate-900 border-transparent text-slate-600 dark:text-slate-300' : 
+                                    isLast 
+                                        ? 'bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-300 dark:border-slate-700 text-slate-500 placeholder:text-slate-400 italic focus:bg-white dark:focus:bg-slate-900 focus:border-solid focus:not-italic focus:text-slate-900 dark:focus:text-white'
+                                        : 'bg-white dark:bg-slate-900 border-solid border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white'
+                                    }
+                                    ${!isReadOnly && isRowFocused 
+                                        ? `border-primary-500 ring-2 ring-primary-500/20 shadow-lg z-10 ${isLast ? 'bg-white dark:bg-slate-900 border-solid not-italic text-slate-900 dark:text-white' : ''}`
+                                        : !isReadOnly && isDuplicate 
+                                            ? 'border-red-500 text-red-600 bg-red-50 dark:bg-red-900/10 dark:text-red-200 focus:ring-2 focus:ring-red-500' 
+                                            : !isReadOnly ? 'focus:ring-2 focus:ring-primary-500' : ''
+                                    }
+                                  `}
+                              />
                           </div>
                           <div className="w-20 h-[38px] shrink-0 relative z-30">
                               {isRankUpdated && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full z-20 ring-2 ring-white dark:ring-slate-950 pointer-events-none" />}
-                              <RankSelect value={hero.rank} onChange={(val) => handleHeroChange(idx, 'rank', val)} isOpen={isRowFocused} onOpen={() => setFocusedRowIndex(idx)} onClose={() => setFocusedRowIndex(null)} disabled={isReadOnly} />
+                              <RankSelect 
+                                value={hero.rank}
+                                onChange={(val) => handleHeroChange(idx, 'rank', val)}
+                                isOpen={isRowFocused}
+                                onOpen={() => setFocusedRowIndex(idx)}
+                                onClose={() => setFocusedRowIndex(null)}
+                                disabled={isReadOnly}
+                              />
                           </div>
                           <div className="w-10 flex items-center justify-center">
-                              {showDelete && <button onClick={() => handleRemoveHero(idx)} disabled={isRowFocused} className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${isRowFocused ? 'opacity-0 pointer-events-none' : 'text-red-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}><Trash2 size={18} /></button>}
+                              {showDelete && (
+                                <button 
+                                    onClick={() => handleRemoveHero(idx)}
+                                    disabled={isRowFocused}
+                                    className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all
+                                        ${isRowFocused
+                                            ? 'opacity-0 pointer-events-none'
+                                            : 'text-red-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                        }
+                                    `}
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                              )}
                           </div>
                       </div>
                   )})}
               </div>
+
            </div>
         </div>
+
       </div>
 
+      {/* Editor Menu Portal */}
       {isEditorMenuOpen && editorMenuRect && createPortal(
          <>
-             <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsEditorMenuOpen(false)} />
-             <div className="fixed z-[61] w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-menu-in origin-top-right" style={{ top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right }}>
-                <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"><FileJson size={16} /> Экспорт в файл</button>
-                {!isReadOnly && !currentList?.isTemporary && ( <> <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"><Upload size={16} /> Импорт из файла</button> </> )}
+             <div 
+                className="fixed inset-0 z-[60] bg-transparent" 
+                onClick={() => setIsEditorMenuOpen(false)} 
+             />
+             <div 
+                className="fixed z-[61] w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-menu-in origin-top-right"
+                style={{
+                    top: editorMenuRect.bottom + 8,
+                    right: window.innerWidth - editorMenuRect.right,
+                }}
+             >
+                <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                    <FileJson size={16} /> Экспорт в файл
+                </button>
+                {!isReadOnly && !currentList?.isTemporary && (
+                    <>
+                        <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                            <Upload size={16} /> Импорт из файла
+                        </button>
+                    </>
+                )}
                 <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
-                <button onClick={() => handleEditorMenuAction(openTextExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"><Copy size={16} /> Экспорт (Текст)</button>
-                {!isReadOnly && !currentList?.isTemporary && ( <> <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"><FileText size={16} /> Импорт (Текст)</button> <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" /> <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium"><ArrowLeftRight size={16} /> Импорт рангов</button> </> )}
+                <button onClick={() => handleEditorMenuAction(openTextExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                    <Copy size={16} /> Экспорт (Текст)
+                </button>
+                {!isReadOnly && !currentList?.isTemporary && (
+                    <>
+                        <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                            <FileText size={16} /> Импорт (Текст)
+                        </button>
+                        <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
+                        <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium">
+                            <ArrowLeftRight size={16} /> Импорт рангов
+                        </button>
+                    </>
+                )}
              </div>
-         </>, document.body
+         </>,
+         document.body
       )}
 
       {/* Confirmation Modals */}
@@ -939,7 +1154,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
           <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${listToDelete ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Удалить?</h3>
               <p className="text-sm text-slate-500 mb-6">{isDeleteCloud ? 'Удалить из облака?' : 'Это действие необратимо.'}</p>
-              <div className="grid grid-cols-2 gap-3"><button onClick={handleCancelModal} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button><button onClick={confirmDelete} className="py-3 font-bold text-white bg-red-500 rounded-xl">Удалить</button></div>
+              <div className="grid grid-cols-2 gap-3">
+                  <button onClick={handleCancelModal} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
+                  <button onClick={confirmDelete} className="py-3 font-bold text-white bg-red-500 rounded-xl">Удалить</button>
+              </div>
           </div>
       </div>
 

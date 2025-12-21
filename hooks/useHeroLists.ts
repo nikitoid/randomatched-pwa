@@ -127,16 +127,18 @@ export const useHeroLists = (
         setIsSyncing(false);
     };
 
-    // Polling is required because sometimes browser events don't fire reliably 
-    // in PWA split-screen mode or when toggling via quick settings on Android
-    const intervalId = setInterval(() => {
-        if (navigator.onLine !== isOnline) {
-            setIsOnline(navigator.onLine);
-        }
-    }, 2000);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    // Polling strictly based on navigator.onLine to catch state drift
+    const intervalId = setInterval(() => {
+        setIsOnline(prev => {
+            if (prev !== navigator.onLine) {
+                return navigator.onLine;
+            }
+            return prev;
+        });
+    }, 2000);
 
     // Initial check on mount
     checkConnectivity().then(setIsOnline);
@@ -146,7 +148,7 @@ export const useHeroLists = (
       window.removeEventListener('offline', handleOffline);
       clearInterval(intervalId);
     };
-  }, [isOnline]); // Depend on isOnline to avoid stale closure in interval if logic changes
+  }, []); 
 
   const syncWithCloud = async () => {
     if (!isLoaded) return;
