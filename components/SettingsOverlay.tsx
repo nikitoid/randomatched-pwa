@@ -955,7 +955,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
                  {/* Second Row: Group Toggle and Actions */}
                  <div className="flex items-center justify-between mt-1">
-                    {!currentList?.isTemporary ? (
+                    {!currentList?.isTemporary && (
                         <button 
                             onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)}
                             disabled={isReadOnly}
@@ -965,14 +965,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
                             <div className={`w-2 h-2 rounded-full ml-1 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         </button>
-                    ) : (
-                        <div className="flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl text-xs font-bold bg-slate-50 text-slate-400 border border-slate-200 dark:bg-slate-800/50 dark:text-slate-500 dark:border-slate-700 cursor-default opacity-70">
-                             <SquareStack size={14} />
-                             <span>Не в группе</span>
-                        </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 ml-auto">
                         <button onClick={() => setIsStatsModalOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
                             <BarChart3 size={18} />
                         </button>

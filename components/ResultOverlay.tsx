@@ -104,6 +104,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
   };
 
   // --- CUSTOM DND HANDLERS ---
+  const FLOATING_OFFSET = 48; // Half of h-24 (96px)
+
   const handlePointerDown = (e: React.PointerEvent, position: Position) => {
       if (!isDragMode) return;
       e.preventDefault();
@@ -111,16 +113,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
       const el = cardRefs.current[position];
       if (!el) return;
       
-      const rect = el.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
       setActiveDrag({
           id: position,
-          offsetX: e.clientX - centerX,
-          offsetY: e.clientY - centerY,
-          currX: centerX,
-          currY: centerY
+          offsetX: 0, 
+          offsetY: 0,
+          currX: e.clientX,
+          currY: e.clientY - FLOATING_OFFSET // Center the card above the cursor
       });
   };
 
@@ -135,8 +133,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
               if (!prev) return null;
               return {
                   ...prev,
-                  currX: e.clientX - prev.offsetX,
-                  currY: e.clientY - prev.offsetY
+                  currX: e.clientX,
+                  currY: e.clientY - FLOATING_OFFSET
               };
           });
 

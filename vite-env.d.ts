@@ -1,6 +1,3 @@
-/// <reference types="vite/client" />
-/// <reference types="vite-plugin-pwa/client" />
-
 interface ImportMetaEnv {
   readonly VITE_FIREBASE_API_KEY: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN: string;
@@ -21,3 +18,5 @@ declare module '*.svg' {
   const src: string;
   export default src;
 }
+
+declare module '*.css' {}
