@@ -106,7 +106,7 @@ export const useHeroLists = (
 
     // 2. Advanced check: try to fetch a tiny resource
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 1500); // Fast 1.5s timeout
 
     try {
         // Use generate_204 which returns 204 No Content (very fast)
@@ -157,10 +157,10 @@ export const useHeroLists = (
     window.addEventListener('offline', handleOfflineEvent);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Polling interval (every 5s) to catch tricky state changes (e.g. background data toggle)
+    // Polling interval (every 2s) for fast reaction
     const intervalId = setInterval(() => {
         updateOnlineStatus();
-    }, 5000);
+    }, 2000);
 
     return () => {
       window.removeEventListener('online', handleOnlineEvent);

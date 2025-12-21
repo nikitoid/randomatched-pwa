@@ -982,14 +982,16 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     </p>
                  </div>
                  
-                 {onCheckUpdate && isOnline && (
+                 {onCheckUpdate && (
                      <button 
                         onClick={onCheckUpdate}
-                        disabled={isCheckingUpdate}
-                        className="mt-6 flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl active:scale-95 transition-all hover:bg-slate-200 dark:hover:bg-slate-700"
+                        disabled={isCheckingUpdate || !isOnline}
+                        className={`mt-6 flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-xl transition-all hover:bg-slate-200 dark:hover:bg-slate-700
+                            ${(!isOnline || isCheckingUpdate) ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
+                        `}
                      >
-                        {isCheckingUpdate ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                        <span>{isCheckingUpdate ? 'Проверка...' : 'Проверить обновление'}</span>
+                        {isCheckingUpdate ? <Loader2 size={14} className="animate-spin" /> : !isOnline ? <WifiOff size={14} /> : <Download size={14} />}
+                        <span>{isCheckingUpdate ? 'Проверка...' : !isOnline ? 'Нет сети' : 'Проверить обновление'}</span>
                      </button>
                  )}
                  
@@ -1069,7 +1071,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                   value={hero.name}
                                   onChange={(e) => handleHeroChange(idx, 'name', e.target.value)}
                                   placeholder={isLast ? "Добавить героя..." : "Имя героя"}
-                                  disabled={isReadOnly}
+                                  disabled={isReadOnly || isRowFocused}
                                   className={`w-full h-[38px] px-4 text-sm rounded-xl border outline-none select-text transition-all
                                     ${isReadOnly ? 'bg-slate-100 dark:bg-slate-900 border-transparent text-slate-600 dark:text-slate-300' : 
                                     isLast 
@@ -1164,6 +1166,74 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
          </>,
          document.body
       )}
+
+      {/* List Item Context Menu Portal */}
+      {activeListForMenu && contextMenuTargetId && menuPosition && createPortal(
+         <>
+             <div className="fixed inset-0 z-[60] bg-transparent" onClick={handleCloseMenu} />
+             <div 
+                className={`fixed z-[61] w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden ${menuPosition.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-right' : 'animate-menu-in origin-top-right'}`}
+                style={{
+                    top: menuPosition.top,
+                    bottom: menuPosition.bottom,
+                    right: menuPosition.right,
+                }}
+             >
+                <button onClick={() => handleOpenRename(activeListForMenu)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                    <Edit2 size={16} /> Переименовать
+                </button>
+                
+                {activeListForMenu.isLocal && !activeListForMenu.isTemporary && (
+                     <button onClick={() => handleUpload(activeListForMenu.id)} disabled={!isOnline} className={`w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400 text-sm font-medium ${!isOnline ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        <UploadCloud size={16} /> Загрузить в облако
+                    </button>
+                )}
+
+                <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
+                
+                {!activeListForMenu.isCloud && (
+                    <button onClick={() => handleExternalFileExport(activeListForMenu)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                        <Download size={16} /> Сохранить в файл
+                    </button>
+                )}
+
+                <button onClick={() => handleDeleteClick(activeListForMenu)} className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 dark:text-red-400 text-sm font-medium">
+                    <Trash2 size={16} /> Удалить
+                </button>
+             </div>
+         </>, document.body
+      )}
+
+      {/* Create/Rename List Modal */}
+      <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isNameModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+          <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isNameModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{nameModalMode === 'create' ? 'Новый список' : 'Переименовать'}</h3>
+              <form onSubmit={handleNameSubmit}>
+                  <input 
+                    autoFocus
+                    type="text" 
+                    value={nameInputValue} 
+                    onChange={(e) => setNameInputValue(e.target.value)} 
+                    placeholder="Название..." 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-900 transition-all select-text" 
+                  />
+                  
+                  {nameModalMode === 'create' && (
+                      <div className="mt-3 flex justify-end">
+                          <button type="button" onClick={triggerCreateListFileUpload} className="text-xs font-bold text-slate-400 hover:text-primary-500 transition-colors flex items-center gap-1.5">
+                              <Upload size={14} /> <span>Импорт из JSON</span>
+                          </button>
+                          <input type="file" ref={createListFileInputRef} className="hidden" accept=".json" onChange={handleNewListImport} />
+                      </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 mt-6">
+                      <button type="button" onClick={handleCancelModal} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
+                      <button type="submit" disabled={!nameInputValue.trim()} className="py-3 font-bold text-white bg-primary-600 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-600/20">{nameModalMode === 'create' ? 'Создать' : 'Сохранить'}</button>
+                  </div>
+              </form>
+          </div>
+      </div>
 
       {/* STATS MODAL (Re-implemented for Editor) */}
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isStatsModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setIsStatsModalOpen(false)}>
