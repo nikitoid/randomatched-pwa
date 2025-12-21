@@ -34,6 +34,8 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     logs?: {type: string, args: string[], time?: string}[];
     checkForUpdate?: () => void;
     isCheckingUpdate?: boolean;
+    isUpdateAvailable?: boolean;
+    onUpdateApp?: () => void;
 }
 
 type TabType = 'lists' | 'app' | 'appearance' | 'debug';
@@ -63,11 +65,14 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   setColorScheme,
   logs = [],
   checkForUpdate,
-  isCheckingUpdate = false
+  isCheckingUpdate = false,
+  isUpdateAvailable = false,
+  onUpdateApp
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('lists');
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('custom');
+  const [isReorderMode, setIsReorderMode] = useState(false);
   
   // Debug Filter State
   const [debugFilter, setDebugFilter] = useState<'all' | 'log' | 'warn' | 'error'>('all');
@@ -172,6 +177,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
           setEditorMenuRect(null);
           setIsRankSourceDropdownOpen(false);
           setHeroSortDirection(null);
+          setIsReorderMode(false);
       }
   }, [editingListId]);
 
@@ -564,6 +570,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     let nextOrder: SortOrder = sortOrder === 'custom' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'asc';
     setSortOrder(nextOrder);
     sortLists(nextOrder === 'desc' ? 'desc' : 'asc');
+  };
+  
+  const handleToggleReorderMode = () => {
+      setIsReorderMode(!isReorderMode);
   };
 
   const handleOpenMenu = (id: string, buttonRect: DOMRect, cardRect: DOMRect) => {
@@ -1030,13 +1040,15 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         {isReadOnly && <span className="ml-2 text-xs font-normal opacity-60">(Только чтение)</span>}
                     </h2>
 
-                    {!currentList?.isTemporary && (
+                    {!currentList?.isTemporary ? (
                         <button 
                             onClick={handleToggleEditorMenu}
                             className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
                         >
                             <MoreVertical size={24} />
                         </button>
+                    ) : (
+                        <div className="w-10" /> // Dummy to balance back button
                     )}
                  </div>
 
@@ -1129,6 +1141,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         {isSyncing ? <><Loader2 size={10} className="animate-spin" /> Sync</> : isOnline ? <><Wifi size={10} /> Online</> : <><WifiOff size={10} /> Offline</>}
                     </div>
                     <div className="flex gap-2">
+                        <button onClick={handleToggleReorderMode} className={`w-9 h-9 flex items-center justify-center rounded-full border shadow-sm transition-colors ${isReorderMode ? 'bg-primary-100 text-primary-600 border-primary-200 dark:bg-primary-900/40 dark:text-primary-300 dark:border-primary-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                            <GripVertical size={18} />
+                        </button>
                         <button onClick={handleToggleSort} className="w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-600 dark:text-slate-300">
                             {sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}
                         </button>
@@ -1156,6 +1171,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         isDragging={dragItem.current === idx} 
                         hasUpdate={updatedListIds ? updatedListIds.has(list.id) : false}
                         onMarkSeen={onMarkSeen}
+                        isReorderMode={isReorderMode}
                     />
                     ))}
                  </div>
@@ -1218,7 +1234,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
                  
                  <div onClick={handleVersionClick} className="relative cursor-pointer inline-block mb-8">
-                     <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.1.1</p>
+                     <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.2.0</p>
                      {debugClicks > 5 && debugClicks < 10 && (
                          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-slate-400">
                              Debug через {10 - debugClicks}...
@@ -1235,15 +1251,25 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     </p>
                  </div>
 
-                 {checkForUpdate && (
-                     <button 
-                        onClick={checkForUpdate}
-                        disabled={!isOnline || isCheckingUpdate}
-                        className="mb-8 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                     >
-                        <RefreshCw size={14} className={isCheckingUpdate ? 'animate-spin' : ''} /> 
-                        {isCheckingUpdate ? 'Проверка...' : 'Проверить обновления'}
-                     </button>
+                 {isUpdateAvailable && onUpdateApp ? (
+                    <button 
+                        onClick={onUpdateApp}
+                        className="mb-8 px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-transform"
+                    >
+                        <Download size={14} /> 
+                        Обновить и перезапустить
+                    </button>
+                 ) : (
+                     checkForUpdate && (
+                         <button 
+                            onClick={checkForUpdate}
+                            disabled={!isOnline || isCheckingUpdate}
+                            className="mb-8 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                         >
+                            <RefreshCw size={14} className={isCheckingUpdate ? 'animate-spin' : ''} /> 
+                            {isCheckingUpdate ? 'Проверка...' : 'Проверить обновления'}
+                         </button>
+                     )
                  )}
                  
                  <div className="mt-auto pt-4 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center">
@@ -1488,9 +1514,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         <UploadCloud size={16} /> Выгрузить в облако
                     </button>
                 )}
-                <button onClick={(e) => { e.stopPropagation(); if (!activeListForMenu.isTemporary) handleOpenRename(activeListForMenu); }} disabled={activeListForMenu.isTemporary || (!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isTemporary || (!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`}>
-                <Edit2 size={16} /> Переименовать
-                </button>
+                {!activeListForMenu.isTemporary && (
+                    <button onClick={(e) => { e.stopPropagation(); handleOpenRename(activeListForMenu); }} disabled={(!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${(!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`}>
+                    <Edit2 size={16} /> Переименовать
+                    </button>
+                )}
                 
                 <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}>
                     <Copy size={16} /> Экспорт (Текст)

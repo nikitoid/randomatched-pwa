@@ -17,6 +17,7 @@ interface ListItemProps {
   isDragging: boolean;
   hasUpdate: boolean;
   onMarkSeen?: (id: string) => void;
+  isReorderMode?: boolean;
 }
 
 export const ListItem: React.FC<ListItemProps> = ({ 
@@ -31,7 +32,8 @@ export const ListItem: React.FC<ListItemProps> = ({
   onDragEnd,
   isDragging,
   hasUpdate,
-  onMarkSeen
+  onMarkSeen,
+  isReorderMode = false
 }) => {
   const isTemp = list.isTemporary;
   const isCloud = list.isCloud;
@@ -77,15 +79,17 @@ export const ListItem: React.FC<ListItemProps> = ({
          ref={cardRef}
          className={`bg-white dark:bg-slate-900 p-4 rounded-2xl flex items-center transition-shadow relative shadow-sm border border-slate-100 dark:border-slate-800 ${isCloudOffline ? 'bg-slate-50 dark:bg-slate-900/50' : ''}`}
       >
-        <div 
-            draggable={true}
-            className={`mr-1 text-slate-300 dark:text-slate-700 p-1 cursor-grab active:cursor-grabbing touch-none`}
-            onDragStart={handleHandleDragStart}
-            onTouchStart={(e) => onDragStart(e, index)}
-            onTouchEnd={onDragEnd}
-        >
-            <GripVertical size={20} />
-        </div>
+        {isReorderMode && (
+          <div 
+              draggable={true}
+              className={`mr-1 text-slate-300 dark:text-slate-700 p-1 cursor-grab active:cursor-grabbing touch-none animate-in fade-in slide-in-from-left-2`}
+              onDragStart={handleHandleDragStart}
+              onTouchStart={(e) => onDragStart(e, index)}
+              onTouchEnd={onDragEnd}
+          >
+              <GripVertical size={20} />
+          </div>
+        )}
 
         <div className={`mr-4 ml-1 flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 shrink-0 border border-slate-100 dark:border-slate-700/50 relative ${isCloudOffline ? 'grayscale' : ''}`}>
              {getIcon()}

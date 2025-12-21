@@ -240,6 +240,18 @@ const App: React.FC = () => {
   useEffect(() => {
       localStorage.setItem(STORAGE_KEY_SAVED_TEAMS, JSON.stringify(savedTeams));
   }, [savedTeams]);
+
+  // Click outside listener for History Delete Confirmation
+  useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+          if (deleteHistoryConfirm !== null && historyScrollRef.current && !historyScrollRef.current.contains(e.target as Node)) {
+              setDeleteHistoryConfirm(null);
+          }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [deleteHistoryConfirm]);
   
   const getActiveList = () => lists.find(l => l.id === selectedListId);
 
@@ -286,9 +298,6 @@ const App: React.FC = () => {
           setDeleteHistoryConfirm(null);
       } else {
           setDeleteHistoryConfirm(index);
-          setTimeout(() => {
-              setDeleteHistoryConfirm(prev => prev === index ? null : prev);
-          }, 3000);
       }
   };
 
@@ -407,6 +416,7 @@ const App: React.FC = () => {
 
   const confirmReset = () => {
     setAssignments([]);
+    setPlayerNames(['', '', '', '']);
     resetTemporaryLists();
     localStorage.removeItem(STORAGE_KEY_ASSIGNMENTS);
     setIsResetConfirmOpen(false);
@@ -426,7 +436,7 @@ const App: React.FC = () => {
 
   const hasTemporaryLists = lists.some(l => l.isTemporary);
   const hasResult = assignments.length > 0;
-  const canReset = hasResult || hasTemporaryLists;
+  const canReset = hasResult || hasTemporaryLists || playerNames.some(n => n.trim());
 
   // --- RE-ROLL LOGIC (UPDATED FOR GROUP) ---
   const getAvailableHeroesPool = () => {
@@ -1122,6 +1132,8 @@ const App: React.FC = () => {
         logs={consoleLogs}
         checkForUpdate={checkForUpdate}
         isCheckingUpdate={isCheckingUpdate}
+        isUpdateAvailable={isUpdateAvailable}
+        onUpdateApp={handleUpdateApp}
       />
 
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
@@ -1129,7 +1141,7 @@ const App: React.FC = () => {
               <div className="flex flex-col items-center text-center mb-6">
                   <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mb-4"><RotateCcw size={24} /></div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Сбросить сессию?</h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Текущее распределение команд и временные списки будут удалены.</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Текущее распределение команд, имена игроков и временные списки будут удалены.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                  <button onClick={cancelReset} className="px-4 py-3.5 font-bold text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-2xl active:scale-95 transition-all">Отмена</button>
