@@ -1051,7 +1051,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     {!currentList?.isTemporary ? (
                         <button 
                             onClick={handleToggleEditorMenu}
-                            className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                            className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'md:hover:bg-slate-100 dark:md:hover:bg-slate-100 active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
                         >
                             <MoreVertical size={24} />
                         </button>
@@ -1066,18 +1066,18 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         <button 
                             onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)}
                             disabled={isReadOnly}
-                            className={`flex items-center gap-2 pl-3 pr-4 py-2 rounded-xl text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
+                            className={`flex-1 min-w-0 mr-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}
                         >
-                            <SquareStack size={14} />
-                            <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
-                            <div className={`w-2 h-2 rounded-full ml-1 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                            <SquareStack size={14} className="shrink-0" />
+                            <span className="truncate">{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
+                            <div className={`w-2 h-2 rounded-full ml-auto shrink-0 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         </button>
                     ) : (
                         // Hide In Group button completely for temporary lists
                          <div className="w-1" />
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                         <button onClick={() => setIsStatsModalOpen(true)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform">
                             <BarChart3 size={18} />
                         </button>
@@ -1085,8 +1085,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             {heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}
                         </button>
                         {!isReadOnly && (
-                            <button onClick={handleSaveEditor} className="h-9 px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform">
-                               <Save size={16} /> <span>Сохранить</span>
+                            <button onClick={handleSaveEditor} className="h-9 w-9 sm:w-auto sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform">
+                               <Save size={16} /> <span className="hidden sm:inline">Сохранить</span>
                             </button>
                         )}
                     </div>
@@ -1190,7 +1190,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
               <div className="flex flex-col items-center justify-start min-h-full p-6 text-center animate-in fade-in slide-in-from-bottom-2">
                  <div className="w-full max-w-sm">
                     <h3 className="text-left text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Цветовая схема</h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
                         {Object.entries(COLOR_SCHEMES_DATA).map(([key, data]) => {
                             const isSelected = colorScheme === key;
                             const colorValue = `rgb(${data.primary[500]})`;
@@ -1199,7 +1199,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 <button
                                     key={key}
                                     onClick={() => setColorScheme && setColorScheme(key as any)}
-                                    className={`relative flex items-center gap-3 p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95
+                                    className={`relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95
                                         ${isSelected 
                                             ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-md ring-2 ring-primary-500/20' 
                                             : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800'
@@ -1207,13 +1207,13 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                     `}
                                 >
                                     <div 
-                                        className="w-10 h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center"
+                                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center"
                                         style={{ backgroundColor: colorValue }}
                                     >
                                         {isSelected && <Check size={20} className="text-white drop-shadow-md" />}
                                     </div>
-                                    <div className="text-left">
-                                        <div className={`text-sm font-bold ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
+                                    <div className="text-left min-w-0">
+                                        <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
                                             {data.label}
                                         </div>
                                     </div>
