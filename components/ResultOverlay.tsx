@@ -232,10 +232,11 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
       const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
-      // Dynamic sizing based on vmin to ensure fit
+      // Updated Size Class to prevent overlap
+      // Slightly smaller vmin to ensure cross pattern fits on phones
       const cardSizeClass = isFloating 
         ? 'w-32 h-20' 
-        : 'w-[60vmin] h-[34vmin] max-w-[320px] max-h-[190px]';
+        : 'w-[44vmin] h-[26vmin] max-w-[260px] max-h-[160px]';
 
       return (
         <div 
@@ -275,7 +276,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {!isFloating && (
                 <h2 
                     key={player.hero?.id || 'unknown'}
-                    className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-base sm:text-xl' : 'text-xl sm:text-3xl'}`}
+                    className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 transition-opacity duration-200 ${hasHero ? 'animate-hero-reveal' : ''} ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-lg sm:text-2xl'}`}
                 >
                     {hasHero ? heroName : <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>}
                 </h2>
@@ -304,49 +305,42 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     let positionStyle: React.CSSProperties = {};
     
-    // Closer to center for sides (Left/Right)
-    const horizontalOffset = '3rem'; 
-
+    // Revised Positioning to avoid overlap on phones
+    // We use percentages relative to the container center/edges
     switch (position) {
         case 'top':
-            // Docked to TOP edge
             positionStyle = { 
                 position: 'absolute', 
-                top: '4%', // Close to top safe area
+                top: '14%', 
                 left: '50%', 
-                transform: 'translate(-50%, 0) rotate(180deg)',
+                transform: 'translate(-50%, -50%) rotate(180deg)',
                 transformOrigin: 'center'
             };
             break;
         case 'bottom':
-            // Docked to BOTTOM edge (above bottom bar)
             positionStyle = { 
                 position: 'absolute', 
-                bottom: '16%', // Clear of the bottom action bar
+                bottom: '18%', // Moved up slightly to clear the bottom bar on all screens
                 left: '50%', 
-                transform: 'translate(-50%, 0)',
+                transform: 'translate(-50%, 50%)',
                 transformOrigin: 'center'
             };
             break;
         case 'left':
-            // Docked near CENTER
             positionStyle = { 
                 position: 'absolute', 
-                right: '50%', 
+                left: '15%', // Fixed percent from left edge instead of calculating from center
                 top: '50%', 
-                marginRight: horizontalOffset, 
-                transform: 'translate(0, -50%) rotate(90deg)',
+                transform: 'translate(-50%, -50%) rotate(90deg)',
                 transformOrigin: 'center'
             };
             break;
         case 'right':
-            // Docked near CENTER
             positionStyle = { 
                 position: 'absolute', 
-                left: '50%', 
+                right: '15%', // Fixed percent from right edge
                 top: '50%', 
-                marginLeft: horizontalOffset, 
-                transform: 'translate(0, -50%) rotate(-90deg)',
+                transform: 'translate(50%, -50%) rotate(-90deg)',
                 transformOrigin: 'center'
             };
             break;
@@ -355,13 +349,14 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     return (
         <div 
             ref={(el) => { cardRefs.current[position] = el; }}
-            className="z-10"
+            // Added pointer-events-auto because parent has pointer-events-none
+            className="z-10 pointer-events-auto"
             style={{ ...positionStyle, touchAction: 'none' }}
             onPointerDown={(e) => handlePointerDown(e, position)}
         >
             {/* Placeholder when dragging */}
             {isDraggingThis && (
-                <div className="absolute inset-0 w-[60vmin] h-[34vmin] max-w-[320px] max-h-[190px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
+                <div className="absolute inset-0 w-[44vmin] h-[26vmin] max-w-[260px] max-h-[160px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
             )}
             
             <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
