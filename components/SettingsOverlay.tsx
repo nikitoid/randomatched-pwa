@@ -40,6 +40,7 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onToggleDebug?: (val: boolean) => void;
     hapticsEnabled?: boolean;
     onToggleHaptics?: () => void;
+    triggerHaptic: (pattern?: number | number[]) => void;
 }
 
 type TabType = 'lists' | 'app_settings' | 'appearance' | 'info' | 'debug';
@@ -75,7 +76,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   isDebugMode = false,
   onToggleDebug,
   hapticsEnabled = true,
-  onToggleHaptics
+  onToggleHaptics,
+  triggerHaptic
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('lists');
   const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -334,6 +336,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
   const handleToggleEditorMenu = (e: React.MouseEvent) => {
       e.stopPropagation();
+      triggerHaptic(10);
       if (isEditorMenuOpen) {
           setIsEditorMenuOpen(false);
       } else {
@@ -502,14 +505,16 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   // --- EXISTING HANDLERS ---
   const handleToggleSort = () => {
     if (!sortLists) return;
+    triggerHaptic(10);
     let nextOrder: SortOrder = sortOrder === 'custom' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'asc';
     setSortOrder(nextOrder);
     sortLists(nextOrder === 'desc' ? 'desc' : 'asc');
   };
   
-  const handleToggleReorderMode = () => { setIsReorderMode(!isReorderMode); };
+  const handleToggleReorderMode = () => { triggerHaptic(10); setIsReorderMode(!isReorderMode); };
 
   const handleOpenMenu = (id: string, buttonRect: DOMRect, cardRect: DOMRect) => {
+      triggerHaptic(10);
       if (contextMenuTargetId === id) { handleCloseMenu(); return; }
       setContextMenuTargetId(id);
       setActiveItemRect(cardRect);
@@ -522,7 +527,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
   const handleCloseMenu = () => { setContextMenuTargetId(null); setMenuPosition(null); setActiveItemRect(null); };
 
-  const handleOpenCreate = () => { setNameModalMode('create'); setNameInputValue(''); setNameModalOpen(true); handleCloseMenu(); };
+  const handleOpenCreate = () => { triggerHaptic(10); setNameModalMode('create'); setNameInputValue(''); setNameModalOpen(true); handleCloseMenu(); };
   const handleOpenRename = (list: HeroList) => { setNameModalMode('rename'); setTargetListId(list.id); setNameInputValue(list.name); setNameModalOpen(true); handleCloseMenu(); };
 
   const handleNameSubmit = async (e: React.FormEvent) => {
@@ -551,6 +556,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   const handleDeleteClick = (list: HeroList) => { setIsDeleteCloud(!!list.isCloud); setListToDelete(list); handleCloseMenu(); };
   const confirmDelete = async () => {
     if (listToDelete) {
+      triggerHaptic(20);
       if (listToDelete.isCloud && checkConnectivity && addToast) { if (!(await checkConnectivity())) { addToast("Нет интернета", "error"); return; } }
       onDeleteList(listToDelete.id);
       setListToDelete(null);
@@ -564,6 +570,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   }
 
   const handleOpenEditor = (list: HeroList) => {
+    triggerHaptic(10);
     window.history.pushState({ overlay: 'settings-editor' }, '');
     setEditingListId(list.id);
     const heroes = JSON.parse(JSON.stringify(list.heroes));
@@ -604,6 +611,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   };
 
   const handleSortEditorHeroes = () => {
+      triggerHaptic(10);
       const nextDirection = heroSortDirection === 'asc' ? 'desc' : 'asc';
       setHeroSortDirection(nextDirection);
       setEditorHeroes(prev => {
@@ -616,6 +624,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
   const handleSaveEditor = async () => {
     if (isReadOnly) return;
+    triggerHaptic(20);
     if (editingListId) {
       const currentList = lists.find(l => l.id === editingListId);
       if (currentList?.isCloud && checkConnectivity && addToast && !(await checkConnectivity())) { addToast("Нет интернета", "error"); return; }
@@ -668,7 +677,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   };
 
   const renderTabButton = (id: TabType, label: string, icon: React.ReactNode) => (
-    <button data-tab-id={id} onClick={(e) => { if (isDragScroll) { e.preventDefault(); e.stopPropagation(); return; } setActiveTab(id); }} className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap select-none border ${activeTab === id ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800' } ${isDragScroll ? 'pointer-events-none' : ''}`}>
+    <button data-tab-id={id} onClick={(e) => { if (isDragScroll) { e.preventDefault(); e.stopPropagation(); return; } setActiveTab(id); triggerHaptic(10); }} className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap select-none border ${activeTab === id ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-md' : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800' } ${isDragScroll ? 'pointer-events-none' : ''}`}>
       {icon} <span>{label}</span>
     </button>
   );
@@ -686,10 +695,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
       return 'bg-slate-200 dark:bg-slate-700'; 
   };
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, index: number) => { dragItem.current = index; setIsListDragging(true); handleCloseMenu(); if (sortOrder !== 'custom') setSortOrder('custom'); if ('touches' in e) document.body.style.overflow = 'hidden'; };
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => { if (dragItem.current === null) return; dragOverItem.current = index; if (dragItem.current !== index && reorderLists) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); } };
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, index: number) => { dragItem.current = index; setIsListDragging(true); handleCloseMenu(); if (sortOrder !== 'custom') setSortOrder('custom'); if ('touches' in e) document.body.style.overflow = 'hidden'; triggerHaptic(10); };
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => { if (dragItem.current === null) return; dragOverItem.current = index; if (dragItem.current !== index && reorderLists) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); triggerHaptic(5); } };
   const handleDragEnd = (e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => { dragItem.current = null; dragOverItem.current = null; setIsListDragging(false); if ('changedTouches' in e) document.body.style.overflow = ''; };
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => { if (dragItem.current === null || !reorderLists) return; const touch = e.touches[0]; const targetElement = document.elementFromPoint(touch.clientX, touch.clientY); const listItem = targetElement?.closest('[data-list-index]'); if (listItem) { const index = parseInt(listItem.getAttribute('data-list-index') || '-1', 10); if (index !== -1 && index !== dragItem.current) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); } } };
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => { if (dragItem.current === null || !reorderLists) return; const touch = e.touches[0]; const targetElement = document.elementFromPoint(touch.clientX, touch.clientY); const listItem = targetElement?.closest('[data-list-index]'); if (listItem) { const index = parseInt(listItem.getAttribute('data-list-index') || '-1', 10); if (index !== -1 && index !== dragItem.current) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); triggerHaptic(5); } } };
 
   const filteredLogs = useMemo(() => { if (debugFilter === 'all') return logs; return logs.filter(l => l.type === debugFilter); }, [logs, debugFilter]);
 
@@ -708,9 +717,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                     {!currentList?.isTemporary ? ( <button onClick={handleToggleEditorMenu} className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'md:hover:bg-slate-100 dark:md:hover:bg-slate-100 active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}> <MoreVertical size={24} /> </button> ) : ( <div className="w-10" /> )}
                  </div>
                  <div className="flex items-center justify-between mt-1">
-                    {!currentList?.isTemporary ? ( <button onClick={() => !isReadOnly && setEditorIsGroupable(!editorIsGroupable)} disabled={isReadOnly} className={`mr-2 flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}> <SquareStack size={14} className="shrink-0" /> <span className="truncate">{editorIsGroupable ? 'В группе' : 'Не в группе'}</span> <div className={`w-2 h-2 rounded-full ml-auto shrink-0 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} /> </button> ) : ( <div className="w-1" /> )}
+                    {!currentList?.isTemporary ? ( <button onClick={() => { if(!isReadOnly) { setEditorIsGroupable(!editorIsGroupable); triggerHaptic(10); } }} disabled={isReadOnly} className={`mr-2 flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}> <SquareStack size={14} className="shrink-0" /> <span className="truncate">{editorIsGroupable ? 'В группе' : 'Не в группе'}</span> <div className={`w-2 h-2 rounded-full ml-auto shrink-0 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} /> </button> ) : ( <div className="w-1" /> )}
                     <div className="flex gap-2 shrink-0">
-                        <button onClick={() => setIsStatsModalOpen(true)} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"> <BarChart3 size={18} /> </button>
+                        <button onClick={() => { setIsStatsModalOpen(true); triggerHaptic(10); }} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"> <BarChart3 size={18} /> </button>
                         <button onClick={handleSortEditorHeroes} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"> {heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />} </button>
                         {!isReadOnly && ( <button onClick={handleSaveEditor} className="h-8 sm:h-9 px-3 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform"> <Save size={16} /> <span>Сохранить</span> </button> )}
                     </div>
@@ -768,7 +777,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         {Object.entries(COLOR_SCHEMES_DATA).map(([key, data]) => {
                             const isSelected = colorScheme === key;
                             const colorValue = `rgb(${data.primary[500]})`;
-                            return ( <button key={key} onClick={() => setColorScheme && setColorScheme(key as any)} className={`relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-md ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800' } `}> <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center" style={{ backgroundColor: colorValue }}> {isSelected && <Check size={20} className="text-white drop-shadow-md" />} </div> <div className="text-left min-w-0"> <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}> {data.label} </div> </div> </button> );
+                            return ( <button key={key} onClick={() => { setColorScheme && setColorScheme(key as any); triggerHaptic(10); }} className={`relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-md ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800' } `}> <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center" style={{ backgroundColor: colorValue }}> {isSelected && <Check size={20} className="text-white drop-shadow-md" />} </div> <div className="text-left min-w-0"> <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}> {data.label} </div> </div> </button> );
                         })}
                     </div>
                  </div>
@@ -790,7 +799,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                      </div>
                                  </div>
                                  <button 
-                                     onClick={onToggleHaptics}
+                                     onClick={() => { onToggleHaptics && onToggleHaptics(); triggerHaptic(10); }}
                                      className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${hapticsEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                  >
                                      <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${hapticsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />

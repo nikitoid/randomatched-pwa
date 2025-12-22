@@ -1223,6 +1223,7 @@ const App: React.FC = () => {
         onToggleDebug={setIsDebugMode}
         hapticsEnabled={hapticsEnabled}
         onToggleHaptics={toggleHaptics}
+        triggerHaptic={triggerHaptic}
       />
 
       <StatsModal 
@@ -1238,6 +1239,7 @@ const App: React.FC = () => {
         isSyncing={isSyncingHistory}
         isOnline={isOnline}
         lists={lists}
+        triggerHaptic={triggerHaptic}
       />
 
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>

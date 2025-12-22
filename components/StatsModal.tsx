@@ -16,6 +16,7 @@ interface StatsModalProps {
     isSyncing: boolean;
     isOnline: boolean;
     lists: HeroList[]; // For autocomplete
+    triggerHaptic: (pattern?: number | number[]) => void;
 }
 
 export const StatsModal: React.FC<StatsModalProps> = ({
@@ -30,7 +31,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     onSync,
     isSyncing,
     isOnline,
-    lists
+    lists,
+    triggerHaptic
 }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'players' | 'heroes' | 'matches'>('overview');
     const [editMode, setEditMode] = useState(false);
@@ -162,6 +164,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     };
 
     const openAddMatch = () => {
+        triggerHaptic(10);
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0];
         const timeStr = now.toTimeString().slice(0, 5);
@@ -179,6 +182,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     };
 
     const openEditMatch = (match: MatchRecord) => {
+        triggerHaptic(10);
         const d = new Date(match.timestamp);
         // Correct timezone offset adjustment for input value
         const dateStr = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
@@ -214,6 +218,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         if (matchForm.t2p2h && !validateHero(matchForm.t2p2h)) errors.t2p2h = true;
 
         if (Object.keys(errors).length > 0) {
+            triggerHaptic([20, 50, 20]);
             setMatchForm({...matchForm, errors});
             return;
         }
@@ -237,6 +242,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         } else {
             onAddMatch(team1, team2, matchForm.winner, timestamp);
         }
+        triggerHaptic(50);
         setMatchForm(null);
     };
 
@@ -289,6 +295,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         if (deleteConfirmId) {
             onDeleteMatch(deleteConfirmId);
             setDeleteConfirmId(null);
+            triggerHaptic(20);
         }
     }
 
@@ -304,8 +311,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         const diffY = touchStartY.current - touchEndY.current;
         const SWIPE_THRESHOLD = 50;
         
-        // Ensure horizontal swipe is dominant to prevent accidental switching while scrolling
-        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > SWIPE_THRESHOLD) {
+        // Stricter horizontal swipe check: horizontal movement must be 1.5x larger than vertical
+        if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > SWIPE_THRESHOLD) {
             const tabs = ['overview', 'players', 'heroes', 'matches'];
             const idx = tabs.indexOf(activeTab);
             if (diffX > 0 && idx < tabs.length - 1) setActiveTab(tabs[idx + 1] as any);
@@ -474,8 +481,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     {['overview', 'players', 'heroes', 'matches'].map(tab => (
                         <button 
                             key={tab}
-                            onClick={() => setActiveTab(tab as any)} 
-                            className={`flex-1 min-w-[80px] py-3 text-sm font-bold border-b-2 transition-colors capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                            onClick={() => { setActiveTab(tab as any); triggerHaptic(10); }} 
+                            className={`flex-1 min-w-[80px] py-3 text-sm font-bold border-b-2 transition-colors capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800/50'}`}
                         >
                             {tab === 'overview' ? 'Обзор' : tab === 'players' ? 'Игроки' : tab === 'heroes' ? 'Герои' : 'Матчи'}
                         </button>
@@ -492,7 +499,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             <Plus size={16} /> Добавить
                         </button>
                         <button 
-                            onClick={() => setEditMode(!editMode)} 
+                            onClick={() => { setEditMode(!editMode); triggerHaptic(10); }} 
                             className={`text-xs font-bold px-4 py-2 rounded-xl border transition-colors flex items-center gap-1.5 ${editMode ? 'bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
                         >
                             <Edit2 size={16} /> {editMode ? 'Готово' : 'Редактировать'}
