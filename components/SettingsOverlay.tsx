@@ -1250,7 +1250,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                  <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
                  
                  <div onClick={handleVersionClick} className="relative cursor-pointer inline-block mb-8">
-                     <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.2.1</p>
+                     <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.2.3</p>
                      {!isDebugMode && debugClicks > 5 && debugClicks < 10 && (
                          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold text-slate-400">
                              Debug через {10 - debugClicks}...
@@ -1774,6 +1774,21 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         </>
                     );
                  })()}
+              </div>
+          </div>
+      </div>
+
+      {/* Discard Changes Modal */}
+      <div className={`fixed inset-0 z-[70] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isDiscardModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+          <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isDiscardModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+              <div className="flex flex-col items-center text-center mb-6">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-full flex items-center justify-center mb-4"><AlertTriangle size={24} /></div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Несохраненные изменения</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Вы уверены, что хотите выйти? Изменения будут потеряны.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                  <button onClick={handleDiscardCancel} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
+                  <button onClick={handleDiscardConfirm} className="py-3 font-bold text-white bg-orange-500 rounded-xl">Выйти</button>
               </div>
           </div>
       </div>

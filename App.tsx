@@ -72,6 +72,24 @@ const App: React.FC = () => {
      } catch { return new Set(); }
   });
 
+  // Clean up selectedGroupIds if lists change (deleted or ungroupped)
+  useEffect(() => {
+      setSelectedGroupIds(prev => {
+          const next = new Set(prev);
+          let changed = false;
+          // Filter out IDs that no longer exist in lists or are not groupable
+          const validGroupIds = new Set(lists.filter(l => l.isGroupable).map(l => l.id));
+          
+          for (const id of next) {
+              if (!validGroupIds.has(id)) {
+                  next.delete(id);
+                  changed = true;
+              }
+          }
+          return changed ? next : prev;
+      });
+  }, [lists]);
+
   const [assignments, setAssignments] = useState<AssignedPlayer[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_ASSIGNMENTS);

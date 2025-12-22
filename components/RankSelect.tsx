@@ -64,9 +64,9 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
         } else if (letter === 'C') {
             colors = 'text-green-800 bg-green-100 border-green-200 dark:text-green-300 dark:bg-green-500/20 dark:border-green-500/30';
         } else if (letter === 'D') {
-            colors = 'text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:border-slate-700';
-        } else if (letter === 'E') {
             colors = 'text-gray-700 bg-gray-200 border-gray-300 dark:text-gray-300 dark:bg-gray-700/50 dark:border-gray-600';
+        } else if (letter === 'E') {
+            colors = 'text-slate-700 bg-slate-100 border-slate-200 dark:text-slate-300 dark:bg-slate-800 dark:border-slate-700';
         }
 
         if (isButton) {
