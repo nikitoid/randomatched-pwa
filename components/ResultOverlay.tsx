@@ -508,7 +508,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         : 'bg-primary-600 border-primary-400/50 md:hover:bg-primary-500 shadow-[0_0_40px_rgba(var(--primary-500)/0.6)] md:hover:shadow-[0_0_50px_rgba(var(--primary-500)/0.8)]'}`}
               >
                   <div className="flex flex-col items-center">
-                    {heroesRevealed ? (isRerollConfirm ? <Check size={28} className="mb-1 animate-pulse" /> : <RefreshCw size={28} className="mb-1" />) : <Dice5 size={28} className="mb-1" /> ? (isRerollConfirm ? <Check size={28} className="mb-1 animate-pulse" /> : <RefreshCw size={28} className="mb-1" />) : <Dice5 size={28} className="mb-1" />}
+                    {heroesRevealed ? (isRerollConfirm ? <Check size={28} className="mb-1 animate-pulse" /> : <RefreshCw size={28} className="mb-1" />) : <Dice5 size={28} className="mb-1" />}
                     <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">{!heroesRevealed ? 'Герои' : isRerollConfirm ? 'Точно?' : 'Реролл'}</span>
                   </div>
               </button>
