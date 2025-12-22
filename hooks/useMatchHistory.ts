@@ -89,18 +89,18 @@ export const useMatchHistory = (
             winner
         };
         setHistory(prev => [newMatch, ...prev]);
-        addToast("Матч добавлен вручную", "success");
+        addToast("Матч добавлен вручную", "success", 2000);
     };
 
     const updateMatch = (id: string, updates: Partial<MatchRecord>) => {
         setHistory(prev => prev.map(m => m.id === id ? { ...m, ...updates, lastUpdated: Date.now() } : m));
-        addToast("Матч обновлен", "success");
+        addToast("Матч обновлен", "success", 2000);
     };
 
     const deleteMatch = (id: string) => {
         setHistory(prev => prev.filter(m => m.id !== id));
         setDeletedIds(prev => new Set(prev).add(id));
-        addToast("Матч удален", "info");
+        addToast("Матч удален", "info", 2000);
     };
 
     const renamePlayer = (oldName: string, newName: string) => {
@@ -122,7 +122,7 @@ export const useMatchHistory = (
             }
             return match;
         }));
-        addToast(`Игрок "${oldName}" переименован`, 'success');
+        addToast(`Игрок "${oldName}" переименован`, 'success', 2000);
     };
 
     const renameHero = (oldName: string, newName: string) => {
@@ -146,12 +146,12 @@ export const useMatchHistory = (
             }
             return match;
         }));
-        addToast(`Герой "${oldName}" переименован`, 'success');
+        addToast(`Герой "${oldName}" переименован`, 'success', 2000);
     };
 
     const syncHistory = async () => {
         if (!navigator.onLine) {
-            addToast("Нет подключения к интернету", "error");
+            addToast("Нет подключения к интернету", "error", 2000);
             return;
         }
 
@@ -240,14 +240,14 @@ export const useMatchHistory = (
             if (pushedToCloud > 0) msg.push(`Отправлено: ${pushedToCloud}`);
             
             if (msg.length > 0) {
-                addToast(`Синхронизация: ${msg.join(', ')}`, 'success', 3000);
+                addToast(`Синхронизация: ${msg.join(', ')}`, 'success', 2500);
             } else {
-                addToast("Данные актуальны", "info");
+                addToast("Данные актуальны", "info", 1500);
             }
 
         } catch (e) {
             console.error("Sync history failed", e);
-            addToast("Ошибка синхронизации истории", "error");
+            addToast("Ошибка синхронизации истории", "error", 2000);
         } finally {
             setIsSyncingHistory(false);
         }

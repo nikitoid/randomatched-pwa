@@ -39,6 +39,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     // Swipe Logic
     const touchStartX = useRef(0);
     const touchEndX = useRef(0);
+    const touchStartY = useRef(0);
+    const touchEndY = useRef(0);
     
     // Rename States
     const [editingItemName, setEditingItemName] = useState<{name: string, value: string, type: 'player' | 'hero'} | null>(null);
@@ -66,7 +68,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             setEditingItemName(null);
             setMatchForm(null);
             setDeleteConfirmId(null);
-            setActiveTab('overview');
+            // Don't reset activeTab immediately for exit animation smoothness
         }
     }, [isOpen]);
 
@@ -293,17 +295,21 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     // Swipe Handling
     const handleTouchStart = (e: React.TouchEvent) => {
         touchStartX.current = e.targetTouches[0].clientX;
+        touchStartY.current = e.targetTouches[0].clientY;
     };
     const handleTouchEnd = (e: React.TouchEvent) => {
         touchEndX.current = e.changedTouches[0].clientX;
-        const diff = touchStartX.current - touchEndX.current;
+        touchEndY.current = e.changedTouches[0].clientY;
+        const diffX = touchStartX.current - touchEndX.current;
+        const diffY = touchStartY.current - touchEndY.current;
         const SWIPE_THRESHOLD = 50;
         
-        if (Math.abs(diff) > SWIPE_THRESHOLD) {
+        // Ensure horizontal swipe is dominant to prevent accidental switching while scrolling
+        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > SWIPE_THRESHOLD) {
             const tabs = ['overview', 'players', 'heroes', 'matches'];
             const idx = tabs.indexOf(activeTab);
-            if (diff > 0 && idx < tabs.length - 1) setActiveTab(tabs[idx + 1] as any);
-            if (diff < 0 && idx > 0) setActiveTab(tabs[idx - 1] as any);
+            if (diffX > 0 && idx < tabs.length - 1) setActiveTab(tabs[idx + 1] as any);
+            if (diffX < 0 && idx > 0) setActiveTab(tabs[idx - 1] as any);
         }
     };
 
@@ -344,8 +350,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         );
     };
 
-    if (!isOpen) return null;
-
     // Match Form Overlay
     if (matchForm) {
         return (
@@ -378,12 +382,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Команда 1</h3>
                                 <button 
                                     onClick={() => setMatchForm({...matchForm, winner: 'team1'})}
-                                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team1' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
+                                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team1' ? 'bg-secondary-100 text-secondary-700 border-secondary-200 dark:bg-secondary-900/30 dark:text-secondary-400 dark:border-secondary-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
                                 >
                                     {matchForm.winner === 'team1' ? 'Победитель' : 'Выбрать победителем'}
                                 </button>
                             </div>
-                            <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team1' ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
+                            <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team1' ? 'border-secondary-500/50 bg-secondary-50/50 dark:bg-secondary-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
                                 <div className="space-y-3">
                                     <div className="flex gap-2">
                                         {renderInput("", "t1p1", <User size={14}/>, "Игрок 1")}
@@ -397,7 +401,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             </div>
                         </div>
 
-                        <div className="flex justify-center -my-3 relative z-10 pointer-events-none">
+                        <div className="flex justify-center my-1 relative z-10 pointer-events-none">
                             <div className="bg-white dark:bg-slate-900 p-1.5 rounded-full border border-slate-100 dark:border-slate-800 shadow-sm text-slate-300">
                                 <Swords size={16} />
                             </div>
@@ -409,12 +413,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Команда 2</h3>
                                 <button 
                                     onClick={() => setMatchForm({...matchForm, winner: 'team2'})}
-                                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team2' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
+                                    className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team2' ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
                                 >
                                     {matchForm.winner === 'team2' ? 'Победитель' : 'Выбрать победителем'}
                                 </button>
                             </div>
-                            <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team2' ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
+                            <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team2' ? 'border-primary-500/50 bg-primary-50/50 dark:bg-primary-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
                                 <div className="space-y-3">
                                     <div className="flex gap-2">
                                         {renderInput("", "t2p1", <User size={14}/>, "Игрок 3")}
@@ -439,9 +443,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     }
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+        <div 
+            className={`fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} 
+            onClick={onClose}
+        >
             <div 
-                className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl flex flex-col h-[90dvh] border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 overflow-hidden" 
+                className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl flex flex-col h-[90dvh] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
                 onClick={e => e.stopPropagation()}
             >
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 sticky top-0">
@@ -494,7 +501,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 )}
 
                 <div 
-                    className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' ? 'p-0' : 'p-4'}`}
+                    className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' ? 'p-0 pb-20' : 'p-4'}`}
                     onTouchStart={handleTouchStart} 
                     onTouchEnd={handleTouchEnd}
                 >
@@ -659,7 +666,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     )}
 
                     {activeTab === 'matches' && (
-                        <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4 pb-safe-area-bottom">
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4">
                             <div className="space-y-3">
                                 {history.map(match => {
                                     const date = new Date(match.timestamp).toLocaleDateString();
@@ -677,7 +684,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             <div className="space-y-2">
                                                 {/* Team 1 */}
                                                 <div className={`flex items-center gap-2 ${match.winner === 'team1' ? 'opacity-100' : 'opacity-60'}`}>
-                                                    <div className={`w-1.5 h-8 rounded-full ${match.winner === 'team1' ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                                                    <div className={`w-1.5 h-8 rounded-full ${match.winner === 'team1' ? 'bg-secondary-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                                                             {match.team1.map(p => p.name).join(', ')}
@@ -691,7 +698,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                                 {/* Team 2 */}
                                                 <div className={`flex items-center gap-2 ${match.winner === 'team2' ? 'opacity-100' : 'opacity-60'}`}>
-                                                    <div className={`w-1.5 h-8 rounded-full ${match.winner === 'team2' ? 'bg-green-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
+                                                    <div className={`w-1.5 h-8 rounded-full ${match.winner === 'team2' ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
                                                             {match.team2.map(p => p.name).join(', ')}
@@ -721,7 +728,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             </div>
 
             {/* Delete Confirmation Modal */}
-            <div className={`fixed inset-0 z-[80] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${deleteConfirmId ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+            <div 
+                className={`fixed inset-0 z-[80] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${deleteConfirmId ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                onClick={(e) => e.stopPropagation()} 
+            >
                  <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${deleteConfirmId ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
                     <div className="flex flex-col items-center text-center mb-6">
                         <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mb-4"><Trash2 size={24} /></div>
