@@ -4,14 +4,17 @@ import { useTheme } from './hooks/useTheme';
 import { useHeroLists } from './hooks/useHeroLists';
 import { useToast } from './hooks/useToast';
 import { usePWA } from './hooks/usePWA';
+import { useHaptics } from './hooks/useHaptics';
+import { useMatchHistory } from './hooks/useMatchHistory';
 import { generateAssignmentsWithMode, getHeroWeight, getBestPermutation, getUniqueHeroesFromLists } from './utils/generator';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ResultOverlay } from './components/ResultOverlay';
 import { SettingsOverlay } from './components/SettingsOverlay';
+import { StatsModal } from './components/StatsModal';
 import { ToastContainer } from './components/Toast';
 import { AssignedPlayer, GenerationMode, Hero, HeroList } from './types';
 import { RANKS } from './constants';
-import { Dice5, Shuffle, Settings, History, RotateCcw, Loader2, Download, X, WifiOff, Layers, ChevronDown, LogOut, User, Users, Clock, Trash2, Check, Cloud, Database, Filter, SquareStack, BarChart3 } from 'lucide-react';
+import { Dice5, Shuffle, Settings, History, RotateCcw, Loader2, Download, X, WifiOff, Layers, ChevronDown, LogOut, User, Users, Clock, Trash2, Check, Cloud, Database, Filter, SquareStack, BarChart3, Trophy } from 'lucide-react';
 
 const STORAGE_KEY_ASSIGNMENTS = 'randomatched_last_session_v1';
 const STORAGE_KEY_PLAYER_NAMES = 'randomatched_player_names_v1';
@@ -23,6 +26,7 @@ const STORAGE_KEY_DEBUG_MODE = 'randomatched_debug_mode_v1';
 const App: React.FC = () => {
   const { theme, toggleTheme, colorScheme, setColorScheme } = useTheme();
   const { toasts, addToast, removeToast } = useToast();
+  const { trigger: triggerHaptic, toggle: toggleHaptics, isEnabled: hapticsEnabled } = useHaptics();
   
   const { 
     lists, 
@@ -55,6 +59,17 @@ const App: React.FC = () => {
       handleOpenUpdateBanner,
       checkForUpdate
   } = usePWA(addToast);
+
+  const {
+      history,
+      addMatch,
+      addManualMatch,
+      updateMatch,
+      deleteMatch,
+      renamePlayer,
+      syncHistory,
+      isSyncingHistory
+  } = useMatchHistory(addToast);
   
   const [selectedListId, setSelectedListId] = useState<string>('');
   
@@ -146,6 +161,7 @@ const App: React.FC = () => {
   
   // Stats Modal
   const [isGroupStatsOpen, setIsGroupStatsOpen] = useState(false);
+  const [isHistoryStatsOpen, setIsHistoryStatsOpen] = useState(false);
 
   // Debug Console Logs
   const [consoleLogs, setConsoleLogs] = useState<{type: string, args: string[]}[]>([]);
@@ -207,11 +223,12 @@ const App: React.FC = () => {
             return;
         }
 
-        if (isResetConfirmOpen || isGroupStatsOpen || isNamesOpen || isListSelectorOpen) {
+        if (isResetConfirmOpen || isGroupStatsOpen || isNamesOpen || isListSelectorOpen || isHistoryStatsOpen) {
             if (isResetConfirmOpen) setIsResetConfirmOpen(false);
             if (isGroupStatsOpen) setIsGroupStatsOpen(false);
             if (isNamesOpen) setIsNamesOpen(false);
             if (isListSelectorOpen) setIsListSelectorOpen(false);
+            if (isHistoryStatsOpen) setIsHistoryStatsOpen(false);
             
             // Ensure we stay on root if we just closed a modal that wasn't settings
             if (window.history.state?.view !== 'root') {
@@ -234,7 +251,7 @@ const App: React.FC = () => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [isSettingsOpen, isResetConfirmOpen, showResult, isNamesOpen, isListSelectorOpen, isGroupStatsOpen, addToast]);
+  }, [isSettingsOpen, isResetConfirmOpen, showResult, isNamesOpen, isListSelectorOpen, isGroupStatsOpen, isHistoryStatsOpen, addToast]);
 
   useEffect(() => {
     if (isLoaded && lists.length > 0) {
@@ -288,6 +305,7 @@ const App: React.FC = () => {
   const handleSelectList = (id: string) => {
     setSelectedListId(id);
     setIsListSelectorOpen(false);
+    triggerHaptic(10);
   };
   
   const handleToggleGroupItem = (id: string) => {
@@ -297,6 +315,7 @@ const App: React.FC = () => {
           else newSet.add(id);
           return newSet;
       });
+      triggerHaptic(10);
   };
 
   const handleNameChange = (index: number, value: string) => {
@@ -318,6 +337,7 @@ const App: React.FC = () => {
 
   const handleSelectSavedTeam = (team: string[]) => {
       setPlayerNames(team);
+      triggerHaptic(10);
   };
   
   const handleDeleteHistoryItem = (e: React.MouseEvent, index: number) => {
@@ -326,8 +346,10 @@ const App: React.FC = () => {
       if (deleteHistoryConfirm === index) {
           setSavedTeams(prev => prev.filter((_, i) => i !== index));
           setDeleteHistoryConfirm(null);
+          triggerHaptic(20);
       } else {
           setDeleteHistoryConfirm(index);
+          triggerHaptic(10);
       }
   };
 
@@ -362,8 +384,10 @@ const App: React.FC = () => {
   };
 
   const handleGenerate = () => {
+    triggerHaptic(20);
     if (lists.length === 0) {
       addToast("Сначала создайте список героев в настройках", "warning");
+      triggerHaptic([20, 50, 20]);
       return;
     }
 
@@ -372,6 +396,7 @@ const App: React.FC = () => {
     if (isGroupMode) {
         if (selectedGroupIds.size === 0) {
             addToast("Выберите хотя бы один список для группы", "warning");
+            triggerHaptic([20, 50, 20]);
             return;
         }
         targetLists = lists.filter(l => selectedGroupIds.has(l.id));
@@ -379,6 +404,7 @@ const App: React.FC = () => {
         const list = getActiveList();
         if (!list) {
             addToast("Выберите список для генерации", "warning");
+            triggerHaptic([20, 50, 20]);
             return;
         }
         targetLists = [list];
@@ -397,6 +423,7 @@ const App: React.FC = () => {
     // Validate Total Heroes
     if (uniqueHeroes.length < 4) {
         addToast(`Недостаточно уникальных героев (${uniqueHeroes.length}). Нужно минимум 4.`, "warning");
+        triggerHaptic([20, 50, 20]);
         return;
     }
 
@@ -424,10 +451,12 @@ const App: React.FC = () => {
       setIsAnimating(false);
       window.history.pushState({ view: 'result' }, '');
       setShowResult(true);
+      triggerHaptic(50);
     }, 400);
   };
 
   const handleRevealHeroes = () => {
+      triggerHaptic(20);
       let targetLists: HeroList[] = [];
       if (isGroupMode) {
           targetLists = lists.filter(l => selectedGroupIds.has(l.id));
@@ -438,10 +467,12 @@ const App: React.FC = () => {
 
       const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast);
       setAssignments(generated);
+      triggerHaptic(30);
   };
 
   const handleResetSessionClick = () => {
     setIsResetConfirmOpen(true);
+    triggerHaptic(10);
   };
 
   const confirmReset = () => {
@@ -451,6 +482,7 @@ const App: React.FC = () => {
     localStorage.removeItem(STORAGE_KEY_ASSIGNMENTS);
     setIsResetConfirmOpen(false);
     addToast("Сессия сброшена", "info", 1500);
+    triggerHaptic(20);
   };
 
   const cancelReset = () => {
@@ -461,8 +493,15 @@ const App: React.FC = () => {
     if (assignments.length > 0) {
       window.history.pushState({ view: 'result' }, '');
       setShowResult(true);
+      triggerHaptic(10);
     }
   };
+  
+  const handleRecordResult = (winner: 'team1' | 'team2' | 'draw') => {
+      addMatch(assignments, winner, playerNames);
+      addToast("Результат матча сохранен", "success");
+      triggerHaptic(50);
+  }
 
   const hasTemporaryLists = lists.some(l => l.isTemporary);
   const hasResult = assignments.length > 0;
@@ -480,6 +519,7 @@ const App: React.FC = () => {
   };
 
   const handleRerollHero = (playerNumber: number) => {
+    triggerHaptic(10);
     const allHeroes = getAvailableHeroesPool();
     const currentHeroIds = assignments.map(a => a.hero ? a.hero.id : '').filter(id => id !== '');
     
@@ -488,6 +528,7 @@ const App: React.FC = () => {
     
     if (availableHeroes.length === 0) { 
         addToast("Нет доступных героев для замены.", "warning"); 
+        triggerHaptic([20, 50, 20]);
         return; 
     }
 
@@ -549,6 +590,7 @@ const App: React.FC = () => {
   };
 
   const handleRerollAllHeroes = () => {
+    triggerHaptic(20);
     let targetLists: HeroList[] = [];
     if (isGroupMode) {
         targetLists = lists.filter(l => selectedGroupIds.has(l.id));
@@ -560,6 +602,7 @@ const App: React.FC = () => {
     
     if (uniqueHeroes.length < 4) {
         addToast("Недостаточно уникальных героев для переброса.", "warning");
+        triggerHaptic([20, 50, 20]);
         return;
     }
     
@@ -568,6 +611,7 @@ const App: React.FC = () => {
   };
 
   const handleShuffleTeams = () => {
+    triggerHaptic(20);
     const pNums = [1, 2, 3, 4].sort(() => 0.5 - Math.random());
     
     const newAssignments: AssignedPlayer[] = assignments.map((assignment, index) => {
@@ -583,6 +627,7 @@ const App: React.FC = () => {
   };
 
   const handleBanHero = (playerNumber: number) => {
+    triggerHaptic(20);
     const activeList = getActiveList();
     
     const assignmentToBan = assignments.find(a => a.playerNumber === playerNumber);
@@ -593,7 +638,7 @@ const App: React.FC = () => {
     const currentHeroIds = assignments.map(a => a.hero ? a.hero.id : '').filter(Boolean);
     const availableForReplacement = allHeroes.filter(h => !currentHeroIds.includes(h.id));
 
-    if (availableForReplacement.length === 0) { addToast("Некого брать на замену!", "warning"); return; }
+    if (availableForReplacement.length === 0) { addToast("Некого брать на замену!", "warning"); triggerHaptic([20, 50, 20]); return; }
     const newHero = availableForReplacement[Math.floor(Math.random() * availableForReplacement.length)];
 
     setAssignments(prev => prev.map(p => p.playerNumber === playerNumber ? { ...p, hero: newHero } : p));
@@ -620,6 +665,7 @@ const App: React.FC = () => {
   };
 
   const handleBanAllCurrent = () => {
+    triggerHaptic(30);
     const heroesToBan = assignments.filter(a => a.hero !== null).map(a => a.hero!);
     const activeList = getActiveList();
 
@@ -648,6 +694,7 @@ const App: React.FC = () => {
   };
   
   const handleSwapPositions = (pos1: 'top'|'bottom'|'left'|'right', pos2: 'top'|'bottom'|'left'|'right') => {
+      triggerHaptic(10);
       const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
       const idx1 = positionToIndex[pos1];
       const idx2 = positionToIndex[pos2];
@@ -863,7 +910,7 @@ const App: React.FC = () => {
                              </button>
                          </div>
                          <button 
-                            onClick={() => setIsGroupStatsOpen(true)}
+                            onClick={() => { setIsGroupStatsOpen(true); setIsListSelectorOpen(false); }}
                             disabled={isGroupMode ? groupTotalHeroes === 0 : !activeList || activeList.heroes.length === 0}
                             className={`w-10 h-10 my-auto rounded-xl flex items-center justify-center transition-colors border active:scale-95 ${isGroupMode 
                                 ? 'bg-primary-50 text-primary-600 border-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800 disabled:opacity-50' 
@@ -1073,7 +1120,7 @@ const App: React.FC = () => {
                                     placeholder={`Игрок ${index + 1}`}
                                     className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500 outline-none transition-all focus:bg-white dark:focus:bg-slate-900 select-text"
                                 />
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                                <div className="absolute left-3 top-1/2 -translate-x-0 -translate-y-1/2 text-slate-400 pointer-events-none">
                                     <User size={14} />
                                 </div>
                             </div>
@@ -1111,11 +1158,15 @@ const App: React.FC = () => {
 
       <nav className="px-6 pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
          <div className="flex items-center justify-around max-w-lg mx-auto h-16">
+            <button onClick={() => { setIsHistoryStatsOpen(true); triggerHaptic(10); }} className="flex flex-col items-center justify-center gap-1 w-16 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
+                <Trophy size={20} strokeWidth={2} /> <span className="text-[9px] font-bold">Стат</span>
+            </button>
+            <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
             <button onClick={handleShowLastResult} disabled={!hasResult} className={`flex flex-col items-center justify-center gap-1 w-20 h-full transition-colors ${hasResult ? 'text-primary-600 dark:text-primary-400' : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'}`}>
                 <History size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">История</span>
             </button>
             <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
-            <button onClick={() => setIsSettingsOpen(true)} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
+            <button onClick={() => { setIsSettingsOpen(true); triggerHaptic(10); }} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
                 <Settings size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">Настройки</span>
             </button>
          </div>
@@ -1137,6 +1188,7 @@ const App: React.FC = () => {
         setBalanceThreshold={setBalanceThreshold}
         playerNames={playerNames}
         onSwapPositions={handleSwapPositions}
+        onRecordResult={handleRecordResult}
       />
 
       <SettingsOverlay
@@ -1167,6 +1219,21 @@ const App: React.FC = () => {
         onUpdateApp={handleUpdateApp}
         isDebugMode={isDebugMode}
         onToggleDebug={setIsDebugMode}
+        hapticsEnabled={hapticsEnabled}
+        onToggleHaptics={toggleHaptics}
+      />
+
+      <StatsModal 
+        isOpen={isHistoryStatsOpen}
+        onClose={() => setIsHistoryStatsOpen(false)}
+        history={history}
+        onDeleteMatch={deleteMatch}
+        onUpdateMatch={updateMatch}
+        onAddMatch={addManualMatch}
+        onRenamePlayer={renamePlayer}
+        onSync={syncHistory}
+        isSyncing={isSyncingHistory}
+        isOnline={isOnline}
       />
 
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>

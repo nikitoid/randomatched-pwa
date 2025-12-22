@@ -40,3 +40,29 @@ export interface ToastMessage {
 export type GenerationMode = 'random' | 'balanced' | 'strict';
 
 export type ColorScheme = 'indigo' | 'emerald' | 'rose' | 'amber' | 'violet' | 'sky';
+
+// History & Stats Types
+export interface MatchPlayer {
+  name: string;
+  heroId: string;
+  heroName: string;
+}
+
+export interface MatchRecord {
+  id: string;
+  timestamp: number;
+  lastUpdated: number;
+  team1: MatchPlayer[]; // 'Odd' team
+  team2: MatchPlayer[]; // 'Even' team
+  winner: 'team1' | 'team2' | 'draw' | null;
+  note?: string;
+}
+
+export interface PlayerStat {
+  name: string;
+  matches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  heroesPlayed: Record<string, number>;
+}

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy } from 'lucide-react';
 import { AssignedPlayer, GenerationMode } from '../types';
 
 interface ResultOverlayProps {
@@ -19,6 +19,7 @@ interface ResultOverlayProps {
   setBalanceThreshold?: (val: number) => void;
   playerNames?: string[];
   onSwapPositions?: (pos1: 'top'|'bottom'|'left'|'right', pos2: 'top'|'bottom'|'left'|'right') => void;
+  onRecordResult?: (winner: 'team1' | 'team2' | 'draw') => void;
 }
 
 type Position = 'top' | 'bottom' | 'left' | 'right';
@@ -44,10 +45,11 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
   balanceThreshold = 1,
   setBalanceThreshold,
   playerNames = [],
-  onSwapPositions
+  onSwapPositions,
+  onRecordResult
 }) => {
-  const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all'; playerNumber?: number; playerName?: string; } | null>(null);
-  const [displayModal, setDisplayModal] = useState<{ type: 'single' | 'ban_all'; playerNumber?: number; playerName?: string; } | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
+  const [displayModal, setDisplayModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
   const [showInfo, setShowInfo] = useState(false);
   const [isRerollConfirm, setIsRerollConfirm] = useState(false);
   const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false);
@@ -102,6 +104,18 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     }
     setConfirmModal(null);
   };
+  
+  const handleRecordWin = (winner: 'team1' | 'team2' | 'draw') => {
+      if (onRecordResult) onRecordResult(winner);
+      setConfirmModal(null);
+      // Wait slightly then trigger ban all
+      setTimeout(() => onBanAll(), 100);
+  };
+  
+  const handleSkipRecord = () => {
+      onBanAll();
+      setConfirmModal(null);
+  }
 
   // --- CUSTOM DND HANDLERS ---
   const handlePointerDown = (e: React.PointerEvent, position: Position) => {
@@ -304,25 +318,13 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     let positionStyle: React.CSSProperties = {};
     
-    // Layout Logic:
-    // Left/Right cards hug the central button closely.
-    // Top/Bottom cards hug the *Left/Right* cards (not the button), forming a cluster.
-    
-    // Config:
-    const btnRadius = '45px'; // Central button approx radius
-    const gap = '8px'; // Very small gap
-    
-    // Half dimensions of the card (used for center-to-edge calc)
-    // Card Dimensions: 52vmin x 32vmin (Max 320x200)
-    // We use min() to ensure we respect the max-px limits in calculations
-    const halfH = 'min(16vmin, 100px)'; // Half of Short Side (Height)
-    const halfW = 'min(26vmin, 160px)'; // Half of Long Side (Width)
+    // Layout Logic (same as before)
+    const btnRadius = '45px'; 
+    const gap = '8px'; 
+    const halfH = 'min(16vmin, 100px)'; 
+    const halfW = 'min(26vmin, 160px)';
 
-    // Side Cards Offset: Center -> Button -> Gap -> HalfCardHeight
     const sideOffsetFromCenter = `calc(${btnRadius} + ${gap} + ${halfH})`;
-    
-    // Top/Bottom Cards Offset: Center -> SideCardWidth (Visual Height) -> Gap -> HalfCardHeight
-    // This positions them "outside" the side cards
     const verticalOffsetFromCenter = `calc(${halfW} + ${gap} + ${halfH})`;
 
     switch (position) {
@@ -367,16 +369,13 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     return (
         <div 
             ref={(el) => { cardRefs.current[position] = el; }}
-            // Added pointer-events-auto because parent has pointer-events-none
             className="z-10 pointer-events-auto"
             style={{ ...positionStyle, touchAction: 'none' }}
             onPointerDown={(e) => handlePointerDown(e, position)}
         >
-            {/* Placeholder when dragging */}
             {isDraggingThis && (
                 <div className="absolute inset-0 w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
             )}
-            
             <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
                 {renderCardContent(player, false, isDraggingThis, isHoveredTarget)}
             </div>
@@ -388,12 +387,19 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
       if (!activeDrag) return null;
       const player = getPlayer(activeDrag.id as Position);
       if (!player) return null;
-      
       return renderCardContent(player, true, true, false);
   };
 
-  const getModalTitle = () => displayModal?.type === 'single' ? 'Забанить героя?' : displayModal?.type === 'ban_all' ? 'Исключить всех?' : 'Подтверждение';
-  const getModalDescription = () => displayModal?.type === 'single' ? `"${displayModal.playerName}" будет убран из списка.` : displayModal?.type === 'ban_all' ? 'Все текущие герои будут убраны из списка.' : 'Вы уверены?';
+  const getModalTitle = () => {
+      if (displayModal?.type === 'single') return 'Забанить героя?';
+      if (displayModal?.type === 'winner') return 'Кто победил?';
+      return 'Сбросить текущий расклад?';
+  }
+  const getModalDescription = () => {
+      if (displayModal?.type === 'single') return `"${displayModal.playerName}" будет убран из списка.`;
+      if (displayModal?.type === 'winner') return 'Запишите результат матча в историю перед сбросом.';
+      return 'Все текущие герои будут убраны из списка.';
+  }
   
   const getModeTitle = () => generationMode === 'random' ? 'Полный рандом' : generationMode === 'balanced' ? 'Умный баланс' : 'Настраиваемый';
   const getModeDescription = () => {
@@ -534,7 +540,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
               <Shuffle size={20} className="mb-1" /> <span className="text-[10px] font-bold">Команды</span>
           </button>
           <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
-          <button onClick={() => setConfirmModal({ type: 'ban_all' })} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
+          <button onClick={() => setConfirmModal({ type: 'winner' })} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
               <Trash2 size={20} className="mb-1" /> <span className="text-[10px] font-bold">Сброс</span>
           </button>
         </div>
@@ -547,10 +553,32 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{getModalTitle()}</h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{getModalDescription()}</p>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                 <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Нет</button>
-                 <button onClick={handleConfirmAction} className="py-3 font-bold text-white bg-red-500 rounded-xl">Да</button>
-              </div>
+              
+              {displayModal?.type === 'winner' ? (
+                   <div className="flex flex-col gap-2 w-full">
+                       <button onClick={() => handleRecordWin('team1')} className="py-3 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                           Победа Team 1 (Odd)
+                       </button>
+                       <button onClick={() => handleRecordWin('team2')} className="py-3 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
+                           Победа Team 2 (Even)
+                       </button>
+                       <button onClick={() => handleRecordWin('draw')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-xl active:scale-95 transition-transform">
+                           Ничья
+                       </button>
+                       <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />
+                       <button onClick={handleSkipRecord} className="py-3 font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl active:scale-95 transition-transform">
+                           Просто сбросить
+                       </button>
+                       <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-400 dark:text-slate-500 bg-transparent rounded-xl active:scale-95 transition-transform">
+                           Отмена
+                       </button>
+                   </div>
+              ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                     <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Нет</button>
+                     <button onClick={handleConfirmAction} className="py-3 font-bold text-white bg-red-500 rounded-xl">Да</button>
+                  </div>
+              )}
            </div>
       </div>
 
