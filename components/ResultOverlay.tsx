@@ -425,6 +425,14 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
       return names.join(' и ');
   };
 
+  const handleResetClick = () => {
+      if (filledNamesCount === 0) {
+          setConfirmModal({ type: 'ban_all' });
+      } else {
+          setConfirmModal({ type: 'winner' });
+      }
+  };
+
   return (
     <>
       <div className={`fixed inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
@@ -554,7 +562,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
               <Shuffle size={20} className="mb-1" /> <span className="text-[10px] font-bold">Команды</span>
           </button>
           <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
-          <button onClick={() => setConfirmModal({ type: 'winner' })} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
+          <button onClick={handleResetClick} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
               <Trash2 size={20} className="mb-1" /> <span className="text-[10px] font-bold">Сброс</span>
           </button>
         </div>

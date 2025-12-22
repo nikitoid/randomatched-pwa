@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useHeroLists } from './hooks/useHeroLists';
@@ -1159,15 +1158,15 @@ const App: React.FC = () => {
 
       <nav className="px-6 pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
          <div className="flex items-center justify-around max-w-lg mx-auto h-16">
-            <button onClick={() => { setIsHistoryStatsOpen(true); triggerHaptic(10); }} className="flex flex-col items-center justify-center gap-1 w-16 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
-                <Trophy size={20} strokeWidth={2} /> <span className="text-[9px] font-bold">Стат</span>
+            <button onClick={() => { setIsHistoryStatsOpen(true); triggerHaptic(10); }} className="flex-1 flex flex-col items-center justify-center gap-1 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
+                <Trophy size={20} strokeWidth={2} /> <span className="text-[10px] font-bold">Статистика</span>
             </button>
             <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
-            <button onClick={handleShowLastResult} disabled={!hasResult} className={`flex flex-col items-center justify-center gap-1 w-20 h-full transition-colors ${hasResult ? 'text-primary-600 dark:text-primary-400' : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'}`}>
+            <button onClick={handleShowLastResult} disabled={!hasResult} className={`flex-1 flex flex-col items-center justify-center gap-1 h-full transition-colors ${hasResult ? 'text-primary-600 dark:text-primary-400' : 'text-slate-300 dark:text-slate-700 cursor-not-allowed'}`}>
                 <History size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">История</span>
             </button>
             <div className="w-px h-8 bg-slate-100 dark:bg-slate-800" />
-            <button onClick={() => { setIsSettingsOpen(true); triggerHaptic(10); }} className="flex flex-col items-center justify-center gap-1 w-20 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
+            <button onClick={() => { setIsSettingsOpen(true); triggerHaptic(10); }} className="flex-1 flex flex-col items-center justify-center gap-1 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
                 <Settings size={24} strokeWidth={2} /> <span className="text-[10px] font-bold">Настройки</span>
             </button>
          </div>
