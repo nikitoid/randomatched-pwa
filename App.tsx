@@ -67,6 +67,7 @@ const App: React.FC = () => {
       updateMatch,
       deleteMatch,
       renamePlayer,
+      renameHero,
       syncHistory,
       isSyncingHistory
   } = useMatchHistory(addToast);
@@ -497,7 +498,7 @@ const App: React.FC = () => {
     }
   };
   
-  const handleRecordResult = (winner: 'team1' | 'team2' | 'draw') => {
+  const handleRecordResult = (winner: 'team1' | 'team2') => {
       addMatch(assignments, winner, playerNames);
       addToast("Результат матча сохранен", "success");
       triggerHaptic(50);
@@ -1231,9 +1232,11 @@ const App: React.FC = () => {
         onUpdateMatch={updateMatch}
         onAddMatch={addManualMatch}
         onRenamePlayer={renamePlayer}
+        onRenameHero={renameHero}
         onSync={syncHistory}
         isSyncing={isSyncingHistory}
         isOnline={isOnline}
+        lists={lists}
       />
 
       <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isResetConfirmOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>

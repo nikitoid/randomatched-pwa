@@ -4,18 +4,24 @@ import { MatchRecord, AssignedPlayer, ToastType, MatchPlayer } from '../types';
 import { db } from '../firebase';
 
 const STORAGE_KEY_HISTORY = 'randomatched_match_history_v1';
+const STORAGE_KEY_DELETED = 'randomatched_deleted_matches_v1';
 
 export const useMatchHistory = (
     addToast: (message: string, type: ToastType, duration?: number) => void
 ) => {
     const [history, setHistory] = useState<MatchRecord[]>([]);
+    const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
     const [isSyncingHistory, setIsSyncingHistory] = useState(false);
 
     useEffect(() => {
         try {
-            const saved = localStorage.getItem(STORAGE_KEY_HISTORY);
-            if (saved) {
-                setHistory(JSON.parse(saved));
+            const savedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
+            if (savedHistory) {
+                setHistory(JSON.parse(savedHistory));
+            }
+            const savedDeleted = localStorage.getItem(STORAGE_KEY_DELETED);
+            if (savedDeleted) {
+                setDeletedIds(new Set(JSON.parse(savedDeleted)));
             }
         } catch (e) {
             console.error("Failed to load history", e);
@@ -26,26 +32,34 @@ export const useMatchHistory = (
         localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
     }, [history]);
 
-    const addMatch = (assignments: AssignedPlayer[], winner: 'team1' | 'team2' | 'draw', playerNames: string[]) => {
-        const team1 = assignments.filter(a => a.team === 'Odd').map(a => {
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEY_DELETED, JSON.stringify(Array.from(deletedIds)));
+    }, [deletedIds]);
+
+    const addMatch = (assignments: AssignedPlayer[], winner: 'team1' | 'team2', playerNames: string[]) => {
+        const team1Raw = assignments.filter(a => a.team === 'Odd').map(a => {
             const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
             const idx = positionToIndex[a.position];
             return {
-                name: (playerNames[idx] || `Игрок ${a.playerNumber}`).trim(),
+                name: (playerNames[idx] || '').trim(),
                 heroId: a.hero?.id || 'unknown',
                 heroName: a.hero?.name || 'Unknown'
             };
         });
 
-        const team2 = assignments.filter(a => a.team === 'Even').map(a => {
+        const team2Raw = assignments.filter(a => a.team === 'Even').map(a => {
             const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
             const idx = positionToIndex[a.position];
             return {
-                name: (playerNames[idx] || `Игрок ${a.playerNumber}`).trim(),
+                name: (playerNames[idx] || '').trim(),
                 heroId: a.hero?.id || 'unknown',
                 heroName: a.hero?.name || 'Unknown'
             };
         });
+
+        // Filter out players with empty names
+        const team1 = team1Raw.filter(p => p.name !== '');
+        const team2 = team2Raw.filter(p => p.name !== '');
 
         const newMatch: MatchRecord = {
             id: crypto.randomUUID(),
@@ -63,11 +77,12 @@ export const useMatchHistory = (
     const addManualMatch = (
         team1: MatchPlayer[], 
         team2: MatchPlayer[], 
-        winner: 'team1' | 'team2' | 'draw'
+        winner: 'team1' | 'team2',
+        timestamp: number = Date.now()
     ) => {
         const newMatch: MatchRecord = {
             id: crypto.randomUUID(),
-            timestamp: Date.now(),
+            timestamp,
             lastUpdated: Date.now(),
             team1,
             team2,
@@ -84,6 +99,7 @@ export const useMatchHistory = (
 
     const deleteMatch = (id: string) => {
         setHistory(prev => prev.filter(m => m.id !== id));
+        setDeletedIds(prev => new Set(prev).add(id));
         addToast("Матч удален", "info");
     };
 
@@ -106,7 +122,31 @@ export const useMatchHistory = (
             }
             return match;
         }));
-        addToast(`Игрок "${oldName}" переименован в "${newName}"`, 'success');
+        addToast(`Игрок "${oldName}" переименован`, 'success');
+    };
+
+    const renameHero = (oldName: string, newName: string) => {
+        if (!oldName.trim() || !newName.trim() || oldName === newName) return;
+
+        setHistory(prev => prev.map(match => {
+            let changed = false;
+            const updateHero = (p: MatchPlayer) => {
+                if (p.heroName === oldName) {
+                    changed = true;
+                    return { ...p, heroName: newName };
+                }
+                return p;
+            };
+
+            const newTeam1 = match.team1.map(updateHero);
+            const newTeam2 = match.team2.map(updateHero);
+
+            if (changed) {
+                return { ...match, team1: newTeam1, team2: newTeam2, lastUpdated: Date.now() };
+            }
+            return match;
+        }));
+        addToast(`Герой "${oldName}" переименован`, 'success');
     };
 
     const syncHistory = async () => {
@@ -117,64 +157,87 @@ export const useMatchHistory = (
 
         setIsSyncingHistory(true);
         try {
-            // 1. Fetch all matches from Cloud
+            const batch = db.batch();
+            let opsCount = 0;
+
+            // 1. Process Deletions First
+            if (deletedIds.size > 0) {
+                for (const id of deletedIds) {
+                    const ref = db.collection('match_history').doc(id);
+                    // We don't check existence, just delete. If it's already gone, it's fine.
+                    batch.delete(ref);
+                    opsCount++;
+                }
+            }
+
+            // 2. Fetch all matches from Cloud to compare
             const snapshot = await db.collection('match_history').get();
-            const cloudMatches: MatchRecord[] = [];
-            
+            const cloudMatchesMap = new Map<string, MatchRecord>();
             snapshot.forEach((doc: any) => {
-                cloudMatches.push(doc.data() as MatchRecord);
+                cloudMatchesMap.set(doc.id, doc.data() as MatchRecord);
             });
 
-            // 2. Merge logic
             const mergedMap = new Map<string, MatchRecord>();
-            
-            // Put local first
-            history.forEach(m => mergedMap.set(m.id, m));
-
             let newFromCloud = 0;
             let updatedFromCloud = 0;
+            let pushedToCloud = 0;
 
-            cloudMatches.forEach(cloudMatch => {
-                const localMatch = mergedMap.get(cloudMatch.id);
-                if (!localMatch) {
-                    mergedMap.set(cloudMatch.id, cloudMatch);
-                    newFromCloud++;
+            // 3. Compare Local vs Cloud
+            // Add local history to map first (filtered by not deleted)
+            const currentLocalHistory = history.filter(m => !deletedIds.has(m.id));
+            
+            for (const localMatch of currentLocalHistory) {
+                mergedMap.set(localMatch.id, localMatch);
+                
+                const cloudMatch = cloudMatchesMap.get(localMatch.id);
+                
+                if (!cloudMatch) {
+                    // Not in cloud -> Push to cloud
+                    const ref = db.collection('match_history').doc(localMatch.id);
+                    batch.set(ref, localMatch);
+                    opsCount++;
+                    pushedToCloud++;
                 } else {
-                    // Conflict resolution: prefer newer update
-                    if (cloudMatch.lastUpdated > localMatch.lastUpdated) {
+                    // Exists in cloud. Check timestamp.
+                    if (localMatch.lastUpdated > cloudMatch.lastUpdated) {
+                        // Local is newer -> Push to cloud
+                        const ref = db.collection('match_history').doc(localMatch.id);
+                        batch.set(ref, localMatch);
+                        opsCount++;
+                        pushedToCloud++;
+                    } else if (cloudMatch.lastUpdated > localMatch.lastUpdated) {
+                        // Cloud is newer -> Update local (in the map)
                         mergedMap.set(cloudMatch.id, cloudMatch);
                         updatedFromCloud++;
                     }
                 }
-            });
+            }
 
-            // 3. Identify matches that need to be pushed to cloud
-            const batch = db.batch();
-            let batchCount = 0;
-
-            for (const [id, match] of mergedMap.entries()) {
-                const cloudMatch = cloudMatches.find(c => c.id === id);
-                // If not in cloud OR local is newer
-                if (!cloudMatch || match.lastUpdated > cloudMatch.lastUpdated) {
-                    const ref = db.collection('match_history').doc(id);
-                    batch.set(ref, match);
-                    batchCount++;
+            // 4. Handle matches that are ONLY in cloud
+            for (const [id, cloudMatch] of cloudMatchesMap.entries()) {
+                if (!mergedMap.has(id) && !deletedIds.has(id)) {
+                    // New from cloud
+                    mergedMap.set(id, cloudMatch);
+                    newFromCloud++;
                 }
             }
 
-            if (batchCount > 0) {
+            // Commit writes
+            if (opsCount > 0) {
                 await batch.commit();
             }
 
-            // 4. Update local state
-            // Sort by timestamp desc
+            // Update Local State
             const finalHistory = Array.from(mergedMap.values()).sort((a, b) => b.timestamp - a.timestamp);
             setHistory(finalHistory);
+            
+            // Clear deleted IDs after successful sync
+            setDeletedIds(new Set());
 
             const msg = [];
-            if (newFromCloud > 0) msg.push(`Загружено: ${newFromCloud}`);
+            if (newFromCloud > 0) msg.push(`Скачано: ${newFromCloud}`);
             if (updatedFromCloud > 0) msg.push(`Обновлено: ${updatedFromCloud}`);
-            if (batchCount > 0) msg.push(`Отправлено: ${batchCount}`);
+            if (pushedToCloud > 0) msg.push(`Отправлено: ${pushedToCloud}`);
             
             if (msg.length > 0) {
                 addToast(`Синхронизация: ${msg.join(', ')}`, 'success', 3000);
@@ -197,6 +260,7 @@ export const useMatchHistory = (
         updateMatch,
         deleteMatch,
         renamePlayer,
+        renameHero,
         syncHistory,
         isSyncingHistory
     };

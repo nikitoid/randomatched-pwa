@@ -54,7 +54,7 @@ export interface MatchRecord {
   lastUpdated: number;
   team1: MatchPlayer[]; // 'Odd' team
   team2: MatchPlayer[]; // 'Even' team
-  winner: 'team1' | 'team2' | 'draw' | null;
+  winner: 'team1' | 'team2' | null; // Removed 'draw'
   note?: string;
 }
 
@@ -63,6 +63,13 @@ export interface PlayerStat {
   matches: number;
   wins: number;
   losses: number;
-  draws: number;
   heroesPlayed: Record<string, number>;
+  score: number; // Weighted score for MVP calculation
+}
+
+export interface HeroStat {
+  name: string;
+  matches: number;
+  wins: number;
+  losses: number;
 }

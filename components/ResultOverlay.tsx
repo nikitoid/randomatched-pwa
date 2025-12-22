@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy } from 'lucide-react';
+import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle } from 'lucide-react';
 import { AssignedPlayer, GenerationMode } from '../types';
 
 interface ResultOverlayProps {
@@ -19,7 +19,7 @@ interface ResultOverlayProps {
   setBalanceThreshold?: (val: number) => void;
   playerNames?: string[];
   onSwapPositions?: (pos1: 'top'|'bottom'|'left'|'right', pos2: 'top'|'bottom'|'left'|'right') => void;
-  onRecordResult?: (winner: 'team1' | 'team2' | 'draw') => void;
+  onRecordResult?: (winner: 'team1' | 'team2') => void;
 }
 
 type Position = 'top' | 'bottom' | 'left' | 'right';
@@ -87,7 +87,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
   const getPlayer = (pos: Position) => assignments.find(p => p.position === pos);
 
   const heroesRevealed = assignments.every(a => a.hero !== null);
-  const hasCustomNames = playerNames.some(n => n.trim() !== '');
+  const filledNamesCount = playerNames.filter(n => n.trim() !== '').length;
+  const canRecordStats = filledNamesCount >= 2;
+  const hasCustomNames = filledNamesCount > 0;
 
   const handleBanClick = (e: React.MouseEvent, player: AssignedPlayer) => {
     e.stopPropagation();
@@ -105,7 +107,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     setConfirmModal(null);
   };
   
-  const handleRecordWin = (winner: 'team1' | 'team2' | 'draw') => {
+  const handleRecordWin = (winner: 'team1' | 'team2') => {
       if (onRecordResult) onRecordResult(winner);
       setConfirmModal(null);
       // Wait slightly then trigger ban all
@@ -215,7 +217,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
   }, [activeDrag, onSwapPositions]);
 
 
-  // Helper to render card CONTENT only (reused for normal and floating)
+  // Helper to render card CONTENT only
   const renderCardContent = (player: AssignedPlayer, isFloating: boolean, isDraggingThis: boolean, isHoveredTarget: boolean) => {
       const position = player.position;
       const hasHero = player.hero !== null;
@@ -225,11 +227,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
       let displayName = "";
       let showNumberBadge = false;
 
-      if (hasCustomNames) {
-          const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
-          const index = positionToIndex[position];
-          const customName = playerNames[index]?.trim();
-          displayName = customName || `Игрок ${index + 1}`;
+      const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+      const index = positionToIndex[position];
+      const customName = playerNames[index]?.trim();
+
+      if (customName) {
+          displayName = customName;
           showNumberBadge = true; 
       } else {
           displayName = `Игрок ${player.playerNumber}`;
@@ -246,7 +249,6 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
       const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
-      // Maximized card size for better screen usage
       const cardSizeClass = isFloating 
         ? 'w-32 h-20' 
         : 'w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px]';
@@ -397,7 +399,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
   }
   const getModalDescription = () => {
       if (displayModal?.type === 'single') return `"${displayModal.playerName}" будет убран из списка.`;
-      if (displayModal?.type === 'winner') return 'Запишите результат матча в историю перед сбросом.';
+      if (displayModal?.type === 'winner') return !canRecordStats 
+        ? 'Для записи статистики нужно заполнить имена минимум 2 игроков.'
+        : 'Запишите результат матча в историю перед сбросом.';
       return 'Все текущие герои будут убраны из списка.';
   }
   
@@ -410,6 +414,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
   const showModal = !!confirmModal;
   const currentMode = GENERATION_MODES.find(m => m.id === generationMode) || GENERATION_MODES[0];
+
+  const getTeamNames = (team: 'Even' | 'Odd') => {
+      const teamPlayers = assignments.filter(a => a.team === team);
+      const names = teamPlayers.map(p => {
+          const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+          const idx = positionToIndex[p.position];
+          return playerNames[idx]?.trim() || `Игрок ${p.playerNumber}`;
+      });
+      return names.join(' и ');
+  };
 
   return (
     <>
@@ -556,18 +570,20 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
               
               {displayModal?.type === 'winner' ? (
                    <div className="flex flex-col gap-2 w-full">
-                       <button onClick={() => handleRecordWin('team1')} className="py-3 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
-                           Победа Team 1 (Odd)
-                       </button>
-                       <button onClick={() => handleRecordWin('team2')} className="py-3 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2">
-                           Победа Team 2 (Even)
-                       </button>
-                       <button onClick={() => handleRecordWin('draw')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-slate-700 rounded-xl active:scale-95 transition-transform">
-                           Ничья
-                       </button>
-                       <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />
+                       {canRecordStats && (
+                           <>
+                               <button onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
+                                   <Trophy size={16} /> <span>{getTeamNames('Odd')}</span>
+                               </button>
+                               <button onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
+                                   <Trophy size={16} /> <span>{getTeamNames('Even')}</span>
+                               </button>
+                               <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />
+                           </>
+                       )}
+                       
                        <button onClick={handleSkipRecord} className="py-3 font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl active:scale-95 transition-transform">
-                           Просто сбросить
+                           Сбросить без записи
                        </button>
                        <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-400 dark:text-slate-500 bg-transparent rounded-xl active:scale-95 transition-transform">
                            Отмена
