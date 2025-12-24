@@ -1156,7 +1156,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <nav className="px-6 pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+      <nav className="pb-safe-area-bottom bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
          <div className="grid grid-cols-3 h-16 w-full max-w-lg mx-auto">
             <button onClick={() => { window.history.pushState({ view: 'stats' }, ''); setIsHistoryStatsOpen(true); triggerHaptic(10); }} className="flex flex-col items-center justify-center gap-1 h-full text-slate-400 md:hover:text-primary-600 dark:md:hover:text-primary-400 active:text-primary-600 transition-colors">
                 <Trophy size={20} strokeWidth={2} /> <span className="text-[10px] font-bold">Статистика</span>
