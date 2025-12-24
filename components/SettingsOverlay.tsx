@@ -705,9 +705,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
   return (
     <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
       
-      {focusedRowIndex !== null && ( <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-40 animate-in fade-in duration-200" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} /> )}
+      {focusedRowIndex !== null && ( <div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} /> )}
       
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800">
+      <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800 transition-all duration-300 ${focusedRowIndex !== null ? 'opacity-20 blur-[1px] pointer-events-none' : ''}`}>
         <div className="px-4 py-3 pt-safe-area-top">
           {editingListId ? (
             <div className="flex flex-col w-full pb-1">
@@ -753,16 +753,20 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             <div className="pb-safe-area-bottom px-4 pt-4">
                 {editorHeroes.map((hero, index) => {
                     const isFocused = focusedRowIndex === index;
+                    const isDimmed = focusedRowIndex !== null && !isFocused;
                     const isPlaceholderRow = !isReadOnly && index === editorHeroes.length - 1;
                     
                     return (
                         <div 
                             key={hero.id} 
-                            className={`flex items-center gap-2 mb-2 animate-in fade-in slide-in-from-bottom-2 ${isFocused ? 'relative z-50' : 'relative'}`} 
+                            className={`flex items-center gap-2 mb-1.5 animate-in fade-in slide-in-from-bottom-2 transition-all duration-300 
+                                ${isFocused ? 'relative z-50 scale-[1.02]' : 'relative z-0'}
+                                ${isDimmed ? 'opacity-20 blur-[1px] grayscale pointer-events-none' : ''}
+                            `} 
                             style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
                         >
                             {/* Rank Select */}
-                            <div className="w-14 h-10 shrink-0">
+                            <div className="w-14 h-9 shrink-0">
                                 <RankSelect 
                                     value={hero.rank} 
                                     onChange={(val) => handleHeroChange(index, 'rank', val)}
@@ -781,12 +785,12 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                     onChange={(e) => handleHeroChange(index, 'name', e.target.value)}
                                     placeholder={isPlaceholderRow ? "Добавить героя..." : "Имя героя"}
                                     readOnly={isReadOnly || isFocused}
-                                    className={`w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border outline-none transition-all text-sm
+                                    className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border outline-none transition-all text-sm
                                         ${localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`) ? 'border-primary-300 dark:border-primary-700 shadow-[0_0_0_1px_rgba(var(--primary-500)/0.2)]' : 'border-slate-200 dark:border-slate-800 focus:border-primary-500'}
                                         ${isPlaceholderRow ? 'border-dashed border-slate-300 dark:border-slate-700 placeholder:italic placeholder:text-slate-400' : ''}
                                     `}
                                 />
-                                {/* Delete Button */}
+                                {/* Delete Button - Hidden when focused */}
                                 {!isReadOnly && !isFocused && (hero.name || hero.rank) && (
                                     <button 
                                         onClick={() => handleRemoveHero(index)}
