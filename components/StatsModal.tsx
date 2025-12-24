@@ -1,5 +1,6 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle } from 'lucide-react';
 import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat } from '../types';
 
@@ -62,15 +63,35 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     // Autocomplete State
     const [suggestions, setSuggestions] = useState<{ field: string, list: string[] } | null>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number, left: number, width: number } | null>(null);
 
-    // Reset states on close
+    // Update dropdown position when suggestions or anchor changes
+    useLayoutEffect(() => {
+        if (suggestions && anchorEl) {
+            const rect = anchorEl.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width
+            });
+        } else {
+            setDropdownPosition(null);
+        }
+    }, [suggestions, anchorEl]);
+
+    // Reset states on close & Open first tab
     useEffect(() => {
         if (!isOpen) {
             setEditMode(false);
             setEditingItemName(null);
             setMatchForm(null);
             setDeleteConfirmId(null);
-            // Don't reset activeTab immediately for exit animation smoothness
+            setSuggestions(null);
+            setAnchorEl(null);
+        } else {
+            // Always open on the first tab
+            setActiveTab('overview');
         }
     }, [isOpen]);
 
@@ -246,13 +267,16 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         setMatchForm(null);
     };
 
-    const handleAutocomplete = (field: string, value: string) => {
+    const handleAutocomplete = (field: string, value: string, target: HTMLElement) => {
         if (!matchForm) return;
         setMatchForm({ 
             ...matchForm, 
             [field]: value,
             errors: { ...matchForm.errors, [field]: false } // clear error on type
         });
+        
+        // Update anchor immediately
+        setAnchorEl(target);
 
         if (value.length < 1) {
             setSuggestions(null);
@@ -288,6 +312,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 errors: { ...matchForm.errors, [suggestions.field]: false }
             });
             setSuggestions(null);
+            setAnchorEl(null);
         }
     };
 
@@ -338,7 +363,15 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     <input 
                         type="text" 
                         value={value}
-                        onChange={(e) => handleAutocomplete(valKey as string, e.target.value)}
+                        onFocus={(e) => setAnchorEl(e.target)}
+                        onBlur={() => {
+                            // Delay blur to allow click on suggestion to register
+                            setTimeout(() => {
+                                setSuggestions(null);
+                                setAnchorEl(null);
+                            }, 150);
+                        }}
+                        onChange={(e) => handleAutocomplete(valKey as string, e.target.value, e.target)}
                         placeholder={placeholder}
                         className={`w-full pl-8 pr-2 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm border focus:bg-white dark:focus:bg-slate-900 outline-none transition-all ${isError ? 'border-red-500 focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-500'}`}
                     />
@@ -346,20 +379,37 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {icon}
                     </div>
                 </div>
-                {suggestions && suggestions.field === valKey && (
-                    <div className="absolute top-full left-0 w-full bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-50 overflow-hidden mt-1 animate-in fade-in zoom-in-95 duration-100">
-                        {suggestions.list.map(item => (
-                            <button 
-                                key={item}
-                                onClick={() => applySuggestion(item)}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors truncate border-b border-slate-50 dark:border-slate-700 last:border-0"
-                            >
-                                {item}
-                            </button>
-                        ))}
-                    </div>
-                )}
             </div>
+        );
+    };
+
+    // Portal for Autocomplete Dropdown
+    const renderAutocompletePortal = () => {
+        if (!suggestions || !dropdownPosition) return null;
+        
+        return createPortal(
+            <div 
+                className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-[100] overflow-hidden mt-1 animate-in fade-in zoom-in-95 duration-100"
+                style={{
+                    top: dropdownPosition.top,
+                    left: dropdownPosition.left,
+                    width: dropdownPosition.width,
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                }}
+            >
+                {suggestions.list.map(item => (
+                    <button 
+                        key={item}
+                        onMouseDown={(e) => e.preventDefault()} // Prevent blur before click
+                        onClick={() => applySuggestion(item)}
+                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors truncate border-b border-slate-50 dark:border-slate-700 last:border-0"
+                    >
+                        {item}
+                    </button>
+                ))}
+            </div>,
+            document.body
         );
     };
 
@@ -451,6 +501,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <button onClick={handleMatchSubmit} className="flex-1 py-3.5 font-bold text-white bg-primary-600 rounded-xl shadow-lg shadow-primary-600/20 text-sm active:scale-95 transition-transform">Сохранить</button>
                     </div>
                 </div>
+                {renderAutocompletePortal()}
             </div>
         );
     }

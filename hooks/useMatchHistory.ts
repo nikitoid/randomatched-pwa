@@ -160,65 +160,80 @@ export const useMatchHistory = (
             const batch = db.batch();
             let opsCount = 0;
 
-            // 1. Process Deletions First
+            // 1. Process Deletions First (Push Tombstones)
+            // Instead of deleting the document, we mark it as deleted so other clients know to remove it.
             if (deletedIds.size > 0) {
                 for (const id of deletedIds) {
                     const ref = db.collection('match_history').doc(id);
-                    // We don't check existence, just delete. If it's already gone, it's fine.
-                    batch.delete(ref);
+                    // Write tombstone
+                    batch.set(ref, { id, deleted: true, lastUpdated: Date.now() }, { merge: true });
                     opsCount++;
                 }
             }
 
             // 2. Fetch all matches from Cloud to compare
             const snapshot = await db.collection('match_history').get();
-            const cloudMatchesMap = new Map<string, MatchRecord>();
+            const cloudMatchesMap = new Map<string, any>();
             snapshot.forEach((doc: any) => {
-                cloudMatchesMap.set(doc.id, doc.data() as MatchRecord);
+                cloudMatchesMap.set(doc.id, doc.data());
             });
 
             const mergedMap = new Map<string, MatchRecord>();
             let newFromCloud = 0;
             let updatedFromCloud = 0;
             let pushedToCloud = 0;
+            let deletedFromCloud = 0;
 
             // 3. Compare Local vs Cloud
-            // Add local history to map first (filtered by not deleted)
+            // Add local history to map first (filtered by not deleted locally)
             const currentLocalHistory = history.filter(m => !deletedIds.has(m.id));
             
             for (const localMatch of currentLocalHistory) {
-                mergedMap.set(localMatch.id, localMatch);
-                
                 const cloudMatch = cloudMatchesMap.get(localMatch.id);
                 
                 if (!cloudMatch) {
                     // Not in cloud -> Push to cloud
                     const ref = db.collection('match_history').doc(localMatch.id);
                     batch.set(ref, localMatch);
+                    mergedMap.set(localMatch.id, localMatch); // Keep local version
                     opsCount++;
                     pushedToCloud++;
                 } else {
-                    // Exists in cloud. Check timestamp.
-                    if (localMatch.lastUpdated > cloudMatch.lastUpdated) {
-                        // Local is newer -> Push to cloud
-                        const ref = db.collection('match_history').doc(localMatch.id);
-                        batch.set(ref, localMatch);
-                        opsCount++;
-                        pushedToCloud++;
-                    } else if (cloudMatch.lastUpdated > localMatch.lastUpdated) {
-                        // Cloud is newer -> Update local (in the map)
-                        mergedMap.set(cloudMatch.id, cloudMatch);
-                        updatedFromCloud++;
+                    // Exists in cloud. Check if deleted in cloud.
+                    if (cloudMatch.deleted) {
+                        // Deleted in cloud -> Remove local (Do not add to mergedMap)
+                        deletedFromCloud++;
+                        // No op needed, just don't add to mergedMap
+                    } else {
+                        // Check timestamp.
+                        if (localMatch.lastUpdated > cloudMatch.lastUpdated) {
+                            // Local is newer -> Push to cloud
+                            const ref = db.collection('match_history').doc(localMatch.id);
+                            batch.set(ref, localMatch);
+                            mergedMap.set(localMatch.id, localMatch);
+                            opsCount++;
+                            pushedToCloud++;
+                        } else if (cloudMatch.lastUpdated > localMatch.lastUpdated) {
+                            // Cloud is newer -> Update local
+                            mergedMap.set(cloudMatch.id, cloudMatch as MatchRecord);
+                            updatedFromCloud++;
+                        } else {
+                            // Same -> Keep local
+                            mergedMap.set(localMatch.id, localMatch);
+                        }
                     }
                 }
             }
 
             // 4. Handle matches that are ONLY in cloud
             for (const [id, cloudMatch] of cloudMatchesMap.entries()) {
-                if (!mergedMap.has(id) && !deletedIds.has(id)) {
-                    // New from cloud
-                    mergedMap.set(id, cloudMatch);
-                    newFromCloud++;
+                // If it wasn't processed in the local loop AND wasn't deleted locally
+                if (!history.find(m => m.id === id) && !deletedIds.has(id)) {
+                    if (!cloudMatch.deleted) {
+                        // New from cloud
+                        mergedMap.set(id, cloudMatch as MatchRecord);
+                        newFromCloud++;
+                    }
                 }
             }
 
@@ -238,6 +253,7 @@ export const useMatchHistory = (
             if (newFromCloud > 0) msg.push(`Скачано: ${newFromCloud}`);
             if (updatedFromCloud > 0) msg.push(`Обновлено: ${updatedFromCloud}`);
             if (pushedToCloud > 0) msg.push(`Отправлено: ${pushedToCloud}`);
+            if (deletedFromCloud > 0) msg.push(`Удалено: ${deletedFromCloud}`);
             
             if (msg.length > 0) {
                 addToast(`Синхронизация: ${msg.join(', ')}`, 'success', 2500);
