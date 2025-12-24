@@ -519,7 +519,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 )}
 
                 <div 
-                    className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' ? 'p-0 pb-20' : 'p-4'}`}
+                    className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' ? 'p-0' : 'p-4'}`}
                     onTouchStart={handleTouchStart} 
                     onTouchEnd={handleTouchEnd}
                 >
@@ -684,7 +684,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     )}
 
                     {activeTab === 'matches' && (
-                        <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4">
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300 p-4">
                             <div className="space-y-3">
                                 {history.map(match => {
                                     const date = new Date(match.timestamp).toLocaleDateString();

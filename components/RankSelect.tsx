@@ -10,9 +10,10 @@ interface RankSelectProps {
     onOpen: () => void;
     onClose: () => void;
     disabled?: boolean;
+    readOnly?: boolean;
 }
 
-export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen, onOpen, onClose, disabled }) => {
+export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen, onOpen, onClose, disabled, readOnly }) => {
     const [menuStyle, setMenuStyle] = useState<{ top?: number, bottom?: number, left: number, width: number, origin: string }>({ left: 0, width: 0, origin: 'top' });
     const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -76,7 +77,7 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
     };
 
     const handleClick = () => {
-        if (disabled) return;
+        if (disabled || readOnly) return;
         if (isOpen) onClose();
         else onOpen();
     };
@@ -86,12 +87,12 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
             <button
                 ref={buttonRef}
                 onClick={handleClick}
-                className={`w-full h-full flex items-center justify-center px-2 py-2 text-sm rounded-xl border transition-all outline-none font-bold select-none ${getRankStyle(value)} ${disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
+                className={`w-full h-full flex items-center justify-center px-2 py-1 text-sm rounded-xl border transition-all outline-none font-bold select-none ${getRankStyle(value)} ${disabled ? 'opacity-50 cursor-not-allowed' : readOnly ? 'cursor-default' : 'active:scale-95'}`}
             >
                 {value || <span className="text-xs font-normal opacity-70">Ранг</span>}
             </button>
 
-            {isOpen && !disabled && createPortal(
+            {isOpen && !disabled && !readOnly && createPortal(
                 <div 
                     className={`fixed bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden z-[102] rank-select-menu
                         ${menuStyle.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-left' : 'animate-menu-in origin-top-left'}

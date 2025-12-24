@@ -751,42 +751,54 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         {/* Editor Container */}
         <div className={`absolute inset-0 overflow-y-auto no-scrollbar transition-all duration-300 ease-out bg-slate-50 dark:bg-slate-950 ${editingListId ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-[20%] opacity-0 pointer-events-none'}`}>
             <div className="pb-safe-area-bottom px-4 pt-4">
-                {editorHeroes.map((hero, index) => (
-                    <div key={hero.id} className="flex items-center gap-3 mb-3 animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}>
-                        {/* Rank Select */}
-                        <div className="w-16 h-12 shrink-0">
-                            <RankSelect 
-                                value={hero.rank} 
-                                onChange={(val) => handleHeroChange(index, 'rank', val)}
-                                isOpen={focusedRowIndex === index}
-                                onOpen={() => setFocusedRowIndex(index)}
-                                onClose={() => setFocusedRowIndex(null)}
-                                disabled={isReadOnly}
-                            />
+                {editorHeroes.map((hero, index) => {
+                    const isFocused = focusedRowIndex === index;
+                    const isPlaceholderRow = !isReadOnly && index === editorHeroes.length - 1;
+                    
+                    return (
+                        <div 
+                            key={hero.id} 
+                            className={`flex items-center gap-2 mb-2 animate-in fade-in slide-in-from-bottom-2 ${isFocused ? 'relative z-50' : 'relative'}`} 
+                            style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
+                        >
+                            {/* Rank Select */}
+                            <div className="w-14 h-10 shrink-0">
+                                <RankSelect 
+                                    value={hero.rank} 
+                                    onChange={(val) => handleHeroChange(index, 'rank', val)}
+                                    isOpen={isFocused}
+                                    onOpen={() => setFocusedRowIndex(index)}
+                                    onClose={() => setFocusedRowIndex(null)}
+                                    readOnly={isReadOnly}
+                                />
+                            </div>
+                            
+                            {/* Name Input */}
+                            <div className="flex-1 relative">
+                                <input
+                                    type="text"
+                                    value={hero.name}
+                                    onChange={(e) => handleHeroChange(index, 'name', e.target.value)}
+                                    placeholder={isPlaceholderRow ? "Добавить героя..." : "Имя героя"}
+                                    readOnly={isReadOnly || isFocused}
+                                    className={`w-full px-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border outline-none transition-all text-sm
+                                        ${localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`) ? 'border-primary-300 dark:border-primary-700 shadow-[0_0_0_1px_rgba(var(--primary-500)/0.2)]' : 'border-slate-200 dark:border-slate-800 focus:border-primary-500'}
+                                        ${isPlaceholderRow ? 'border-dashed border-slate-300 dark:border-slate-700 placeholder:italic placeholder:text-slate-400' : ''}
+                                    `}
+                                />
+                                {/* Delete Button */}
+                                {!isReadOnly && !isFocused && (hero.name || hero.rank) && (
+                                    <button 
+                                        onClick={() => handleRemoveHero(index)}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-300 md:hover:text-red-500 transition-colors"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                        
-                        {/* Name Input */}
-                        <div className="flex-1 relative">
-                            <input
-                                type="text"
-                                value={hero.name}
-                                onChange={(e) => handleHeroChange(index, 'name', e.target.value)}
-                                placeholder="Имя героя"
-                                readOnly={isReadOnly}
-                                className={`w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border outline-none transition-all ${localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`) ? 'border-primary-300 dark:border-primary-700 shadow-[0_0_0_1px_rgba(var(--primary-500)/0.2)]' : 'border-slate-200 dark:border-slate-800 focus:border-primary-500'}`}
-                            />
-                            {/* Delete Button (if not last empty row or read only) */}
-                            {!isReadOnly && (hero.name || hero.rank) && (
-                                <button 
-                                    onClick={() => handleRemoveHero(index)}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-slate-300 md:hover:text-red-500 transition-colors"
-                                >
-                                    <X size={16} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
                 
                 <div className="h-20" /> {/* Bottom spacer */}
             </div>
