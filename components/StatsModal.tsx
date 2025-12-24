@@ -315,8 +315,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > SWIPE_THRESHOLD) {
             const tabs = ['overview', 'players', 'heroes', 'matches'];
             const idx = tabs.indexOf(activeTab);
-            if (diffX > 0 && idx < tabs.length - 1) setActiveTab(tabs[idx + 1] as any);
-            if (diffX < 0 && idx > 0) setActiveTab(tabs[idx - 1] as any);
+            let nextTab = null;
+            if (diffX > 0 && idx < tabs.length - 1) nextTab = tabs[idx + 1];
+            if (diffX < 0 && idx > 0) nextTab = tabs[idx - 1];
+            
+            if (nextTab) {
+                setActiveTab(nextTab as any);
+                setEditingItemName(null);
+            }
         }
     };
 
@@ -481,7 +487,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     {['overview', 'players', 'heroes', 'matches'].map(tab => (
                         <button 
                             key={tab}
-                            onClick={() => { setActiveTab(tab as any); triggerHaptic(10); }} 
+                            onClick={() => { 
+                                if (activeTab === tab) return;
+                                setActiveTab(tab as any); 
+                                setEditingItemName(null);
+                                triggerHaptic(10); 
+                            }} 
                             className={`flex-1 min-w-[80px] py-3 text-sm font-bold border-b-2 transition-colors capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800/50'}`}
                         >
                             {tab === 'overview' ? 'Обзор' : tab === 'players' ? 'Игроки' : tab === 'heroes' ? 'Герои' : 'Матчи'}
