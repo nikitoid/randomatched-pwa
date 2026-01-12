@@ -166,6 +166,20 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     const currentList = lists.find(l => l.id === editingListId);
     const isReadOnly = !!(currentList?.isCloud && !isOnline);
 
+    // --- CHANGE DETECTION LOGIC ---
+    const hasFieldUpdate = (heroId: string, field: 'name' | 'rank') => {
+        // 1. Check local changes (from Import Rank etc)
+        if (localHeroUpdates.has(`${heroId}:${field}`)) return true;
+
+        // 2. Check cloud updates
+        if (editingListId && updatedHeroIds) {
+            const listUpdates = updatedHeroIds.get(editingListId);
+            if (listUpdates && listUpdates.has(`${heroId}:${field}`)) return true;
+        }
+
+        return false;
+    };
+
     // --- DIRTY CHECK LOGIC ---
     const getCleanHeroes = (heroes: Hero[]) => {
         // Filter out empty rows and trim names for comparison
@@ -872,7 +886,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 `}
                                     >
                                         {/* Rank Select */}
-                                        <div className="w-14 h-9 shrink-0">
+                                        <div className="w-14 h-9 shrink-0 relative">
                                             <RankSelect
                                                 value={hero.rank}
                                                 onChange={(val) => handleHeroChange(index, 'rank', val)}
@@ -881,6 +895,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                 onClose={() => setFocusedRowIndex(null)}
                                                 readOnly={isReadOnly}
                                             />
+                                            {/* Rank Change Indicator */}
+                                            {hasFieldUpdate(hero.id, 'rank') && (
+                                                <div className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900 pointer-events-none z-10" />
+                                            )}
                                         </div>
 
                                         {/* Name Input */}
@@ -896,6 +914,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                             ${isPlaceholderRow ? 'border-dashed border-slate-300 dark:border-slate-700 placeholder:italic placeholder:text-slate-400' : ''}
                                         `}
                                             />
+                                            {/* Name Change Indicator */}
+                                            {hasFieldUpdate(hero.id, 'name') && (
+                                                <div className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900 pointer-events-none z-10" />
+                                            )}
                                             {/* Delete Button - Hidden when focused */}
                                             {!isReadOnly && !isFocused && (hero.name || hero.rank) && (
                                                 <button
