@@ -1,0 +1,142 @@
+import React from 'react';
+import { ChevronDown, Users, Clock, Trash2, X, User } from 'lucide-react';
+
+interface PlayerNameInputProps {
+    isNamesOpen: boolean;
+    setIsNamesOpen: (val: boolean) => void;
+    filledNamesCount: number;
+    savedTeams: string[][];
+    historyScrollRef: React.RefObject<HTMLDivElement>;
+    handleHistoryMouseDown: (e: React.MouseEvent) => void;
+    handleHistoryMouseLeave: () => void;
+    handleHistoryMouseUp: () => void;
+    handleHistoryMouseMove: (e: React.MouseEvent) => void;
+    isHistoryDragging: boolean;
+    isHistoryDragScroll: boolean;
+    deleteHistoryConfirm: number | null;
+    handleSelectSavedTeam: (team: string[]) => void;
+    handleDeleteHistoryItem: (e: React.MouseEvent, index: number) => void;
+    playerNames: string[];
+    handleNameChange: (index: number, value: string) => void;
+}
+
+export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
+    isNamesOpen,
+    setIsNamesOpen,
+    filledNamesCount,
+    savedTeams,
+    historyScrollRef,
+    handleHistoryMouseDown,
+    handleHistoryMouseLeave,
+    handleHistoryMouseUp,
+    handleHistoryMouseMove,
+    isHistoryDragging,
+    isHistoryDragScroll,
+    deleteHistoryConfirm,
+    handleSelectSavedTeam,
+    handleDeleteHistoryItem,
+    playerNames,
+    handleNameChange,
+}) => {
+    return (
+        <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-40' : 'z-20'}`}>
+            <button
+                onClick={() => setIsNamesOpen(!isNamesOpen)}
+                className={`w-full p-4 flex items-center justify-between text-left bg-white dark:bg-slate-900/90 backdrop-blur-md border border-slate-100 dark:border-slate-800 transition-all duration-300 ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm hover:shadow-md'}`}
+            >
+                <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${filledNamesCount > 0 ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                        <Users size={20} />
+                    </div>
+                    <div>
+                        <span className="block text-sm font-bold text-slate-900 dark:text-white">Имена игроков</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{filledNamesCount > 0 ? `Заполнено: ${filledNamesCount}` : 'Не заполнены'}</span>
+                    </div>
+                </div>
+                <div className={`text-slate-300 transition-transform duration-300 ${isNamesOpen ? 'rotate-180' : ''}`}>
+                    <ChevronDown size={20} />
+                </div>
+            </button>
+
+            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl overflow-hidden transition-all duration-300 origin-top ${isNamesOpen ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
+                <div className="p-4 pt-5">
+
+                    {savedTeams.length > 0 && (
+                        <div className="mb-4">
+                            <div className="flex items-center gap-2 mb-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                <Clock size={12} /> <span>История команд</span>
+                            </div>
+                            <div
+                                ref={historyScrollRef}
+                                onMouseDown={handleHistoryMouseDown}
+                                onMouseLeave={handleHistoryMouseLeave}
+                                onMouseUp={handleHistoryMouseUp}
+                                onMouseMove={handleHistoryMouseMove}
+                                onWheel={(e) => {
+                                    if (historyScrollRef.current) {
+                                        historyScrollRef.current.scrollLeft += e.deltaY;
+                                    }
+                                }}
+                                className={`flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1 touch-pan-x ${isHistoryDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                            >
+                                {savedTeams.map((team, idx) => {
+                                    const filled = team.filter(n => n.trim());
+                                    const label = filled.length > 0 ? filled.slice(0, 2).join(', ') + (filled.length > 2 ? '...' : '') : 'Пустая команда';
+                                    const isConfirmingDelete = deleteHistoryConfirm === idx;
+
+                                    return (
+                                        <div key={idx} className="relative group shrink-0 flex items-center">
+                                            <button
+                                                onClick={() => {
+                                                    if (isHistoryDragScroll || isConfirmingDelete) return;
+                                                    handleSelectSavedTeam(team);
+                                                }}
+                                                className={`pl-3 pr-8 py-2 rounded-xl text-xs font-medium transition-colors border select-none
+                                                    ${isConfirmingDelete
+                                                        ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border-red-200 dark:border-red-900/50'
+                                                        : 'bg-slate-100 dark:bg-slate-800 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 text-slate-600 dark:text-slate-300 border-transparent active:border-primary-500'
+                                                    }
+                                                `}
+                                                style={{ pointerEvents: 'auto' }}
+                                            >
+                                                {label}
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDeleteHistoryItem(e, idx)}
+                                                className={`absolute right-1 p-1.5 rounded-lg transition-colors
+                                                    ${isConfirmingDelete
+                                                        ? 'text-red-600 md:hover:bg-red-100 dark:text-red-400 dark:md:hover:bg-red-900/40 active:bg-red-100'
+                                                        : 'text-slate-400 md:hover:text-red-500 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:text-red-500 active:bg-slate-200'
+                                                    }
+                                                `}
+                                            >
+                                                {isConfirmingDelete ? <Trash2 size={12} /> : <X size={12} />}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                        {[0, 1, 2, 3].map((index) => (
+                            <div key={index} className="relative group">
+                                <input
+                                    type="text"
+                                    value={playerNames[index]}
+                                    onChange={(e) => handleNameChange(index, e.target.value)}
+                                    placeholder={`Игрок ${index + 1}`}
+                                    className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500 outline-none transition-all focus:bg-white dark:focus:bg-slate-900 select-text"
+                                />
+                                <div className="absolute left-3 top-1/2 -translate-x-0 -translate-y-1/2 text-slate-400 pointer-events-none">
+                                    <User size={14} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
