@@ -120,7 +120,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 )}
                 {isEditing ? (
                     <form
-                        className="flex-1 flex gap-2"
+                        className="flex-1 min-w-0 flex gap-2"
                         onSubmit={(e) => { e.preventDefault(); handleSave(); }}
                     >
                         <input
@@ -128,10 +128,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                             type="text"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            className="flex-1 px-3 py-1.5 text-lg font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500"
+                            className="flex-1 min-w-0 px-3 py-1.5 text-lg font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500"
                         />
-                        <button type="submit" className="p-2 bg-green-100 text-green-600 rounded-xl"><Check size={20} /></button>
-                        <button type="button" onClick={() => setIsEditing(false)} className="p-2 bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-400 rounded-xl"><X size={20} /></button>
+                        <button type="submit" className="shrink-0 p-2 bg-green-100 text-green-600 rounded-xl"><Check size={20} /></button>
+                        <button type="button" onClick={() => setIsEditing(false)} className="shrink-0 p-2 bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-400 rounded-xl"><X size={20} /></button>
                     </form>
                 ) : (
                     <>
