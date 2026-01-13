@@ -41,14 +41,14 @@ export default defineConfig({
         screenshots: [
           {
             src: '/screenshots/mobile.jpg',
-            sizes: '419x854',
+            sizes: '430x932',
             type: 'image/jpeg',
             form_factor: 'narrow',
             label: 'Mobile Screen'
           },
           {
             src: '/screenshots/desktop.jpg',
-            sizes: '1920x1080',
+            sizes: '1920x1062',
             type: 'image/jpeg',
             form_factor: 'wide',
             label: 'Desktop Screen'

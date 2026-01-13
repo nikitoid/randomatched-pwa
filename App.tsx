@@ -326,6 +326,7 @@ const App: React.FC = () => {
                 onClearTrash={clearTrash}
                 isAutoSyncEnabled={isAutoSyncStatsEnabled}
                 onImportData={importData}
+                checkConnectivity={checkConnectivity}
             />
 
             <ResetConfirmModal

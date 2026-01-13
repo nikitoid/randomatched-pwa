@@ -27,6 +27,7 @@ interface StatsModalProps {
     onClearTrash: () => void;
     isAutoSyncEnabled: boolean;
     onImportData: (data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => boolean;
+    checkConnectivity?: () => Promise<boolean>;
 }
 
 export const StatsModal: React.FC<StatsModalProps> = ({
@@ -48,7 +49,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     onPermanentDeleteMatch = () => { },
     onClearTrash = () => { },
     isAutoSyncEnabled,
-    onImportData
+    onImportData,
+    checkConnectivity
 }) => {
     // Backup Menu State
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
@@ -171,24 +173,36 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     // Actually, syncWithAnimation uses `onSync` and `setVisualSyncState`.
     // Let's rely on standard useEffect deps or a fresh ref.
 
-    // To safe-guard against dependency loops, we can use a ref for the animation trigger
+    // We need to keep a ref to checkConnectivity as well to use in cleanup
+    // We need to keep a ref to checkConnectivity as well to use in cleanup
+    const checkConnectivityRef = useRef(checkConnectivity);
     const syncWithAnimationRef = useRef(syncWithAnimation);
-    const onSyncRef = useRef(onSync); // Restore this for the cleanup function
+    const onSyncRef = useRef(onSync);
+
     useEffect(() => {
+        checkConnectivityRef.current = checkConnectivity;
         syncWithAnimationRef.current = syncWithAnimation;
         onSyncRef.current = onSync;
-    }, [syncWithAnimation, onSync]);
+    }, [checkConnectivity, syncWithAnimation, onSync]);
 
     useEffect(() => {
         if (isOpen && isAutoSyncEnabled) {
             // Trigger animated sync on OPEN
             syncWithAnimationRef.current({ silentIfNoChanges: true, force: true });
             return () => {
-                // Determine if we should sync on close?
-                // The original code did sync on close.
-                // We do NOT want animation on close (modal is closing).
-                // So we stick to raw onSyncRef.current for close.
-                onSyncRef.current({ silentIfNoChanges: true });
+                // Determine if we should sync on close
+                // Use async IIFE to check connectivity first
+                (async () => {
+                    const check = checkConnectivityRef.current;
+                    if (check) {
+                        const hasInternet = await check();
+                        if (!hasInternet) return;
+                    } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                        return;
+                    }
+                    // Only sync if online
+                    onSyncRef.current({ silentIfNoChanges: true });
+                })();
             };
         }
     }, [isOpen, isAutoSyncEnabled]);
