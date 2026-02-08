@@ -78,6 +78,17 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         }
     }, [isOpen]);
 
+    // Обработка закрытия по Escape
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     useEffect(() => {
         if (confirmModal) {
             setDisplayModal(confirmModal);
@@ -507,7 +518,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             <button onClick={() => setShowInfo(true)} className="mr-1 p-2 rounded-full text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-100 dark:md:hover:bg-slate-700 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"><HelpCircle size={20} /></button>
                         </div>
                     )}
-                    <button onClick={onClose} className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative z-50"><X size={24} /></button>
+                    <button data-testid="close-result-overlay" onClick={onClose} className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative z-50"><X size={24} /></button>
                 </div>
 
                 {/* Board Container */}
@@ -524,6 +535,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     {/* CENTER ACTION BUTTON */}
                     <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto animate-fade-in ${isRerollConfirm ? 'z-50' : 'z-30'}`}>
                         <button
+                            data-testid="center-action-button"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (!heroesRevealed) onRevealHeroes();

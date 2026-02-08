@@ -27,7 +27,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
                 <div className="flex flex-col gap-3">
                     <div className="grid grid-cols-2 gap-3">
                         <button onClick={onCancel} className="px-4 py-3.5 font-bold text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-2xl active:scale-95 transition-all">Отмена</button>
-                        <button onClick={onConfirm} className="px-4 py-3.5 font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-2xl active:scale-95 transition-all md:hover:bg-red-100 dark:md:hover:bg-red-900/30">Сбросить</button>
+                        <button data-testid="confirm-reset-button" onClick={onConfirm} className="px-4 py-3.5 font-bold text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-2xl active:scale-95 transition-all md:hover:bg-red-100 dark:md:hover:bg-red-900/30">Сбросить</button>
                     </div>
                     {onResetAndSync && (
                         <button

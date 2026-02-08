@@ -25,9 +25,17 @@ interface StatsModalProps {
 
     onPermanentDeleteMatch: (id: string) => void;
     onClearTrash: () => void;
-    isAutoSyncEnabled: boolean;
+
     onImportData: (data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => boolean;
     checkConnectivity?: () => Promise<boolean>;
+    // Облачный бэкап
+    cloudBackups: Array<{ id: string; createdAt: number; matchCount: number }>;
+    isCreatingBackup: boolean;
+    isLoadingBackups: boolean;
+    isRestoringBackup: boolean;
+    onCreateCloudBackup: () => Promise<string | null>;
+    onListCloudBackups: () => Promise<Array<{ id: string; createdAt: number; matchCount: number }>>;
+    onRestoreFromCloudBackup: (id: string) => Promise<boolean>;
 }
 
 export const StatsModal: React.FC<StatsModalProps> = ({
@@ -48,25 +56,45 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     onRestoreMatch = () => { },
     onPermanentDeleteMatch = () => { },
     onClearTrash = () => { },
-    isAutoSyncEnabled,
+
     onImportData,
-    checkConnectivity
+    checkConnectivity,
+    // Облачный бэкап
+    cloudBackups = [],
+    isCreatingBackup = false,
+    isLoadingBackups = false,
+    isRestoringBackup = false,
+    onCreateCloudBackup = async () => null,
+    onListCloudBackups = async () => [],
+    onRestoreFromCloudBackup = async () => false
 }) => {
     // Backup Menu State
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
+    const [restoreConfirmId, setRestoreConfirmId] = useState<string | null>(null);
+    const [restoreConfirmInput, setRestoreConfirmInput] = useState('');
     const titleClickCount = useRef(0);
     const titleClickTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    // Загрузка списка бэкапов при открытии меню
+    useEffect(() => {
+        if (isDataMenuOpen && isOnline) {
+            onListCloudBackups();
+        }
+    }, [isDataMenuOpen]);
 
     const handleTitleClick = () => {
         titleClickCount.current += 1;
 
         if (titleClickTimeout.current) clearTimeout(titleClickTimeout.current);
 
+        if (titleClickCount.current >= 3) {
+            setIsDataMenuOpen(true);
+            triggerHaptic([10, 50, 10]);
+            titleClickCount.current = 0;
+            return;
+        }
+
         titleClickTimeout.current = setTimeout(() => {
-            if (titleClickCount.current === 3) {
-                setIsDataMenuOpen(true);
-                triggerHaptic([10, 50, 10]);
-            }
             titleClickCount.current = 0;
         }, 500);
     };
@@ -185,27 +213,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         onSyncRef.current = onSync;
     }, [checkConnectivity, syncWithAnimation, onSync]);
 
-    useEffect(() => {
-        if (isOpen && isAutoSyncEnabled) {
-            // Trigger animated sync on OPEN
-            syncWithAnimationRef.current({ silentIfNoChanges: true, force: true });
-            return () => {
-                // Determine if we should sync on close
-                // Use async IIFE to check connectivity first
-                (async () => {
-                    const check = checkConnectivityRef.current;
-                    if (check) {
-                        const hasInternet = await check();
-                        if (!hasInternet) return;
-                    } else if (typeof navigator !== 'undefined' && !navigator.onLine) {
-                        return;
-                    }
-                    // Only sync if online
-                    onSyncRef.current({ silentIfNoChanges: true });
-                })();
-            };
-        }
-    }, [isOpen, isAutoSyncEnabled]);
+
 
     // Match Form State
     const [matchForm, setMatchForm] = useState<{
@@ -391,24 +399,51 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
         const qualifiedPlayers = sortedPlayers.filter(p => p.matches >= 2);
         const mvp = qualifiedPlayers.length > 0 ? qualifiedPlayers[0] : (sortedPlayers.length > 0 ? sortedPlayers[0] : null);
-        const underdog = qualifiedPlayers.length > 0 ? qualifiedPlayers[qualifiedPlayers.length - 1] : (sortedPlayers.length > 0 ? sortedPlayers[sortedPlayers.length - 1] : null);
+        // Базовый underdog по винрейту (fallback) — минимум 3 матча для объективности
+        const qualifiedForUnderdog = sortedPlayers.filter(p => p.matches >= 3);
+        const fallbackUnderdog = qualifiedForUnderdog.length > 0
+            ? qualifiedForUnderdog[qualifiedForUnderdog.length - 1]
+            : (qualifiedPlayers.length > 0 ? qualifiedPlayers[qualifiedPlayers.length - 1] : null);
 
-        // Streak Calculation
-        const streakStats: Record<string, { current: number, max: number }> = {};
+        // Streak Calculation (победы и поражения)
+        // lastStreakMatchIndex отслеживает индекс последнего матча в серии игрока
+        const streakStats: Record<string, {
+            current: number, // текущая серия побед (положительное) 
+            max: number,
+            lastStreakMatchIndex: number,
+            loseStreak: number, // текущая серия поражений
+            lastLoseStreakMatchIndex: number
+        }> = {};
         // History is Newest -> Oldest. Reverse to process chronologically.
-        [...history].reverse().forEach(match => {
+        const reversedHistory = [...history].reverse();
+        reversedHistory.forEach((match, matchIndex) => {
             const winner = match.winner;
             const processStreak = (p: MatchPlayer, won: boolean) => {
                 const name = p.name;
-                if (!streakStats[name]) streakStats[name] = { current: 0, max: 0 };
+                if (!streakStats[name]) streakStats[name] = {
+                    current: 0,
+                    max: 0,
+                    lastStreakMatchIndex: -1,
+                    loseStreak: 0,
+                    lastLoseStreakMatchIndex: -1
+                };
 
                 if (won) {
                     streakStats[name].current += 1;
+                    streakStats[name].lastStreakMatchIndex = matchIndex;
                     if (streakStats[name].current > streakStats[name].max) {
                         streakStats[name].max = streakStats[name].current;
                     }
+                    // Сбрасываем серию поражений при победе
+                    streakStats[name].loseStreak = 0;
+                    streakStats[name].lastLoseStreakMatchIndex = -1;
                 } else {
-                    streakStats[name].current = 0; // Reset on loss
+                    // Сбрасываем серию побед при поражении
+                    streakStats[name].current = 0;
+                    streakStats[name].lastStreakMatchIndex = -1;
+                    // Увеличиваем серию поражений
+                    streakStats[name].loseStreak += 1;
+                    streakStats[name].lastLoseStreakMatchIndex = matchIndex;
                 }
             };
 
@@ -416,15 +451,43 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             match.team2.forEach(p => processStreak(p, winner === 'team2'));
         });
 
-        // Find Best Active Streak
+        // Find Best Active Win Streak ("В огне")
+        // При равных сериях приоритет отдаётся тому, кто последним получил этот статус
         let bestStreakPlayer: { name: string, streak: number } | null = null;
+        let bestStreakMatchIndex = -1;
         Object.entries(streakStats).forEach(([name, stats]) => {
             if (stats.current >= 3) {
-                if (!bestStreakPlayer || stats.current > bestStreakPlayer.streak) {
+                if (!bestStreakPlayer ||
+                    stats.current > bestStreakPlayer.streak ||
+                    (stats.current === bestStreakPlayer.streak && stats.lastStreakMatchIndex > bestStreakMatchIndex)) {
                     bestStreakPlayer = { name, streak: stats.current };
+                    bestStreakMatchIndex = stats.lastStreakMatchIndex;
                 }
             }
         });
+
+        // Find Underdog (комбинированный подход)
+        // Приоритет 1: Игрок с активной серией поражений >= 3
+        // Приоритет 2: При равных сериях — последний получивший этот статус
+        // Fallback: Игрок с худшим винрейтом (>= 3 матчей)
+        let underdogByLoseStreak: { name: string, loseStreak: number, player: PlayerStat } | null = null;
+        let underdogLoseStreakMatchIndex = -1;
+        Object.entries(streakStats).forEach(([name, stats]) => {
+            if (stats.loseStreak >= 3) {
+                const player = playerStats[name];
+                if (player) {
+                    if (!underdogByLoseStreak ||
+                        stats.loseStreak > underdogByLoseStreak.loseStreak ||
+                        (stats.loseStreak === underdogByLoseStreak.loseStreak && stats.lastLoseStreakMatchIndex > underdogLoseStreakMatchIndex)) {
+                        underdogByLoseStreak = { name, loseStreak: stats.loseStreak, player };
+                        underdogLoseStreakMatchIndex = stats.lastLoseStreakMatchIndex;
+                    }
+                }
+            }
+        });
+
+        // Финальный underdog: приоритет серии поражений, иначе fallback
+        const underdog = underdogByLoseStreak ? underdogByLoseStreak.player : fallbackUnderdog;
 
         return { totalMatches, sortedPlayers, sortedHeroes, mvp, underdog, streakStats, bestStreakPlayer };
     }, [history]);
@@ -879,45 +942,218 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             {isDataMenuOpen && createPortal(
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-                    onClick={() => setIsDataMenuOpen(false)}
+                >
+                    <div
+                        className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[85dvh] flex flex-col"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="p-6 pb-3 shrink-0">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Резервное копирование</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                Сохраните статистику локально или в облако.
+                            </p>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto px-6 space-y-4">
+                            {/* Локальный бэкап */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Локальный бэкап</h4>
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={handleExport}
+                                        data-testid="backup-export-btn"
+                                        className="w-full flex items-center gap-3 p-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                        <ArrowUp className="text-green-500" size={20} />
+                                        <span>Экспорт в файл</span>
+                                    </button>
+
+                                    <label className="w-full flex items-center gap-3 p-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer relative overflow-hidden">
+                                        <ArrowDown className="text-blue-500" size={20} />
+                                        <span>Импорт из файла</span>
+                                        <input
+                                            type="file"
+                                            accept=".json"
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            onChange={handleImport}
+                                            data-testid="backup-import-input"
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Облачный бэкап */}
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Облачный бэкап</h4>
+
+                                <button
+                                    onClick={async () => {
+                                        triggerHaptic(10);
+                                        await onCreateCloudBackup();
+                                    }}
+                                    disabled={!isOnline || isCreatingBackup}
+                                    data-testid="backup-cloud-create-btn"
+                                    className={`w-full flex items-center justify-center gap-3 p-3.5 rounded-2xl font-medium transition-colors ${isOnline && !isCreatingBackup
+                                        ? 'bg-primary-600 text-white hover:bg-primary-700'
+                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                                        }`}
+                                >
+                                    {isCreatingBackup ? (
+                                        <>
+                                            <Loader2 size={20} className="animate-spin" />
+                                            <span>Создание бэкапа...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <RefreshCw size={20} />
+                                            <span>Создать бэкап в облаке</span>
+                                        </>
+                                    )}
+                                </button>
+
+                                {/* Список облачных бэкапов */}
+                                <div className="mt-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-medium text-slate-500">Доступные бэкапы</span>
+                                        {isLoadingBackups && (
+                                            <Loader2 size={14} className="animate-spin text-slate-400" />
+                                        )}
+                                    </div>
+
+                                    {!isOnline ? (
+                                        <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4">
+                                            Нет подключения к интернету
+                                        </p>
+                                    ) : cloudBackups.length === 0 && !isLoadingBackups ? (
+                                        <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4" data-testid="backup-list-empty">
+                                            Облачных бэкапов пока нет
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto" data-testid="backup-list">
+                                            {cloudBackups.map(backup => {
+                                                const date = new Date(backup.createdAt);
+                                                const dateStr = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                                                const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+                                                return (
+                                                    <div
+                                                        key={backup.id}
+                                                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
+                                                        data-testid="backup-item"
+                                                    >
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium text-slate-900 dark:text-white">
+                                                                {dateStr} в {timeStr}
+                                                            </p>
+                                                            <p className="text-xs text-slate-500">
+                                                                {backup.matchCount} {backup.matchCount === 1 ? 'матч' : backup.matchCount < 5 ? 'матча' : 'матчей'}
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => {
+                                                                triggerHaptic(10);
+                                                                setRestoreConfirmId(backup.id);
+                                                                setRestoreConfirmInput('');
+                                                            }}
+                                                            disabled={isRestoringBackup}
+                                                            data-testid="backup-restore-btn"
+                                                            className="px-3 py-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors disabled:opacity-50"
+                                                        >
+                                                            Восстановить
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 pt-4 shrink-0">
+                            <button
+                                onClick={() => setIsDataMenuOpen(false)}
+                                data-testid="backup-close-btn"
+                                className="w-full p-3 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-medium transition-colors bg-slate-100 dark:bg-slate-800"
+                            >
+                                Закрыть
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Restore Confirmation Modal */}
+            {restoreConfirmId && createPortal(
+                <div
+                    className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
                 >
                     <div
                         className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200"
                         onClick={e => e.stopPropagation()}
                     >
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Резервное копирование</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                            Экспортируйте данные статистики в файл для сохранения или импортируйте ранее сохраненный бэкап.
-                            <br /><span className="text-xs text-amber-500 mt-1 block">Импорт полностью перезапишет текущую историю!</span>
-                        </p>
-
-                        <div className="space-y-3">
-                            <button
-                                onClick={handleExport}
-                                className="w-full flex items-center justify-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                            >
-                                <ArrowUp className="text-green-500" size={24} />
-                                Экспорт в файл
-                            </button>
-
-                            <label className="w-full flex items-center justify-center gap-3 p-4 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer relative overflow-hidden">
-                                <ArrowDown className="text-blue-500" size={24} />
-                                Импорт из файла
-                                <input
-                                    type="file"
-                                    accept=".json"
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                    onChange={handleImport}
-                                />
-                            </label>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2.5 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                                <AlertCircle className="text-red-500" size={24} />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Подтверждение восстановления</h3>
                         </div>
 
-                        <button
-                            onClick={() => setIsDataMenuOpen(false)}
-                            className="w-full mt-6 p-3 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-medium transition-colors"
-                        >
-                            Закрыть
-                        </button>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+                            <span className="text-red-500 font-bold">Внимание!</span> Восстановление из бэкапа полностью перезапишет текущую историю матчей. Это действие нельзя отменить.
+                        </p>
+
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
+                            Для подтверждения введите <span className="font-mono font-bold text-slate-900 dark:text-white">ВОССТАНОВИТЬ</span>:
+                        </p>
+
+                        <input
+                            type="text"
+                            value={restoreConfirmInput}
+                            onChange={e => setRestoreConfirmInput(e.target.value)}
+                            placeholder="ВОССТАНОВИТЬ"
+                            data-testid="restore-confirm-input"
+                            className="w-full p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-mono border border-slate-200 dark:border-slate-700 focus:border-primary-500 outline-none mb-4"
+                        />
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setRestoreConfirmId(null);
+                                    setRestoreConfirmInput('');
+                                }}
+                                data-testid="restore-cancel-btn"
+                                className="flex-1 py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (restoreConfirmInput === 'ВОССТАНОВИТЬ' && restoreConfirmId) {
+                                        triggerHaptic([20, 50, 20]);
+                                        const success = await onRestoreFromCloudBackup(restoreConfirmId);
+                                        if (success) {
+                                            setRestoreConfirmId(null);
+                                            setRestoreConfirmInput('');
+                                            setIsDataMenuOpen(false);
+                                        }
+                                    }
+                                }}
+                                disabled={restoreConfirmInput !== 'ВОССТАНОВИТЬ' || isRestoringBackup}
+                                data-testid="restore-confirm-btn"
+                                className={`flex-1 py-3 font-bold rounded-xl text-sm transition-colors ${restoreConfirmInput === 'ВОССТАНОВИТЬ' && !isRestoringBackup
+                                    ? 'bg-red-600 text-white hover:bg-red-700'
+                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                                    }`}
+                            >
+                                {isRestoringBackup ? (
+                                    <Loader2 size={16} className="animate-spin mx-auto" />
+                                ) : (
+                                    'Восстановить'
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>,
                 document.body

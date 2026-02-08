@@ -45,8 +45,10 @@ const App: React.FC = () => {
     const {
         history, addMatch, addManualMatch, updateMatch, deleteMatch,
         renamePlayer, renameHero, syncHistory, isSyncingHistory,
-        deletedHistory, restoreMatch, permanentDeleteMatch, clearTrash,
-        isAutoSyncStatsEnabled, toggleAutoSyncStats, importData
+        deletedHistory, restoreMatch, permanentDeleteMatch, clearTrash, importData,
+        // Облачный бэкап
+        createCloudBackup, listCloudBackups, restoreFromCloudBackup,
+        cloudBackups, isCreatingBackup, isLoadingBackups, isRestoringBackup
     } = useMatchHistory(addToast);
 
     // UI State
@@ -301,8 +303,7 @@ const App: React.FC = () => {
                 onToggleHaptics={toggleHaptics}
                 triggerHaptic={triggerHaptic}
                 history={history}
-                isAutoSyncStats={isAutoSyncStatsEnabled}
-                onToggleAutoSyncStats={toggleAutoSyncStats}
+
             />
 
             <StatsModal
@@ -324,9 +325,17 @@ const App: React.FC = () => {
                 onRestoreMatch={restoreMatch}
                 onPermanentDeleteMatch={permanentDeleteMatch}
                 onClearTrash={clearTrash}
-                isAutoSyncEnabled={isAutoSyncStatsEnabled}
+
                 onImportData={importData}
                 checkConnectivity={checkConnectivity}
+                // Облачный бэкап
+                cloudBackups={cloudBackups}
+                isCreatingBackup={isCreatingBackup}
+                isLoadingBackups={isLoadingBackups}
+                isRestoringBackup={isRestoringBackup}
+                onCreateCloudBackup={createCloudBackup}
+                onListCloudBackups={listCloudBackups}
+                onRestoreFromCloudBackup={restoreFromCloudBackup}
             />
 
             <ResetConfirmModal

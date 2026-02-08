@@ -15,22 +15,7 @@ export const useMatchHistory = (
     const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
     const [isSyncingHistory, setIsSyncingHistory] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
-    const [isAutoSyncStatsEnabled, setIsAutoSyncStatsEnabled] = useState(() => {
-        try {
-            const saved = localStorage.getItem('randomatched_auto_sync_stats');
-            return saved !== null ? JSON.parse(saved) : true;
-        } catch {
-            return true;
-        }
-    });
 
-    const toggleAutoSyncStats = () => {
-        setIsAutoSyncStatsEnabled(prev => {
-            const newVal = !prev;
-            localStorage.setItem('randomatched_auto_sync_stats', JSON.stringify(newVal));
-            return newVal;
-        });
-    };
 
     useEffect(() => {
         try {
@@ -535,6 +520,140 @@ export const useMatchHistory = (
         }
     };
 
+    // === Облачный бэкап ===
+    const [isCreatingBackup, setIsCreatingBackup] = useState(false);
+    const [isLoadingBackups, setIsLoadingBackups] = useState(false);
+    const [isRestoringBackup, setIsRestoringBackup] = useState(false);
+    const [cloudBackups, setCloudBackups] = useState<Array<{ id: string; createdAt: number; matchCount: number }>>([]);
+
+    // Интерфейс для бэкапа
+    interface CloudBackup {
+        id: string;
+        createdAt: number;
+        matchCount: number;
+        history: MatchRecord[];
+        deletedHistory: MatchRecord[];
+    }
+
+    // Создание бэкапа в облаке
+    const createCloudBackup = async () => {
+        if (!navigator.onLine) {
+            addToast("Нет подключения к интернету", "error", 2000);
+            return null;
+        }
+
+        setIsCreatingBackup(true);
+        try {
+            const backupId = crypto.randomUUID();
+            const now = Date.now();
+
+            const backupData: CloudBackup = {
+                id: backupId,
+                createdAt: now,
+                matchCount: history.length,
+                history: history,
+                deletedHistory: deletedHistory
+            };
+
+            await db.collection('backups').doc(backupId).set(backupData);
+
+            addToast("Бэкап успешно создан", "success", 2000);
+
+            // Обновляем локальный список бэкапов
+            setCloudBackups(prev => [{
+                id: backupId,
+                createdAt: now,
+                matchCount: history.length
+            }, ...prev]);
+
+            return backupId;
+        } catch (e) {
+            console.error("Create backup failed", e);
+            addToast("Ошибка создания бэкапа", "error", 2000);
+            return null;
+        } finally {
+            setIsCreatingBackup(false);
+        }
+    };
+
+    // Получение списка бэкапов из облака
+    const listCloudBackups = async () => {
+        if (!navigator.onLine) {
+            addToast("Нет подключения к интернету", "error", 2000);
+            return [];
+        }
+
+        setIsLoadingBackups(true);
+        try {
+            const snapshot = await db.collection('backups')
+                .orderBy('createdAt', 'desc')
+                .get();
+
+            const backups = snapshot.docs.map((doc: any) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    createdAt: data.createdAt,
+                    matchCount: data.matchCount || 0
+                };
+            });
+
+            setCloudBackups(backups);
+            return backups;
+        } catch (e) {
+            console.error("List backups failed", e);
+            addToast("Ошибка загрузки списка бэкапов", "error", 2000);
+            return [];
+        } finally {
+            setIsLoadingBackups(false);
+        }
+    };
+
+    // Восстановление из бэкапа
+    const restoreFromCloudBackup = async (backupId: string) => {
+        if (!navigator.onLine) {
+            addToast("Нет подключения к интернету", "error", 2000);
+            return false;
+        }
+
+        setIsRestoringBackup(true);
+        try {
+            const doc = await db.collection('backups').doc(backupId).get();
+
+            if (!doc.exists) {
+                addToast("Бэкап не найден", "error", 2000);
+                return false;
+            }
+
+            const data = doc.data() as CloudBackup;
+            const now = Date.now();
+
+            // Обновляем lastUpdated для всех матчей, чтобы при синхронизации они перезаписали данные в БД
+            const restoredHistory = data.history.map(match => ({
+                ...match,
+                lastUpdated: now
+            }));
+
+            const restoredDeletedHistory = data.deletedHistory.map(match => ({
+                ...match,
+                lastUpdated: now
+            }));
+
+            setHistory(restoredHistory);
+            setDeletedHistory(restoredDeletedHistory);
+            setDeletedIds(new Set());
+
+            addToast("История восстановлена из бэкапа", "success", 2500);
+            return true;
+        } catch (e) {
+            console.error("Restore backup failed", e);
+            addToast("Ошибка восстановления из бэкапа", "error", 2000);
+            return false;
+        } finally {
+            setIsRestoringBackup(false);
+        }
+    };
+
     return {
         history,
         deletedHistory,
@@ -549,8 +668,16 @@ export const useMatchHistory = (
         renameHero,
         syncHistory,
         isSyncingHistory,
-        isAutoSyncStatsEnabled,
-        toggleAutoSyncStats,
-        importData
+
+        importData,
+        // Облачный бэкап
+        createCloudBackup,
+        listCloudBackups,
+        restoreFromCloudBackup,
+        cloudBackups,
+        isCreatingBackup,
+        isLoadingBackups,
+        isRestoringBackup
     };
 };
+

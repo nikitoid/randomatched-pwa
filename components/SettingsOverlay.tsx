@@ -43,8 +43,7 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     hapticsEnabled?: boolean;
     onToggleHaptics?: () => void;
     triggerHaptic: (pattern?: number | number[]) => void;
-    isAutoSyncStats?: boolean;
-    onToggleAutoSyncStats?: () => void;
+
 }
 
 type TabType = 'lists' | 'app_settings' | 'appearance' | 'info';
@@ -81,8 +80,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     onToggleHaptics,
     triggerHaptic,
     history = [],
-    isAutoSyncStats = true,
-    onToggleAutoSyncStats
+
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('lists');
     const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -1000,26 +998,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                         </div>
                                     </div>
 
-                                    {/* Auto-Sync Stats */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isAutoSyncStats ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
-                                                    <RefreshCw size={20} />
-                                                </div>
-                                                <div className="text-left">
-                                                    <h3 className="font-bold text-slate-900 dark:text-white">Автосинхронизация</h3>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Синхронизация статистики</p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => { onToggleAutoSyncStats && onToggleAutoSyncStats(); triggerHaptic(10); }}
-                                                className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${isAutoSyncStats ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
-                                            >
-                                                <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${isAutoSyncStats ? 'translate-x-6' : 'translate-x-1'}`} />
-                                            </button>
-                                        </div>
-                                    </div>
+
                                 </div>
                             </div>
                         )}
