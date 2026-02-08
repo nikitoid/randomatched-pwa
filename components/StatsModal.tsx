@@ -1016,7 +1016,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-xs font-medium text-slate-500">Доступные бэкапы</span>
                                         {isLoadingBackups && (
-                                            <Loader2 size={14} className="animate-spin text-slate-400" />
+                                            <Loader2 size={14} className="animate-spin text-slate-400" data-testid="backup-loading" />
                                         )}
                                     </div>
 
