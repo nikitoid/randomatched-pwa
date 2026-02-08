@@ -1,4 +1,5 @@
 
+import { checkConnectivity } from '../utils/connectivity';
 import { useState, useEffect, useCallback } from 'react';
 import { MatchRecord, AssignedPlayer, ToastType, MatchPlayer } from '../types';
 import { db } from '../firebase';
@@ -246,7 +247,8 @@ export const useMatchHistory = (
     const syncHistory = async (options?: { silentIfNoChanges?: boolean }) => {
         const { silentIfNoChanges = false } = options || {};
 
-        if (!navigator.onLine) {
+        const isConnected = await checkConnectivity();
+        if (!isConnected) {
             if (!silentIfNoChanges) {
                 addToast("Нет подключения к интернету", "error", 2000);
             }
@@ -537,7 +539,8 @@ export const useMatchHistory = (
 
     // Создание бэкапа в облаке
     const createCloudBackup = async () => {
-        if (!navigator.onLine) {
+        const isConnected = await checkConnectivity();
+        if (!isConnected) {
             addToast("Нет подключения к интернету", "error", 2000);
             return null;
         }
@@ -578,7 +581,8 @@ export const useMatchHistory = (
 
     // Получение списка бэкапов из облака
     const listCloudBackups = async () => {
-        if (!navigator.onLine) {
+        const isConnected = await checkConnectivity();
+        if (!isConnected) {
             addToast("Нет подключения к интернету", "error", 2000);
             return [];
         }
@@ -611,9 +615,10 @@ export const useMatchHistory = (
 
     // Восстановление из бэкапа
     const restoreFromCloudBackup = async (backupId: string) => {
-        if (!navigator.onLine) {
+        const isConnected = await checkConnectivity();
+        if (!isConnected) {
             addToast("Нет подключения к интернету", "error", 2000);
-            return false;
+            return false; // Changed from null/empty array to match respective return type logically or handle upstream
         }
 
         setIsRestoringBackup(true);
