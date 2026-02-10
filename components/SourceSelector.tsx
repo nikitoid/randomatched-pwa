@@ -187,7 +187,11 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                     let iconColor = 'text-slate-400';
                                     let iconBg = 'bg-slate-50 dark:bg-slate-800';
 
-                                    if (list.isCloud) {
+                                    if (list.isTemporary) {
+                                        Icon = Filter;
+                                        iconColor = 'text-primary-500';
+                                        iconBg = 'bg-primary-50 dark:bg-primary-900/20';
+                                    } else if (list.isCloud) {
                                         Icon = Cloud;
                                         iconColor = 'text-sky-500';
                                         iconBg = 'bg-sky-50 dark:bg-sky-900/20';
@@ -207,8 +211,9 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                                 {isSelected ? <Check size={18} /> : <Icon size={18} />}
                                             </div>
                                             <div className="flex-1 text-left min-w-0">
-                                                <h3 className={`text-sm font-bold truncate ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-200'}`}>
+                                                <h3 className={`text-sm font-bold truncate ${isSelected ? 'text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-200'} ${list.isTemporary ? 'italic' : ''}`}>
                                                     {list.name}
+                                                    {list.isTemporary && <span className="text-[10px] font-normal text-slate-500 ml-1.5">(врем.)</span>}
                                                 </h3>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs text-slate-500 dark:text-slate-400">Героев: {list.heroes.length}</span>

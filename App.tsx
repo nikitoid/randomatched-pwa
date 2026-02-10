@@ -65,7 +65,7 @@ const App: React.FC = () => {
 
     const {
         isGroupMode, setIsGroupMode, selectedGroupIds, setSelectedGroupIds, handleToggleGroupItem: baseHandleToggleGroup
-    } = useGroupSelection(lists);
+    } = useGroupSelection(lists, selectedListId);
 
     const {
         playerNames, setPlayerNames, savedTeams, setSavedTeams, deleteHistoryConfirm,

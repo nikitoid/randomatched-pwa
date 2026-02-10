@@ -348,6 +348,7 @@ export const useHeroLists = (
       isLocal: true,
       isTemporary: true,
       isCloud: false,
+      isGroupable: true,
       lastModified: Date.now()
     };
 
@@ -363,6 +364,7 @@ export const useHeroLists = (
       isLocal: true,
       isTemporary: true,
       isCloud: false,
+      isGroupable: true,
       lastModified: Date.now()
     };
     setLists(prev => [...prev, newList]);
