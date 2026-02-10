@@ -52,7 +52,6 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 transition-all text-slate-900 dark:text-white placeholder:text-slate-400"
-                            autoFocus
                         />
                     </div>
                 </div>
