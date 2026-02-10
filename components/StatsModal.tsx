@@ -1,10 +1,11 @@
 
 import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3 } from 'lucide-react';
-import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat } from '../types';
+import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye } from 'lucide-react';
+import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBackup } from '../types';
 import { PlayerDetails } from './PlayerDetails';
 import { HeroDetails } from './HeroDetails';
+import { CloudBackupManager } from './CloudBackupManager';
 
 interface StatsModalProps {
     isOpen: boolean;
@@ -36,6 +37,8 @@ interface StatsModalProps {
     onCreateCloudBackup: () => Promise<string | null>;
     onListCloudBackups: () => Promise<Array<{ id: string; createdAt: number; matchCount: number }>>;
     onRestoreFromCloudBackup: (id: string) => Promise<boolean>;
+    onDeleteCloudBackup: (id: string) => Promise<boolean>;
+    onGetCloudBackupDetails: (id: string) => Promise<CloudBackup | null>;
 }
 
 export const StatsModal: React.FC<StatsModalProps> = ({
@@ -66,12 +69,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     isRestoringBackup = false,
     onCreateCloudBackup = async () => null,
     onListCloudBackups = async () => [],
-    onRestoreFromCloudBackup = async () => false
+    onRestoreFromCloudBackup = async () => false,
+    onDeleteCloudBackup = async () => false,
+    onGetCloudBackupDetails = async () => null
 }) => {
     // Backup Menu State
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
-    const [restoreConfirmId, setRestoreConfirmId] = useState<string | null>(null);
-    const [restoreConfirmInput, setRestoreConfirmInput] = useState('');
+    const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
+
     const titleClickCount = useRef(0);
     const titleClickTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -139,7 +144,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     // Visual Sync State Logic
     const [visualSyncState, setVisualSyncState] = useState<'idle' | 'syncing' | 'success'>('idle');
-    const [isConnectionVerified, setIsConnectionVerified] = useState(false);
 
     const syncWithAnimation = async (options?: any) => {
         // Allow auto-sync to trigger animation even if not idle, but prefer idle state management
@@ -267,20 +271,11 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             setAnchorEl(null);
             setSelectedPlayer(null);
             setSelectedHero(null);
-            setIsConnectionVerified(false); // Reset verification state
         } else {
             // Always open on the first tab
             setActiveTab('overview');
             setSelectedPlayer(null);
             setSelectedHero(null);
-
-            // Verify connectivity when opening
-            setIsConnectionVerified(false);
-            if (checkConnectivity) {
-                checkConnectivity().then(isConnected => {
-                    if (isConnected) setIsConnectionVerified(true);
-                });
-            }
         }
     }, [isOpen]);
 
@@ -1004,86 +999,23 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Облачный бэкап</h4>
 
                                 <button
-                                    onClick={async () => {
+                                    onClick={() => {
                                         triggerHaptic(10);
-                                        await onCreateCloudBackup();
+                                        setIsDataMenuOpen(false);
+                                        setIsBackupManagerOpen(true);
                                     }}
-                                    disabled={!isOnline || isCreatingBackup}
-                                    data-testid="backup-cloud-create-btn"
-                                    className={`w-full flex items-center justify-center gap-3 p-3.5 rounded-2xl font-medium transition-colors ${isOnline && !isCreatingBackup
-                                        ? 'bg-primary-600 text-white hover:bg-primary-700'
-                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
-                                        }`}
+                                    className="w-full flex items-center justify-center gap-3 p-3.5 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-2xl font-medium hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+                                    data-testid="backup-open-manager-btn"
                                 >
-                                    {isCreatingBackup ? (
-                                        <>
-                                            <Loader2 size={20} className="animate-spin" />
-                                            <span>Создание бэкапа...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <RefreshCw size={20} />
-                                            <span>Создать бэкап в облаке</span>
-                                        </>
-                                    )}
+                                    <RefreshCw size={20} />
+                                    <span>Управление облачными бэкапами</span>
                                 </button>
 
-                                {/* Список облачных бэкапов */}
-                                <div className="mt-3">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="text-xs font-medium text-slate-500">Доступные бэкапы</span>
-                                        {isLoadingBackups && (
-                                            <Loader2 size={14} className="animate-spin text-slate-400" data-testid="backup-loading" />
-                                        )}
-                                    </div>
-
-                                    {!isOnline ? (
-                                        <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4">
-                                            Нет подключения к интернету
-                                        </p>
-                                    ) : cloudBackups.length === 0 && !isLoadingBackups ? (
-                                        <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-4" data-testid="backup-list-empty">
-                                            Облачных бэкапов пока нет
-                                        </p>
-                                    ) : (
-                                        <div className="space-y-2 max-h-48 overflow-y-auto" data-testid="backup-list">
-                                            {cloudBackups.map(backup => {
-                                                const date = new Date(backup.createdAt);
-                                                const dateStr = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                                                const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-                                                return (
-                                                    <div
-                                                        key={backup.id}
-                                                        className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl"
-                                                        data-testid="backup-item"
-                                                    >
-                                                        <div className="flex-1">
-                                                            <p className="text-sm font-medium text-slate-900 dark:text-white">
-                                                                {dateStr} в {timeStr}
-                                                            </p>
-                                                            <p className="text-xs text-slate-500">
-                                                                {backup.matchCount} {backup.matchCount === 1 ? 'матч' : backup.matchCount < 5 ? 'матча' : 'матчей'}
-                                                            </p>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => {
-                                                                triggerHaptic(10);
-                                                                setRestoreConfirmId(backup.id);
-                                                                setRestoreConfirmInput('');
-                                                            }}
-                                                            disabled={isRestoringBackup}
-                                                            data-testid="backup-restore-btn"
-                                                            className="px-3 py-1.5 text-xs font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors disabled:opacity-50"
-                                                        >
-                                                            Восстановить
-                                                        </button>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-                                </div>
+                                {cloudBackups.length > 0 && (
+                                    <p className="text-center text-xs text-slate-400 mt-2">
+                                        Доступно бэкапов: {cloudBackups.length}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -1101,79 +1033,29 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 document.body
             )}
 
-            {/* Restore Confirmation Modal */}
-            {restoreConfirmId && createPortal(
-                <div
-                    className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
-                >
-                    <div
-                        className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2.5 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                                <AlertCircle className="text-red-500" size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Подтверждение восстановления</h3>
-                        </div>
 
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                            <span className="text-red-500 font-bold">Внимание!</span> Восстановление из бэкапа полностью перезапишет текущую историю матчей. Это действие нельзя отменить.
-                        </p>
 
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-                            Для подтверждения введите <span className="font-mono font-bold text-slate-900 dark:text-white">ВОССТАНОВИТЬ</span>:
-                        </p>
+            {/* Backup Viewer Modal - Removed here as it's inside CloudBackupManager, OR kept if needed for other flows? 
+                Actually CloudBackupManager handles it internally now.
+                But wait, does StatsModal need it for anything else? No.
+            */}
 
-                        <input
-                            type="text"
-                            value={restoreConfirmInput}
-                            onChange={e => setRestoreConfirmInput(e.target.value)}
-                            placeholder="ВОССТАНОВИТЬ"
-                            data-testid="restore-confirm-input"
-                            className="w-full p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-mono border border-slate-200 dark:border-slate-700 focus:border-primary-500 outline-none mb-4"
-                        />
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    setRestoreConfirmId(null);
-                                    setRestoreConfirmInput('');
-                                }}
-                                data-testid="restore-cancel-btn"
-                                className="flex-1 py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm"
-                            >
-                                Отмена
-                            </button>
-                            <button
-                                onClick={async () => {
-                                    if (restoreConfirmInput === 'ВОССТАНОВИТЬ' && restoreConfirmId) {
-                                        triggerHaptic([20, 50, 20]);
-                                        const success = await onRestoreFromCloudBackup(restoreConfirmId);
-                                        if (success) {
-                                            setRestoreConfirmId(null);
-                                            setRestoreConfirmInput('');
-                                            setIsDataMenuOpen(false);
-                                        }
-                                    }
-                                }}
-                                disabled={restoreConfirmInput !== 'ВОССТАНОВИТЬ' || isRestoringBackup}
-                                data-testid="restore-confirm-btn"
-                                className={`flex-1 py-3 font-bold rounded-xl text-sm transition-colors ${restoreConfirmInput === 'ВОССТАНОВИТЬ' && !isRestoringBackup
-                                    ? 'bg-red-600 text-white hover:bg-red-700'
-                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
-                                    }`}
-                            >
-                                {isRestoringBackup ? (
-                                    <Loader2 size={16} className="animate-spin mx-auto" />
-                                ) : (
-                                    'Восстановить'
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                document.body
+            {/* Cloud Backup Manager */}
+            {isBackupManagerOpen && (
+                <CloudBackupManager
+                    isOpen={isBackupManagerOpen}
+                    onClose={() => setIsBackupManagerOpen(false)}
+                    backups={cloudBackups}
+                    isLoadingBackups={isLoadingBackups}
+                    isCreatingBackup={isCreatingBackup}
+                    isRestoringBackup={isRestoringBackup}
+                    onCreateBackup={onCreateCloudBackup}
+                    onRestoreBackup={onRestoreFromCloudBackup}
+                    onDeleteBackup={onDeleteCloudBackup}
+                    onGetBackupDetails={onGetCloudBackupDetails}
+                    triggerHaptic={triggerHaptic}
+                    isOnline={isOnline}
+                />
             )}
 
             <div
@@ -1194,8 +1076,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <div className="flex gap-2">
                             <button
                                 onClick={() => syncWithAnimation()}
-                                disabled={!isOnline || !isConnectionVerified || visualSyncState !== 'idle'}
-                                className={`p-2 rounded-full transition-all duration-300 ${(!isOnline || !isConnectionVerified) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
+                                disabled={!isOnline || visualSyncState !== 'idle'}
+                                className={`p-2 rounded-full transition-all duration-300 ${(!isOnline) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
                                     visualSyncState === 'success' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' :
                                         'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}
                                 title="Синхронизация"
@@ -1373,31 +1255,31 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             )}
                                         </div>
                                     )}
-                                </div>
 
-                                {/* Top Efficiency Chart */}
-                                <div className="pt-2">
-                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                                        <TrendingUp size={16} className="text-primary-500" /> Топ эффективности
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {sortedPlayers.filter(p => p.matches > 1).slice(0, 5).map((player, i) => {
-                                            const winRate = (player.wins / player.matches) * 100;
-                                            return (
-                                                <div key={player.name}>
-                                                    <div className="flex justify-between text-xs font-medium mb-1">
-                                                        <span className="text-slate-700 dark:text-slate-300">{i + 1}. {player.name}</span>
-                                                        <span className="text-slate-500">{Math.round(winRate)}% <span className="text-[9px] opacity-60">({player.wins}/{player.matches})</span></span>
+                                    {/* Top Efficiency Chart */}
+                                    <div className="pt-2 col-span-2">
+                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                            <TrendingUp size={16} className="text-primary-500" /> Топ эффективности
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {sortedPlayers.filter(p => p.matches > 1).slice(0, 5).map((player, i) => {
+                                                const winRate = (player.wins / player.matches) * 100;
+                                                return (
+                                                    <div key={player.name}>
+                                                        <div className="flex justify-between text-xs font-medium mb-1">
+                                                            <span className="text-slate-700 dark:text-slate-300">{i + 1}. {player.name}</span>
+                                                            <span className="text-slate-500">{Math.round(winRate)}% <span className="text-[9px] opacity-60">({player.wins}/{player.matches})</span></span>
+                                                        </div>
+                                                        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-primary-500 rounded-full" style={{ width: `${winRate}%` }}></div>
+                                                        </div>
                                                     </div>
-                                                    <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-primary-500 rounded-full" style={{ width: `${winRate}%` }}></div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                        {sortedPlayers.filter(p => p.matches > 1).length === 0 && (
-                                            <div className="text-xs text-slate-400 italic text-center py-4">Недостаточно матчей для статистики</div>
-                                        )}
+                                                )
+                                            })}
+                                            {sortedPlayers.filter(p => p.matches > 1).length === 0 && (
+                                                <div className="text-xs text-slate-400 italic text-center py-4">Недостаточно матчей для статистики</div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

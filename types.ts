@@ -73,3 +73,11 @@ export interface HeroStat {
   wins: number;
   losses: number;
 }
+
+export interface CloudBackup {
+  id: string;
+  createdAt: number;
+  matchCount: number;
+  history: MatchRecord[];
+  deletedHistory: MatchRecord[];
+}

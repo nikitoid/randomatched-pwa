@@ -1,7 +1,7 @@
 
-import { checkConnectivity } from '../utils/connectivity';
+import { useConnectivity } from './useConnectivity';
 import { useState, useEffect, useCallback } from 'react';
-import { MatchRecord, AssignedPlayer, ToastType, MatchPlayer } from '../types';
+import { MatchRecord, AssignedPlayer, ToastType, MatchPlayer, CloudBackup } from '../types';
 import { db } from '../firebase';
 
 const STORAGE_KEY_HISTORY = 'randomatched_match_history_v1';
@@ -11,6 +11,7 @@ const STORAGE_KEY_DELETED_HISTORY = 'randomatched_deleted_history_content_v1';
 export const useMatchHistory = (
     addToast: (message: string, type: ToastType, duration?: number) => void
 ) => {
+    const { checkConnectivity } = useConnectivity();
     const [history, setHistory] = useState<MatchRecord[]>([]);
     const [deletedHistory, setDeletedHistory] = useState<MatchRecord[]>([]);
     const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -530,14 +531,7 @@ export const useMatchHistory = (
     const [isRestoringBackup, setIsRestoringBackup] = useState(false);
     const [cloudBackups, setCloudBackups] = useState<Array<{ id: string; createdAt: number; matchCount: number }>>([]);
 
-    // Интерфейс для бэкапа
-    interface CloudBackup {
-        id: string;
-        createdAt: number;
-        matchCount: number;
-        history: MatchRecord[];
-        deletedHistory: MatchRecord[];
-    }
+
 
     // Создание бэкапа в облаке
     const createCloudBackup = async () => {
@@ -661,6 +655,48 @@ export const useMatchHistory = (
         }
     };
 
+    // Удаление бэкапа из облака
+    const deleteCloudBackup = async (backupId: string) => {
+        const isConnected = await checkConnectivity();
+        if (!isConnected) {
+            addToast("Нет подключения к интернету", "error", 2000);
+            return false;
+        }
+
+        try {
+            await db.collection('backups').doc(backupId).delete();
+            setCloudBackups(prev => prev.filter(b => b.id !== backupId));
+            addToast("Бэкап удален", "success", 2000);
+            return true;
+        } catch (e) {
+            console.error("Delete backup failed", e);
+            addToast("Ошибка удаления бэкапа", "error", 2000);
+            return false;
+        }
+    };
+
+    // Получение деталей бэкапа (для просмотра)
+    const getCloudBackupDetails = async (backupId: string): Promise<CloudBackup | null> => {
+        const isConnected = await checkConnectivity();
+        if (!isConnected) {
+            addToast("Нет подключения к интернету", "error", 2000);
+            return null;
+        }
+
+        try {
+            const doc = await db.collection('backups').doc(backupId).get();
+            if (!doc.exists) {
+                addToast("Бэкап не найден", "error", 2000);
+                return null;
+            }
+            return doc.data() as CloudBackup;
+        } catch (e) {
+            console.error("Get backup details failed", e);
+            addToast("Ошибка получения данных бэкапа", "error", 2000);
+            return null;
+        }
+    };
+
     return {
         history,
         deletedHistory,
@@ -684,7 +720,10 @@ export const useMatchHistory = (
         cloudBackups,
         isCreatingBackup,
         isLoadingBackups,
-        isRestoringBackup
+        isRestoringBackup,
+        deleteCloudBackup,
+        getCloudBackupDetails
+
     };
 };
 

@@ -48,7 +48,8 @@ const App: React.FC = () => {
         deletedHistory, restoreMatch, permanentDeleteMatch, clearTrash, importData,
         // Облачный бэкап
         createCloudBackup, listCloudBackups, restoreFromCloudBackup,
-        cloudBackups, isCreatingBackup, isLoadingBackups, isRestoringBackup
+        cloudBackups, isCreatingBackup, isLoadingBackups, isRestoringBackup,
+        deleteCloudBackup, getCloudBackupDetails
     } = useMatchHistory(addToast);
 
     // UI State
@@ -336,6 +337,8 @@ const App: React.FC = () => {
                 onCreateCloudBackup={createCloudBackup}
                 onListCloudBackups={listCloudBackups}
                 onRestoreFromCloudBackup={restoreFromCloudBackup}
+                onDeleteCloudBackup={deleteCloudBackup}
+                onGetCloudBackupDetails={getCloudBackupDetails}
             />
 
             <ResetConfirmModal
@@ -348,6 +351,7 @@ const App: React.FC = () => {
                     triggerHaptic(20);
                 }}
                 isOnline={isOnline}
+                checkConnectivity={checkConnectivity}
             />
 
             <GroupStatsModal

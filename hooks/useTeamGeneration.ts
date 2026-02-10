@@ -63,7 +63,7 @@ export const useTeamGeneration = ({
         }
     });
 
-    const [generationMode, setGenerationMode] = useState<GenerationMode>('random');
+    const [generationMode, setGenerationMode] = useState<GenerationMode>('balanced');
     const [balanceThreshold, setBalanceThreshold] = useState<number>(1);
     const [showResult, setShowResult] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);

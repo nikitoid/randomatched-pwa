@@ -6,6 +6,16 @@ test.describe('Резервное копирование статистики', 
     let app: RandoMatchedApp;
 
     test.beforeEach(async ({ page }) => {
+        // ENABLE TEST MODE (Mock DB)
+        await page.addInitScript(() => {
+            (window as any).__PLAYWRIGHT_TEST__ = true;
+        });
+
+        // MOCK CONNECTIVITY CHECK
+        await page.route('**google.com/favicon.ico*', async route => {
+            await route.fulfill({ status: 200, body: 'mock-favicon' });
+        });
+
         // Инъекция тестовых данных
         await injectTestData(page, [TEST_LIST_PRIMARY]);
         app = new RandoMatchedApp(page);
@@ -89,9 +99,6 @@ test.describe('Резервное копирование статистики', 
     });
 
     test('должно отображаться сообщение об отсутствии бэкапов', async ({ page }, testInfo) => {
-        // Пропускаем тест для Safari Mobile, так как он нестабилен при полном прогоне
-        test.skip(testInfo.project.name === 'safari-mobile', 'Тест нестабилен на Safari Mobile из-за проблем с рендерингом пустого состояния');
-
         test.slow(); // Увеличиваем таймаут для этого теста, так как на Safari он нестабилен
 
         // Открываем статистику и меню бэкапов
