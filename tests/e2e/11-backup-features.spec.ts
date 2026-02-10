@@ -66,16 +66,16 @@ test.describe('Резервное копирование статистики', 
 
         // Проверяем наличие кнопок
         const exportBtn = page.getByTestId('backup-export-btn');
-        const cloudBackupBtn = page.getByTestId('backup-cloud-create-btn');
+        const openManagerBtn = page.getByTestId('backup-open-manager-btn');
         const closeBtn = page.getByTestId('backup-close-btn');
 
         await expect(exportBtn).toBeVisible();
-        await expect(cloudBackupBtn).toBeVisible();
+        await expect(openManagerBtn).toBeVisible();
         await expect(closeBtn).toBeVisible();
 
         // Проверяем текст кнопок
         await expect(exportBtn).toContainText('Экспорт в файл');
-        await expect(cloudBackupBtn).toContainText('Создать бэкап в облаке');
+        await expect(openManagerBtn).toContainText('Управление облачными бэкапами');
     });
 
     test('меню должно закрываться по кнопке Закрыть', async ({ page }) => {
@@ -107,6 +107,10 @@ test.describe('Резервное копирование статистики', 
 
         await openBackupMenu(page);
 
+        // Открываем менеджер облачных бэкапов
+        const openManagerBtn = page.getByTestId('backup-open-manager-btn');
+        await openManagerBtn.click();
+
         // Даем время на завершение анимаций и сетевых запросов
         await page.waitForTimeout(2000);
 
@@ -130,13 +134,17 @@ test.describe('Резервное копирование статистики', 
 
         await openBackupMenu(page);
 
+        // Открываем менеджер облачных бэкапов
+        const openManagerBtn = page.getByTestId('backup-open-manager-btn');
+        await openManagerBtn.click();
+
         // Проверяем структуру UI облачного бэкапа
-        const cloudSection = page.locator('h4:has-text("Облачный бэкап")');
+        const cloudSection = page.locator('h3:has-text("Облачные бэкапы")');
         await expect(cloudSection).toBeVisible();
 
-        // Проверяем наличие раздела "Доступные бэкапы"
-        const availableBackups = page.locator('text=Доступные бэкапы');
-        await expect(availableBackups).toBeVisible();
+        // Проверяем наличие раздела "доступно" (информация о количестве бэкапов)
+        const availableStatus = page.locator('text=доступно');
+        await expect(availableStatus).toBeVisible();
     });
 
     test('модальное окно подтверждения должно требовать ввод слова ВОССТАНОВИТЬ', async ({ page }) => {
@@ -146,12 +154,16 @@ test.describe('Резервное копирование статистики', 
 
         await openBackupMenu(page);
 
+        // Открываем менеджер облачных бэкапов
+        const openManagerBtn = page.getByTestId('backup-open-manager-btn');
+        await openManagerBtn.click();
+
         // Проверяем, есть ли кнопки восстановления - если есть бэкапы
-        const restoreButtonCount = await page.getByTestId('backup-restore-btn').count();
+        const restoreButtonCount = await page.getByTestId('backup-manager-restore-btn').count();
 
         if (restoreButtonCount > 0) {
             // Кликаем на первую кнопку восстановления
-            await page.getByTestId('backup-restore-btn').first().click();
+            await page.getByTestId('backup-manager-restore-btn').first().click();
             await page.waitForTimeout(200);
 
             // Проверяем, что модальное окно подтверждения открылось

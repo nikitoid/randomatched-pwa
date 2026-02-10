@@ -427,6 +427,17 @@ export const useTeamGeneration = ({
         handleShuffleTeams,
         handleBanHero,
         handleBanAllCurrent,
-        handleSwapPositions
+        handleSwapPositions,
+        // New manual selection
+        getAvailableHeroesPool,
+        handleManualHeroSelect: (playerNumber: number, hero: Hero) => {
+            triggerHaptic(10);
+            if (assignments.some(a => a.playerNumber !== playerNumber && a.hero?.id === hero.id)) {
+                addToast("Этот герой уже занят другим игроком!", "warning");
+                return;
+            }
+            setAssignments(prev => prev.map(p => p.playerNumber === playerNumber ? { ...p, hero } : p));
+            addToast(`Герой изменен на ${hero.name}`, "success");
+        }
     };
 };

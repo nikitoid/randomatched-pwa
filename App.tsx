@@ -93,7 +93,7 @@ const App: React.FC = () => {
         handleRevealHeroes, handleResetSessionClick, confirmReset, cancelReset,
         handleShowLastResult, handleRecordResult, handleRerollHero,
         handleRerollAllHeroes, handleShuffleTeams, handleBanHero, handleBanAllCurrent,
-        handleSwapPositions
+        handleSwapPositions, handleManualHeroSelect, getAvailableHeroesPool
     } = useTeamGeneration({
         lists, activeList, isGroupMode, selectedGroupIds, addToast, triggerHaptic,
         playerNames, saveTeamHistory, resetTemporaryLists, updateList, forkList,
@@ -270,6 +270,8 @@ const App: React.FC = () => {
                 playerNames={playerNames}
                 onSwapPositions={handleSwapPositions}
                 onRecordResult={handleRecordResult}
+                onManualSelect={handleManualHeroSelect}
+                availableHeroes={getAvailableHeroesPool()}
             />
 
             <SettingsOverlay

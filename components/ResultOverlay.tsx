@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { AssignedPlayer, GenerationMode } from '../types';
+import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog } from 'lucide-react';
+import { AssignedPlayer, GenerationMode, Hero } from '../types';
+import { HeroSelectionModal } from './HeroSelectionModal';
 
 interface ResultOverlayProps {
     isOpen: boolean;
@@ -20,6 +21,8 @@ interface ResultOverlayProps {
     playerNames?: string[];
     onSwapPositions?: (pos1: 'top' | 'bottom' | 'left' | 'right', pos2: 'top' | 'bottom' | 'left' | 'right') => void;
     onRecordResult?: (winner: 'team1' | 'team2') => void;
+    onManualSelect?: (playerNumber: number, hero: Hero) => void;
+    availableHeroes?: Hero[];
 }
 
 type Position = 'top' | 'bottom' | 'left' | 'right';
@@ -46,12 +49,17 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     setBalanceThreshold,
     playerNames = [],
     onSwapPositions,
-    onRecordResult
+    onRecordResult,
+    onManualSelect,
+    availableHeroes = []
 }) => {
     const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
     const [displayModal, setDisplayModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
     const [showInfo, setShowInfo] = useState(false);
     const [isRerollConfirm, setIsRerollConfirm] = useState(false);
+
+    const [isHeroSelectionOpen, setIsHeroSelectionOpen] = useState(false);
+    const [selectedPlayerForEdit, setSelectedPlayerForEdit] = useState<number | null>(null);
     const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false);
 
     // Custom DND State
@@ -116,6 +124,20 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             onBanAll();
         }
         setConfirmModal(null);
+    };
+
+    const handleOpenManualSelect = (e: React.MouseEvent, playerNumber: number) => {
+        e.stopPropagation();
+        setSelectedPlayerForEdit(playerNumber);
+        setIsHeroSelectionOpen(true);
+    };
+
+    const handleManualHeroSelect = (hero: Hero) => {
+        if (selectedPlayerForEdit !== null && onManualSelect) {
+            onManualSelect(selectedPlayerForEdit, hero);
+        }
+        setIsHeroSelectionOpen(false);
+        setSelectedPlayerForEdit(null);
     };
 
     const handleRecordWin = (winner: 'team1' | 'team2') => {
@@ -286,7 +308,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {!isFloating && hasHero && !isDragMode && (
                     <div className="absolute top-0 left-0 w-full flex justify-between p-2 animate-fade-in z-20">
                         <button onClick={(e) => handleBanClick(e, player)} className={buttonStyle}><Ban size={14} /></button>
-                        <button onClick={(e) => { e.stopPropagation(); onRerollSpecific(player.playerNumber); }} className={buttonStyle}><RefreshCw size={14} /></button>
+                        <div className="flex gap-1">
+                            {onManualSelect && (
+                                <button data-testid="manual-select-btn" onClick={(e) => handleOpenManualSelect(e, player.playerNumber)} className={buttonStyle}><UserCog size={14} /></button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); onRerollSpecific(player.playerNumber); }} className={buttonStyle}><RefreshCw size={14} /></button>
+                        </div>
                     </div>
                 )}
 
@@ -447,7 +474,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     return (
         <>
-            <div className={`fixed inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
+            <div data-testid="result-overlay" className={`fixed inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
 
                 {/* Backdrop for Mode Selector */}
                 <div
@@ -630,6 +657,15 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     <button onClick={() => setShowInfo(false)} className="w-full py-3 font-bold text-white bg-primary-600 rounded-xl">Понятно</button>
                 </div>
             </div>
+
+            <HeroSelectionModal
+                isOpen={isHeroSelectionOpen}
+                onClose={() => setIsHeroSelectionOpen(false)}
+                availableHeroes={availableHeroes}
+                unavailableHeroIds={new Set(assignments.map(a => a.hero?.id).filter(Boolean) as string[])}
+                onSelect={handleManualHeroSelect}
+                currentHeroId={assignments.find(a => a.playerNumber === selectedPlayerForEdit)?.hero?.id}
+            />
         </>
     );
 };

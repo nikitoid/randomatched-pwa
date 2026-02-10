@@ -272,7 +272,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                             data-testid="restore-confirm-input"
                         />
                         <div className="flex gap-3">
-                            <button onClick={() => setRestoreConfirmId(null)} className="flex-1 py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm">Отмена</button>
+                            <button onClick={() => setRestoreConfirmId(null)} className="flex-1 py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm" data-testid="restore-cancel-btn">Отмена</button>
                             <button
                                 onClick={handleRestore}
                                 disabled={restoreConfirmInput !== 'ВОССТАНОВИТЬ' || isRestoringBackup}
