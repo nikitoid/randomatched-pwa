@@ -15,7 +15,7 @@ interface StatsModalProps {
     onAddMatch: (t1: MatchPlayer[], t2: MatchPlayer[], winner: 'team1' | 'team2', timestamp: number) => void;
     onRenamePlayer: (oldName: string, newName: string) => void;
     onRenameHero: (oldName: string, newName: string) => void;
-    onSync: (options?: { silentIfNoChanges?: boolean }) => void;
+    onSync: (options?: { silentIfNoChanges?: boolean }) => Promise<boolean>;
     isSyncing: boolean;
     isOnline: boolean;
     lists: HeroList[]; // For autocomplete
@@ -139,6 +139,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     // Visual Sync State Logic
     const [visualSyncState, setVisualSyncState] = useState<'idle' | 'syncing' | 'success'>('idle');
+    const [isConnectionVerified, setIsConnectionVerified] = useState(false);
 
     const syncWithAnimation = async (options?: any) => {
         // Allow auto-sync to trigger animation even if not idle, but prefer idle state management
@@ -149,19 +150,26 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
         setVisualSyncState('syncing');
         const startTime = Date.now();
+        let success = false;
 
         try {
-            await onSync(options);
+            success = await onSync(options);
+        } catch (e) {
+            success = false;
         } finally {
             const elapsed = Date.now() - startTime;
             const minDuration = 1000; // Spinner animation duration (approx)
             const remaining = Math.max(0, minDuration - elapsed);
 
             setTimeout(() => {
-                setVisualSyncState('success');
-                setTimeout(() => {
+                if (success) {
+                    setVisualSyncState('success');
+                    setTimeout(() => {
+                        setVisualSyncState('idle');
+                    }, 2000);
+                } else {
                     setVisualSyncState('idle');
-                }, 2000);
+                }
             }, remaining);
         }
     };
@@ -259,11 +267,20 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             setAnchorEl(null);
             setSelectedPlayer(null);
             setSelectedHero(null);
+            setIsConnectionVerified(false); // Reset verification state
         } else {
             // Always open on the first tab
             setActiveTab('overview');
             setSelectedPlayer(null);
             setSelectedHero(null);
+
+            // Verify connectivity when opening
+            setIsConnectionVerified(false);
+            if (checkConnectivity) {
+                checkConnectivity().then(isConnected => {
+                    if (isConnected) setIsConnectionVerified(true);
+                });
+            }
         }
     }, [isOpen]);
 
@@ -1177,8 +1194,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <div className="flex gap-2">
                             <button
                                 onClick={() => syncWithAnimation()}
-                                disabled={!isOnline || visualSyncState !== 'idle'}
-                                className={`p-2 rounded-full transition-all duration-300 ${!isOnline ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
+                                disabled={!isOnline || !isConnectionVerified || visualSyncState !== 'idle'}
+                                className={`p-2 rounded-full transition-all duration-300 ${(!isOnline || !isConnectionVerified) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
                                     visualSyncState === 'success' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' :
                                         'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}
                                 title="Синхронизация"

@@ -244,7 +244,7 @@ export const useMatchHistory = (
         }
     };
 
-    const syncHistory = async (options?: { silentIfNoChanges?: boolean }) => {
+    const syncHistory = async (options?: { silentIfNoChanges?: boolean }): Promise<boolean> => {
         const { silentIfNoChanges = false } = options || {};
 
         const isConnected = await checkConnectivity();
@@ -252,7 +252,7 @@ export const useMatchHistory = (
             if (!silentIfNoChanges) {
                 addToast("Нет подключения к интернету", "error", 2000);
             }
-            return;
+            return false;
         }
 
         setIsSyncingHistory(true);
@@ -494,11 +494,13 @@ export const useMatchHistory = (
             // Cleanup permanently deleted docs
             await cleanupPermanentDeletes();
 
+            return true;
         } catch (e) {
             console.error("Sync history failed", e);
             if (!silentIfNoChanges) {
                 addToast("Ошибка синхронизации истории", "error", 2000);
             }
+            return false;
         } finally {
             setIsSyncingHistory(false);
         }
