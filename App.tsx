@@ -9,7 +9,6 @@ import { useAppStats } from './hooks/useAppStats';
 import { useGroupSelection } from './hooks/useGroupSelection';
 import { useHistoryInput } from './hooks/useHistoryInput';
 import { useTeamGeneration } from './hooks/useTeamGeneration';
-import { useBackButton } from './hooks/useBackButton';
 import { ResultOverlay } from './components/ResultOverlay';
 import { SettingsOverlay } from './components/SettingsOverlay';
 import { StatsModal } from './components/StatsModal';
@@ -24,6 +23,7 @@ import { GroupStatsModal } from './components/GroupStatsModal';
 import { UpdateBanner } from './components/UpdateBanner';
 import { GenConfirmModal } from './components/GenConfirmModal';
 import { getUniqueHeroesFromLists } from './utils/generator';
+import { NavigationProvider } from './context/NavigationContext';
 
 const App: React.FC = () => {
     const { theme, toggleTheme, colorScheme, setColorScheme } = useTheme();
@@ -117,13 +117,6 @@ const App: React.FC = () => {
         }
     });
 
-    useBackButton({
-        isSettingsOpen, setIsSettingsOpen, showResult, setShowResult,
-        isResetConfirmOpen, setIsResetConfirmOpen, isGroupStatsOpen, setIsGroupStatsOpen,
-        isNamesOpen, setIsNamesOpen, isListSelectorOpen, setIsListSelectorOpen,
-        isHistoryStatsOpen, setIsHistoryStatsOpen, addToast
-    });
-
     // Effect: Select default list if none selected
     useEffect(() => {
         if (isLoaded && lists.length > 0) {
@@ -172,209 +165,211 @@ const App: React.FC = () => {
     };
 
     return (
-        <div className="relative h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300 overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary-50/50 to-transparent dark:from-primary-950/20 pointer-events-none" />
-            <ToastContainer toasts={toasts} removeToast={removeToast} />
+        <NavigationProvider>
+            <div className="relative h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300 overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary-50/50 to-transparent dark:from-primary-950/20 pointer-events-none" />
+                <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-            <Header
-                isCheckingUpdate={isCheckingUpdate}
-                isUpdateAvailable={isUpdateAvailable}
-                handleOpenUpdateBanner={handleOpenUpdateBanner}
-                theme={theme}
-                toggleTheme={toggleTheme}
-            />
-
-            <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative z-1">
-
-                <div
-                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 transition-all duration-300 ${isListSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
-                    onClick={() => setIsListSelectorOpen(false)}
-                />
-                <div
-                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 transition-all duration-300 ${isNamesOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
-                    onClick={() => setIsNamesOpen(false)}
+                <Header
+                    isCheckingUpdate={isCheckingUpdate}
+                    isUpdateAvailable={isUpdateAvailable}
+                    handleOpenUpdateBanner={handleOpenUpdateBanner}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
                 />
 
-                <SourceSelector
-                    lists={lists}
-                    activeList={activeList}
-                    selectedListId={selectedListId}
-                    isGroupMode={isGroupMode}
-                    setIsGroupMode={setIsGroupMode}
-                    selectedGroupIds={selectedGroupIds}
-                    handleToggleGroupItem={handleToggleGroupItem}
-                    handleSelectList={handleSelectList}
-                    isListSelectorOpen={isListSelectorOpen}
-                    setIsListSelectorOpen={setIsListSelectorOpen}
-                    setIsGroupStatsOpen={setIsGroupStatsOpen}
-                    isOnline={isOnline}
-                    groupTotalHeroes={groupTotalHeroes}
-                    selectedGroupCount={selectedGroupCount}
+                <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative z-1">
+
+                    <div
+                        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 transition-all duration-300 ${isListSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                        onClick={() => setIsListSelectorOpen(false)}
+                    />
+                    <div
+                        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 transition-all duration-300 ${isNamesOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                        onClick={() => setIsNamesOpen(false)}
+                    />
+
+                    <SourceSelector
+                        lists={lists}
+                        activeList={activeList}
+                        selectedListId={selectedListId}
+                        isGroupMode={isGroupMode}
+                        setIsGroupMode={setIsGroupMode}
+                        selectedGroupIds={selectedGroupIds}
+                        handleToggleGroupItem={handleToggleGroupItem}
+                        handleSelectList={handleSelectList}
+                        isListSelectorOpen={isListSelectorOpen}
+                        setIsListSelectorOpen={setIsListSelectorOpen}
+                        setIsGroupStatsOpen={setIsGroupStatsOpen}
+                        isOnline={isOnline}
+                        groupTotalHeroes={groupTotalHeroes}
+                        selectedGroupCount={selectedGroupCount}
+                    />
+
+                    <PlayerNameInput
+                        isNamesOpen={isNamesOpen}
+                        setIsNamesOpen={setIsNamesOpen}
+                        filledNamesCount={filledNamesCount}
+                        savedTeams={savedTeams}
+                        historyScrollRef={historyScrollRef}
+                        handleHistoryMouseDown={handleHistoryMouseDown}
+                        handleHistoryMouseLeave={handleHistoryMouseLeave}
+                        handleHistoryMouseUp={handleHistoryMouseUp}
+                        handleHistoryMouseMove={handleHistoryMouseMove}
+                        isHistoryDragging={isHistoryDragging}
+                        isHistoryDragScroll={isHistoryDragScroll}
+                        deleteHistoryConfirm={deleteHistoryConfirm}
+                        handleSelectSavedTeam={handleSelectSavedTeam}
+                        handleDeleteHistoryItem={(e, i) => {
+                            if (handleDeleteHistoryItem(e, i)) {
+                                triggerHaptic(20);
+                            } else {
+                                triggerHaptic(10);
+                            }
+                        }}
+                        playerNames={playerNames}
+                        handleNameChange={handleNameChange}
+                    />
+
+                    <MainControls
+                        handleGenerate={handleGenerateClick}
+                        isAnimating={isAnimating}
+                        hasLists={lists.length > 0}
+                        canReset={canReset}
+                        handleResetSessionClick={handleResetSessionClick}
+                    />
+                </main>
+
+                <AppNavigation
+                    onOpenStats={() => { setIsHistoryStatsOpen(true); triggerHaptic(10); }}
+                    onOpenHistory={handleShowLastResult}
+                    onOpenSettings={() => { setIsSettingsOpen(true); triggerHaptic(10); }}
+                    hasResult={hasResult}
                 />
 
-                <PlayerNameInput
-                    isNamesOpen={isNamesOpen}
-                    setIsNamesOpen={setIsNamesOpen}
-                    filledNamesCount={filledNamesCount}
-                    savedTeams={savedTeams}
-                    historyScrollRef={historyScrollRef}
-                    handleHistoryMouseDown={handleHistoryMouseDown}
-                    handleHistoryMouseLeave={handleHistoryMouseLeave}
-                    handleHistoryMouseUp={handleHistoryMouseUp}
-                    handleHistoryMouseMove={handleHistoryMouseMove}
-                    isHistoryDragging={isHistoryDragging}
-                    isHistoryDragScroll={isHistoryDragScroll}
-                    deleteHistoryConfirm={deleteHistoryConfirm}
-                    handleSelectSavedTeam={handleSelectSavedTeam}
-                    handleDeleteHistoryItem={(e, i) => {
-                        if (handleDeleteHistoryItem(e, i)) {
-                            triggerHaptic(20);
-                        } else {
-                            triggerHaptic(10);
-                        }
-                    }}
+                <ResultOverlay
+                    isOpen={showResult}
+                    onClose={() => setShowResult(false)}
+                    assignments={assignments}
+                    onRerollSpecific={handleRerollHero}
+                    onRerollAllHeroes={handleRerollAllHeroes}
+                    onShuffleTeams={handleShuffleTeams}
+                    onBanSpecific={handleBanHero}
+                    onBanAll={handleBanAllCurrent}
+                    onRevealHeroes={handleRevealHeroes}
+                    generationMode={generationMode}
+                    setGenerationMode={setGenerationMode}
+                    balanceThreshold={balanceThreshold}
+                    setBalanceThreshold={setBalanceThreshold}
                     playerNames={playerNames}
-                    handleNameChange={handleNameChange}
+                    onSwapPositions={handleSwapPositions}
+                    onRecordResult={handleRecordResult}
+                    onManualSelect={handleManualHeroSelect}
+                    availableHeroes={getAvailableHeroesPool()}
                 />
 
-                <MainControls
-                    handleGenerate={handleGenerateClick}
-                    isAnimating={isAnimating}
-                    hasLists={lists.length > 0}
-                    canReset={canReset}
-                    handleResetSessionClick={handleResetSessionClick}
+                <SettingsOverlay
+                    isOpen={isSettingsOpen}
+                    onClose={() => setIsSettingsOpen(false)}
+                    lists={lists}
+                    onAddList={addList}
+                    onUpdateList={updateList}
+                    onDeleteList={deleteList}
+                    onUploadToCloud={uploadToCloud}
+                    onSync={syncWithCloud}
+                    reorderLists={reorderLists}
+                    sortLists={sortLists}
+                    isOnline={isOnline}
+                    isSyncing={isSyncing}
+                    checkConnectivity={checkConnectivity}
+                    addToast={addToast}
+                    updatedListIds={updatedListIds}
+                    onMarkSeen={markListAsSeen}
+                    updatedHeroIds={updatedHeroIds}
+                    onDismissHeroUpdates={dismissHeroUpdates}
+                    colorScheme={colorScheme}
+                    setColorScheme={setColorScheme}
+                    // logs={consoleLogs} // REMOVED
+                    checkForUpdate={checkForUpdate}
+                    isCheckingUpdate={isCheckingUpdate}
+                    isUpdateAvailable={isUpdateAvailable}
+                    onUpdateApp={handleUpdateApp}
+                    // isDebugMode={isDebugMode} // REMOVED
+                    // onToggleDebug={setIsDebugMode} // REMOVED
+                    hapticsEnabled={hapticsEnabled}
+                    onToggleHaptics={toggleHaptics}
+                    triggerHaptic={triggerHaptic}
+                    history={history}
+
                 />
-            </main>
 
-            <AppNavigation
-                onOpenStats={() => { window.history.pushState({ view: 'stats' }, ''); setIsHistoryStatsOpen(true); triggerHaptic(10); }}
-                onOpenHistory={handleShowLastResult}
-                onOpenSettings={() => { setIsSettingsOpen(true); triggerHaptic(10); }}
-                hasResult={hasResult}
-            />
+                <StatsModal
+                    isOpen={isHistoryStatsOpen}
+                    onClose={() => setIsHistoryStatsOpen(false)}
+                    history={history}
+                    onDeleteMatch={deleteMatch}
+                    onUpdateMatch={updateMatch}
+                    onAddMatch={addManualMatch}
+                    onRenamePlayer={renamePlayer}
+                    onRenameHero={renameHero}
+                    onSync={syncHistory}
+                    isSyncing={isSyncingHistory}
+                    isOnline={isOnline}
 
-            <ResultOverlay
-                isOpen={showResult}
-                onClose={() => setShowResult(false)}
-                assignments={assignments}
-                onRerollSpecific={handleRerollHero}
-                onRerollAllHeroes={handleRerollAllHeroes}
-                onShuffleTeams={handleShuffleTeams}
-                onBanSpecific={handleBanHero}
-                onBanAll={handleBanAllCurrent}
-                onRevealHeroes={handleRevealHeroes}
-                generationMode={generationMode}
-                setGenerationMode={setGenerationMode}
-                balanceThreshold={balanceThreshold}
-                setBalanceThreshold={setBalanceThreshold}
-                playerNames={playerNames}
-                onSwapPositions={handleSwapPositions}
-                onRecordResult={handleRecordResult}
-                onManualSelect={handleManualHeroSelect}
-                availableHeroes={getAvailableHeroesPool()}
-            />
+                    lists={lists}
+                    triggerHaptic={triggerHaptic}
+                    deletedHistory={deletedHistory}
+                    onRestoreMatch={restoreMatch}
+                    onPermanentDeleteMatch={permanentDeleteMatch}
+                    onClearTrash={clearTrash}
 
-            <SettingsOverlay
-                isOpen={isSettingsOpen}
-                onClose={() => setIsSettingsOpen(false)}
-                lists={lists}
-                onAddList={addList}
-                onUpdateList={updateList}
-                onDeleteList={deleteList}
-                onUploadToCloud={uploadToCloud}
-                onSync={syncWithCloud}
-                reorderLists={reorderLists}
-                sortLists={sortLists}
-                isOnline={isOnline}
-                isSyncing={isSyncing}
-                checkConnectivity={checkConnectivity}
-                addToast={addToast}
-                updatedListIds={updatedListIds}
-                onMarkSeen={markListAsSeen}
-                updatedHeroIds={updatedHeroIds}
-                onDismissHeroUpdates={dismissHeroUpdates}
-                colorScheme={colorScheme}
-                setColorScheme={setColorScheme}
-                // logs={consoleLogs} // REMOVED
-                checkForUpdate={checkForUpdate}
-                isCheckingUpdate={isCheckingUpdate}
-                isUpdateAvailable={isUpdateAvailable}
-                onUpdateApp={handleUpdateApp}
-                // isDebugMode={isDebugMode} // REMOVED
-                // onToggleDebug={setIsDebugMode} // REMOVED
-                hapticsEnabled={hapticsEnabled}
-                onToggleHaptics={toggleHaptics}
-                triggerHaptic={triggerHaptic}
-                history={history}
+                    onImportData={importData}
+                    checkConnectivity={checkConnectivity}
+                    // Облачный бэкап
+                    cloudBackups={cloudBackups}
+                    isCreatingBackup={isCreatingBackup}
+                    isLoadingBackups={isLoadingBackups}
+                    isRestoringBackup={isRestoringBackup}
+                    onCreateCloudBackup={createCloudBackup}
+                    onListCloudBackups={listCloudBackups}
+                    onRestoreFromCloudBackup={restoreFromCloudBackup}
+                    onDeleteCloudBackup={deleteCloudBackup}
+                    onGetCloudBackupDetails={getCloudBackupDetails}
+                />
 
-            />
+                <ResetConfirmModal
+                    isOpen={isResetConfirmOpen}
+                    onCancel={cancelReset}
+                    onConfirm={confirmReset}
+                    onResetAndSync={() => {
+                        confirmReset();
+                        syncHistory();
+                        triggerHaptic(20);
+                    }}
+                    isOnline={isOnline}
+                    checkConnectivity={checkConnectivity}
+                />
 
-            <StatsModal
-                isOpen={isHistoryStatsOpen}
-                onClose={() => setIsHistoryStatsOpen(false)}
-                history={history}
-                onDeleteMatch={deleteMatch}
-                onUpdateMatch={updateMatch}
-                onAddMatch={addManualMatch}
-                onRenamePlayer={renamePlayer}
-                onRenameHero={renameHero}
-                onSync={syncHistory}
-                isSyncing={isSyncingHistory}
-                isOnline={isOnline}
+                <GroupStatsModal
+                    isOpen={isGroupStatsOpen}
+                    onClose={() => setIsGroupStatsOpen(false)}
+                    getSelectionStats={getSelectionStats}
+                    getRankBarColor={getRankBarColor}
+                />
 
-                lists={lists}
-                triggerHaptic={triggerHaptic}
-                deletedHistory={deletedHistory}
-                onRestoreMatch={restoreMatch}
-                onPermanentDeleteMatch={permanentDeleteMatch}
-                onClearTrash={clearTrash}
+                <GenConfirmModal
+                    isOpen={isGenConfirmOpen}
+                    onCancel={() => setIsGenConfirmOpen(false)}
+                    onConfirm={confirmGenerate}
+                />
 
-                onImportData={importData}
-                checkConnectivity={checkConnectivity}
-                // Облачный бэкап
-                cloudBackups={cloudBackups}
-                isCreatingBackup={isCreatingBackup}
-                isLoadingBackups={isLoadingBackups}
-                isRestoringBackup={isRestoringBackup}
-                onCreateCloudBackup={createCloudBackup}
-                onListCloudBackups={listCloudBackups}
-                onRestoreFromCloudBackup={restoreFromCloudBackup}
-                onDeleteCloudBackup={deleteCloudBackup}
-                onGetCloudBackupDetails={getCloudBackupDetails}
-            />
-
-            <ResetConfirmModal
-                isOpen={isResetConfirmOpen}
-                onCancel={cancelReset}
-                onConfirm={confirmReset}
-                onResetAndSync={() => {
-                    confirmReset();
-                    syncHistory();
-                    triggerHaptic(20);
-                }}
-                isOnline={isOnline}
-                checkConnectivity={checkConnectivity}
-            />
-
-            <GroupStatsModal
-                isOpen={isGroupStatsOpen}
-                onClose={() => setIsGroupStatsOpen(false)}
-                getSelectionStats={getSelectionStats}
-                getRankBarColor={getRankBarColor}
-            />
-
-            <GenConfirmModal
-                isOpen={isGenConfirmOpen}
-                onCancel={() => setIsGenConfirmOpen(false)}
-                onConfirm={confirmGenerate}
-            />
-
-            <UpdateBanner
-                isVisible={showUpdateBanner}
-                onUpdate={handleUpdateApp}
-                onClose={() => setShowUpdateBanner(false)}
-            />
-        </div>
+                <UpdateBanner
+                    isVisible={showUpdateBanner}
+                    onUpdate={handleUpdateApp}
+                    onClose={() => setShowUpdateBanner(false)}
+                />
+            </div>
+        </NavigationProvider>
     );
 };
 

@@ -6,6 +6,7 @@ import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBa
 import { PlayerDetails } from './PlayerDetails';
 import { HeroDetails } from './HeroDetails';
 import { CloudBackupManager } from './CloudBackupManager';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface StatsModalProps {
     isOpen: boolean;
@@ -76,6 +77,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     // Backup Menu State
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
     const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
+
+    useBackHandler(isDataMenuOpen, () => {
+        setIsDataMenuOpen(false);
+    }, { id: 'stats-data-menu', priority: 30 });
 
     const titleClickCount = useRef(0);
     const titleClickTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -279,55 +284,59 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         }
     }, [isOpen]);
 
-    // Back Button Logic for Details
-    useEffect(() => {
-        if (!isOpen) return;
+    // Back Button Logic with useBackHandler
+    useBackHandler(isOpen, () => {
+        // 1. Close Detail Views if open
+        if (selectedPlayer || selectedHero) {
+            setSelectedPlayer(null);
+            setSelectedHero(null);
+            // Restore 'stats' view state if needed, or just let it be.
+            // Since we are "going back" from details, we conceptually stay in Stats.
+            // In the old logic we used history.back() which triggered popstate.
+            // Here we just update state.
+            // BUT: usage of pushState for details means we might have a browser history entry to pop?
+            // If we opened details with pushState, pressing physical back pops it.
+            // NavigationContext traps physical back.
+            // If we have a forward history for details, we should probably pop it to keep URL/state clean?
+            // ACTUALLY: The Context traps the event, so browser history IS popped (conceptually) or we trapped it.
+            // If we trapped it (pushState inserted), we are good.
+            return;
+        }
 
-        const handlePopState = (event: PopStateEvent) => {
-            const state = event.state;
+        // 2. Close Modal
+        onClose();
+    }, { id: 'stats-modal', priority: 20 }); // Higher priority than App/Root
 
-            // If we returned to the main stats view (from details), close details
-            if (state?.view === 'stats') {
-                if (selectedPlayer || selectedHero) {
-                    setSelectedPlayer(null);
-                    setSelectedHero(null);
-                }
-            } else if (!state?.view || state.view === 'root') {
-                if (selectedPlayer || selectedHero) {
-                    // If we returned to root while details were open (skipped 'stats' state),
-                    // we close details but KEEP modal open.
-                    // We also restore 'stats' state to ensure consistent navigation stack.
-                    setSelectedPlayer(null);
-                    setSelectedHero(null);
-                    window.history.pushState({ view: 'stats' }, '');
-                } else {
-                    // If we are at root and NO details are open, closes the modal
-                    onClose();
-                }
-            }
-        };
+    // We still need to handle "forward" navigation or state consistency if we rely on history.state.view
+    // But since we are moving away from relying on history for logic, we just manage internal state.
+    // However, for "Deep Linking" or keeping browser forward button working, we might need more.
+    // For now, mirroring old logic's intent: Close details first, then modal.
 
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, [isOpen, selectedPlayer, selectedHero]);
+    // Old effect for synchronizing history state when details open/close?
+    // The old logic pushed 'stats-details'.
+    // If we use useBackHandler, we intercept the hardware back.
+    // So we don't need to listen to popstate manually.
+
+    /* 
+    DEPRECATED: Old popstate listener removed.
+    */
 
     const openHeroDetails = (hero: HeroStat) => {
         triggerHaptic(10);
-        window.history.pushState({ view: 'stats-details' }, '');
+        // window.history.pushState({ view: 'stats-details' }, ''); // Optional: if we want to support browser forward
         setSelectedHero(hero);
     };
 
     const openPlayerDetails = (player: PlayerStat) => {
         triggerHaptic(10);
-        window.history.pushState({ view: 'stats-details' }, '');
+        // window.history.pushState({ view: 'stats-details' }, '');
         setSelectedPlayer(player);
     };
 
     const closeDetails = () => {
         triggerHaptic(10);
-        // We rely on history.back() to trigger the popstate event which handles the closing logic
-        // This ensures consistent behavior with the system back button
-        window.history.back();
+        setSelectedPlayer(null);
+        setSelectedHero(null);
     };
 
     const closeMatchForm = () => {

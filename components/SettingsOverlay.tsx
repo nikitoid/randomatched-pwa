@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, RefreshCw, Trash, Info, SmartphoneNfc, Vibrate } from 'lucide-react';
+import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, Hero, ColorScheme, MatchRecord } from '../types';
 import { RANKS, COLOR_SCHEMES_DATA } from '../constants';
 import { RankSelect } from './RankSelect';
@@ -243,85 +244,65 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
     // --- HISTORY & NAVIGATION HANDLER ---
 
-    // 1. PUSH STATE ON OPEN ONLY
+    useBackHandler(isOpen, () => {
+        // High priority internal states (Modals on top of Settings)
+        if (isNameModalOpen) { setNameModalOpen(false); return; }
+        if (listToDelete) { setListToDelete(null); return; }
+        if (isDiscardModalOpen) { setDiscardModalOpen(false); return; }
+        if (isStatsModalOpen) { setIsStatsModalOpen(false); return; }
+        if (importMode !== 'none') { setImportMode('none'); return; }
+
+        // Rank Menu
+        if (focusedRowIndex !== null) {
+            setFocusedRowIndex(null);
+            return;
+        }
+
+        // Editor Mode
+        if (editingListId) {
+            if (isDirtyRef.current) {
+                // Prevent navigation, show confirmation
+                setDiscardModalOpen(true);
+                return;
+            }
+            // Close editor
+            if (onDismissHeroUpdates) onDismissHeroUpdates(editingListId);
+            setEditingListId(null);
+            setEditorHeroes([]);
+            return;
+        }
+
+        // Close Settings Overlay
+        onClose();
+    }, { id: 'settings-overlay', priority: 20 });
+
+    /* 
+    DEPRECATED: Old history management removed.
+    We relying on internal state and just trapping the back button.
+    */
+
+    // 1. PUSH STATE ON OPEN ONLY - REMOVED or MODIFIED?
+    // We might still want to push 'settings' state so browser URL changes?
+    // User plan said: "We will maintain pushState usage to ensure the browser's "Back" button is physically active."
+    // However, the NavigationContext handles the 'physical' back. 
+    // If we pushState, we need to ensure we don't duplicate it. 
+    // NavigationContext usage:
+    // - When we open Settings (App.tsx), we just set isSettingsOpen(true). 
+    // - If we want browser back to work, we need a history entry to "remove".
+    // - NavContext traps the "pop".
+    // - If we DON'T push a state, hitting back will go to "google.com" (previous page).
+    // - SO WE MUST PUSH STATE when opening.
+
     useEffect(() => {
         if (isOpen) {
-            const currentState = window.history.state;
-            const isInSettingsContext =
-                currentState?.overlay === 'settings' ||
-                currentState?.overlay === 'settings-editor';
-
-            if (!isInSettingsContext) {
-                window.history.pushState({ overlay: 'settings' }, '');
-            }
+            // We push a state to have something to pop.
+            // We don't really care about the content, just that it exists.
+            // But to avoid "stacking" if re-renders happen, checking history.state might be good.
+            // or just trust the user flow.
+            // App.tsx toggles isOpen.
+            window.history.pushState({ overlay: 'settings' }, '');
         }
     }, [isOpen]);
-
-    // 2. LISTENER FOR NAVIGATION (Hierarchy: App -> Settings -> Editor)
-    useEffect(() => {
-        if (isOpen) {
-            const handlePopState = (event: PopStateEvent) => {
-                const state = event.state;
-                const overlay = state?.overlay;
-
-                // Close focused rank menu if open via back button
-                if (focusedRowIndex !== null) {
-                    setFocusedRowIndex(null);
-                    window.history.pushState({ overlay: 'settings-editor' }, '');
-                    return;
-                }
-
-                if (isNameModalOpen || listToDelete || isDiscardModalOpen || isStatsModalOpen || importMode !== 'none') {
-                    // Restore appropriate state depending on where we are
-                    if (editingListId) {
-                        window.history.pushState({ overlay: 'settings-editor' }, '');
-                    } else {
-                        window.history.pushState({ overlay: 'settings' }, '');
-                    }
-                    // Close overlays
-                    setNameModalOpen(false);
-                    setListToDelete(null);
-                    setDiscardModalOpen(false);
-                    setIsStatsModalOpen(false);
-                    setImportMode('none');
-                    return;
-                }
-
-                // INTERCEPT BACK ACTION IF DIRTY
-                if (overlay === 'settings' && editingListId) {
-                    if (isDirtyRef.current) {
-                        // Push state back to prevent actual navigation, then show confirmation
-                        window.history.pushState({ overlay: 'settings-editor' }, '');
-                        setDiscardModalOpen(true);
-                        return;
-                    }
-
-                    if (onDismissHeroUpdates) onDismissHeroUpdates(editingListId);
-                    setEditingListId(null);
-                    setEditorHeroes([]);
-                    return;
-                }
-
-                if (overlay === 'settings-editor') {
-                    return;
-                }
-
-                if (overlay !== 'settings' && overlay !== 'settings-editor') {
-                    onClose();
-                    setEditingListId(null);
-
-                    setNameModalOpen(false);
-                    setListToDelete(null);
-                    setDiscardModalOpen(false);
-                    setIsStatsModalOpen(false);
-                    setImportMode('none');
-                }
-            };
-
-            window.addEventListener('popstate', handlePopState);
-            return () => window.removeEventListener('popstate', handlePopState);
-        }
-    }, [isOpen, editingListId, isNameModalOpen, listToDelete, isDiscardModalOpen, isStatsModalOpen, onDismissHeroUpdates, focusedRowIndex, importMode]);
 
     // Rank Logic
     const getHeroStats = (heroName: string) => {

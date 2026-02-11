@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog } from 'lucide-react';
 import { AssignedPlayer, GenerationMode, Hero } from '../types';
 import { HeroSelectionModal } from './HeroSelectionModal';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface ResultOverlayProps {
     isOpen: boolean;
@@ -76,6 +77,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     // Refs for tracking elements positions
     const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+    useBackHandler(isOpen, () => {
+        if (isHeroSelectionOpen) { setIsHeroSelectionOpen(false); return; }
+        if (confirmModal) { setConfirmModal(null); return; }
+        if (showInfo) { setShowInfo(false); return; }
+        if (isRerollConfirm) { setIsRerollConfirm(false); return; }
+        if (isModeSelectorOpen) { setIsModeSelectorOpen(false); return; }
+
+        onClose();
+    }, { id: 'result-overlay', priority: 20 });
+
     useEffect(() => {
         if (!isOpen) {
             setIsRerollConfirm(false);
@@ -90,6 +101,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isOpen) {
+                // Let back handler handle logic if complex, or just close
+                // For consistecy, maybe call the same logic?
+                // But Escape is usually "Close All" or "Step Back".
+                // Simple onClose is fine for Desktop fallback.
                 onClose();
             }
         };

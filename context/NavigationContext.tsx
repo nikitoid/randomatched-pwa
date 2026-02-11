@@ -1,0 +1,121 @@
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { useToast } from '../hooks/useToast';
+
+interface NavigationItem {
+    id: string;
+    onBack: () => void;
+    priority: number;
+    isBlocking: boolean;
+}
+
+interface NavigationContextType {
+    register: (id: string, onBack: () => void, priority?: number, isBlocking?: boolean) => void;
+    unregister: (id: string) => void;
+}
+
+const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
+
+export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    // Stack of active handlers
+    const [stack, setStack] = useState<NavigationItem[]>([]);
+    const stackRef = useRef<NavigationItem[]>([]); // Ref for immediate access in event listener
+    const lastBackPressTime = useRef<number>(0);
+    const { addToast } = useToast();
+
+    // Sync ref with state
+    useEffect(() => {
+        stackRef.current = stack;
+    }, [stack]);
+
+    // Initialize history state on mount
+    useEffect(() => {
+        // Ensure we have a state to pop from
+        window.history.replaceState({ view: 'root' }, '');
+    }, []);
+
+    const register = useCallback((id: string, onBack: () => void, priority = 10, isBlocking = false) => {
+        setStack(prev => {
+            // Remove existing if any (update scenario)
+            const filtered = prev.filter(item => item.id !== id);
+            // Add new
+            const newItem = { id, onBack, priority, isBlocking };
+            const newStack = [...filtered, newItem].sort((a, b) => a.priority - b.priority);
+            return newStack;
+        });
+    }, []);
+
+    const unregister = useCallback((id: string) => {
+        setStack(prev => prev.filter(item => item.id !== id));
+    }, []);
+
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            const currentStack = stackRef.current;
+
+            if (currentStack.length > 0) {
+                // Get the highest priority item (last one due to sort)
+                const topItem = currentStack[currentStack.length - 1];
+
+                if (topItem.isBlocking) {
+                    // Blocking logic: Do NOTHING, just trap the back event (restore state)
+                    // We push state again to "undo" the back navigation efficiently
+                    window.history.pushState({ view: 'root' }, '');
+                    return;
+                }
+
+                // Normal handler
+                topItem.onBack();
+
+                // IMPORTANT: The browser ALREADY went back in history. 
+                // Checks if we need to restore the state?
+                // Usually for modals we use pushState when opening. 
+                // If the modal was opened WITHOUT pushState, we might be navigating back from Root to Previous Site logic.
+                // But generally in SPA with "fake" history for modals:
+                // If we want to stay on the "same" URL visually or logical state, we might need to handle it.
+                // However, the standard pattern for "Back Button to close modal" assumes the modal *added* a history entry?
+                // Or we just trap the event.
+                // Let's stick to the "Trap" pattern for now:
+                // If we handled it internally, we restore the history state so the user doesn't actually leave the page 
+                // UNLESS the modal logic itself handles history (like SettingsOverlay currently does).
+                // Refactoring: We should Standardize. 
+                // OPTION A: Modals DON'T push state, we just trap 'popstate' and prevent exit.
+                // OPTION B: Modals PUSH state, and 'popstate' naturally closes them.
+
+                // Current implementation in App seems mixed. 
+                // Let's trust the "Trap" approach for stability: 
+                // "The user pressed back. We start an action. We Restore the history state to prevent exiting the app."
+                window.history.pushState({ view: 'root' }, '');
+            } else {
+                // Stack is empty -> Exit App Logic
+                const now = Date.now();
+                if (now - lastBackPressTime.current < 2000) {
+                    // Double press detected within 2 seconds
+                    // Allow default behavior (exit/back)
+                    // We DO NOT push state here, allowing the browser to go back.
+                } else {
+                    // First press
+                    lastBackPressTime.current = now;
+                    window.history.pushState({ view: 'root' }, ''); // Trap
+                    addToast("Нажмите еще раз для выхода", "info", 2000);
+                }
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [addToast]);
+
+    return (
+        <NavigationContext.Provider value={{ register, unregister }}>
+            {children}
+        </NavigationContext.Provider>
+    );
+};
+
+export const useNavigation = () => {
+    const context = useContext(NavigationContext);
+    if (!context) {
+        throw new Error('useNavigation must be used within a NavigationProvider');
+    }
+    return context;
+};

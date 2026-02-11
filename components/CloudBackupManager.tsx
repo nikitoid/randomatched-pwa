@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Search, Cloud, RefreshCw, Trash2, Eye, Calendar, Loader2, AlertCircle } from 'lucide-react';
 import { CloudBackup, MatchRecord } from '../types';
 import { BackupViewer } from './BackupViewer';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface CloudBackupManagerProps {
     isOpen: boolean;
@@ -55,6 +56,29 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
             return dateStr.includes(lower) || timeStr.includes(lower) || b.matchCount.toString().includes(lower);
         });
     }, [backups, search]);
+
+    useBackHandler(isOpen, () => {
+        // Priority 1: Restore Confirmation
+        if (restoreConfirmId) {
+            setRestoreConfirmId(null);
+            return;
+        }
+
+        // Priority 2: Delete Confirmation
+        if (deleteConfirmId) {
+            setDeleteConfirmId(null);
+            return;
+        }
+
+        // Priority 3: Viewing Backup
+        if (viewingBackup) {
+            setViewingBackup(null);
+            return;
+        }
+
+        // Priority 4: Close Manager
+        onClose();
+    }, { id: 'cloud-backup-manager', priority: 40 });
 
     if (!isOpen) return null;
 
