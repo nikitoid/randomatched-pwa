@@ -86,18 +86,21 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 // "The user pressed back. We start an action. We Restore the history state to prevent exiting the app."
                 window.history.pushState({ view: 'root' }, '');
             } else {
-                // Stack is empty -> Exit App Logic
+                // Stack is empty -> Root View
+                // User Request: Completely block exit via Back Button.
+                // Always trap the event by pushing state again.
+                window.history.pushState({ view: 'root' }, '');
+
+                // Optional: Notify user how to minimize if they spam
                 const now = Date.now();
                 if (now - lastBackPressTime.current < 2000) {
-                    // Double press detected within 2 seconds
-                    // Allow default behavior (exit/back)
-                    // We DO NOT push state here, allowing the browser to go back.
-                } else {
-                    // First press
-                    lastBackPressTime.current = now;
-                    window.history.pushState({ view: 'root' }, ''); // Trap
-                    addToast("Нажмите еще раз для выхода", "info", 2000);
+                    // If spamming, maybe show a toast hint? 
+                    // Or just keep it silent as requested "reliable approach".
+                    // Let's add a subtle hint just so they don't think it's broken, 
+                    // or keep it silent if they just want to minimize.
+                    // User said "Only can be minimized by other button".
                 }
+                lastBackPressTime.current = now;
             }
         };
 
