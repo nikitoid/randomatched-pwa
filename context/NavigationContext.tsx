@@ -29,8 +29,11 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // Initialize history state on mount
     useEffect(() => {
-        // Ensure we have a state to pop from
-        window.history.replaceState({ view: 'root' }, '');
+        // Android Back Button Trap Strategy:
+        // We push a state immediately. This ensures that when the user presses "Back",
+        // they land on the *previous* state (which is still our app), triggering popstate.
+        // If we only used replaceState, the history length might be 1, so "Back" would exit immediately.
+        window.history.pushState({ view: 'root' }, '');
     }, []);
 
     const register = useCallback((id: string, onBack: () => void, priority = 10, isBlocking = false) => {
