@@ -11,7 +11,7 @@ const STORAGE_KEY_DELETED_HISTORY = 'randomatched_deleted_history_content_v1';
 export const useMatchHistory = (
     addToast: (message: string, type: ToastType, duration?: number) => void
 ) => {
-    const { checkConnectivity } = useConnectivity();
+    const { checkConnectivity, isOnline } = useConnectivity();
     const [history, setHistory] = useState<MatchRecord[]>([]);
     const [deletedHistory, setDeletedHistory] = useState<MatchRecord[]>([]);
     const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -248,8 +248,7 @@ export const useMatchHistory = (
     const syncHistory = async (options?: { silentIfNoChanges?: boolean }): Promise<boolean> => {
         const { silentIfNoChanges = false } = options || {};
 
-        const isConnected = await checkConnectivity();
-        if (!isConnected) {
+        if (!isOnline && !(await checkConnectivity())) {
             if (!silentIfNoChanges) {
                 addToast("Нет подключения к интернету", "error", 2000);
             }
@@ -535,8 +534,7 @@ export const useMatchHistory = (
 
     // Создание бэкапа в облаке
     const createCloudBackup = async () => {
-        const isConnected = await checkConnectivity();
-        if (!isConnected) {
+        if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return null;
         }
@@ -577,8 +575,7 @@ export const useMatchHistory = (
 
     // Получение списка бэкапов из облака
     const listCloudBackups = async () => {
-        const isConnected = await checkConnectivity();
-        if (!isConnected) {
+        if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return [];
         }
@@ -611,8 +608,7 @@ export const useMatchHistory = (
 
     // Восстановление из бэкапа
     const restoreFromCloudBackup = async (backupId: string) => {
-        const isConnected = await checkConnectivity();
-        if (!isConnected) {
+        if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return false; // Changed from null/empty array to match respective return type logically or handle upstream
         }
@@ -657,8 +653,7 @@ export const useMatchHistory = (
 
     // Удаление бэкапа из облака
     const deleteCloudBackup = async (backupId: string) => {
-        const isConnected = await checkConnectivity();
-        if (!isConnected) {
+        if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return false;
         }
@@ -677,8 +672,7 @@ export const useMatchHistory = (
 
     // Получение деталей бэкапа (для просмотра)
     const getCloudBackupDetails = async (backupId: string): Promise<CloudBackup | null> => {
-        const isConnected = await checkConnectivity();
-        if (!isConnected) {
+        if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return null;
         }

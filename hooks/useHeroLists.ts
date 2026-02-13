@@ -136,8 +136,8 @@ export const useHeroLists = (
           isLocal: false,
           isCloud: true,
           isGroupable: data.isGroupable ?? false,
-          lastModified: Date.now()
-        });
+          lastModified: data.lastModified || Date.now() // Use cloud timestamp if available
+        } as HeroList);
       });
 
       setLists(prevLists => {
@@ -146,18 +146,20 @@ export const useHeroLists = (
         const newUpdates = new Set(updatedListIds);
         const newHeroUpdates = new Map<string, Set<string>>(updatedHeroIds);
 
-        cloudListsMap.forEach((cloudList, id) => {
-          const existingIndex = newLists.findIndex(l => l.id === id);
+        cloudListsMap.forEach((cloudList) => {
+          const existingIndex = newLists.findIndex(l => l.id === cloudList.id);
 
           if (existingIndex !== -1) {
             const existingList = newLists[existingIndex];
 
-            if (existingList.isCloud) {
+            // Only update if cloud version is newer or if local is not cloud-synced
+            if (existingList.lastModified < (cloudList.lastModified || 0) || !existingList.isCloud) {
               const isNameChanged = (existingList.name || '').trim() !== (cloudList.name || '').trim();
               const isGroupableChanged = existingList.isGroupable !== cloudList.isGroupable;
               const isHeroesChanged = !areHeroArraysEqual(existingList.heroes, cloudList.heroes);
 
-              if (isNameChanged || isHeroesChanged || isGroupableChanged) {
+
+              if (isNameChanged || isHeroesChanged || isGroupableChanged || !existingList.isCloud) {
                 newLists[existingIndex] = { ...existingList, ...cloudList };
                 newUpdates.add(existingList.id);
                 hasChanges = true;
@@ -244,19 +246,17 @@ export const useHeroLists = (
 
     try {
       setIsSyncing(true);
-      const docRef = await db.collection("lists").add({
+      await db.collection("lists").doc(listToUpload.id).set({
         name: listToUpload.name,
         heroes: listToUpload.heroes,
         isGroupable: listToUpload.isGroupable || false
       });
 
-      const newCloudId = docRef.id;
-
+      // ID остается прежним, меняем только флаг
       setLists(prev => prev.map(list => {
         if (list.id === id) {
           return {
             ...list,
-            id: newCloudId,
             isCloud: true,
             isLocal: false
           };
@@ -274,6 +274,16 @@ export const useHeroLists = (
   };
 
   const updateList = async (id: string, updates: Partial<HeroList>) => {
+    const list = lists.find(l => l.id === id);
+
+    // Строгая проверка для облачных списков
+    if (list?.isCloud) {
+      if (!isOnline && !(await checkConnectivity())) {
+        addToast("Нет интернета. Редактирование облачного списка запрещено.", "error");
+        return;
+      }
+    }
+
     setLists(prev => prev.map(list =>
       list.id === id
         ? { ...list, ...updates, lastModified: Date.now() }
@@ -284,18 +294,15 @@ export const useHeroLists = (
     const updatedData = { ...currentList, ...updates };
 
     if (updatedData.isCloud) {
-      if (navigator.onLine) {
-        try {
-          await db.collection("lists").doc(id).set({
-            name: updatedData.name,
-            heroes: updatedData.heroes,
-            isGroupable: updatedData.isGroupable || false
-          }, { merge: true });
-        } catch (e) {
-          console.error("Failed to update cloud list", e);
-          // Silent fail or toast? Keeping silent for seamless offline editing if needed, 
-          // but strictly speaking cloud lists in offline should be read-only in this app's logic
-        }
+      try {
+        await db.collection("lists").doc(id).set({
+          name: updatedData.name,
+          heroes: updatedData.heroes,
+          isGroupable: updatedData.isGroupable || false
+        }, { merge: true });
+      } catch (e) {
+        console.error("Failed to update cloud list", e);
+        addToast("Ошибка сохранения в облако", "error");
       }
     }
   };
@@ -305,8 +312,7 @@ export const useHeroLists = (
     if (!listToDelete) return;
 
     if (listToDelete.isCloud) {
-      const hasInternet = await checkConnectivity();
-      if (!hasInternet) {
+      if (!isOnline && !(await checkConnectivity())) {
         addToast("Нет сети. Невозможно удалить из облака.", "error");
         return;
       }
