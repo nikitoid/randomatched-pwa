@@ -10,8 +10,8 @@ interface ConnectivityContextType {
 const ConnectivityContext = createContext<ConnectivityContextType | null>(null);
 
 export const ConnectivityProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    // Initialize with navigator.onLine as a first guess
-    const [isOnline, setIsOnline] = useState(navigator.onLine);
+    // Initialize with false to assume offline until proven otherwise
+    const [isOnline, setIsOnline] = useState(false);
 
     const checkStatus = useCallback(async () => {
         if (!navigator.onLine) {

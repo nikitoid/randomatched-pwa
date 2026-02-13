@@ -99,14 +99,13 @@ export const useHeroLists = (
 
   const syncWithCloud = async () => {
     if (!isLoaded) return;
-    setIsSyncing(true);
-
     const hasInternet = await checkConnectivity();
 
     if (!hasInternet) {
-      setIsSyncing(false);
       return;
     }
+
+    setIsSyncing(true);
 
     try {
       const querySnapshot = await db.collection("lists").get();
