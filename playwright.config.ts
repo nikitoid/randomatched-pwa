@@ -26,7 +26,7 @@ export default defineConfig({
     // Общие настройки для всех проектов
     use: {
         // Базовый URL приложения
-        baseURL: 'http://localhost:5173',
+        baseURL: 'http://127.0.0.1:5173',
 
         // Скриншоты только при падении тестов
         screenshot: 'only-on-failure',
@@ -72,8 +72,8 @@ export default defineConfig({
 
     // Запуск dev-сервера перед тестами
     webServer: {
-        command: 'npm run dev',
-        url: 'http://localhost:5173',
+        command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
+        url: 'http://127.0.0.1:5173',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
     },

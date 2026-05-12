@@ -1,4 +1,5 @@
 import { Hero, HeroList } from '../../types';
+export type { Hero, HeroList };
 
 /**
  * Тестовые данные для E2E тестов
@@ -154,17 +155,11 @@ export async function waitForAppReady(page: any) {
     // Ждем появления основного контента
     await page.waitForSelector('main', { state: 'visible' });
 
-    // Даем время на инициализацию React и загрузку данных из localStorage
-    await page.waitForTimeout(2000);
-
-    // Явно ждем, пока кнопка генерации станет enabled (до 10 секунд)
-    // Это критически важно, т.к. кнопка disabled пока не загрузятся данные из localStorage
-    try {
-        await page.waitForSelector('button:has-text("ГЕНЕРИРОВАТЬ"):not([disabled])', {
-            state: 'visible',
-            timeout: 10000
-        });
-    } catch (error) {
-        console.warn('Кнопка генерации не стала enabled за 10 секунд, продолжаем...');
-    }
+    // Вместо жесткого ожидания в 2 секунды, ждем пока исчезнет лоадер (если он есть) 
+    // или пока кнопка генерации не станет кликабельной.
+    // Это делает тесты быстрее на мощных машинах и надежнее на слабых.
+    await page.waitForSelector('button:has-text("ГЕНЕРИРОВАТЬ"):not([disabled])', {
+        state: 'visible',
+        timeout: 15000
+    });
 }

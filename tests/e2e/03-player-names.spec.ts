@@ -1,38 +1,45 @@
-import { test, expect } from '@playwright/test';
-import { injectTestData, injectPlayerNames, waitForAppReady } from '../helpers/test-data';
-import { RandoMatchedApp } from '../helpers/page-objects';
+import { test, expect } from '../helpers/fixtures';
+import { waitForAppReady, TEST_PLAYER_NAMES } from '../helpers/test-data';
 
-test.describe('Ввод имен игроков', () => {
-    let app: RandoMatchedApp;
-
-    test.beforeEach(async ({ page }) => {
-        app = new RandoMatchedApp(page);
-        await injectTestData(page);
+test.describe('Имена игроков', () => {
+    test.beforeEach(async ({ page, injectData }) => {
+        await injectData();
         await page.goto('/');
         await waitForAppReady(page);
     });
 
-    test('должна сохраняться возможность работы без имен игроков', async () => {
-        // Проверяем, что кнопка генерации доступна даже без имен
-        await expect(app.generateButton).toBeEnabled();
+    test('должна открываться панель ввода имен', async ({ app }) => {
+        await app.namesToggle.click();
+        await expect(app.page.locator('span:has-text("Имена игроков")').first()).toBeVisible();
     });
 
-    test('должны сохраняться введенные имена', async ({ page }) => {
-        // Инъектируем имена
-        await injectPlayerNames(page);
+    test('должна быть возможность добавить имена игроков', async ({ app }) => {
+        await app.namesToggle.click();
+        
+        // Вводим имена в 4 инпута
+        const inputs = app.page.locator('input[placeholder^="Игрок"]');
+        for (let i = 0; i < 4; i++) {
+            await inputs.nth(i).fill(TEST_PLAYER_NAMES[i]);
+        }
 
-        // Проверяем, что имена сохранились в localStorage
-        const savedTeams = await app.getLocalStorageItem('randomatched_saved_teams_v1');
-        expect(savedTeams).toBeTruthy();
+        // Проверяем, что значения сохранились в инпутах
+        for (let i = 0; i < 4; i++) {
+            await expect(inputs.nth(i)).toHaveValue(TEST_PLAYER_NAMES[i]);
+        }
     });
 
-    test('должна быть возможность генерации с именами игроков', async ({ page }) => {
-        // Инъектируем имена
-        await injectPlayerNames(page);
-        await page.reload();
-        await waitForAppReady(page);
+    test('имена должны сохраняться в localStorage', async ({ app }) => {
+        await app.namesToggle.click();
+        const inputs = app.page.locator('input[placeholder^="Игрок"]');
+        
+        const testName = 'Тестовый Игрок 1';
+        await inputs.first().fill(testName);
 
-        // Проверяем, что кнопка генерации активна
-        await expect(app.generateButton).toBeEnabled();
+        // Ждем небольшую задержку (автосохранение обычно по дебаунсу или сразу)
+        // В App.tsx playerNames стейт обновляется сразу
+        
+        // Проверяем localStorage
+        const savedNames = await app.getLocalStorageItem('randomatched_player_names_v1');
+        expect(savedNames).toContain(testName);
     });
 });

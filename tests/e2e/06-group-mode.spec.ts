@@ -26,11 +26,9 @@ test.describe('Групповой режим', () => {
 
         // Ищем переключатель группового режима
         const groupModeButton = page.locator('button:has-text("Группа")').first();
-
-        if (await groupModeButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await groupModeButton.click();
-            await page.waitForTimeout(500);
-        }
+        await expect(groupModeButton).toBeVisible({ timeout: 5000 });
+        await groupModeButton.click();
+        await page.waitForTimeout(500);
 
         // Закрываем селектор
         await app.sourceSelector.click();

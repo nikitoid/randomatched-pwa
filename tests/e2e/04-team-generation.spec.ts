@@ -1,65 +1,69 @@
-import { test, expect } from '@playwright/test';
-import { injectTestData, waitForAppReady } from '../helpers/test-data';
-import { RandoMatchedApp } from '../helpers/page-objects';
+import { test, expect } from '../helpers/fixtures';
+import { waitForAppReady } from '../helpers/test-data';
 
 test.describe('Генерация команд', () => {
-    let app: RandoMatchedApp;
-
-    test.beforeEach(async ({ page }) => {
-        app = new RandoMatchedApp(page);
-        await injectTestData(page);
+    test.beforeEach(async ({ page, injectData }) => {
+        await injectData();
         await page.goto('/');
         await waitForAppReady(page);
     });
 
-    test('должна быть доступна кнопка генерации', async () => {
-        await expect(app.generateButton).toBeVisible();
-        await expect(app.generateButton).toBeEnabled();
-    });
-
-    test('должна выполняться генерация команд', async ({ page }) => {
-        // Нажимаем кнопку генерации
+    test('должна выполняться генерация героев', async ({ app }) => {
         await app.clickGenerate();
 
-        // Даем время на генерацию и анимацию
-        await page.waitForTimeout(2000);
+        // Проверяем наличие оверлея с результатами по test-id
+        await expect(app.page.getByTestId('result-overlay')).toBeVisible();
 
-        // После генерации открывается ResultOverlay - проверяем центральную кнопку
-        const overlayButton = page.getByTestId('center-action-button');
-        await expect(overlayButton).toBeVisible({ timeout: 5000 });
+        // Проверяем, что отображаются карточки героев (их должно быть 4 в стандартном режиме 2x2)
+        // Карточки имеют специфический градиент или структуру, но мы можем проверить по h2 внутри оверлея
+        const heroNames = app.page.getByTestId('result-overlay').locator('h2');
+        await expect(heroNames).toHaveCount(4);
     });
 
-    test('должна сохраняться возможность повторной генерации', async ({ page }) => {
-        // Первая генерация
+    test('результаты генерации должны закрываться по нажатию Escape', async ({ app }) => {
         await app.clickGenerate();
-        await page.waitForTimeout(2000);
+        await expect(app.page.getByTestId('result-overlay')).toBeVisible();
 
-        // Закрываем оверлей результатов через кнопку X
         await app.closeResultOverlay();
-        await page.waitForTimeout(500);
-
-        // Нажимаем кнопку "Сбросить сессию" на главной странице
-        await expect(app.resetButton).toBeVisible({ timeout: 5000 });
-        await app.resetButton.click();
-        await page.waitForTimeout(500);
-
-        // Подтверждаем сброс в модальном окне
-        // Подтверждаем сброс в модальном окне
-        const confirmButton = page.getByTestId('confirm-reset-button');
-        await expect(confirmButton).toBeVisible();
-        await confirmButton.click();
-        await page.waitForTimeout(500);
-
-        // Проверяем, что кнопка генерации снова доступна
-        await expect(app.generateButton).toBeEnabled({ timeout: 5000 });
+        await expect(app.page.getByTestId('result-overlay')).toBeHidden();
     });
 
-    test('должна отображаться плавная генерация', async ({ page }) => {
-        // Нажимаем кнопку генерации
-        await app.generateButton.click();
+    test('после генерации должна обновляться история', async ({ app }) => {
+        // Заполняем имена, чтобы можно было записать результат
+        await app.namesToggle.click();
+        await app.fillPlayerName(0, 'Игрок 1');
+        await app.fillPlayerName(1, 'Игрок 2');
+        await app.namesToggle.click();
 
-        // После клика должен открыться оверлей с результатами
-        const overlayButton = page.getByTestId('center-action-button');
-        await expect(overlayButton).toBeVisible({ timeout: 5000 });
+        await app.clickGenerate();
+        await app.revealHeroes();
+        
+        // Записываем результат матча
+        await app.recordMatch(1);
+
+        // Открываем статистику (бывшую историю)
+        await app.statsButton.click();
+        await expect(app.page.getByTestId('stats-title')).toBeVisible();
+        
+        // Проверяем наличие записи в localStorage
+        const history = await app.getLocalStorageItem('randomatched_match_history_v1');
+        expect(history.length).toBeGreaterThan(0);
+    });
+
+    test('кнопка Сбросить сессию должна очищать текущий результат', async ({ app }) => {
+        await app.clickGenerate();
+        await app.closeResultOverlay();
+
+        // Проверяем, что кнопка сброса появилась и работает
+        await expect(app.resetButton).toBeVisible();
+        await app.resetButton.click();
+        
+        // Подтверждаем сброс в модалке
+        const confirmBtn = app.page.getByTestId('confirm-reset-button');
+        await confirmBtn.waitFor({ state: 'visible' });
+        await confirmBtn.click();
+        
+        // После сброса кнопка генерации должна быть видна и активна
+        await expect(app.generateButton).toBeEnabled({ timeout: 10000 });
     });
 });

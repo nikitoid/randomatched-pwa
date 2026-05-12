@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 
 /**
  * Page Objects для RandoMatched App
@@ -15,142 +15,149 @@ export class RandoMatchedApp {
         this.page = page;
     }
 
-    // Основные элементы приложения
-    get header() {
-        return this.page.locator('header');
-    }
-
-    get appTitle() {
-        return this.page.locator('h1:has-text("Random")');
-    }
-
-    get themeToggle() {
-        // Используем aria-label для поиска кнопки темы
-        return this.page.locator('button[aria-label="Переключить тему"]');
-    }
-
-    get navigation() {
-        return this.page.locator('nav');
-    }
+    // --- Локаторы основных элементов ---
+    get header() { return this.page.locator('header'); }
+    get appTitle() { return this.page.getByRole('heading', { name: /Randomatched/i }); }
+    get themeToggle() { return this.page.getByTestId('theme-toggle'); }
+    get namesToggle() { return this.page.getByRole('button', { name: 'Имена игроков' }); }
+    get navigation() { return this.page.locator('nav'); }
 
     // Кнопки навигации
-    get statsButton() {
-        return this.page.locator('button:has-text("Статистика")');
-    }
+    get statsButton() { return this.page.getByRole('button', { name: 'Статистика' }); }
+    get historyButton() { return this.page.getByRole('button', { name: 'История' }); }
+    get settingsButton() { return this.page.getByRole('button', { name: 'Настройки' }); }
 
-    get historyButton() {
-        return this.page.locator('button:has-text("История")');
-    }
-
-    get settingsButton() {
-        return this.page.locator('button:has-text("Настройки")');
-    }
-
-    // Source Selector (выбор списка)
+    // Элементы управления на главной
     get sourceSelector() {
-        // Ищем кнопку после label "Источник героев"
-        return this.page.locator('label:has-text("Источник героев")').locator('..').locator('button').first();
+        return this.page.locator('label:has-text("Источник героев")')
+            .locator('..')
+            .locator('button').first();
     }
-
     get sourceSelectorText() {
-        // Упрощенный селектор - ищем h2 внутри кнопки источника
         return this.sourceSelector.locator('h2');
     }
+    get generateButton() { return this.page.getByRole('button', { name: 'ГЕНЕРИРОВАТЬ' }); }
+    get resetButton() { return this.page.getByTestId('reset-session-button'); }
 
-    // Главная кнопка генерации
-    get generateButton() {
-        return this.page.locator('button:has-text("ГЕНЕРИРОВАТЬ")');
+    // --- Локаторы статистики ---
+    get statsModal() { return this.page.getByTestId('stats-modal'); }
+    get statsTitle() { return this.page.getByTestId('stats-title'); }
+    get backupExportButton() { return this.page.getByTestId('backup-export-btn'); }
+    get backupImportInput() { return this.page.getByTestId('backup-import-input'); }
+    get backupOpenManagerButton() { return this.page.getByTestId('backup-open-manager-btn'); }
+    get backupCloseButton() { return this.page.getByTestId('backup-close-btn'); }
+    get statsCloseButton() { return this.page.getByTestId('stats-close-btn'); }
+
+    // --- Локаторы облачных бэкапов ---
+    get backupManager() { return this.page.locator('h3:has-text("Облачные бэкапы")').locator('..'); }
+    get backupListEmpty() { return this.page.getByTestId('backup-list-empty'); }
+    get backupRestoreButtons() { return this.page.getByTestId('backup-manager-restore-btn'); }
+    get restoreConfirmInput() { return this.page.getByTestId('restore-confirm-input'); }
+    get restoreConfirmBtn() { return this.page.getByTestId('restore-confirm-btn'); }
+    get restoreCancelBtn() { return this.page.getByTestId('restore-cancel-btn'); }
+
+    // --- Методы взаимодействия ---
+
+    async getLocalStorageItem(key: string): Promise<any> {
+        const value = await this.page.evaluate((k) => localStorage.getItem(k), key);
+        if (!value) return null;
+        try {
+            return JSON.parse(value);
+        } catch (e) {
+            return value;
+        }
     }
 
-    get resetButton() {
-        return this.page.locator('button:has-text("Сбросить сессию")');
+    async clickGenerate() {
+        await this.generateButton.click();
     }
 
-    // Проверка темы
+    async openBackupMenu() {
+        await this.statsButton.click();
+        const title = this.statsTitle;
+        // Тройной клик для открытия скрытого меню данных
+        await title.click({ clickCount: 3 });
+    }
+
     async isDarkTheme(): Promise<boolean> {
         const html = this.page.locator('html');
-        const className = await html.getAttribute('class');
-        return className?.includes('dark') ?? false;
+        return (await html.getAttribute('class'))?.includes('dark') ?? false;
     }
 
-    // Ожидание готовности приложения
     async waitForReady() {
         await this.page.waitForSelector('main', { state: 'visible' });
-        // Увеличено до 2 сек для надежной загрузки
-        await this.page.waitForTimeout(2000);
+        // Вместо таймаута ждем, пока кнопка генерации станет доступной
+        await this.generateButton.waitFor({ state: 'visible' });
     }
 
-    // Открыть панель настроек
     async openSettings() {
         await this.settingsButton.click();
-        await this.page.waitForTimeout(500);
+        await this.page.locator('h2:has-text("Настройки")').waitFor({ state: 'visible' });
     }
 
-    // Закрыть панель настроек (клик вне или на кнопку закрытия)
     async closeSettings() {
-        const closeButton = this.page.locator('button[aria-label="Закрыть настройки"]').or(
-            this.page.locator('button:has-text("Закрыть")').first()
-        );
+        const closeButton = this.page.getByTestId('settings-close-btn');
 
-        if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-            await closeButton.click();
-        } else {
-            // Клик в область за пределами панели
-            await this.page.locator('body').click({ position: { x: 10, y: 10 } });
-        }
-        await this.page.waitForTimeout(500);
+        await closeButton.waitFor({ state: 'visible' });
+        await closeButton.click();
+        await closeButton.waitFor({ state: 'hidden' });
     }
 
-    // Закрыть оверлей результатов генерации (Escape для надежности)
     async closeResultOverlay() {
-        // Используем Escape для закрытия - теперь обрабатывается в ResultOverlay
-        await this.page.keyboard.press('Escape');
+        const overlay = this.page.getByTestId('result-overlay');
+        // Ждем появления (учитывая анимацию 400мс в приложении)
+        await overlay.waitFor({ state: 'visible', timeout: 10000 });
+        
+        // Даем анимации завершиться
         await this.page.waitForTimeout(500);
+
+        const closeBtn = this.page.getByTestId('close-result-overlay');
+        if (await closeBtn.isVisible()) {
+            await closeBtn.click();
+        } else {
+            await this.page.keyboard.press('Escape');
+        }
+        
+        // Ждем скрытия
+        await overlay.waitFor({ state: 'hidden', timeout: 10000 });
     }
 
-    // Переключить тему
+    async revealHeroes() {
+        const centerBtn = this.page.getByTestId('center-action-button');
+        await centerBtn.waitFor({ state: 'visible' });
+        await centerBtn.click();
+    }
+
+    async recordMatch(winnerTeam: 1 | 2 = 1) {
+        // Нажимаем "Завершить"
+        const finishBtn = this.page.getByTestId('finish-match-btn');
+        await finishBtn.waitFor({ state: 'visible' });
+        await finishBtn.click();
+        
+        // Выбираем победителя в модалке
+        const teamBtn = winnerTeam === 1 
+            ? this.page.getByTestId('record-team1-win-btn')
+            : this.page.getByTestId('record-team2-win-btn');
+        
+        await teamBtn.waitFor({ state: 'visible' });
+        await teamBtn.click();
+    }
+
     async toggleTheme() {
+        const currentTheme = await this.isDarkTheme();
         await this.themeToggle.click();
-        await this.page.waitForTimeout(500);
+        
+        // Если была темная, ждем удаления класса dark. Если была светлая, ждем добавления.
+        if (currentTheme) {
+            await expect(this.page.locator('html')).not.toHaveClass(/dark/);
+        } else {
+            await expect(this.page.locator('html')).toHaveClass(/dark/);
+        }
     }
 
-    // Нажать кнопку генерации
-    async clickGenerate() {
-        // Явно ждем, пока кнопка станет enabled before клика
-        await this.generateButton.waitFor({ state: 'visible', timeout: 10000 });
-        await this.page.waitForSelector('button:has-text("ГЕНЕРИРОВАТЬ"):not([disabled])', {
-            timeout: 10000
-        });
-        await this.generateButton.click();
-        await this.page.waitForTimeout(500);
-    }
-
-    // Получить localStorage данные
-    async getLocalStorageItem(key: string): Promise<any> {
-        return this.page.evaluate((k) => {
-            const item = localStorage.getItem(k);
-            if (!item) return null;
-
-            // Пытаемся распарсить как JSON, если не получается - возвращаем как есть
-            try {
-                return JSON.parse(item);
-            } catch {
-                return item;
-            }
-        }, key);
-    }
-
-    // Установить localStorage данные
-    async setLocalStorageItem(key: string, value: any) {
-        await this.page.evaluate(
-            ({ k, v }) => {
-                if (typeof v === 'string') {
-                    localStorage.setItem(k, v);
-                } else {
-                    localStorage.setItem(k, JSON.stringify(v));
-                }
-            },
-            { k: key, v: value }
-        );
+    // --- Хэлперы для ввода данных ---
+    async fillPlayerName(index: number, name: string) {
+        const input = this.page.getByPlaceholder(/Введите имя|Игрок \d/).nth(index);
+        await input.fill(name);
     }
 }

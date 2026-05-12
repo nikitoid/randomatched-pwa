@@ -25,6 +25,7 @@ dist-ssr
 *.sln
 *.sw?
 .agent
+*.code-workspace
 
 # Playwright
 /test-results/

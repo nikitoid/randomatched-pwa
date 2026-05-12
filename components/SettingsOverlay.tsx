@@ -824,7 +824,14 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                         </div>
                     ) : (
                         <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                            <button onClick={manualGoBack} className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"> <ChevronLeft size={24} /> </button>
+                            <button 
+                                onClick={manualGoBack} 
+                                aria-label="Закрыть"
+                                data-testid="settings-close-btn"
+                                className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                            > 
+                                <ChevronLeft size={24} /> 
+                            </button>
                             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Настройки</h2>
                         </div>
                     )}

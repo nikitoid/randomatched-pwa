@@ -1,11 +1,8 @@
-import { test, expect } from '@playwright/test';
-import { RandoMatchedApp } from '../helpers/page-objects';
-import { injectTestData, waitForAppReady, TEST_LIST_PRIMARY } from '../helpers/test-data';
+import { test, expect } from '../helpers/fixtures';
+import { waitForAppReady } from '../helpers/test-data';
 
 test.describe('Резервное копирование статистики', () => {
-    let app: RandoMatchedApp;
-
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, injectData }) => {
         // ENABLE TEST MODE (Mock DB)
         await page.addInitScript(() => {
             (window as any).__PLAYWRIGHT_TEST__ = true;
@@ -16,206 +13,92 @@ test.describe('Резервное копирование статистики', 
             await route.fulfill({ status: 200, body: 'mock-favicon' });
         });
 
-        // Инъекция тестовых данных
-        await injectTestData(page, [TEST_LIST_PRIMARY]);
-        app = new RandoMatchedApp(page);
+        await injectData();
         await page.goto('/');
         await waitForAppReady(page);
     });
 
-    // Helper для надежного открытия меню бэкапов
-    const openBackupMenu = async (page: any) => {
-        const statsTitle = page.locator('h2:has-text("Статистика")');
-        await expect(statsTitle).toBeVisible();
-
-        // Увеличиваем ожидание для Safari Mobile, чтобы анимация открытия модалки точно завершилась
-        await page.waitForTimeout(1000);
-
-        // Используем force: true и задержки для надежного тройного клика
-        await statsTitle.click({ force: true });
-        await page.waitForTimeout(200);
-        await statsTitle.click({ force: true });
-        await page.waitForTimeout(200);
-        await statsTitle.click({ force: true });
-
-        // Ждём появления меню
-        const backupMenuTitle = page.locator('h3:has-text("Резервное копирование")');
-        await expect(backupMenuTitle).toBeVisible({ timeout: 10000 });
-    };
-
-    test('должно открываться меню бэкапов по тройному клику на заголовке', async ({ page }) => {
-        // Открываем статистику
-        await app.statsButton.click();
-        await page.waitForTimeout(300);
-
-        // Используем хелпер
-        await openBackupMenu(page);
-
-        // Проверяем, что меню бэкапов открылось
-        const backupMenu = page.locator('text=Резервное копирование').first();
-        await expect(backupMenu).toBeVisible();
+    test('должно открываться меню бэкапов по тройному клику на заголовке', async ({ app }) => {
+        await app.openBackupMenu();
+        await expect(app.page.locator('text=Резервное копирование').first()).toBeVisible();
     });
 
-    test('меню бэкапов должно содержать кнопки локального и облачного бэкапа', async ({ page }) => {
-        // Открываем статистику
-        await app.statsButton.click();
-        await page.waitForTimeout(300);
+    test('меню бэкапов должно содержать кнопки локального и облачного бэкапа', async ({ app }) => {
+        await app.openBackupMenu();
 
-        // Открываем меню бэкапов
-        await openBackupMenu(page);
+        await expect(app.backupExportButton).toBeVisible();
+        await expect(app.backupOpenManagerButton).toBeVisible();
+        await expect(app.backupCloseButton).toBeVisible();
 
-        // Проверяем наличие кнопок
-        const exportBtn = page.getByTestId('backup-export-btn');
-        const openManagerBtn = page.getByTestId('backup-open-manager-btn');
-        const closeBtn = page.getByTestId('backup-close-btn');
-
-        await expect(exportBtn).toBeVisible();
-        await expect(openManagerBtn).toBeVisible();
-        await expect(closeBtn).toBeVisible();
-
-        // Проверяем текст кнопок
-        await expect(exportBtn).toContainText('Экспорт в файл');
-        await expect(openManagerBtn).toContainText('Управление облачными бэкапами');
+        await expect(app.backupExportButton).toContainText('Экспорт в файл');
+        await expect(app.backupOpenManagerButton).toContainText('Управление облачными бэкапами');
     });
 
-    test('меню должно закрываться по кнопке Закрыть', async ({ page }) => {
-        // Открываем статистику и меню бэкапов
-        await app.statsButton.click();
-        await page.waitForTimeout(300);
+    test('меню должно закрываться по кнопке Закрыть', async ({ app }) => {
+        await app.openBackupMenu();
+        await expect(app.page.locator('text=Резервное копирование').first()).toBeVisible();
 
-        await openBackupMenu(page);
-
-        // Проверяем, что меню открылось
-        const backupMenu = page.locator('text=Резервное копирование').first();
-        await expect(backupMenu).toBeVisible();
-
-        // Закрываем меню
-        const closeBtn = page.getByTestId('backup-close-btn');
-        await closeBtn.click();
-        await page.waitForTimeout(200);
-
-        // Проверяем, что меню закрылось
-        await expect(backupMenu).not.toBeVisible();
+        await app.backupCloseButton.click();
+        await expect(app.page.locator('text=Резервное копирование').first()).toBeHidden();
     });
 
-    test('должно отображаться сообщение об отсутствии бэкапов', async ({ page }, testInfo) => {
-        test.slow(); // Увеличиваем таймаут для этого теста, так как на Safari он нестабилен
+    test('должно отображаться сообщение об отсутствии бэкапов', async ({ app }) => {
+        test.slow();
+        await app.openBackupMenu();
+        await app.backupOpenManagerButton.click();
 
-        // Открываем статистику и меню бэкапов
-        await app.statsButton.click();
-        await page.waitForTimeout(300);
+        // Ждём появления одного из состояний
+        const emptyMessage = app.backupListEmpty;
+        const offlineMessage = app.page.locator('text=Нет подключения к интернету');
+        const backupList = app.page.getByTestId('backup-list');
+        const loadingIndicator = app.page.getByTestId('backup-loading');
 
-        await openBackupMenu(page);
-
-        // Открываем менеджер облачных бэкапов
-        const openManagerBtn = page.getByTestId('backup-open-manager-btn');
-        await openManagerBtn.click();
-
-        // Даем время на завершение анимаций и сетевых запросов
-        await page.waitForTimeout(2000);
-
-        // После открытия меню ждём одного из возможных состояний
-        const emptyMessage = page.getByTestId('backup-list-empty');
-        const offlineMessage = page.locator('text=Нет подключения к интернету');
-        const backupList = page.getByTestId('backup-list');
-        const loadingIndicator = page.getByTestId('backup-loading');
-
-        // Ждём пока появится любой из элементов: загрузка, пустой список, offline, или список бэкапов
         await expect(
             emptyMessage.or(offlineMessage).or(backupList).or(loadingIndicator)
-        ).toBeVisible({ timeout: 30000 });
+        ).toBeVisible({ timeout: 15000 });
     });
 
-    test('кнопка восстановления должна открывать модальное окно подтверждения с инъектированными бэкапами', async ({ page }) => {
-        // Инъекция мокированных бэкапов через localStorage эмуляцию
-        // Для этого теста используем прямую инъекцию в DOM
-        await app.statsButton.click();
-        await page.waitForTimeout(300);
+    test('кнопка восстановления должна открывать модальное окно подтверждения', async ({ app }) => {
+        await app.openBackupMenu();
+        await app.backupOpenManagerButton.click();
 
-        await openBackupMenu(page);
-
-        // Открываем менеджер облачных бэкапов
-        const openManagerBtn = page.getByTestId('backup-open-manager-btn');
-        await openManagerBtn.click();
-
-        // Проверяем структуру UI облачного бэкапа
-        const cloudSection = page.locator('h3:has-text("Облачные бэкапы")');
-        await expect(cloudSection).toBeVisible();
-
-        // Проверяем наличие раздела "доступно" (информация о количестве бэкапов)
-        const availableStatus = page.locator('text=доступно');
-        await expect(availableStatus).toBeVisible();
+        await expect(app.page.locator('h3:has-text("Облачные бэкапы")')).toBeVisible();
+        await expect(app.page.locator('text=доступно')).toBeVisible();
     });
 
-    test('модальное окно подтверждения должно требовать ввод слова ВОССТАНОВИТЬ', async ({ page }) => {
-        // Открываем статистику и меню бэкапов
-        await app.statsButton.click();
-        await page.waitForTimeout(300);
+    test('модальное окно подтверждения должно требовать ввод слова ВОССТАНОВИТЬ', async ({ app, page }) => {
+        await app.openBackupMenu();
+        await app.backupOpenManagerButton.click();
 
-        await openBackupMenu(page);
+        // Создаем бэкап, чтобы кнопка восстановления появилась
+        const createBtn = page.getByTestId('backup-manager-create-btn');
+        await createBtn.click();
+        
+        const restoreBtn = app.backupRestoreButtons.first();
+        await expect(restoreBtn).toBeVisible({ timeout: 10000 });
+        await restoreBtn.click();
 
-        // Открываем менеджер облачных бэкапов
-        const openManagerBtn = page.getByTestId('backup-open-manager-btn');
-        await openManagerBtn.click();
+        await expect(app.restoreConfirmInput).toBeVisible();
+        await expect(app.restoreConfirmBtn).toBeDisabled();
 
-        // Проверяем, есть ли кнопки восстановления - если есть бэкапы
-        const restoreButtonCount = await page.getByTestId('backup-manager-restore-btn').count();
+        await app.restoreConfirmInput.fill('test');
+        await expect(app.restoreConfirmBtn).toBeDisabled();
 
-        if (restoreButtonCount > 0) {
-            // Кликаем на первую кнопку восстановления
-            await page.getByTestId('backup-manager-restore-btn').first().click();
-            await page.waitForTimeout(200);
+        await app.restoreConfirmInput.fill('ВОССТАНОВИТЬ');
+        await expect(app.restoreConfirmBtn).toBeEnabled();
 
-            // Проверяем, что модальное окно подтверждения открылось
-            const confirmInput = page.getByTestId('restore-confirm-input');
-            await expect(confirmInput).toBeVisible();
-
-            // Проверяем, что кнопка подтверждения неактивна
-            const confirmBtn = page.getByTestId('restore-confirm-btn');
-            await expect(confirmBtn).toBeDisabled();
-
-            // Вводим неправильное слово
-            await confirmInput.fill('test');
-            await expect(confirmBtn).toBeDisabled();
-
-            // Вводим правильное слово
-            await confirmInput.fill('ВОССТАНОВИТЬ');
-            await expect(confirmBtn).toBeEnabled();
-
-            // Отменяем
-            const cancelBtn = page.getByTestId('restore-cancel-btn');
-            await cancelBtn.click();
-            await page.waitForTimeout(200);
-
-            // Модальное окно должно закрыться
-            await expect(confirmInput).not.toBeVisible();
-        }
+        await app.restoreCancelBtn.click();
+        await expect(app.restoreConfirmInput).toBeHidden();
     });
 
-    test('разделы локального и облачного бэкапа должны быть видны', async ({ page }) => {
-        // Открываем статистику и меню бэкапов
-        await app.statsButton.click();
-        await page.waitForTimeout(300);
-
-        await openBackupMenu(page);
-
-        // Проверяем разделы
-        const localSection = page.locator('h4:has-text("Локальный бэкап")');
-        const cloudSection = page.locator('h4:has-text("Облачный бэкап")');
-
-        await expect(localSection).toBeVisible();
-        await expect(cloudSection).toBeVisible();
+    test('разделы локального и облачного бэкапа должны быть видны', async ({ app }) => {
+        await app.openBackupMenu();
+        await expect(app.page.locator('h4:has-text("Локальный бэкап")')).toBeVisible();
+        await expect(app.page.locator('h4:has-text("Облачный бэкап")')).toBeVisible();
     });
 
-    test('поле ввода импорта должно принимать JSON файлы', async ({ page }) => {
-        // Открываем статистику и меню бэкапов
-        await app.statsButton.click();
-        await page.waitForTimeout(300);
-
-        await openBackupMenu(page);
-
-        // Проверяем, что поле ввода принимает .json файлы
-        const importInput = page.getByTestId('backup-import-input');
-        await expect(importInput).toHaveAttribute('accept', '.json');
+    test('поле ввода импорта должно принимать JSON файлы', async ({ app }) => {
+        await app.openBackupMenu();
+        await expect(app.backupImportInput).toHaveAttribute('accept', '.json');
     });
 });

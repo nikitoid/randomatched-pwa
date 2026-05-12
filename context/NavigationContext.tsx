@@ -108,7 +108,24 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         };
 
         window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                const currentStack = stackRef.current;
+                if (currentStack.length > 0) {
+                    const topItem = currentStack[currentStack.length - 1];
+                    topItem.onBack();
+                    e.preventDefault();
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, [addToast]);
 
     return (

@@ -1068,6 +1068,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             )}
 
             <div
+                data-testid="stats-modal"
                 className={`fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isOpen && !matchForm ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                 onClick={onClose}
             >
@@ -1078,6 +1079,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 sticky top-0">
                         <h2
                             className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 select-none active:scale-95 transition-transform"
+                            data-testid="stats-title"
                             onClick={handleTitleClick}
                         >
                             <Trophy size={20} className="text-yellow-500" /> Статистика
@@ -1099,7 +1101,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <RefreshCw size={20} />
                                 )}
                             </button>
-                            <button onClick={onClose} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <button 
+                                onClick={onClose} 
+                                data-testid="stats-close-btn"
+                                aria-label="Закрыть"
+                                className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            >
                                 <X size={20} />
                             </button>
                         </div>
@@ -1204,7 +1211,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                     <div className="p-4 h-full rounded-3xl bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/10 dark:to-red-900/10 border border-orange-100 dark:border-orange-900/30 relative overflow-hidden">
                                                         <div className="flex items-center gap-2 mb-3 text-orange-500">
                                                             <TrendingUp size={18} />
-                                                            <span className="text-xs font-black uppercase tracking-wider">В огне</span>
+                                                            <span data-testid="on-fire-badge" className="text-xs font-black uppercase tracking-wider">В огне</span>
                                                         </div>
                                                         <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{bestStreakPlayer.name}</div>
                                                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -1267,7 +1274,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                     {/* Top Efficiency Chart */}
                                     <div className="pt-2 col-span-2">
-                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                        <h3 data-testid="efficiency-top" className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                                             <TrendingUp size={16} className="text-primary-500" /> Топ эффективности
                                         </h3>
                                         <div className="space-y-3">
@@ -1321,7 +1328,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-slate-200 text-slate-700' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
                                                         {idx + 1}
                                                     </div>
-                                                    <div>
+                                                    <div className="flex items-center gap-2" onClick={handleTitleClick}>
                                                         <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                             {player.name}
                                                             {streakStats[player.name]?.current >= 3 && (

@@ -613,11 +613,11 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         </>
                     )}
 
-                    <button onClick={onShuffleTeams} disabled={heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                    <button data-testid="shuffle-teams-btn" onClick={onShuffleTeams} disabled={isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                         <Shuffle size={20} className="mb-1" /> <span className="text-[10px] font-bold">Команды</span>
                     </button>
                     <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
-                    <button onClick={handleResetClick} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
+                    <button data-testid="finish-match-btn" onClick={handleResetClick} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
                         <CheckCircle2 size={20} className="mb-1" /> <span className="text-[10px] font-bold">Завершить</span>
                     </button>
                 </div>
@@ -635,10 +635,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         <div className="flex flex-col gap-2 w-full">
                             {canRecordStats && (
                                 <>
-                                    <button onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
+                                    <button data-testid="record-team1-win-btn" onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
                                         <Trophy size={16} /> <span>{getTeamNames('Odd')}</span>
                                     </button>
-                                    <button onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
+                                    <button data-testid="record-team2-win-btn" onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
                                         <Trophy size={16} /> <span>{getTeamNames('Even')}</span>
                                     </button>
                                     <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />

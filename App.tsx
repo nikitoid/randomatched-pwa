@@ -146,6 +146,12 @@ const App: React.FC = () => {
         triggerHaptic(10);
     };
 
+    const handleToggleTheme = () => {
+        toggleTheme();
+        addToast(`Тема изменена на ${theme === 'light' ? 'темную' : 'светлую'}`, 'info', 2000);
+        triggerHaptic(10);
+    };
+
     const hasTemporaryLists = lists.some(l => l.isTemporary);
     const hasResult = assignments.length > 0;
     const canReset = hasResult || hasTemporaryLists;
@@ -175,7 +181,7 @@ const App: React.FC = () => {
                     isUpdateAvailable={isUpdateAvailable}
                     handleOpenUpdateBanner={handleOpenUpdateBanner}
                     theme={theme}
-                    toggleTheme={toggleTheme}
+                    toggleTheme={handleToggleTheme}
                 />
 
                 <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-lg mx-auto relative z-1">
@@ -368,6 +374,8 @@ const App: React.FC = () => {
                     onUpdate={handleUpdateApp}
                     onClose={() => setShowUpdateBanner(false)}
                 />
+
+                <ToastContainer toasts={toasts} removeToast={removeToast} />
             </div>
         </NavigationProvider>
     );

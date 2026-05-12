@@ -37,7 +37,11 @@ export const MainControls: React.FC<MainControlsProps> = ({
 
             <div className="h-8 mt-6 flex items-center justify-center relative z-0">
                 {canReset && (
-                    <button onClick={handleResetSessionClick} className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 dark:bg-red-900/10 text-red-500 dark:text-red-400 text-xs font-bold uppercase tracking-wider md:hover:bg-red-100 dark:md:hover:bg-red-900/20 active:bg-red-100 transition-colors">
+                    <button 
+                        data-testid="reset-session-button"
+                        onClick={handleResetSessionClick} 
+                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 dark:bg-red-900/10 text-red-500 dark:text-red-400 text-xs font-bold uppercase tracking-wider md:hover:bg-red-100 dark:md:hover:bg-red-900/20 active:bg-red-100 transition-colors"
+                    >
                         <RotateCcw size={14} /> Сбросить сессию
                     </button>
                 )}

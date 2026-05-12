@@ -1,43 +1,33 @@
-import { test, expect } from '@playwright/test';
-import { injectTestData, waitForAppReady } from '../helpers/test-data';
-import { RandoMatchedApp } from '../helpers/page-objects';
+import { test, expect } from '../helpers/fixtures';
+import { waitForAppReady, TEST_LIST_PRIMARY, TEST_LIST_SECONDARY } from '../helpers/test-data';
 
 test.describe('Управление списками героев', () => {
-    let app: RandoMatchedApp;
-
-    test.beforeEach(async ({ page }) => {
-        app = new RandoMatchedApp(page);
-        await injectTestData(page);
+    test.beforeEach(async ({ page, injectData }) => {
+        await injectData([TEST_LIST_PRIMARY, TEST_LIST_SECONDARY]);
         await page.goto('/');
         await waitForAppReady(page);
     });
 
-    test('должно открываться и закрываться окно настроек', async ({ page }) => {
-        // Открываем настройки
-        await app.openSettings();
-        await page.waitForTimeout(500);
-
-        // Проверяем, что панель настроек открылась
-        const settingsPanel = page.locator('text=Настройки').or(page.locator('text=Settings')).first();
-        await expect(settingsPanel).toBeVisible({ timeout: 5000 });
-
-        // Закрываем настройки
-        await app.closeSettings();
-        await page.waitForTimeout(500);
+    test('должен отображаться текущий выбранный список', async ({ app }) => {
+        await expect(app.sourceSelector).toBeVisible();
+        await expect(app.sourceSelector).toContainText('Тестовый список 1');
     });
 
-    test('должны сохраняться списки в localStorage', async () => {
-        // Проверяем, что список сохранен
-        const lists = await app.getLocalStorageItem('randomatched_lists_v1');
-        expect(lists).toBeTruthy();
-        expect(lists.length).toBe(1);
-        expect(lists[0].name).toBe('Тестовый список 1');
-        expect(lists[0].heroes.length).toBe(12);
+    test('должно открываться меню выбора списка', async ({ app }) => {
+        await app.sourceSelector.click();
+        // Ждем появления элементов управления внутри выпадающего списка
+        await expect(app.page.locator('button:has-text("Один")')).toBeVisible();
+        await expect(app.page.locator('button:has-text("Группа")')).toBeVisible();
     });
 
-    test('должен отображаться корректный индикатор локального списка', async () => {
-        // Проверяем, что список помечен как локальный в localStorage
-        const lists = await app.getLocalStorageItem('randomatched_lists_v1');
-        expect(lists[0].isLocal).toBe(true);
+    test('должна быть возможность сменить активный список', async ({ app }) => {
+        await app.sourceSelector.click();
+
+        // Выбираем второй список (он должен закрыться автоматически)
+        const secondaryListItem = app.page.locator(`text=${TEST_LIST_SECONDARY.name}`).first();
+        await secondaryListItem.click();
+
+        // Проверяем, что текст на главной обновился
+        await expect(app.sourceSelector).toContainText('Тестовый список 2');
     });
 });

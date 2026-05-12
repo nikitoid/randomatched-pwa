@@ -16,7 +16,7 @@ test.describe('История матчей', () => {
         await expect(app.statsButton).toBeVisible();
     });
 
-    test('должна открываться страница статистики', async ({ page }) => {
+    test('статистика должна быть доступна через навигацию в истории', async ({ page }) => {
         await app.statsButton.click();
         await page.waitForTimeout(1000);
 
@@ -34,8 +34,8 @@ test.describe('История матчей', () => {
         await page.waitForTimeout(2000);
 
         // Проверяем, что история начала формироваться
-        const history = await app.getLocalStorageItem('matchHistory');
-        // История может быть пустой или содержать записи
-        expect(history).toBeDefined();
+        const history = await app.getLocalStorageItem('randomatched_match_history_v1');
+        // Ожидаем, что это массив (пустой или нет)
+        expect(Array.isArray(history)).toBe(true);
     });
 });

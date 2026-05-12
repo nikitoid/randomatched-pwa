@@ -61,5 +61,9 @@ test.describe('Настройки приложения', () => {
         // Закрываем настройки
         await app.closeSettings();
         await page.waitForTimeout(500);
+
+        // Проверяем, что панель настроек скрылась
+        const settingsPanel = page.locator('h2:has-text("Настройки")');
+        await expect(settingsPanel).toBeHidden({ timeout: 5000 });
     });
 });
