@@ -1017,11 +1017,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         setIsBackupManagerOpen(true);
                                     }}
                                     disabled={isDebugMode}
-                                    className={`w-full flex items-center justify-center gap-3 p-3.5 rounded-2xl font-medium transition-colors ${
-                                        isDebugMode
+                                    className={`w-full flex items-center justify-center gap-3 p-3.5 rounded-2xl font-medium transition-colors ${isDebugMode
                                             ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
                                             : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40'
-                                    }`}
+                                        }`}
                                     title={isDebugMode ? "Облачный бэкап отключен в режиме разработчика" : ""}
                                     data-testid="backup-open-manager-btn"
                                 >
@@ -1116,8 +1115,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <RefreshCw size={20} />
                                 )}
                             </button>
-                            <button 
-                                onClick={onClose} 
+                            <button
+                                onClick={onClose}
                                 data-testid="stats-close-btn"
                                 aria-label="Закрыть"
                                 className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"

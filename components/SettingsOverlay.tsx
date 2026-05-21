@@ -115,7 +115,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         const diffX = touchStartX.current - touchEndX.current;
         const diffY = touchStartY.current - touchEndY.current;
         if (Math.abs(diffY) > Math.abs(diffX)) return;
-        
+
         const tabs: TabType[] = ['appearance', 'app_settings', 'info'];
         if (isDebugMode) {
             tabs.push('debug');
@@ -142,11 +142,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 setActiveTab(id);
                 triggerHaptic(10);
             }}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap select-none border ${
-                activeTab === id
+            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap select-none border ${activeTab === id
                     ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-md'
                     : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800'
-            } ${isDragScroll ? 'pointer-events-none' : ''}`}
+                } ${isDragScroll ? 'pointer-events-none' : ''}`}
         >
             {icon} <span>{label}</span>
         </button>
@@ -178,7 +177,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             ];
 
             const winner: 'team1' | 'team2' = Math.random() > 0.5 ? 'team1' : 'team2';
-            
+
             demoHistory.push({
                 id: crypto.randomUUID(),
                 timestamp: now - i * 3600 * 1000 * 12,
@@ -210,13 +209,13 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800 transition-all duration-300">
                 <div className="px-4 py-3 pt-safe-area-top">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             aria-label="Закрыть"
                             data-testid="settings-close-btn"
                             className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
-                        > 
-                            <ChevronLeft size={24} /> 
+                        >
+                            <ChevronLeft size={24} />
                         </button>
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">Настройки</h2>
                     </div>
@@ -244,19 +243,19 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                             const isSelected = colorScheme === key;
                                             const colorValue = `rgb(${data.primary[500]})`;
                                             return (
-                                                <button 
-                                                    key={key} 
-                                                    onClick={() => { setColorScheme && setColorScheme(key as any); triggerHaptic(10); }} 
+                                                <button
+                                                    key={key}
+                                                    onClick={() => { setColorScheme && setColorScheme(key as any); triggerHaptic(10); }}
                                                     className={`relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-md ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800'} `}
-                                                > 
-                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center" style={{ backgroundColor: colorValue }}> 
-                                                        {isSelected && <Check size={20} className="text-white drop-shadow-md" />} 
-                                                    </div> 
-                                                    <div className="text-left min-w-0"> 
-                                                        <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}> 
-                                                            {data.label} 
-                                                        </div> 
-                                                    </div> 
+                                                >
+                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center" style={{ backgroundColor: colorValue }}>
+                                                        {isSelected && <Check size={20} className="text-white drop-shadow-md" />}
+                                                    </div>
+                                                    <div className="text-left min-w-0">
+                                                        <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                            {data.label}
+                                                        </div>
+                                                    </div>
                                                 </button>
                                             );
                                         })}
@@ -315,25 +314,25 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
                         {activeTab === 'info' && (
                             <div className="flex flex-col items-center justify-center h-full p-6 text-center animate-in fade-in slide-in-from-bottom-2">
-                                <div className="w-24 h-24 bg-primary-100 dark:bg-primary-900/30 rounded-3xl flex items-center justify-center text-primary-600 dark:text-primary-400 mb-6 shadow-xl shadow-primary-500/10 rotate-3"> 
-                                    <Dice5 size={48} /> 
+                                <div className="w-24 h-24 bg-primary-100 dark:bg-primary-900/30 rounded-3xl flex items-center justify-center text-primary-600 dark:text-primary-400 mb-6 shadow-xl shadow-primary-500/10 rotate-3">
+                                    <Dice5 size={48} />
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
-                                <div className="relative inline-block mb-8"> 
-                                    <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.7.0</p> 
+                                <div className="relative inline-block mb-8">
+                                    <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.8.0</p>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6"> 
-                                    <p className="mb-3"> Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>. </p> 
-                                    <p> Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей. </p> 
+                                <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                                    <p className="mb-3"> Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>. </p>
+                                    <p> Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей. </p>
                                 </div>
                                 {isUpdateAvailable && onUpdateApp && (
-                                    <button onClick={onUpdateApp} className="mb-8 px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-transform"> 
-                                        <Download size={14} /> Обновить и перезапустить 
+                                    <button onClick={onUpdateApp} className="mb-8 px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-transform">
+                                        <Download size={14} /> Обновить и перезапустить
                                     </button>
                                 )}
-                                <div className="mt-auto pt-4 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center"> 
-                                    <span>Designed for Unmatched Fans</span> 
-                                    <span>by Nikitoid</span> 
+                                <div className="mt-auto pt-4 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center">
+                                    <span>Designed for Unmatched Fans</span>
+                                    <span>by Nikitoid</span>
                                 </div>
                             </div>
                         )}
@@ -366,7 +365,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                         <h3 className="font-bold flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
                                             Быстрые действия
                                         </h3>
-                                        
+
                                         <button
                                             onClick={handleGenerateDemoHistory}
                                             className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-violet-600 dark:bg-violet-700 text-white rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform"

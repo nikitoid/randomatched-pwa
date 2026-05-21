@@ -558,7 +558,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 />
 
                 {/* Controls Bar */}
-                <div className="absolute top-0 left-0 w-full px-4 pt-safe-area-top pt-6 mt-2 flex justify-between items-center pointer-events-none">
+                <div className="absolute top-0 left-0 w-full px-6 pt-safe-area-top pt-6 mt-2 flex justify-between items-center pointer-events-none">
                     {setGenerationMode && (
                         <div className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen ? 'z-[61] ring-2 ring-primary-500/50' : 'z-50'}`}>
 
