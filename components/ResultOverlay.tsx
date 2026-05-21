@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog, History, Terminal, Search } from 'lucide-react';
 import { AssignedPlayer, GenerationMode, Hero, MatchRecord } from '../types';
@@ -550,16 +549,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     return (
         <>
-            <div data-testid="result-overlay" className={`absolute inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
+            <div data-testid="result-overlay" className={`fixed inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
 
                 {/* Backdrop for Mode Selector */}
                 <div
-                    className={`absolute inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-all duration-300 ${isModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-all duration-300 ${isModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                     onClick={() => setIsModeSelectorOpen(false)}
                 />
 
                 {/* Controls Bar */}
-                <div className="absolute top-0 left-0 w-full px-6 pt-safe-area-top pt-6 mt-2 flex justify-between items-center pointer-events-none">
+                <div className="absolute top-0 left-0 w-full px-4 pt-safe-area-top pt-6 mt-2 flex justify-between items-center pointer-events-none">
                     {setGenerationMode && (
                         <div className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen ? 'z-[61] ring-2 ring-primary-500/50' : 'z-50'}`}>
 
@@ -620,11 +619,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             {setPrioritizeUnplayed && (
                                 <button
                                     onClick={() => setPrioritizeUnplayed(!prioritizeUnplayed)}
-                                    className={`p-2 rounded-full transition-all duration-200 ${
-                                        prioritizeUnplayed
-                                            ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-500/20'
-                                            : 'text-slate-400 md:hover:text-slate-600 dark:md:hover:text-slate-200 md:hover:bg-slate-100 dark:md:hover:bg-slate-700'
-                                    }`}
+                                    className={`p-2 rounded-full transition-all duration-200 ${prioritizeUnplayed
+                                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-500/20'
+                                        : 'text-slate-400 md:hover:text-slate-600 dark:md:hover:text-slate-200 md:hover:bg-slate-100 dark:md:hover:bg-slate-700'
+                                        }`}
                                     title="Приоритет редко игравших героев"
                                 >
                                     <History size={20} />
@@ -789,7 +787,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             {/* Weights Table Modal */}
             <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isWeightsModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
                 <div className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col max-h-[85vh] ${isWeightsModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-                    
+
                     {/* Header */}
                     <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
                         <div>
@@ -801,7 +799,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                 Всего героев: {availableHeroes.length}
                             </p>
                         </div>
-                        <button 
+                        <button
                             onClick={() => { setIsWeightsModalOpen(false); setWeightsSearchTerm(''); }}
                             className="p-2 rounded-xl text-slate-400 md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
                         >
@@ -845,13 +843,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                     filteredHeroes.map(({ hero, weight, power }) => {
                                         const isSelected = assignments.some(a => a.hero?.id === hero.id);
                                         return (
-                                            <tr 
-                                                key={hero.id} 
-                                                className={`transition-colors ${
-                                                    isSelected 
-                                                        ? 'bg-primary-50/50 dark:bg-primary-950/20 font-medium' 
-                                                        : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800/30'
-                                                }`}
+                                            <tr
+                                                key={hero.id}
+                                                className={`transition-colors ${isSelected
+                                                    ? 'bg-primary-50/50 dark:bg-primary-950/20 font-medium'
+                                                    : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800/30'
+                                                    }`}
                                             >
                                                 <td className="py-2.5 px-2 flex items-center gap-2">
                                                     <span className={`truncate text-slate-800 dark:text-slate-200 ${isSelected ? 'text-primary-600 dark:text-primary-400 font-bold' : ''}`}>

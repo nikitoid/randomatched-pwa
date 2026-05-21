@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, Users, Clock, Trash2, X, User } from 'lucide-react';
 
 interface PlayerNameInputProps {
@@ -18,6 +18,7 @@ interface PlayerNameInputProps {
     handleDeleteHistoryItem: (e: React.MouseEvent, index: number) => void;
     playerNames: string[];
     handleNameChange: (index: number, value: string) => void;
+    uniquePlayerNames: string[];
 }
 
 export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
@@ -37,7 +38,29 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
     handleDeleteHistoryItem,
     playerNames,
     handleNameChange,
+    uniquePlayerNames,
 }) => {
+    const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+    const activeSuggestions = focusedIndex !== null
+        ? uniquePlayerNames
+            .filter(name => {
+                const query = (playerNames[focusedIndex] || '').trim().toLowerCase();
+                if (!query) return false;
+
+                const cleanName = name.trim();
+                const matchesQuery = cleanName.toLowerCase().includes(query);
+
+                // Исключаем имена, уже введенные в другие инпуты
+                const isAlreadyEntered = playerNames.some((pName, idx) =>
+                    idx !== focusedIndex && pName.trim().toLowerCase() === cleanName.toLowerCase()
+                );
+
+                return matchesQuery && !isAlreadyEntered;
+            })
+            .slice(0, 5)
+        : [];
+
     return (
         <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-40' : 'z-20'}`}>
             <button
@@ -58,7 +81,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                 </div>
             </button>
 
-            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl overflow-hidden transition-all duration-300 origin-top ${isNamesOpen ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
+            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl transition-all duration-300 origin-top ${isNamesOpen ? 'opacity-100 scale-y-100 pointer-events-auto overflow-visible' : 'opacity-0 scale-y-0 pointer-events-none overflow-hidden'}`}>
                 <div className="p-4 pt-5">
 
                     {savedTeams.length > 0 && (
@@ -126,12 +149,35 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                     type="text"
                                     value={playerNames[index]}
                                     onChange={(e) => handleNameChange(index, e.target.value)}
+                                    onFocus={() => setFocusedIndex(index)}
+                                    onBlur={() => setFocusedIndex(null)}
                                     placeholder={`Игрок ${index + 1}`}
                                     className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500 outline-none transition-all focus:bg-white dark:focus:bg-slate-900 select-text"
                                 />
                                 <div className="absolute left-3 top-1/2 -translate-x-0 -translate-y-1/2 text-slate-400 pointer-events-none">
                                     <User size={14} />
                                 </div>
+                                {focusedIndex === index && activeSuggestions.length > 0 && (
+                                    <div className="suggestions-dropdown absolute top-[100%] left-0 right-0 mt-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="p-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                                            {activeSuggestions.map((name) => (
+                                                <button
+                                                    key={name}
+                                                    type="button"
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        handleNameChange(index, name);
+                                                        setFocusedIndex(null);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400 rounded-xl transition-colors flex items-center gap-2"
+                                                >
+                                                    <User size={12} className="text-slate-400" />
+                                                    <span>{name}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

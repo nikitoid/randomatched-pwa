@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useHeroLists } from './hooks/useHeroLists';
 import { useToast } from './hooks/useToast';
@@ -74,6 +74,22 @@ const App: React.FC = () => {
         historyScrollRef, isHistoryDragging, handleHistoryMouseDown, handleHistoryMouseLeave,
         handleHistoryMouseUp, handleHistoryMouseMove, isHistoryDragScroll
     } = useHistoryInput();
+
+    // Unique player names from match history for autocomplete
+    const uniquePlayerNames = useMemo(() => {
+        const names = new Set<string>();
+        history.forEach(m => {
+            m.team1.forEach(p => {
+                const clean = p.name.trim();
+                if (clean) names.add(clean);
+            });
+            m.team2.forEach(p => {
+                const clean = p.name.trim();
+                if (clean) names.add(clean);
+            });
+        });
+        return Array.from(names).sort();
+    }, [history]);
 
     const activeList = lists.find(l => l.id === selectedListId);
 
@@ -236,6 +252,7 @@ const App: React.FC = () => {
                         }}
                         playerNames={playerNames}
                         handleNameChange={handleNameChange}
+                        uniquePlayerNames={uniquePlayerNames}
                     />
 
                     <MainControls
