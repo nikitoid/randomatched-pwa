@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, RefreshCw, Trash, Info, SmartphoneNfc, Vibrate } from 'lucide-react';
+import { X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, Wifi, WifiOff, Loader2, Files, Smartphone, Palette, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, BarChart3, Dice5, Check, GripVertical, MoreVertical, Layers, FileJson, FileText, ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, SquareStack, Eye, RefreshCw, Trash, Info, SmartphoneNfc, Vibrate, Terminal } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, Hero, ColorScheme, MatchRecord } from '../types';
 import { RANKS, COLOR_SCHEMES_DATA } from '../constants';
@@ -34,20 +34,19 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onDismissHeroUpdates?: (listId: string) => void;
     colorScheme?: ColorScheme;
     setColorScheme?: (scheme: ColorScheme) => void;
-    // logs?: { type: string, args: string[], time?: string }[]; // REMOVED
     checkForUpdate?: () => void;
     isCheckingUpdate?: boolean;
     isUpdateAvailable?: boolean;
     onUpdateApp?: () => void;
-    // isDebugMode?: boolean; // REMOVED
-    // onToggleDebug?: (val: boolean) => void; // REMOVED
+    isDebugMode?: boolean;
+    onToggleDebug?: (val: boolean) => void;
     hapticsEnabled?: boolean;
     onToggleHaptics?: () => void;
     triggerHaptic: (pattern?: number | number[]) => void;
-
+    onImportData?: (data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => boolean;
 }
 
-type TabType = 'lists' | 'app_settings' | 'appearance' | 'info';
+type TabType = 'lists' | 'app_settings' | 'appearance' | 'info' | 'debug';
 type SortOrder = 'asc' | 'desc' | 'custom';
 type ImportMode = 'none' | 'text_import' | 'text_export' | 'rank_import' | 'file_import_confirm' | 'rank_import_confirm';
 
@@ -75,13 +74,13 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     isCheckingUpdate = false,
     isUpdateAvailable = false,
     onUpdateApp,
-    // isDebugMode = false, // REMOVED
-    // onToggleDebug, // REMOVED
+    isDebugMode = false,
+    onToggleDebug,
     hapticsEnabled = true,
     onToggleHaptics,
     triggerHaptic,
     history = [],
-
+    onImportData,
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('lists');
     const [editingListId, setEditingListId] = useState<string | null>(null);
@@ -797,6 +796,58 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => { if (dragItem.current === null || !reorderLists) return; const touch = e.touches[0]; const targetElement = document.elementFromPoint(touch.clientX, touch.clientY); const listItem = targetElement?.closest('[data-list-index]'); if (listItem) { const index = parseInt(listItem.getAttribute('data-list-index') || '-1', 10); if (index !== -1 && index !== dragItem.current) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); triggerHaptic(5); } } };
 
     // const filteredLogs = useMemo(() => { if (debugFilter === 'all') return logs; return logs.filter(l => l.type === debugFilter); }, [logs, debugFilter]); // REMOVED
+    const handleGenerateDemoHistory = () => {
+        triggerHaptic(20);
+        const allHeroes = lists.flatMap(l => l.heroes).filter(h => h.name.trim());
+        if (allHeroes.length < 4) {
+            if (addToast) addToast("Сначала добавьте героев в списки (минимум 4)", "warning");
+            return;
+        }
+
+        const players = ["Игрок 1", "Игрок 2", "Игрок 3", "Игрок 4"];
+        const demoHistory: MatchRecord[] = [];
+        const now = Date.now();
+
+        for (let i = 0; i < 15; i++) {
+            const shuffledHeroes = [...allHeroes].sort(() => 0.5 - Math.random());
+            const selectedHeroes = shuffledHeroes.slice(0, 4);
+
+            const team1 = [
+                { name: players[0], heroId: selectedHeroes[0].id, heroName: selectedHeroes[0].name },
+                { name: players[1], heroId: selectedHeroes[1].id, heroName: selectedHeroes[1].name }
+            ];
+            const team2 = [
+                { name: players[2], heroId: selectedHeroes[2].id, heroName: selectedHeroes[2].name },
+                { name: players[3], heroId: selectedHeroes[3].id, heroName: selectedHeroes[3].name }
+            ];
+
+            const winner: 'team1' | 'team2' = Math.random() > 0.5 ? 'team1' : 'team2';
+            
+            demoHistory.push({
+                id: crypto.randomUUID(),
+                timestamp: now - i * 3600 * 1000 * 12,
+                lastUpdated: now,
+                team1,
+                team2,
+                winner
+            });
+        }
+
+        if (onImportData) {
+            onImportData({ history: demoHistory, deletedHistory: [] });
+            if (addToast) addToast("Сгенерировано 15 демо-матчей", "success");
+        }
+    };
+
+    const handleClearAllHistory = () => {
+        triggerHaptic(30);
+        if (window.confirm("Вы уверены, что хотите полностью очистить всю историю матчей? Это действие перезапишет локальные данные и синхронизируется с облаком при следующем обмене.")) {
+            if (onImportData) {
+                onImportData({ history: [], deletedHistory: [] });
+                if (addToast) addToast("История полностью очищена", "success");
+            }
+        }
+    };
 
     return (
         <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
@@ -844,7 +895,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             {renderTabButton('appearance', 'Внешний вид', <Palette size={16} />)}
                             {renderTabButton('app_settings', 'Приложение', <SmartphoneNfc size={16} />)}
                             {renderTabButton('info', 'Инфо', <Info size={16} />)}
-                            {/* {isDebugMode && renderTabButton('debug', 'Debug', <Terminal size={16} />)} */}
+                            {isDebugMode && renderTabButton('debug', 'Debug', <Terminal size={16} />)}
                         </div>
                     </div>
                 )}
@@ -986,6 +1037,27 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                         </div>
                                     </div>
 
+                                    {/* Режим разработчика */}
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDebugMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                    <Terminal size={20} />
+                                                </div>
+                                                <div className="text-left">
+                                                    <h3 className="font-bold text-slate-900 dark:text-white">Режим разработчика</h3>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Отображение весов и отладка</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => { onToggleDebug && onToggleDebug(!isDebugMode); triggerHaptic(10); }}
+                                                className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${isDebugMode ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                            >
+                                                <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${isDebugMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+
 
                                 </div>
                             </div>
@@ -999,6 +1071,55 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6"> <p className="mb-3"> Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>. </p> <p> Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей. </p> </div>
                                 {isUpdateAvailable && onUpdateApp && (<button onClick={onUpdateApp} className="mb-8 px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-transform"> <Download size={14} /> Обновить и перезапустить </button>)}
                                 <div className="mt-auto pt-4 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center"> <span>Designed for Unmatched Fans</span> <span>by Nikitoid</span> </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'debug' && isDebugMode && (
+                            <div className="flex flex-col items-center justify-start min-h-full p-6 animate-in fade-in slide-in-from-bottom-2">
+                                <div className="w-full max-w-sm flex flex-col gap-4">
+                                    {/* LocalStorage Summary */}
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                                        <h3 className="font-bold mb-3 flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                            <Database size={16} /> Сводка LocalStorage
+                                        </h3>
+                                        <div className="text-xs font-mono space-y-1.5 max-h-40 overflow-y-auto no-scrollbar bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-100 dark:border-slate-900">
+                                            {Object.keys(localStorage).map(key => {
+                                                const val = localStorage.getItem(key) || '';
+                                                let displaySize = `${(val.length * 2) / 1024}`;
+                                                displaySize = parseFloat(displaySize).toFixed(2);
+                                                return (
+                                                    <div key={key} className="flex justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-1 last:border-0 last:pb-0">
+                                                        <span className="truncate text-slate-600 dark:text-slate-400">{key}</span>
+                                                        <span className="font-bold text-slate-850 dark:text-slate-200 shrink-0">{displaySize} KB</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 space-y-3">
+                                        <h3 className="font-bold flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                            Быстрые действия
+                                        </h3>
+                                        
+                                        <button
+                                            onClick={handleGenerateDemoHistory}
+                                            className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-violet-600 dark:bg-violet-700 text-white rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform"
+                                        >
+                                            <RefreshCw size={16} />
+                                            <span>Создать демо-историю (15 игр)</span>
+                                        </button>
+
+                                        <button
+                                            onClick={handleClearAllHistory}
+                                            className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-red-650 dark:bg-red-750 text-white rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform"
+                                        >
+                                            <Trash size={16} />
+                                            <span>Полная очистка истории</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>

@@ -1,6 +1,123 @@
 
-import { Hero, HeroList, AssignedPlayer, GenerationMode } from '../types';
+import { Hero, HeroList, AssignedPlayer, GenerationMode, MatchRecord } from '../types';
 import { RANK_VALUES } from '../constants';
+
+// Helper to select a single item based on weights
+export const selectWeightedSingle = <T>(
+  items: T[],
+  getWeight: (item: T) => number
+): T => {
+  if (items.length === 0) throw new Error("Empty array");
+  let totalWeight = 0;
+  const itemWeights = items.map(item => {
+    const w = Math.max(0.01, getWeight(item));
+    totalWeight += w;
+    return w;
+  });
+  
+  const r = Math.random() * totalWeight;
+  let sum = 0;
+  for (let i = 0; i < items.length; i++) {
+    sum += itemWeights[i];
+    if (sum >= r) {
+      return items[i];
+    }
+  }
+  return items[items.length - 1];
+};
+
+// Helper to select multiple unique items based on weights
+export const selectWeightedUnique = <T extends { id: string }>(
+  pool: T[],
+  getWeight: (item: T) => number,
+  count: number
+): T[] => {
+  const result: T[] = [];
+  const candidates = [...pool];
+  
+  const weights = new Map<string, number>();
+  candidates.forEach(c => {
+    weights.set(c.id, Math.max(0.01, getWeight(c)));
+  });
+
+  const limit = Math.min(count, candidates.length);
+
+  for (let i = 0; i < limit; i++) {
+    let totalWeight = 0;
+    for (const c of candidates) {
+      totalWeight += weights.get(c.id) || 0.01;
+    }
+
+    if (totalWeight <= 0) {
+      const randIdx = Math.floor(Math.random() * candidates.length);
+      const chosen = candidates.splice(randIdx, 1)[0];
+      result.push(chosen);
+      continue;
+    }
+
+    const r = Math.random() * totalWeight;
+    let sum = 0;
+    let chosenIndex = 0;
+
+    for (let j = 0; j < candidates.length; j++) {
+      sum += weights.get(candidates[j].id) || 0.01;
+      if (sum >= r) {
+        chosenIndex = j;
+        break;
+      }
+    }
+
+    const chosen = candidates.splice(chosenIndex, 1)[0];
+    result.push(chosen);
+  }
+
+  return result;
+};
+
+// Calculate hero weights based on match history
+export const getHeroHistoryWeights = (
+  history: MatchRecord[],
+  allHeroes: Hero[],
+  prioritizeUnplayed: boolean
+): Map<string, number> => {
+  const weights = new Map<string, number>();
+  
+  if (!prioritizeUnplayed || history.length === 0) {
+    allHeroes.forEach(h => weights.set(h.id, 1));
+    return weights;
+  }
+
+  const DEPTH = Math.min(20, history.length);
+  const lastPlayedIndices = new Map<string, number>();
+
+  for (let i = 0; i < DEPTH; i++) {
+    const match = history[i];
+    const heroIdsInMatch = new Set<string>();
+    
+    if (match.team1) match.team1.forEach(p => { if (p.heroId) heroIdsInMatch.add(p.heroId); });
+    if (match.team2) match.team2.forEach(p => { if (p.heroId) heroIdsInMatch.add(p.heroId); });
+
+    for (const heroId of heroIdsInMatch) {
+      if (!lastPlayedIndices.has(heroId)) {
+        lastPlayedIndices.set(heroId, i);
+      }
+    }
+  }
+
+  allHeroes.forEach(hero => {
+    const lastPlayedIndex = lastPlayedIndices.get(hero.id);
+    let inactivityScore = DEPTH;
+
+    if (lastPlayedIndex !== undefined) {
+      inactivityScore = lastPlayedIndex;
+    }
+
+    const weight = 1 + inactivityScore * 1.5;
+    weights.set(hero.id, weight);
+  });
+
+  return weights;
+};
 
 // Helper to get weight
 export const getHeroWeight = (hero: Hero | null): number => {
@@ -57,12 +174,23 @@ export const getBestPermutation = (heroes: Hero[]): { groupA: Hero[], groupB: He
   }; 
 };
 
+// Helper for Fisher-Yates Shuffle
+export const shuffleArray = <T>(array: T[]): T[] => {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
 export const generateAssignmentsWithMode = (
     lists: HeroList[], 
     mode: GenerationMode, 
     threshold: number, 
     currentAssignments: AssignedPlayer[],
-    onToast?: (msg: string, type: 'warning' | 'info', duration?: number) => void
+    onToast?: (msg: string, type: 'warning' | 'info', duration?: number) => void,
+    weights?: Map<string, number>
 ): AssignedPlayer[] => {
   // Use unique heroes logic to avoid duplicates across lists
   const allHeroes = getUniqueHeroesFromLists(lists);
@@ -73,13 +201,21 @@ export const generateAssignmentsWithMode = (
   let newAssignments = [...currentAssignments];
 
   if (mode === 'random') {
-      chosenHeroes = [...allHeroes].sort(() => 0.5 - Math.random()).slice(0, 4);
+      if (weights) {
+          chosenHeroes = selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4);
+      } else {
+          chosenHeroes = shuffleArray(allHeroes).slice(0, 4);
+      }
       newAssignments.forEach((assign, idx) => {
          newAssignments[idx] = { ...assign, hero: chosenHeroes[idx] };
       });
   } 
   else if (mode === 'balanced') {
-      chosenHeroes = [...allHeroes].sort(() => 0.5 - Math.random()).slice(0, 4);
+      if (weights) {
+          chosenHeroes = selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4);
+      } else {
+          chosenHeroes = shuffleArray(allHeroes).slice(0, 4);
+      }
 
       const TARGET_DIFF = 1;
       const MAX_SWAPS = 2;
@@ -111,7 +247,9 @@ export const generateAssignmentsWithMode = (
           const solvers = potentialMoves.filter(m => m.diff <= TARGET_DIFF);
           
           if (solvers.length > 0) {
-              const move = solvers[Math.floor(Math.random() * solvers.length)];
+              const move = weights
+                  ? selectWeightedSingle(solvers, m => weights.get(m.hero.id) || 1)
+                  : solvers[Math.floor(Math.random() * solvers.length)];
               chosenHeroes[move.idx] = move.hero;
               bestResult = getBestPermutation(chosenHeroes);
               break;
@@ -120,7 +258,9 @@ export const generateAssignmentsWithMode = (
               const topTierCount = Math.max(1, Math.floor(potentialMoves.length * 0.25));
               const topMoves = potentialMoves.slice(0, topTierCount);
               
-              const move = topMoves[Math.floor(Math.random() * topMoves.length)];
+              const move = weights
+                  ? selectWeightedSingle(topMoves, m => weights.get(m.hero.id) || 1)
+                  : topMoves[Math.floor(Math.random() * topMoves.length)];
               chosenHeroes[move.idx] = move.hero;
               bestResult = getBestPermutation(chosenHeroes);
           }
@@ -143,13 +283,17 @@ export const generateAssignmentsWithMode = (
       let attempts = 0;
       const MAX_STRICT_ATTEMPTS = 200;
 
-      let sample = [...allHeroes].sort(() => 0.5 - Math.random()).slice(0, 4);
+      let sample = weights
+          ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4)
+          : shuffleArray(allHeroes).slice(0, 4);
       let bestFound = getBestPermutation(sample);
       let bestDiffFound = bestFound.diff;
 
       while (attempts < MAX_STRICT_ATTEMPTS) {
           if (bestDiffFound <= threshold) break;
-          sample = [...allHeroes].sort(() => 0.5 - Math.random()).slice(0, 4);
+          sample = weights
+              ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4)
+              : shuffleArray(allHeroes).slice(0, 4);
           const result = getBestPermutation(sample);
           if (result.diff <= threshold) {
               bestFound = result;

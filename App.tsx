@@ -93,11 +93,13 @@ const App: React.FC = () => {
         handleRevealHeroes, handleResetSessionClick, confirmReset, cancelReset,
         handleShowLastResult, handleRecordResult, handleRerollHero,
         handleRerollAllHeroes, handleShuffleTeams, handleBanHero, handleBanAllCurrent,
-        handleSwapPositions, handleManualHeroSelect, getAvailableHeroesPool
+        handleSwapPositions, handleManualHeroSelect, getAvailableHeroesPool,
+        prioritizeUnplayed, setPrioritizeUnplayed, isDebugMode, setIsDebugMode
     } = useTeamGeneration({
         lists, activeList, isGroupMode, selectedGroupIds, addToast, triggerHaptic,
         playerNames, saveTeamHistory, resetTemporaryLists, updateList, forkList,
         createTemporaryList, setSelectedListId, setIsGroupMode, addMatch,
+        history,
         onSwapNames: (idx1, idx2) => {
             const newNames = [...playerNames];
             [newNames[idx1], newNames[idx2]] = [newNames[idx2], newNames[idx1]];
@@ -148,7 +150,6 @@ const App: React.FC = () => {
 
     const handleToggleTheme = () => {
         toggleTheme();
-        addToast(`Тема изменена на ${theme === 'light' ? 'темную' : 'светлую'}`, 'info', 2000);
         triggerHaptic(10);
     };
 
@@ -272,6 +273,10 @@ const App: React.FC = () => {
                     onRecordResult={handleRecordResult}
                     onManualSelect={handleManualHeroSelect}
                     availableHeroes={getAvailableHeroesPool()}
+                    prioritizeUnplayed={prioritizeUnplayed}
+                    setPrioritizeUnplayed={setPrioritizeUnplayed}
+                    isDebugMode={isDebugMode}
+                    history={history}
                 />
 
                 <SettingsOverlay
@@ -295,18 +300,17 @@ const App: React.FC = () => {
                     onDismissHeroUpdates={dismissHeroUpdates}
                     colorScheme={colorScheme}
                     setColorScheme={setColorScheme}
-                    // logs={consoleLogs} // REMOVED
                     checkForUpdate={checkForUpdate}
                     isCheckingUpdate={isCheckingUpdate}
                     isUpdateAvailable={isUpdateAvailable}
                     onUpdateApp={handleUpdateApp}
-                    // isDebugMode={isDebugMode} // REMOVED
-                    // onToggleDebug={setIsDebugMode} // REMOVED
+                    isDebugMode={isDebugMode}
+                    onToggleDebug={setIsDebugMode}
                     hapticsEnabled={hapticsEnabled}
                     onToggleHaptics={toggleHaptics}
                     triggerHaptic={triggerHaptic}
                     history={history}
-
+                    onImportData={importData}
                 />
 
                 <StatsModal
@@ -321,6 +325,7 @@ const App: React.FC = () => {
                     onSync={syncHistory}
                     isSyncing={isSyncingHistory}
                     isOnline={isOnline}
+                    isDebugMode={isDebugMode}
 
                     lists={lists}
                     triggerHaptic={triggerHaptic}
@@ -347,7 +352,7 @@ const App: React.FC = () => {
                     isOpen={isResetConfirmOpen}
                     onCancel={cancelReset}
                     onConfirm={confirmReset}
-                    onResetAndSync={() => {
+                    onResetAndSync={isDebugMode ? undefined : () => {
                         confirmReset();
                         syncHistory();
                         triggerHaptic(20);

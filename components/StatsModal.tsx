@@ -40,6 +40,7 @@ interface StatsModalProps {
     onRestoreFromCloudBackup: (id: string) => Promise<boolean>;
     onDeleteCloudBackup: (id: string) => Promise<boolean>;
     onGetCloudBackupDetails: (id: string) => Promise<CloudBackup | null>;
+    isDebugMode?: boolean;
 }
 
 export const StatsModal: React.FC<StatsModalProps> = ({
@@ -72,7 +73,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     onListCloudBackups = async () => [],
     onRestoreFromCloudBackup = async () => false,
     onDeleteCloudBackup = async () => false,
-    onGetCloudBackupDetails = async () => null
+    onGetCloudBackupDetails = async () => null,
+    isDebugMode = false
 }) => {
     // Backup Menu State
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
@@ -87,10 +89,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     // Загрузка списка бэкапов при открытии меню
     useEffect(() => {
-        if (isDataMenuOpen && isOnline) {
+        if (isDataMenuOpen && isOnline && !isDebugMode) {
             onListCloudBackups();
         }
-    }, [isDataMenuOpen]);
+    }, [isDataMenuOpen, isOnline, isDebugMode]);
 
     const handleTitleClick = () => {
         titleClickCount.current += 1;
@@ -1009,16 +1011,29 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                 <button
                                     onClick={() => {
+                                        if (isDebugMode) return;
                                         triggerHaptic(10);
                                         setIsDataMenuOpen(false);
                                         setIsBackupManagerOpen(true);
                                     }}
-                                    className="w-full flex items-center justify-center gap-3 p-3.5 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 rounded-2xl font-medium hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors"
+                                    disabled={isDebugMode}
+                                    className={`w-full flex items-center justify-center gap-3 p-3.5 rounded-2xl font-medium transition-colors ${
+                                        isDebugMode
+                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
+                                            : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40'
+                                    }`}
+                                    title={isDebugMode ? "Облачный бэкап отключен в режиме разработчика" : ""}
                                     data-testid="backup-open-manager-btn"
                                 >
-                                    <RefreshCw size={20} />
+                                    <RefreshCw size={20} className={isDebugMode ? "opacity-50" : ""} />
                                     <span>Управление облачными бэкапами</span>
                                 </button>
+
+                                {isDebugMode && (
+                                    <p className="text-center text-xs text-red-500 font-medium mt-1">
+                                        Облачные функции отключены в режиме разработчика!
+                                    </p>
+                                )}
 
                                 {cloudBackups.length > 0 && (
                                     <p className="text-center text-xs text-slate-400 mt-2">
@@ -1087,11 +1102,11 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <div className="flex gap-2">
                             <button
                                 onClick={() => syncWithAnimation()}
-                                disabled={!isOnline || visualSyncState !== 'idle'}
-                                className={`p-2 rounded-full transition-all duration-300 ${(!isOnline) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
+                                disabled={!isOnline || visualSyncState !== 'idle' || isDebugMode}
+                                className={`p-2 rounded-full transition-all duration-300 ${(!isOnline || isDebugMode) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
                                     visualSyncState === 'success' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' :
                                         'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}
-                                title="Синхронизация"
+                                title={isDebugMode ? "Синхронизация отключена в режиме разработчика" : "Синхронизация"}
                             >
                                 {visualSyncState === 'syncing' ? (
                                     <Loader2 size={20} className="animate-spin" />

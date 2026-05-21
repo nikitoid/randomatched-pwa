@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Hero, HeroList, AssignedPlayer, GenerationMode } from '../types';
-import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists } from '../utils/generator';
+import { Hero, HeroList, AssignedPlayer, GenerationMode, MatchRecord } from '../types';
+import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists, getHeroHistoryWeights, selectWeightedSingle } from '../utils/generator';
 
 const STORAGE_KEY_ASSIGNMENTS = 'randomatched_last_session_v1';
 const STORAGE_KEY_DEBUG_MODE = 'randomatched_debug_mode_v1';
@@ -23,6 +23,7 @@ interface UseTeamGenerationProps {
     setIsGroupMode: (val: boolean) => void;
     addMatch: (assignments: AssignedPlayer[], winner: 'team1' | 'team2', playerNames: string[]) => void;
     onSwapNames: (idx1: number, idx2: number) => void;
+    history: MatchRecord[];
 }
 
 export const useTeamGeneration = ({
@@ -41,7 +42,8 @@ export const useTeamGeneration = ({
     setSelectedListId,
     setIsGroupMode,
     addMatch,
-    onSwapNames
+    onSwapNames,
+    history
 }: UseTeamGenerationProps) => {
 
     const [assignments, setAssignments] = useState<AssignedPlayer[]>(() => {
@@ -65,6 +67,22 @@ export const useTeamGeneration = ({
 
     const [generationMode, setGenerationMode] = useState<GenerationMode>('balanced');
     const [balanceThreshold, setBalanceThreshold] = useState<number>(1);
+    const [prioritizeUnplayed, setPrioritizeUnplayed] = useState<boolean>(() => {
+        try {
+            const saved = localStorage.getItem('randomatched_prioritize_unplayed_v1');
+            return saved ? JSON.parse(saved) : false;
+        } catch (e) {
+            return false;
+        }
+    });
+    const [isDebugMode, setIsDebugMode] = useState<boolean>(() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY_DEBUG_MODE);
+            return saved ? JSON.parse(saved) : false;
+        } catch (e) {
+            return false;
+        }
+    });
     const [showResult, setShowResult] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
@@ -72,6 +90,14 @@ export const useTeamGeneration = ({
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY_ASSIGNMENTS, JSON.stringify(assignments));
     }, [assignments]);
+
+    useEffect(() => {
+        localStorage.setItem('randomatched_prioritize_unplayed_v1', JSON.stringify(prioritizeUnplayed));
+    }, [prioritizeUnplayed]);
+
+    useEffect(() => {
+        localStorage.setItem(STORAGE_KEY_DEBUG_MODE, JSON.stringify(isDebugMode));
+    }, [isDebugMode]);
 
     const handleGenerate = () => {
         triggerHaptic(20);
@@ -155,7 +181,9 @@ export const useTeamGeneration = ({
             if (activeList) targetLists = [activeList];
         }
 
-        const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast);
+        const pool = getAvailableHeroesPool();
+        const weights = getHeroHistoryWeights(history, pool, prioritizeUnplayed);
+        const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast, weights);
         setAssignments(generated);
         triggerHaptic(30);
     };
@@ -221,10 +249,17 @@ export const useTeamGeneration = ({
             return;
         }
 
+        const pool = getAvailableHeroesPool();
+        const weights = getHeroHistoryWeights(history, pool, prioritizeUnplayed);
+
         let newHero: Hero;
 
         if (generationMode === 'random') {
-            newHero = availableHeroes[Math.floor(Math.random() * availableHeroes.length)];
+            if (prioritizeUnplayed && weights) {
+                newHero = selectWeightedSingle(availableHeroes, h => weights.get(h.id) || 1);
+            } else {
+                newHero = availableHeroes[Math.floor(Math.random() * availableHeroes.length)];
+            }
         } else {
             const targetAssignment = assignments.find(a => a.playerNumber === playerNumber);
             if (!targetAssignment) return;
@@ -238,40 +273,43 @@ export const useTeamGeneration = ({
                 .filter(a => a.team === myTeam && a.playerNumber !== playerNumber && a.hero)
                 .reduce((sum, a) => sum + getHeroWeight(a.hero), 0);
 
-            if (generationMode === 'strict') {
-                const candidates = availableHeroes.map(h => {
-                    const w = getHeroWeight(h);
-                    const diff = Math.abs(opposingWeight - (myTeamCurrentWeight + w));
-                    return { hero: h, diff };
-                });
+            const candidates = availableHeroes.map(h => {
+                const w = getHeroWeight(h);
+                const diff = Math.abs(opposingWeight - (myTeamCurrentWeight + w));
+                return { hero: h, diff };
+            });
 
+            if (generationMode === 'strict') {
                 const validOptions = candidates.filter(c => c.diff <= balanceThreshold);
 
                 if (validOptions.length > 0) {
-                    newHero = validOptions[Math.floor(Math.random() * validOptions.length)].hero;
+                    if (prioritizeUnplayed && weights) {
+                        newHero = selectWeightedSingle(validOptions, c => weights.get(c.hero.id) || 1).hero;
+                    } else {
+                        newHero = validOptions[Math.floor(Math.random() * validOptions.length)].hero;
+                    }
                 } else {
                     const bestPossibleDiff = Math.min(...candidates.map(c => c.diff));
                     const bestOptions = candidates.filter(c => c.diff === bestPossibleDiff);
-                    newHero = bestOptions[Math.floor(Math.random() * bestOptions.length)].hero;
+                    if (prioritizeUnplayed && weights) {
+                        newHero = selectWeightedSingle(bestOptions, c => weights.get(c.hero.id) || 1).hero;
+                    } else {
+                        newHero = bestOptions[Math.floor(Math.random() * bestOptions.length)].hero;
+                    }
                     addToast(`Не найдено героев с разницей ≤ ${balanceThreshold}. Выбран ближайший.`, "info", 2000);
                 }
 
             } else {
-                const candidates = availableHeroes.map(h => {
-                    const w = getHeroWeight(h);
-                    const diff = Math.abs(opposingWeight - (myTeamCurrentWeight + w));
-                    return { hero: h, diff };
-                });
-
                 const bestPossibleDiff = Math.min(...candidates.map(c => c.diff));
                 const TOLERANCE = 1;
 
-                const validOptions = candidates.filter(c =>
-                    c.diff <= 1 ||
-                    c.diff <= bestPossibleDiff + TOLERANCE
-                );
+                const validOptions = candidates.filter(c => c.diff <= bestPossibleDiff + TOLERANCE);
 
-                newHero = validOptions[Math.floor(Math.random() * validOptions.length)].hero;
+                if (prioritizeUnplayed && weights) {
+                    newHero = selectWeightedSingle(validOptions, c => weights.get(c.hero.id) || 1).hero;
+                } else {
+                    newHero = validOptions[Math.floor(Math.random() * validOptions.length)].hero;
+                }
             }
         }
 
@@ -294,7 +332,9 @@ export const useTeamGeneration = ({
             return;
         }
 
-        const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast);
+        const pool = getAvailableHeroesPool();
+        const weights = getHeroHistoryWeights(history, pool, prioritizeUnplayed);
+        const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast, weights);
         setAssignments(generated);
     };
 
@@ -438,6 +478,10 @@ export const useTeamGeneration = ({
             }
             setAssignments(prev => prev.map(p => p.playerNumber === playerNumber ? { ...p, hero } : p));
             addToast(`Герой изменен на ${hero.name}`, "success");
-        }
+        },
+        prioritizeUnplayed,
+        setPrioritizeUnplayed,
+        isDebugMode,
+        setIsDebugMode
     };
 };

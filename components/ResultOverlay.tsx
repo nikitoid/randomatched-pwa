@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog } from 'lucide-react';
-import { AssignedPlayer, GenerationMode, Hero } from '../types';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog, History, Terminal, Search } from 'lucide-react';
+import { AssignedPlayer, GenerationMode, Hero, MatchRecord } from '../types';
 import { HeroSelectionModal } from './HeroSelectionModal';
 import { useBackHandler } from '../hooks/useBackHandler';
+import { getHeroHistoryWeights, getHeroWeight } from '../utils/generator';
 
 interface ResultOverlayProps {
     isOpen: boolean;
@@ -24,6 +25,10 @@ interface ResultOverlayProps {
     onRecordResult?: (winner: 'team1' | 'team2') => void;
     onManualSelect?: (playerNumber: number, hero: Hero) => void;
     availableHeroes?: Hero[];
+    prioritizeUnplayed?: boolean;
+    setPrioritizeUnplayed?: (val: boolean) => void;
+    isDebugMode?: boolean;
+    history?: MatchRecord[];
 }
 
 type Position = 'top' | 'bottom' | 'left' | 'right';
@@ -52,7 +57,11 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     onSwapPositions,
     onRecordResult,
     onManualSelect,
-    availableHeroes = []
+    availableHeroes = [],
+    prioritizeUnplayed = false,
+    setPrioritizeUnplayed,
+    isDebugMode = false,
+    history = []
 }) => {
     const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
     const [displayModal, setDisplayModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
@@ -62,6 +71,47 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const [isHeroSelectionOpen, setIsHeroSelectionOpen] = useState(false);
     const [selectedPlayerForEdit, setSelectedPlayerForEdit] = useState<number | null>(null);
     const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false);
+    const [isWeightsModalOpen, setIsWeightsModalOpen] = useState(false);
+    const [weightsSearchTerm, setWeightsSearchTerm] = useState('');
+
+    // Вычисление весов для отладки
+    const weightsMap = useMemo(() => {
+        return getHeroHistoryWeights(history, availableHeroes, true);
+    }, [history, availableHeroes]);
+
+    // Список героев, отсортированных по весу для модального окна
+    const sortedHeroesWithWeights = useMemo(() => {
+        return availableHeroes
+            .map(hero => {
+                const weight = weightsMap.get(hero.id) || 1;
+                const power = getHeroWeight(hero);
+                return { hero, weight, power };
+            })
+            .sort((a, b) => b.weight - a.weight);
+    }, [availableHeroes, weightsMap]);
+
+    const filteredHeroes = useMemo(() => {
+        return sortedHeroesWithWeights.filter(item =>
+            item.hero.name.toLowerCase().includes(weightsSearchTerm.toLowerCase())
+        );
+    }, [sortedHeroesWithWeights, weightsSearchTerm]);
+
+    // Вычисление силы команд для отладки баланса
+    const oddPower = useMemo(() => {
+        return assignments
+            .filter(a => a.team === 'Odd' && a.hero)
+            .reduce((sum, a) => sum + getHeroWeight(a.hero), 0);
+    }, [assignments]);
+
+    const evenPower = useMemo(() => {
+        return assignments
+            .filter(a => a.team === 'Even' && a.hero)
+            .reduce((sum, a) => sum + getHeroWeight(a.hero), 0);
+    }, [assignments]);
+
+    const powerDiff = useMemo(() => {
+        return Math.abs(oddPower - evenPower);
+    }, [oddPower, evenPower]);
 
     // Custom DND State
     const [isDragMode, setIsDragMode] = useState(false);
@@ -78,6 +128,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     useBackHandler(isOpen, () => {
+        if (isWeightsModalOpen) { setIsWeightsModalOpen(false); return; }
         if (isHeroSelectionOpen) { setIsHeroSelectionOpen(false); return; }
         if (confirmModal) { setConfirmModal(null); return; }
         if (showInfo) { setShowInfo(false); return; }
@@ -272,6 +323,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         const heroName = player.hero?.name || "";
         const heroRank = player.hero?.rank || "";
 
+        const weight = player.hero ? (weightsMap.get(player.hero.id) || 1) : 1;
+        const power = player.hero ? getHeroWeight(player.hero) : 6;
+
         let displayName = "";
         let showNumberBadge = false;
 
@@ -332,10 +386,17 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     </div>
                 )}
 
-                {/* Rank Badge */}
-                {hasHero && heroRank && !isDragMode && !isFloating && (
-                    <div className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-fade-in">
-                        <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[10px] sm:text-[11px] font-bold tracking-widest text-white/90">{heroRank}</div>
+                {/* Rank & Debug Info Badge */}
+                {hasHero && !isDragMode && !isFloating && (
+                    <div className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-fade-in flex flex-col items-center gap-1">
+                        {heroRank && (
+                            <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[10px] sm:text-[11px] font-bold tracking-widest text-white/90">{heroRank}</div>
+                        )}
+                        {isDebugMode && (
+                            <div className="px-1.5 py-0.5 rounded bg-black/40 border border-white/10 text-[9px] font-mono text-white/90 whitespace-nowrap">
+                                W: {weight.toFixed(2)} | P: {power}
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -489,16 +550,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     return (
         <>
-            <div data-testid="result-overlay" className={`fixed inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
+            <div data-testid="result-overlay" className={`absolute inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
 
                 {/* Backdrop for Mode Selector */}
                 <div
-                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-all duration-300 ${isModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                    className={`absolute inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-all duration-300 ${isModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                     onClick={() => setIsModeSelectorOpen(false)}
                 />
 
                 {/* Controls Bar */}
-                <div className="absolute top-0 left-0 w-full px-4 pt-safe-area-top pt-6 mt-2 flex justify-between items-center pointer-events-none">
+                <div className="absolute top-0 left-0 w-full px-6 pt-safe-area-top pt-6 mt-2 flex justify-between items-center pointer-events-none">
                     {setGenerationMode && (
                         <div className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen ? 'z-[61] ring-2 ring-primary-500/50' : 'z-50'}`}>
 
@@ -556,12 +617,54 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             ) : (
                                 <div className="w-1" />
                             )}
+                            {setPrioritizeUnplayed && (
+                                <button
+                                    onClick={() => setPrioritizeUnplayed(!prioritizeUnplayed)}
+                                    className={`p-2 rounded-full transition-all duration-200 ${
+                                        prioritizeUnplayed
+                                            ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-500/20'
+                                            : 'text-slate-400 md:hover:text-slate-600 dark:md:hover:text-slate-200 md:hover:bg-slate-100 dark:md:hover:bg-slate-700'
+                                    }`}
+                                    title="Приоритет редко игравших героев"
+                                >
+                                    <History size={20} />
+                                </button>
+                            )}
+
+                            {isDebugMode && (
+                                <button
+                                    onClick={() => setIsWeightsModalOpen(true)}
+                                    className="p-2 rounded-full text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-100 dark:md:hover:bg-slate-700 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"
+                                    title="Таблица весов героев"
+                                >
+                                    <Terminal size={20} />
+                                </button>
+                            )}
 
                             <button onClick={() => setShowInfo(true)} className="mr-1 p-2 rounded-full text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-100 dark:md:hover:bg-slate-700 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"><HelpCircle size={20} /></button>
                         </div>
                     )}
                     <button data-testid="close-result-overlay" onClick={onClose} className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative z-50"><X size={24} /></button>
                 </div>
+
+                {/* Debug Power Balance Panel */}
+                {isDebugMode && heroesRevealed && (
+                    <div className="absolute top-[80px] left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 dark:bg-slate-900/95 border border-slate-700/50 text-white px-4 py-2 rounded-2xl flex items-center gap-3 text-xs font-bold shadow-lg animate-in slide-in-from-top-2 duration-300 pointer-events-auto">
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-secondary-500" />
+                            <span>Сила Т1: {oddPower}</span>
+                        </div>
+                        <div className="w-px h-4 bg-slate-700" />
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />
+                            <span>Сила Т2: {evenPower}</span>
+                        </div>
+                        <div className="w-px h-4 bg-slate-700" />
+                        <div className="text-orange-400">
+                            Diff: {powerDiff}
+                        </div>
+                    </div>
+                )}
 
                 {/* Board Container */}
                 <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none flex items-center justify-center">
@@ -663,13 +766,140 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
             {/* INFO Modal */}
             <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${showInfo ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showInfo ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+                <div className={`bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showInfo ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
                     <div className="flex flex-col items-center text-center mb-4">
                         <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center mb-4"><Info size={24} /></div>
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{getModeTitle()}</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{getModeDescription()}</p>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100 dark:bg-slate-800/10 dark:border-slate-800 text-left w-full">
+                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                                <History size={12} className={prioritizeUnplayed ? "text-primary-500" : "text-slate-400"} />
+                                Приоритет истории: {prioritizeUnplayed ? "Включен" : "Выключен"}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                                Повышает приоритет выпадения героев, которые давно не играли (или не играли вовсе). {prioritizeUnplayed ? "Система учитывает последние 20 матчей и повышает шансы неактивных героев." : "Включите опцию на панели управления, чтобы сбалансировать частоту появления персонажей."}
+                            </p>
+                        </div>
                     </div>
                     <button onClick={() => setShowInfo(false)} className="w-full py-3 font-bold text-white bg-primary-600 rounded-xl">Понятно</button>
+                </div>
+            </div>
+
+            {/* Weights Table Modal */}
+            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isWeightsModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+                <div className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col max-h-[85vh] ${isWeightsModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+                    
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <Terminal size={18} className="text-primary-500" />
+                                <span>Таблица весов героев</span>
+                            </h3>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                                Всего героев: {availableHeroes.length}
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => { setIsWeightsModalOpen(false); setWeightsSearchTerm(''); }}
+                            className="p-2 rounded-xl text-slate-400 md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="my-4 relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Поиск героя..."
+                            value={weightsSearchTerm}
+                            onChange={(e) => setWeightsSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                        />
+                        {weightsSearchTerm && (
+                            <button
+                                onClick={() => setWeightsSearchTerm('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 md:hover:text-slate-600 dark:md:hover:text-slate-200 transition-colors"
+                            >
+                                Очистить
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Table Content */}
+                    <div className="flex-1 overflow-y-auto pr-1 -mr-1 scrollbar-thin">
+                        <table className="w-full text-left text-sm border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                    <th className="py-2.5 px-2">Герой</th>
+                                    <th className="py-2.5 px-2 text-center">Ранг</th>
+                                    <th className="py-2.5 px-2 text-right">Вес (W)</th>
+                                    <th className="py-2.5 px-2 text-right">Сила (P)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                                {filteredHeroes.length > 0 ? (
+                                    filteredHeroes.map(({ hero, weight, power }) => {
+                                        const isSelected = assignments.some(a => a.hero?.id === hero.id);
+                                        return (
+                                            <tr 
+                                                key={hero.id} 
+                                                className={`transition-colors ${
+                                                    isSelected 
+                                                        ? 'bg-primary-50/50 dark:bg-primary-950/20 font-medium' 
+                                                        : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800/30'
+                                                }`}
+                                            >
+                                                <td className="py-2.5 px-2 flex items-center gap-2">
+                                                    <span className={`truncate text-slate-800 dark:text-slate-200 ${isSelected ? 'text-primary-600 dark:text-primary-400 font-bold' : ''}`}>
+                                                        {hero.name}
+                                                    </span>
+                                                    {isSelected && (
+                                                        <span className="px-1 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-[9px] text-primary-600 dark:text-primary-400 font-black uppercase tracking-wider">
+                                                            В игре
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="py-2.5 px-2 text-center">
+                                                    <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                                        {hero.rank || '—'}
+                                                    </span>
+                                                </td>
+                                                <td className="py-2.5 px-2 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
+                                                    {weight.toFixed(2)}
+                                                </td>
+                                                <td className="py-2.5 px-2 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
+                                                    {power}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4} className="py-8 text-center text-slate-400 dark:text-slate-500 text-sm">
+                                            Герои не найдены
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+                        <div>
+                            <span>Сортировка по весу (убывание)</span>
+                        </div>
+                        <button
+                            onClick={() => { setIsWeightsModalOpen(false); setWeightsSearchTerm(''); }}
+                            className="py-2 px-4 bg-slate-100 dark:bg-slate-800 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition-colors"
+                        >
+                            Закрыть
+                        </button>
+                    </div>
                 </div>
             </div>
 
