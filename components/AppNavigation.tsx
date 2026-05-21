@@ -1,9 +1,10 @@
 import React from 'react';
-import { Trophy, History, Settings } from 'lucide-react';
+import { Trophy, History, Settings, Files } from 'lucide-react';
 
 interface AppNavigationProps {
     onOpenStats: () => void;
     onOpenHistory: () => void;
+    onOpenLists: () => void;
     onOpenSettings: () => void;
     hasResult: boolean;
 }
@@ -11,6 +12,7 @@ interface AppNavigationProps {
 export const AppNavigation: React.FC<AppNavigationProps> = ({
     onOpenStats,
     onOpenHistory,
+    onOpenLists,
     onOpenSettings,
     hasResult,
 }) => {
@@ -40,6 +42,16 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
             >
                 <History size={20} strokeWidth={2} className="mb-1" /> 
                 <span className="text-[10px] font-bold">История</span>
+            </button>
+            
+            <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
+
+            <button 
+                onClick={onOpenLists} 
+                className="flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300 active:text-primary-600"
+            >
+                <Files size={20} strokeWidth={2} className="mb-1" /> 
+                <span className="text-[10px] font-bold">Списки</span>
             </button>
             
             <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />

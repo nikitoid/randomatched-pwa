@@ -27,6 +27,7 @@ test.describe('Начальное состояние приложения', () =
         await expect(app.navigation).toBeVisible();
         await expect(app.statsButton).toBeVisible();
         await expect(app.historyButton).toBeVisible();
+        await expect(app.listsButton).toBeVisible();
         await expect(app.settingsButton).toBeVisible();
     });
 

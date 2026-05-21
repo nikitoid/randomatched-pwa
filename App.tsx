@@ -11,6 +11,7 @@ import { useHistoryInput } from './hooks/useHistoryInput';
 import { useTeamGeneration } from './hooks/useTeamGeneration';
 import { ResultOverlay } from './components/ResultOverlay';
 import { SettingsOverlay } from './components/SettingsOverlay';
+import { ListsOverlay } from './components/ListsOverlay';
 import { StatsModal } from './components/StatsModal';
 import { ToastContainer } from './components/Toast';
 import { Header } from './components/Header';
@@ -56,6 +57,7 @@ const App: React.FC = () => {
     const [selectedListId, setSelectedListId] = useState<string>('');
     const [isListSelectorOpen, setIsListSelectorOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isListsOpen, setIsListsOpen] = useState(false);
     const [isGroupStatsOpen, setIsGroupStatsOpen] = useState(false);
     const [isHistoryStatsOpen, setIsHistoryStatsOpen] = useState(false);
     const [isGenConfirmOpen, setIsGenConfirmOpen] = useState(false);
@@ -267,6 +269,7 @@ const App: React.FC = () => {
                 <AppNavigation
                     onOpenStats={() => { setIsHistoryStatsOpen(true); triggerHaptic(10); }}
                     onOpenHistory={handleShowLastResult}
+                    onOpenLists={() => { setIsListsOpen(true); triggerHaptic(10); }}
                     onOpenSettings={() => { setIsSettingsOpen(true); triggerHaptic(10); }}
                     hasResult={hasResult}
                 />
@@ -296,9 +299,9 @@ const App: React.FC = () => {
                     history={history}
                 />
 
-                <SettingsOverlay
-                    isOpen={isSettingsOpen}
-                    onClose={() => setIsSettingsOpen(false)}
+                <ListsOverlay
+                    isOpen={isListsOpen}
+                    onClose={() => setIsListsOpen(false)}
                     lists={lists}
                     onAddList={addList}
                     onUpdateList={updateList}
@@ -315,6 +318,14 @@ const App: React.FC = () => {
                     onMarkSeen={markListAsSeen}
                     updatedHeroIds={updatedHeroIds}
                     onDismissHeroUpdates={dismissHeroUpdates}
+                    triggerHaptic={triggerHaptic}
+                    history={history}
+                />
+
+                <SettingsOverlay
+                    isOpen={isSettingsOpen}
+                    onClose={() => setIsSettingsOpen(false)}
+                    lists={lists}
                     colorScheme={colorScheme}
                     setColorScheme={setColorScheme}
                     checkForUpdate={checkForUpdate}
@@ -328,6 +339,7 @@ const App: React.FC = () => {
                     triggerHaptic={triggerHaptic}
                     history={history}
                     onImportData={importData}
+                    addToast={addToast}
                 />
 
                 <StatsModal

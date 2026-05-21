@@ -25,6 +25,7 @@ export class RandoMatchedApp {
     // Кнопки навигации
     get statsButton() { return this.page.getByRole('button', { name: 'Статистика' }); }
     get historyButton() { return this.page.getByRole('button', { name: 'История' }); }
+    get listsButton() { return this.page.getByRole('button', { name: 'Списки' }); }
     get settingsButton() { return this.page.getByRole('button', { name: 'Настройки' }); }
 
     // Элементы управления на главной
@@ -97,6 +98,19 @@ export class RandoMatchedApp {
 
     async closeSettings() {
         const closeButton = this.page.getByTestId('settings-close-btn');
+
+        await closeButton.waitFor({ state: 'visible' });
+        await closeButton.click();
+        await closeButton.waitFor({ state: 'hidden' });
+    }
+
+    async openLists() {
+        await this.listsButton.click();
+        await this.page.locator('h2:has-text("Списки героев")').waitFor({ state: 'visible' });
+    }
+
+    async closeLists() {
+        const closeButton = this.page.getByTestId('lists-close-btn');
 
         await closeButton.waitFor({ state: 'visible' });
         await closeButton.click();
