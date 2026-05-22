@@ -81,6 +81,73 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
     const [showEfficiencyInfo, setShowEfficiencyInfo] = useState(false);
 
+    // Date filter state
+    const [filterStartDate, setFilterStartDate] = useState('');
+    const [filterEndDate, setFilterEndDate] = useState('');
+    const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
+
+    const { todayStr, yesterdayStr, lastEveningDateStr } = useMemo(() => {
+        const today = new Date().toLocaleDateString('en-CA');
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+        
+        let lastEveningStr = '';
+        if (history.length > 0) {
+            const maxTimestamp = history.reduce((max, m) => m.timestamp > max ? m.timestamp : max, 0);
+            const adjustedTime = maxTimestamp - 6 * 60 * 60 * 1000;
+            lastEveningStr = new Date(adjustedTime).toLocaleDateString('en-CA');
+        }
+        
+        return { todayStr: today, yesterdayStr, lastEveningDateStr: lastEveningStr };
+    }, [history]);
+
+    const handlePresetToday = () => {
+        setFilterStartDate(todayStr);
+        setFilterEndDate(todayStr);
+        triggerHaptic(10);
+    };
+
+    const handlePresetYesterday = () => {
+        setFilterStartDate(yesterdayStr);
+        setFilterEndDate(yesterdayStr);
+        triggerHaptic(10);
+    };
+
+    const handlePresetLastEvening = () => {
+        if (!lastEveningDateStr) return;
+        setFilterStartDate(lastEveningDateStr);
+        setFilterEndDate(lastEveningDateStr);
+        triggerHaptic(10);
+    };
+
+    const handleResetDateFilter = () => {
+        setFilterStartDate('');
+        setFilterEndDate('');
+        triggerHaptic(10);
+    };
+
+    const formatPeriodLabel = () => {
+        if (!filterStartDate && !filterEndDate) return 'Все время';
+        
+        const formatDate = (dateStr: string) => {
+            if (!dateStr) return '...';
+            const [y, m, d] = dateStr.split('-');
+            return `${d}.${m}.${y}`;
+        };
+        
+        if (filterStartDate && filterEndDate) {
+            if (filterStartDate === filterEndDate) {
+                return formatDate(filterStartDate);
+            }
+            return `с ${formatDate(filterStartDate)} по ${formatDate(filterEndDate)}`;
+        }
+        if (filterStartDate) {
+            return `с ${formatDate(filterStartDate)}`;
+        }
+        return `по ${formatDate(filterEndDate)}`;
+    };
+
     useBackHandler(isDataMenuOpen, () => {
         setIsDataMenuOpen(false);
     }, { id: 'stats-data-menu', priority: 30 });
@@ -283,6 +350,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             setAnchorEl(null);
             setSelectedPlayer(null);
             setSelectedHero(null);
+            // Reset date filters
+            setFilterStartDate('');
+            setFilterEndDate('');
+            setIsDateFilterOpen(false);
         } else {
             // Always open on the first tab
             setActiveTab('overview');
@@ -377,6 +448,28 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         return Array.from(names).sort();
     }, [history]);
 
+    // Date Filtering Logic (with 6-hour shift to group night matches)
+    const filteredHistory = useMemo(() => {
+        return history.filter(match => {
+            // Сдвигаем время матча на 6 часов назад
+            const adjustedTime = match.timestamp - 6 * 60 * 60 * 1000;
+            
+            if (filterStartDate) {
+                const [year, month, day] = filterStartDate.split('-').map(Number);
+                const startLimit = new Date(year, month - 1, day, 0, 0, 0, 0).getTime();
+                if (adjustedTime < startLimit) return false;
+            }
+            
+            if (filterEndDate) {
+                const [year, month, day] = filterEndDate.split('-').map(Number);
+                const endLimit = new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
+                if (adjustedTime > endLimit) return false;
+            }
+            
+            return true;
+        });
+    }, [history, filterStartDate, filterEndDate]);
+
     // Statistics Calculation
     const {
         totalMatches,
@@ -396,7 +489,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         const heroStats: Record<string, HeroStat> = {};
         let totalMatches = 0;
 
-        history.forEach(match => {
+        filteredHistory.forEach(match => {
             totalMatches++;
             const winner = match.winner;
 
@@ -457,7 +550,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             lastLoseStreakMatchIndex: number
         }> = {};
         // History is Newest -> Oldest. Reverse to process chronologically.
-        const reversedHistory = [...history].reverse();
+        const reversedHistory = [...filteredHistory].reverse();
         reversedHistory.forEach((match, matchIndex) => {
             const winner = match.winner;
             const processStreak = (p: MatchPlayer, won: boolean) => {
@@ -533,7 +626,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
         // --- РАСЧЕТ БОЕВОЙ СТАТИСТИКИ (КИЛЛОВ) ---
         const playerMatchesMap: Record<string, MatchRecord[]> = {};
-        history.forEach(match => {
+        filteredHistory.forEach(match => {
             const processPlayerMatch = (p: MatchPlayer) => {
                 const name = p.name.trim();
                 if (!name) return;
@@ -604,7 +697,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         // 3. Самый кровавый матч
         let bloodiestMatch: { id: string, timestamp: number, totalKills: number, players: string } | null = null;
         let totalKillsAll = 0;
-        history.forEach(m => {
+        filteredHistory.forEach(m => {
             const t1Kills = m.team1.reduce((sum, p) => sum + (p.kills || 0), 0);
             const t2Kills = m.team2.reduce((sum, p) => sum + (p.kills || 0), 0);
             const total = t1Kills + t2Kills;
@@ -623,7 +716,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             }
         });
 
-        const avgKillsPerMatch = history.length > 0 ? totalKillsAll / history.length : 0;
+        const avgKillsPerMatch = filteredHistory.length > 0 ? totalKillsAll / filteredHistory.length : 0;
 
         return {
             totalMatches,
@@ -639,7 +732,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             totalKillsAll,
             avgKillsPerMatch
         };
-    }, [history]);
+    }, [filteredHistory]);
 
     // Filtered & Sorted Heroes
     const processedHeroes = useMemo(() => {
@@ -671,9 +764,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     // Filtered Matches
     const processedMatches = useMemo(() => {
-        if (!matchSearch.trim()) return history;
+        if (!matchSearch.trim()) return filteredHistory;
         const lower = matchSearch.toLowerCase().trim();
-        return history.filter(m => {
+        return filteredHistory.filter(m => {
             // Search in Player Names
             const pNames = [...m.team1, ...m.team2].map(p => p.name.toLowerCase());
             if (pNames.some(n => n.includes(lower))) return true;
@@ -688,7 +781,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
             return false;
         });
-    }, [history, matchSearch]);
+    }, [filteredHistory, matchSearch]);
 
 
 
@@ -1099,11 +1192,11 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     <div className="flex gap-4 mb-6">
                         <div className="flex-1">
                             <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Дата</label>
-                            <input type="date" required value={matchForm.date} onChange={e => setMatchForm({ ...matchForm, date: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500" />
+                            <input type="date" required value={matchForm.date} onChange={e => setMatchForm({ ...matchForm, date: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500 text-slate-900 dark:text-white dark:[color-scheme:dark]" />
                         </div>
                         <div className="w-1/3">
                             <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Время</label>
-                            <input type="time" required value={matchForm.time} onChange={e => setMatchForm({ ...matchForm, time: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500" />
+                            <input type="time" required value={matchForm.time} onChange={e => setMatchForm({ ...matchForm, time: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500 text-slate-900 dark:text-white dark:[color-scheme:dark]" />
                         </div>
                     </div>
 
@@ -1301,11 +1394,11 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
             <div
                 data-testid="stats-modal"
-                className={`fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isOpen && !matchForm ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`fixed inset-0 z-[60] flex items-center justify-center bg-slate-50 dark:bg-slate-950 transition-all duration-300 ${isOpen && !matchForm ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                 onClick={onClose}
             >
                 <div
-                    className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl flex flex-col h-[90dvh] border border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
+                    className={`bg-slate-50 dark:bg-slate-950 w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
                     onClick={e => e.stopPropagation()}
                 >
                     <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 sticky top-0">
@@ -1344,7 +1437,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="flex border-b border-slate-100 dark:border-slate-800 shrink-0 overflow-x-auto no-scrollbar">
+                    <div className="flex border-b border-slate-100 dark:border-slate-800 shrink-0 overflow-x-auto no-scrollbar bg-white dark:bg-slate-900">
                         {['overview', 'players', 'heroes', 'matches'].map(tab => (
                             <button
                                 key={tab}
@@ -1356,49 +1449,269 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     setSelectedHero(null);
                                     triggerHaptic(10);
                                 }}
-                                className={`flex-1 min-w-[80px] py-3 text-sm font-bold border-b-2 transition-colors capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800/50'}`}
+                                className={`flex-1 min-w-[80px] py-2 text-sm font-bold border-b-2 transition-colors capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800/50'}`}
                             >
                                 {tab === 'overview' ? 'Обзор' : tab === 'players' ? 'Игроки' : tab === 'heroes' ? 'Герои' : 'Матчи'}
                             </button>
                         ))}
                     </div>
 
+                    {/* Date Filter Trigger & Panel */}
+                    <div className="border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
+                        <button
+                            onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
+                            className="w-full px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Calendar size={14} className={filterStartDate || filterEndDate ? 'text-primary-500' : 'text-slate-400'} />
+                                <span>Период: </span>
+                                <span className={filterStartDate || filterEndDate ? 'text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-300'}>
+                                    {formatPeriodLabel()}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {(filterStartDate || filterEndDate) && (
+                                    <span 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleResetDateFilter();
+                                        }}
+                                        data-testid="reset-date-filter-btn"
+                                        className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                        Сбросить
+                                    </span>
+                                )}
+                                {isDateFilterOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                            </div>
+                        </button>
+
+                        <div
+                            className="grid transition-all duration-300 ease-in-out"
+                            style={{
+                                gridTemplateRows: isDateFilterOpen ? '1fr' : '0fr',
+                                opacity: isDateFilterOpen ? 1 : 0,
+                                pointerEvents: isDateFilterOpen ? 'auto' : 'none'
+                            }}
+                        >
+                            <div className="overflow-hidden">
+                                <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800/60 space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">С даты</label>
+                                            <input
+                                                type="date"
+                                                value={filterStartDate}
+                                                onChange={(e) => { setFilterStartDate(e.target.value); triggerHaptic(5); }}
+                                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase">По дату</label>
+                                            <input
+                                                type="date"
+                                                value={filterEndDate}
+                                                onChange={(e) => { setFilterEndDate(e.target.value); triggerHaptic(5); }}
+                                                className="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap gap-2 pt-1">
+                                        <button
+                                            onClick={handlePresetToday}
+                                            className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${
+                                                filterStartDate === todayStr && filterEndDate === todayStr
+                                                    ? 'bg-primary-500 text-white'
+                                                    : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                            }`}
+                                        >
+                                            Сегодня
+                                        </button>
+                                        <button
+                                            onClick={handlePresetYesterday}
+                                            className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${
+                                                filterStartDate === yesterdayStr && filterEndDate === yesterdayStr
+                                                    ? 'bg-primary-500 text-white'
+                                                    : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                            }`}
+                                        >
+                                            Вчера
+                                        </button>
+                                        {history.length > 0 && (
+                                            <button
+                                                onClick={handlePresetLastEvening}
+                                                className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${
+                                                    filterStartDate === lastEveningDateStr && filterEndDate === lastEveningDateStr
+                                                        ? 'bg-primary-500 text-white'
+                                                        : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                                }`}
+                                            >
+                                                Посл. игровой вечер
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Matches Tab Action Bar - Sticky under tabs */}
                     {activeTab === 'matches' && (
-                        <div className="flex justify-end gap-2 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
-                            {editMode && deletedHistory.length > 0 && (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
+                            {/* Поле поиска матчей */}
+                            <div className="relative flex-1">
+                                <input
+                                    type="text"
+                                    value={matchSearch}
+                                    onChange={(e) => setMatchSearch(e.target.value)}
+                                    placeholder="Поиск матча (игрок, герой, дата)"
+                                    className="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
+                                />
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                {matchSearch && (
+                                    <button onClick={() => { setMatchSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Кнопки действий */}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                {editMode && deletedHistory.length > 0 && (
+                                    <button
+                                        onClick={() => { setShowTrashOnly(!showTrashOnly); triggerHaptic(10); }}
+                                        className={`p-1.5 rounded-xl border transition-colors flex items-center justify-center relative ${showTrashOnly ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-900/50' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
+                                        title={showTrashOnly ? 'Все матчи' : `Корзина (${deletedHistory.length})`}
+                                    >
+                                        <Trash2 size={16} />
+                                        {!showTrashOnly && (
+                                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white">
+                                                {deletedHistory.length}
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
+                                {!editMode && (
+                                    <button
+                                        onClick={openAddMatch}
+                                        className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 active:scale-95 transition-transform"
+                                        title="Добавить матч"
+                                    >
+                                        <Plus size={16} />
+                                    </button>
+                                )}
                                 <button
-                                    onClick={() => { setShowTrashOnly(!showTrashOnly); triggerHaptic(10); }}
-                                    className={`text-xs font-bold px-4 py-2 rounded-xl border transition-colors flex items-center gap-1.5 ${showTrashOnly ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
+                                    onClick={() => { setEditMode(!editMode); setShowTrashOnly(false); triggerHaptic(10); }}
+                                    className={`p-1.5 rounded-xl border transition-colors flex items-center justify-center ${editMode ? 'bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
+                                    title={editMode ? 'Готово' : 'Редактировать'}
                                 >
-                                    <Trash2 size={16} /> {showTrashOnly ? 'Все матчи' : `Корзина (${deletedHistory.length})`}
+                                    {editMode ? <Check size={16} /> : <Edit2 size={16} />}
                                 </button>
-                            )}
-                            {!editMode && (
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Heroes Tab Action Bar - Sticky under tabs */}
+                    {activeTab === 'heroes' && !selectedHero && (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
+                            {/* Поле поиска героев */}
+                            <div className="relative flex-1">
+                                <input
+                                    type="text"
+                                    value={heroSearch}
+                                    onChange={(e) => setHeroSearch(e.target.value)}
+                                    placeholder="Поиск героя..."
+                                    className="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
+                                />
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                {heroSearch && (
+                                    <button onClick={() => { setHeroSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Кнопка сортировки */}
+                            <div className="relative shrink-0">
                                 <button
-                                    onClick={openAddMatch}
-                                    className="text-xs font-bold px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 active:scale-95 transition-transform"
+                                    ref={(el) => {
+                                        if (el && isSortMenuOpen && !dropdownPosition) {
+                                            const rect = el.getBoundingClientRect();
+                                            setDropdownPosition({
+                                                top: rect.bottom + 8,
+                                                left: rect.right - 192,
+                                                width: 192
+                                            });
+                                        }
+                                    }}
+                                    onClick={(e) => {
+                                        if (!isSortMenuOpen) {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setDropdownPosition({
+                                                top: rect.bottom + 8,
+                                                left: rect.right - 192,
+                                                width: 192
+                                            });
+                                        }
+                                        setIsSortMenuOpen(!isSortMenuOpen);
+                                        triggerHaptic(10);
+                                    }}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-colors ${isSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                                    title="Сортировка"
                                 >
-                                    <Plus size={16} /> Добавить
+                                    {heroSort === 'winrate' && <TrendingUp size={16} />}
+                                    {heroSort === 'matches' && <BarChart3 size={16} />}
+                                    {heroSort === 'az' && <ArrowDownAZ size={16} />}
+                                    {heroSort === 'za' && <ArrowUpAZ size={16} />}
+                                    {heroSort === 'pop' && <BarChart3 size={16} />}
                                 </button>
-                            )}
-                            <button
-                                onClick={() => { setEditMode(!editMode); setShowTrashOnly(false); triggerHaptic(10); }}
-                                className={`text-xs font-bold px-4 py-2 rounded-xl border transition-colors flex items-center gap-1.5 ${editMode ? 'bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
-                            >
-                                <Edit2 size={16} /> {editMode ? 'Готово' : 'Редактировать'}
-                            </button>
+
+                                {/* Sort Dropdown Portal */}
+                                {isSortMenuOpen && dropdownPosition && createPortal(
+                                    <>
+                                        <div className="fixed inset-0 z-[9990]" onClick={() => setIsSortMenuOpen(false)}></div>
+                                        <div
+                                            className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
+                                            style={{
+                                                top: dropdownPosition.top,
+                                                left: dropdownPosition.left,
+                                                width: dropdownPosition.width
+                                            }}
+                                        >
+                                            <button onClick={() => { setHeroSort('winrate'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
+                                                {heroSort === 'winrate' && <Check size={14} />}
+                                            </button>
+                                            <button onClick={() => { setHeroSort('matches'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
+                                                {heroSort === 'matches' && <Check size={14} />}
+                                            </button>
+                                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
+                                            <button onClick={() => { setHeroSort('az'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
+                                                {heroSort === 'az' && <Check size={14} />}
+                                            </button>
+                                            <button onClick={() => { setHeroSort('za'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
+                                                {heroSort === 'za' && <Check size={14} />}
+                                            </button>
+                                        </div>
+                                    </>,
+                                    document.body
+                                )}
+                            </div>
                         </div>
                     )}
 
                     <div
-                        className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' || selectedPlayer || selectedHero ? 'p-0' : 'p-4'}`}
+                        className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' || activeTab === 'heroes' || selectedPlayer || selectedHero ? 'p-0' : 'p-4'}`}
                         onTouchStart={handleTouchStart}
                         onTouchEnd={handleTouchEnd}
                     >
                         {activeTab === 'overview' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                <div className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden">
+                                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden">
                                     <div className="relative z-10">
                                         <div className="text-4xl font-black text-slate-900 dark:text-white mb-1">{totalMatches}</div>
                                         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Всего матчей</div>
@@ -1457,7 +1770,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                                 {/* Slide 2: Underdog */}
                                                 <div className="w-full h-full flex-shrink-0">
-                                                    <div className="p-4 h-full rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 relative overflow-hidden">
+                                                    <div className="p-4 h-full rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden">
                                                         <div className="flex items-center gap-2 mb-3 text-slate-400">
                                                             <Skull size={18} />
                                                             <span className="text-xs font-black uppercase tracking-wider">Underdog</span>
@@ -1485,7 +1798,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     ) : (
                                         /* No streak - just show Underdog */
-                                        <div className="p-4 h-full rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                                        <div className="p-4 h-full rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800">
                                             <div className="flex items-center gap-2 mb-3 text-slate-400">
                                                 <Skull size={18} />
                                                 <span className="text-xs font-black uppercase tracking-wider">Underdog</span>
@@ -1528,7 +1841,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             </div>
 
                                             {/* Король убийств */}
-                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 to-red-50/20 dark:from-slate-800/40 dark:to-red-950/10 border border-slate-100 dark:border-slate-800 relative overflow-hidden">
+                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-red-50/20 dark:from-slate-900 dark:to-red-950/10 border border-slate-100 dark:border-slate-800 relative overflow-hidden shadow-sm">
                                                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">Король убийств</div>
                                                 {topTotalKillers && topTotalKillers.length > 0 ? (
                                                     <>
@@ -1588,7 +1901,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <PlayerDetails
                                         key={selectedPlayer.name}
                                         player={selectedPlayer}
-                                        history={history}
+                                        history={filteredHistory}
                                         onBack={closeDetails}
                                         onRename={(newName) => {
                                             onRenamePlayer(selectedPlayer.name, newName);
@@ -1603,7 +1916,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 onClick={() => {
                                                     openPlayerDetails(player);
                                                 }}
-                                                className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 active:bg-slate-100 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                                                className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800/50 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-slate-200 text-slate-700' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -1638,102 +1951,13 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         )}
 
                         {activeTab === 'heroes' && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-                                {/* Hero Search & Sort - Hidden when viewing details */}
-                                {!selectedHero && (
-                                    <div className="flex gap-2 relative z-20">
-                                        <div className="relative flex-1 min-w-0">
-                                            <input
-                                                type="text"
-                                                value={heroSearch}
-                                                onChange={(e) => setHeroSearch(e.target.value)}
-                                                placeholder="Поиск героя..."
-                                                className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors"
-                                            />
-                                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            {heroSearch && (
-                                                <button onClick={() => { setHeroSearch(''); triggerHaptic(10); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                                                    <X size={14} />
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="relative shrink-0 w-10">
-                                            <button
-                                                ref={(el) => {
-                                                    // Save ref and calculate position if opening
-                                                    if (el && isSortMenuOpen && !dropdownPosition) {
-                                                        const rect = el.getBoundingClientRect();
-                                                        setDropdownPosition({
-                                                            top: rect.bottom + 8,
-                                                            left: rect.right - 192, // 192px = w-48
-                                                            width: 192
-                                                        });
-                                                    }
-                                                }}
-                                                onClick={(e) => {
-                                                    if (!isSortMenuOpen) {
-                                                        const rect = e.currentTarget.getBoundingClientRect();
-                                                        setDropdownPosition({
-                                                            top: rect.bottom + 8,
-                                                            left: rect.right - 192,
-                                                            width: 192
-                                                        });
-                                                    }
-                                                    setIsSortMenuOpen(!isSortMenuOpen);
-                                                    triggerHaptic(10);
-                                                }}
-                                                className={`w-full h-full flex items-center justify-center rounded-xl border transition-colors ${isSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                                            >
-                                                {heroSort === 'winrate' && <TrendingUp size={18} />}
-                                                {heroSort === 'matches' && <BarChart3 size={18} />}
-                                                {heroSort === 'az' && <ArrowDownAZ size={18} />}
-                                                {heroSort === 'za' && <ArrowUpAZ size={18} />}
-                                                {heroSort === 'pop' && <BarChart3 size={18} />}
-                                            </button>
-
-                                            {/* Sort Dropdown Portal */}
-                                            {isSortMenuOpen && dropdownPosition && createPortal(
-                                                <>
-                                                    <div className="fixed inset-0 z-[9990]" onClick={() => setIsSortMenuOpen(false)}></div>
-                                                    <div
-                                                        className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
-                                                        style={{
-                                                            top: dropdownPosition.top,
-                                                            left: dropdownPosition.left,
-                                                            width: dropdownPosition.width
-                                                        }}
-                                                    >
-                                                        <button onClick={() => { setHeroSort('winrate'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
-                                                            {heroSort === 'winrate' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setHeroSort('matches'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
-                                                            {heroSort === 'matches' && <Check size={14} />}
-                                                        </button>
-                                                        <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
-                                                        <button onClick={() => { setHeroSort('az'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
-                                                            {heroSort === 'az' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setHeroSort('za'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
-                                                            {heroSort === 'za' && <Check size={14} />}
-                                                        </button>
-                                                    </div>
-                                                </>,
-                                                document.body
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
+                            <div className={`animate-in fade-in slide-in-from-right-4 duration-300 ${selectedHero ? 'p-0' : 'px-4 pb-4 pt-3'}`}>
                                 <div className="space-y-2">
                                     {selectedHero ? (
                                         <HeroDetails
                                             key={selectedHero.name}
                                             hero={selectedHero}
-                                            history={history}
+                                            history={filteredHistory}
                                             onBack={closeDetails}
                                             onRename={(newName) => {
                                                 onRenameHero(selectedHero.name, newName);
@@ -1748,7 +1972,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                     onClick={() => {
                                                         openHeroDetails(hero);
                                                     }}
-                                                    className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 active:bg-slate-100 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                                                    className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800/50 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
                                                 >
                                                     <div className="flex items-center gap-3 overflow-hidden">
                                                         <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0">
@@ -1774,23 +1998,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         )}
 
                         {activeTab === 'matches' && (
-                            <div className="animate-in fade-in slide-in-from-right-4 duration-300 p-4">
-                                {/* Matches Search */}
-                                <div className="mb-4 relative">
-                                    <input
-                                        type="text"
-                                        value={matchSearch}
-                                        onChange={(e) => setMatchSearch(e.target.value)}
-                                        placeholder="Поиск матча (игрок, герой, дата)"
-                                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors"
-                                    />
-                                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    {matchSearch && (
-                                        <button onClick={() => { setMatchSearch(''); triggerHaptic(10); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                                            <X size={14} />
-                                        </button>
-                                    )}
-                                </div>
+                            <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4 pb-4 pt-3">
 
                                 <div className="space-y-3">
                                     {!showTrashOnly && (

@@ -353,7 +353,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                 return (
                                                     <div key={key} className="flex justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-1 last:border-0 last:pb-0">
                                                         <span className="truncate text-slate-600 dark:text-slate-400">{key}</span>
-                                                        <span className="font-bold text-slate-850 dark:text-slate-200 shrink-0">{displaySize} KB</span>
+                                                        <span className="font-bold text-slate-800 dark:text-slate-200 shrink-0">{displaySize} KB</span>
                                                     </div>
                                                 );
                                             })}
