@@ -22,7 +22,12 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
     const [step, setStep] = useState<'select-list' | 'select-heroes'>('select-list');
     const [selectedList, setSelectedList] = useState<HeroList | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedHeroIds, setSelectedHeroIds] = useState<Set<string>>(new Set());
+    const [selectedHeroesByList, setSelectedHeroesByList] = useState<Record<string, Set<string>>>({});
+
+    // Общее количество выбранных героев по всем спискам
+    const totalSelectedCount = useMemo(() => {
+        return Object.values(selectedHeroesByList).reduce((acc, set) => acc + set.size, 0);
+    }, [selectedHeroesByList]);
 
     // Фильтруем другие списки (которые не выбраны и не пустые)
     const availableLists = useMemo(() => {
@@ -46,48 +51,77 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
         if (triggerHaptic) triggerHaptic(10);
         setSelectedList(list);
         setStep('select-heroes');
-        setSelectedHeroIds(new Set());
         setSearchQuery('');
     };
 
     const handleToggleHero = (heroId: string) => {
+        if (!selectedList) return;
         if (triggerHaptic) triggerHaptic(10);
-        setSelectedHeroIds(prev => {
-            const next = new Set(prev);
-            if (next.has(heroId)) {
-                next.delete(heroId);
+        setSelectedHeroesByList(prev => {
+            const next = { ...prev };
+            const currentSet = new Set(next[selectedList.id] || []);
+            if (currentSet.has(heroId)) {
+                currentSet.delete(heroId);
             } else {
-                next.add(heroId);
+                currentSet.add(heroId);
+            }
+            if (currentSet.size === 0) {
+                delete next[selectedList.id];
+            } else {
+                next[selectedList.id] = currentSet;
             }
             return next;
         });
     };
 
     const handleSelectAll = () => {
+        if (!selectedList) return;
         if (triggerHaptic) triggerHaptic(10);
         const allIds = filteredHeroes.map(h => h.id);
-        setSelectedHeroIds(prev => {
-            const next = new Set(prev);
-            allIds.forEach(id => next.add(id));
+        setSelectedHeroesByList(prev => {
+            const next = { ...prev };
+            const currentSet = new Set(next[selectedList.id] || []);
+            allIds.forEach(id => currentSet.add(id));
+            next[selectedList.id] = currentSet;
             return next;
         });
     };
 
     const handleDeselectAll = () => {
+        if (!selectedList) return;
         if (triggerHaptic) triggerHaptic(10);
         const allIds = filteredHeroes.map(h => h.id);
-        setSelectedHeroIds(prev => {
-            const next = new Set(prev);
-            allIds.forEach(id => next.delete(id));
+        setSelectedHeroesByList(prev => {
+            const next = { ...prev };
+            const currentSet = new Set(next[selectedList.id] || []);
+            allIds.forEach(id => currentSet.delete(id));
+            if (currentSet.size === 0) {
+                delete next[selectedList.id];
+            } else {
+                next[selectedList.id] = currentSet;
+            }
             return next;
         });
     };
 
     const handleConfirm = () => {
-        if (!selectedList || selectedHeroIds.size === 0) return;
+        if (totalSelectedCount === 0) return;
         if (triggerHaptic) triggerHaptic(20);
         
-        const heroesToAdd = selectedList.heroes.filter(h => selectedHeroIds.has(h.id));
+        const heroesToAdd: Hero[] = [];
+        lists.forEach(list => {
+            const selectedIds = selectedHeroesByList[list.id];
+            if (selectedIds && selectedIds.size > 0) {
+                list.heroes.forEach(hero => {
+                    if (selectedIds.has(hero.id)) {
+                        if (!heroesToAdd.some(h => h.id === hero.id)) {
+                            heroesToAdd.push(hero);
+                        }
+                    }
+                });
+            }
+        });
+
         onAddHeroes(heroesToAdd);
         handleClose();
     };
@@ -98,7 +132,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
         setTimeout(() => {
             setStep('select-list');
             setSelectedList(null);
-            setSelectedHeroIds(new Set());
+            setSelectedHeroesByList({});
             setSearchQuery('');
         }, 300);
     };
@@ -107,7 +141,6 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
         if (triggerHaptic) triggerHaptic(10);
         setStep('select-list');
         setSelectedList(null);
-        setSelectedHeroIds(new Set());
         setSearchQuery('');
     };
 
@@ -162,11 +195,18 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                                         iconBg = 'bg-sky-50 dark:bg-sky-900/20';
                                     }
 
+                                    const selectedCount = selectedHeroesByList[list.id]?.size || 0;
+                                    const hasSelected = selectedCount > 0;
+
                                     return (
                                         <button
                                             key={list.id}
                                             onClick={() => handleSelectList(list)}
-                                            className="w-full p-4 flex items-center gap-4 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.99] transition-all text-left"
+                                            className={`w-full p-4 flex items-center gap-4 rounded-2xl border active:scale-[0.99] transition-all text-left ${
+                                                hasSelected
+                                                    ? 'border-primary-200 dark:border-primary-900/50 bg-primary-50/10 dark:bg-primary-950/5 hover:bg-primary-50/20 dark:hover:bg-primary-950/10 shadow-sm'
+                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                            }`}
                                         >
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
                                                 <Icon size={18} />
@@ -179,6 +219,11 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                                                     Героев: {list.heroes.length}
                                                 </span>
                                             </div>
+                                            {hasSelected && (
+                                                <div className="flex items-center justify-center h-6 min-w-6 px-1.5 rounded-full bg-primary-500 text-white text-[11px] font-extrabold shrink-0 shadow-sm shadow-primary-500/20">
+                                                    +{selectedCount}
+                                                </div>
+                                            )}
                                         </button>
                                     );
                                 })
@@ -222,7 +267,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                             <div className="grid grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto no-scrollbar">
                                 {filteredHeroes.length > 0 ? (
                                     filteredHeroes.map(hero => {
-                                        const isSelected = selectedHeroIds.has(hero.id);
+                                        const isSelected = selectedList ? (selectedHeroesByList[selectedList.id]?.has(hero.id) || false) : false;
                                         return (
                                             <button
                                                 key={hero.id}
@@ -259,7 +304,18 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                     )}
                 </div>
 
-                {/* Footer (only on select-heroes step) */}
+                {/* Footer */}
+                {step === 'select-list' && totalSelectedCount > 0 && (
+                    <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex gap-3">
+                        <button 
+                            onClick={handleConfirm}
+                            className="flex-1 py-3 font-bold text-sm text-white rounded-xl shadow-lg active:scale-95 transition-all bg-primary-600 hover:bg-primary-700 shadow-primary-600/20"
+                        >
+                            Добавить ({totalSelectedCount})
+                        </button>
+                    </div>
+                )}
+                
                 {step === 'select-heroes' && (
                     <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex gap-3">
                         <button 
@@ -270,14 +326,14 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                         </button>
                         <button 
                             onClick={handleConfirm}
-                            disabled={selectedHeroIds.size === 0}
+                            disabled={totalSelectedCount === 0}
                             className={`flex-1 py-3 font-bold text-sm text-white rounded-xl shadow-lg active:scale-95 transition-all ${
-                                selectedHeroIds.size === 0 
+                                totalSelectedCount === 0 
                                     ? 'bg-slate-300 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none' 
                                     : 'bg-primary-600 hover:bg-primary-700 shadow-primary-600/20'
                             }`}
                         >
-                            Добавить ({selectedHeroIds.size})
+                            Добавить ({totalSelectedCount})
                         </button>
                     </div>
                 )}
