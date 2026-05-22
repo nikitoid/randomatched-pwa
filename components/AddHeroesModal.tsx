@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, ChevronLeft, Search, Check, Database, Filter, Cloud } from 'lucide-react';
 import { HeroList, Hero } from '../types';
 import { useBackHandler } from '../hooks/useBackHandler';
+import { useNavigation } from '../context/NavigationContext';
 
 interface AddHeroesModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
     onAddHeroes,
     triggerHaptic
 }) => {
+    const { close } = useNavigation();
     const [step, setStep] = useState<'select-list' | 'select-heroes'>('select-list');
     const [selectedList, setSelectedList] = useState<HeroList | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -27,16 +29,33 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
 
     const handleBack = () => {
         if (triggerHaptic) triggerHaptic(10);
-        if (step === 'select-heroes') {
-            setStep('select-list');
-            setSelectedList(null);
-            setSearchQuery('');
-        } else {
-            onClose();
-        }
+        close('add-heroes-modal-step2');
     };
 
-    useBackHandler(isOpen, handleBack, { id: 'add-heroes-modal', priority: 20 });
+    useBackHandler(isOpen, () => {
+        if (triggerHaptic) triggerHaptic(10);
+        onClose();
+    }, { id: 'add-heroes-modal-step1', priority: 20 });
+
+    useBackHandler(isOpen && step === 'select-heroes', () => {
+        if (triggerHaptic) triggerHaptic(10);
+        setStep('select-list');
+        setSelectedList(null);
+        setSearchQuery('');
+    }, { id: 'add-heroes-modal-step2', priority: 30 });
+
+    // Сбрасываем состояние после анимации закрытия
+    useEffect(() => {
+        if (!isOpen) {
+            const timer = setTimeout(() => {
+                setStep('select-list');
+                setSelectedList(null);
+                setSelectedHeroesByList({});
+                setSearchQuery('');
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [isOpen]);
 
     // Общее количество выбранных героев по всем спискам
     const totalSelectedCount = useMemo(() => {
@@ -141,14 +160,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
     };
 
     const handleClose = () => {
-        onClose();
-        // Сбрасываем состояние после анимации закрытия
-        setTimeout(() => {
-            setStep('select-list');
-            setSelectedList(null);
-            setSelectedHeroesByList({});
-            setSearchQuery('');
-        }, 300);
+        close('add-heroes-modal-step1');
     };
 
 

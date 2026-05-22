@@ -11,6 +11,7 @@ interface NavigationItem {
 interface NavigationContextType {
     register: (id: string, onBack: () => void, priority?: number, isBlocking?: boolean) => void;
     unregister: (id: string) => void;
+    close: (id: string) => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -22,7 +23,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const lastBackPressTime = useRef<number>(0);
     const { addToast } = useToast();
 
-    const pendingBackIdRef = useRef<string | null>(null);
+    const pendingBackStepsRef = useRef<number>(0);
     const pendingBackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Sync ref with state
@@ -49,14 +50,14 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         
         // Добавляем состояние в историю браузера, только если модаль открывается в первый раз
         if (!alreadyExists) {
-            if (pendingBackIdRef.current !== null) {
+            if (pendingBackStepsRef.current > 0) {
                 // Если был запланирован переход назад из-за закрытия предыдущей модали,
-                // отменяем его и заменяем состояние в истории браузера
-                if (pendingBackTimeoutRef.current) {
+                // отменяем один шаг перехода и заменяем состояние в истории браузера
+                pendingBackStepsRef.current -= 1;
+                if (pendingBackStepsRef.current === 0 && pendingBackTimeoutRef.current) {
                     clearTimeout(pendingBackTimeoutRef.current);
                     pendingBackTimeoutRef.current = null;
                 }
-                pendingBackIdRef.current = null;
                 window.history.replaceState({ type: 'modal', id }, '');
             } else {
                 window.history.pushState({ type: 'modal', id }, '');
@@ -78,16 +79,17 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         if (exists) {
             // Если модаль закрывается программно (через UI-кнопки), а не через системный "Назад",
             // то мы должны убрать ее запись из истории браузера (сделать переход назад)
-            if (window.history.state?.id === id) {
-                pendingBackIdRef.current = id;
+            if (window.history.state?.id === id || pendingBackStepsRef.current > 0) {
+                pendingBackStepsRef.current += 1;
                 if (pendingBackTimeoutRef.current) {
                     clearTimeout(pendingBackTimeoutRef.current);
                 }
                 pendingBackTimeoutRef.current = setTimeout(() => {
-                    if (pendingBackIdRef.current === id) {
-                        window.history.back();
-                        pendingBackIdRef.current = null;
+                    if (pendingBackStepsRef.current > 0) {
+                        window.history.go(-pendingBackStepsRef.current);
+                        pendingBackStepsRef.current = 0;
                     }
+                    pendingBackTimeoutRef.current = null;
                 }, 0);
             }
         }
@@ -95,6 +97,17 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         const newStack = stackRef.current.filter(item => item.id !== id);
         stackRef.current = newStack;
         setStack(newStack);
+    }, []);
+
+    const close = useCallback((id: string) => {
+        const currentStack = stackRef.current;
+        const index = currentStack.findIndex(item => item.id === id);
+        if (index !== -1) {
+            const steps = currentStack.length - index;
+            if (steps > 0) {
+                window.history.go(-steps);
+            }
+        }
     }, []);
 
     useEffect(() => {
@@ -162,7 +175,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, [addToast]);
 
     return (
-        <NavigationContext.Provider value={{ register, unregister }}>
+        <NavigationContext.Provider value={{ register, unregister, close }}>
             {children}
         </NavigationContext.Provider>
     );
