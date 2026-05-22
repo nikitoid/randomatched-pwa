@@ -167,6 +167,38 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         setIsStatsModalOpen(false);
     }, { id: 'list-hero-stats-modal', priority: 30 });
 
+    useBackHandler(isNameModalOpen, () => {
+        setNameModalOpen(false);
+    }, { id: 'list-name-modal', priority: 30 });
+
+    useBackHandler(!!listToDelete, () => {
+        setListToDelete(null);
+    }, { id: 'list-delete-modal', priority: 30 });
+
+    useBackHandler(isDiscardModalOpen, () => {
+        setDiscardModalOpen(false);
+    }, { id: 'list-discard-modal', priority: 30 });
+
+    useBackHandler(importMode !== 'none', () => {
+        if (importMode === 'rank_import_confirm') {
+            setImportMode('rank_import');
+        } else {
+            setImportMode('none');
+        }
+    }, { id: 'list-import-modal', priority: 30 });
+
+    useBackHandler(!!contextMenuTargetId, () => {
+        handleCloseMenu();
+    }, { id: 'list-context-menu', priority: 25 });
+
+    useBackHandler(isEditorMenuOpen, () => {
+        setIsEditorMenuOpen(false);
+    }, { id: 'list-editor-menu', priority: 25 });
+
+    useBackHandler(isSortMenuOpen, () => {
+        setIsSortMenuOpen(false);
+    }, { id: 'list-sort-menu', priority: 25 });
+
     const manualGoBack = () => {
         if (editingListId) {
             setEditingListId(null);
