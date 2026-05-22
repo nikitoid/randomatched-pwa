@@ -25,6 +25,8 @@ import { UpdateBanner } from './components/UpdateBanner';
 import { GenConfirmModal } from './components/GenConfirmModal';
 import { getUniqueHeroesFromLists } from './utils/generator';
 import { NavigationProvider } from './context/NavigationContext';
+import { AddHeroesModal } from './components/AddHeroesModal';
+import { Hero } from './types';
 
 const App: React.FC = () => {
     const { theme, toggleTheme, colorScheme, setColorScheme } = useTheme();
@@ -61,6 +63,7 @@ const App: React.FC = () => {
     const [isGroupStatsOpen, setIsGroupStatsOpen] = useState(false);
     const [isHistoryStatsOpen, setIsHistoryStatsOpen] = useState(false);
     const [isGenConfirmOpen, setIsGenConfirmOpen] = useState(false);
+    const [isAddHeroesOpen, setIsAddHeroesOpen] = useState(false);
 
     // Custom Hooks
     // const { consoleLogs, isDebugMode, setIsDebugMode } = useDebugLogs(); // REMOVED
@@ -152,7 +155,6 @@ const App: React.FC = () => {
     // Handlers wrapped with haptics
     const handleSelectList = (id: string) => {
         setSelectedListId(id);
-        setIsListSelectorOpen(false);
         triggerHaptic(10);
     };
 
@@ -187,6 +189,30 @@ const App: React.FC = () => {
     const confirmGenerate = () => {
         setIsGenConfirmOpen(false);
         handleGenerate();
+    };
+
+    const handleAppendHeroesToSelected = (selectedHeroes: Hero[]) => {
+        const baseLists = isGroupMode 
+            ? lists.filter(l => selectedGroupIds.has(l.id))
+            : activeList ? [activeList] : [];
+        
+        const baseHeroes = getUniqueHeroesFromLists(baseLists);
+        const combinedHeroes = [...baseHeroes];
+        const existingNames = new Set(baseHeroes.map(h => h.name.trim().toLowerCase()));
+        
+        selectedHeroes.forEach(hero => {
+            const normName = hero.name.trim().toLowerCase();
+            if (!existingNames.has(normName)) {
+                combinedHeroes.push(hero);
+                existingNames.add(normName);
+            }
+        });
+        
+        const newId = createTemporaryList(combinedHeroes, "Временный");
+        setSelectedListId(newId);
+        setIsGroupMode(false);
+        
+        addToast(`Создан временный список, добавлено героев: ${selectedHeroes.length}`, 'success');
     };
 
     return (
@@ -229,6 +255,7 @@ const App: React.FC = () => {
                         isOnline={isOnline}
                         groupTotalHeroes={groupTotalHeroes}
                         selectedGroupCount={selectedGroupCount}
+                        onOpenAddHeroes={() => { setIsAddHeroesOpen(true); triggerHaptic(10); }}
                     />
 
                     <PlayerNameInput
@@ -401,6 +428,15 @@ const App: React.FC = () => {
                     isOpen={isGenConfirmOpen}
                     onCancel={() => setIsGenConfirmOpen(false)}
                     onConfirm={confirmGenerate}
+                />
+
+                <AddHeroesModal
+                    isOpen={isAddHeroesOpen}
+                    onClose={() => setIsAddHeroesOpen(false)}
+                    lists={lists}
+                    excludeListIds={isGroupMode ? selectedGroupIds : new Set(activeList ? [activeList.id] : [])}
+                    onAddHeroes={handleAppendHeroesToSelected}
+                    triggerHaptic={triggerHaptic}
                 />
 
                 <UpdateBanner

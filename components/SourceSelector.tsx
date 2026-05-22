@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, X, SquareStack, Layers, BarChart3, Database, Filter, Cloud, Check } from 'lucide-react';
+import { ChevronDown, X, SquareStack, Layers, BarChart3, Database, Filter, Cloud, Check, Plus } from 'lucide-react';
 import { HeroList } from '../types';
 
 interface SourceSelectorProps {
@@ -17,6 +17,7 @@ interface SourceSelectorProps {
     isOnline: boolean;
     groupTotalHeroes: number;
     selectedGroupCount: number;
+    onOpenAddHeroes: () => void;
 }
 
 export const SourceSelector: React.FC<SourceSelectorProps> = ({
@@ -33,7 +34,8 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
     setIsGroupStatsOpen,
     isOnline,
     groupTotalHeroes,
-    selectedGroupCount
+    selectedGroupCount,
+    onOpenAddHeroes
 }) => {
     // For UI display in main selector
     const groupableLists = lists.filter(l => l.isGroupable);
@@ -232,6 +234,23 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                             </div>
                         )}
                     </div>
+
+                    {/* Sticky Footer with Append Button */}
+                    {(isGroupMode ? selectedGroupCount > 0 : !!activeList) && (
+                        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsListSelectorOpen(false);
+                                    onOpenAddHeroes();
+                                }}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/10 active:scale-[0.98] transition-all"
+                            >
+                                <Plus size={14} />
+                                <span>Докинуть героев точечно</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
