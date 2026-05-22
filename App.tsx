@@ -229,7 +229,7 @@ const App: React.FC = () => {
                     toggleTheme={handleToggleTheme}
                 />
 
-                <main className="flex-1 flex flex-col items-center justify-center px-6 pt-6 pb-28 w-full max-w-lg mx-auto relative z-1">
+                <main className="flex-1 flex flex-col items-center main-content-layout px-6 pt-6 pb-28 w-full max-w-lg mx-auto relative z-1">
 
                     <div
                         className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-40 transition-all duration-300 ${isListSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}

@@ -93,7 +93,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                     </div>
                 </button>
 
-                <div className={`absolute top-full left-0 w-full bg-white dark:bg-slate-900 border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl overflow-hidden transition-all duration-300 origin-top flex flex-col max-h-[360px] ${isListSelectorOpen ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
+                <div className={`absolute top-full left-0 w-full bg-white dark:bg-slate-900 border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl overflow-hidden transition-all duration-300 origin-top flex flex-col source-selector-dropdown ${isListSelectorOpen ? 'opacity-100 scale-y-100 pointer-events-auto' : 'opacity-0 scale-y-0 pointer-events-none'}`}>
 
                     {/* Tabs Switcher */}
                     <div className="px-5 pt-4 pb-2">

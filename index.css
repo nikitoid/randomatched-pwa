@@ -219,3 +219,37 @@ body {
 .reveal-smooth {
   animation: heroInSmooth 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
+
+/* Адаптивное вертикальное выравнивание для главного экрана */
+.main-content-layout {
+  justify-content: flex-start;
+}
+
+@media (min-height: 750px) {
+  .main-content-layout {
+    justify-content: center;
+  }
+}
+
+/* Динамическая высота выпадающего списка источников */
+.source-selector-dropdown {
+  max-height: 280px;
+}
+
+@media (min-height: 600px) {
+  .source-selector-dropdown {
+    max-height: 340px;
+  }
+}
+
+@media (min-height: 700px) {
+  .source-selector-dropdown {
+    max-height: 440px;
+  }
+}
+
+@media (min-height: 850px) {
+  .source-selector-dropdown {
+    max-height: 540px;
+  }
+}
