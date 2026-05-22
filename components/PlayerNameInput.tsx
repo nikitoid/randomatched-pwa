@@ -62,7 +62,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
         : [];
 
     return (
-        <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-40' : 'z-20'}`}>
+        <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-50' : 'z-20'}`}>
             <button
                 onClick={() => setIsNamesOpen(!isNamesOpen)}
                 className={`w-full p-4 flex items-center justify-between text-left bg-white dark:bg-slate-900/90 backdrop-blur-md border border-slate-100 dark:border-slate-800 transition-all duration-300 ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm hover:shadow-md'}`}

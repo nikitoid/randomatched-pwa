@@ -18,7 +18,7 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
 }) => {
     return (
         <nav 
-            className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 dark:border-slate-800 transition-all duration-500"
+            className="fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 dark:border-slate-800 transition-all duration-500"
             style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
         >
             <button 

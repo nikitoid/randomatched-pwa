@@ -42,7 +42,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
         <div
             className="w-full mb-6 relative"
             style={{
-                zIndex: isListSelectorOpen ? 40 : 20,
+                zIndex: isListSelectorOpen ? 50 : 20,
                 transition: isListSelectorOpen ? 'z-index 0s' : 'z-index 0s linear 0.3s'
             }}
         >
