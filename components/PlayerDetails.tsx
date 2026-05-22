@@ -46,7 +46,6 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
         // Top Heroes
         const heroesMap = new Map<string, { matches: number, wins: number }>();
         let totalKills = 0;
-        let maxKills = 0;
         let matchesWithKillsCount = 0;
 
         playerMatches.forEach(m => {
@@ -64,11 +63,37 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             if (pData && pData.kills !== undefined && pData.kills !== null) {
                 totalKills += pData.kills;
                 matchesWithKillsCount++;
-                if (pData.kills > maxKills) {
-                    maxKills = pData.kills;
-                }
             }
         });
+
+        // Calculate max kills in a series of games (gap <= 6 hours)
+        const chronologicalMatches = [...playerMatches].sort((a, b) => a.timestamp - b.timestamp);
+        let maxKills = 0;
+        let currentSeriesKills = 0;
+        let lastTimestamp = 0;
+
+        chronologicalMatches.forEach(m => {
+            const isTeam1 = m.team1.some(p => p.name === player.name);
+            const pData = isTeam1 ? m.team1.find(p => p.name === player.name) : m.team2.find(p => p.name === player.name);
+            const kills = (pData && pData.kills !== undefined && pData.kills !== null) ? pData.kills : 0;
+
+            if (lastTimestamp === 0) {
+                currentSeriesKills = kills;
+                lastTimestamp = m.timestamp;
+            } else if (m.timestamp - lastTimestamp <= 6 * 60 * 60 * 1000) {
+                currentSeriesKills += kills;
+                lastTimestamp = m.timestamp;
+            } else {
+                if (currentSeriesKills > maxKills) {
+                    maxKills = currentSeriesKills;
+                }
+                currentSeriesKills = kills;
+                lastTimestamp = m.timestamp;
+            }
+        });
+        if (currentSeriesKills > maxKills) {
+            maxKills = currentSeriesKills;
+        }
 
         const topHeroes = Array.from(heroesMap.entries())
             .map(([name, stats]) => ({ name, ...stats }))
@@ -202,8 +227,8 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                             <Skull size={12} className="text-red-500" /> Убийства
                         </div>
                         <div className="text-2xl font-black text-slate-900 dark:text-white">{totalKills}</div>
-                        <div className="text-[10px] text-red-500 font-bold mt-1">
-                            Рекорд: {maxKills}
+                        <div className="text-[10px] text-red-500 font-bold mt-1" title="Максимальное количество убийств за серию игр с интервалом не более 6 часов">
+                            Рекорд серии: {maxKills}
                         </div>
                     </div>
                     <div className="p-4 rounded-3xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm">

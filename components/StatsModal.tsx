@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye } from 'lucide-react';
+import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye, HelpCircle } from 'lucide-react';
 import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBackup } from '../types';
 import { PlayerDetails } from './PlayerDetails';
 import { HeroDetails } from './HeroDetails';
@@ -79,10 +79,15 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     // Backup Menu State
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
     const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
+    const [showEfficiencyInfo, setShowEfficiencyInfo] = useState(false);
 
     useBackHandler(isDataMenuOpen, () => {
         setIsDataMenuOpen(false);
     }, { id: 'stats-data-menu', priority: 30 });
+
+    useBackHandler(showEfficiencyInfo, () => {
+        setShowEfficiencyInfo(false);
+    }, { id: 'stats-efficiency-info', priority: 40 });
 
     const titleClickCount = useRef(0);
     const titleClickTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -373,7 +378,20 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     }, [history]);
 
     // Statistics Calculation
-    const { totalMatches, sortedPlayers, sortedHeroes, mvp, underdog, streakStats, bestStreakPlayer } = useMemo(() => {
+    const {
+        totalMatches,
+        sortedPlayers,
+        sortedHeroes,
+        mvp,
+        underdog,
+        streakStats,
+        bestStreakPlayer,
+        topKillsSeriesPlayer,
+        topTotalKillers,
+        bloodiestMatch,
+        totalKillsAll,
+        avgKillsPerMatch
+    } = useMemo(() => {
         const playerStats: Record<string, PlayerStat> = {};
         const heroStats: Record<string, HeroStat> = {};
         let totalMatches = 0;
@@ -411,10 +429,11 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             match.team2.forEach(p => processPlayer(p.name, winner === 'team2', p.heroName));
         });
 
-        // Calculate Weighted Score for Players (Bayesian-ish or simple weighted)
+        // Calculate Weighted Score for Players (Bayesian Average with C = 25, m = 0.5)
         Object.values(playerStats).forEach(p => {
-            const winRate = p.matches > 0 ? p.wins / p.matches : 0;
-            p.score = winRate * (1 - 1 / (p.matches + 1));
+            const C = 25;
+            const m = 0.5;
+            p.score = (p.wins + C * m) / (p.matches + C);
         });
 
         const sortedPlayers = Object.values(playerStats).sort((a, b) => b.score - a.score || b.wins - a.wins);
@@ -512,7 +531,114 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         // Финальный underdog: приоритет серии поражений, иначе fallback
         const underdog = underdogByLoseStreak ? underdogByLoseStreak.player : fallbackUnderdog;
 
-        return { totalMatches, sortedPlayers, sortedHeroes, mvp, underdog, streakStats, bestStreakPlayer };
+        // --- РАСЧЕТ БОЕВОЙ СТАТИСТИКИ (КИЛЛОВ) ---
+        const playerMatchesMap: Record<string, MatchRecord[]> = {};
+        history.forEach(match => {
+            const processPlayerMatch = (p: MatchPlayer) => {
+                const name = p.name.trim();
+                if (!name) return;
+                if (!playerMatchesMap[name]) {
+                    playerMatchesMap[name] = [];
+                }
+                playerMatchesMap[name].push(match);
+            };
+            match.team1.forEach(processPlayerMatch);
+            match.team2.forEach(processPlayerMatch);
+        });
+
+        const playerKillsStats: Record<string, { total: number, maxSeries: number }> = {};
+        Object.entries(playerMatchesMap).forEach(([name, matches]) => {
+            const sorted = [...matches].sort((a, b) => a.timestamp - b.timestamp);
+            let total = 0;
+            let maxSeries = 0;
+            let currentSeriesKills = 0;
+            let lastTimestamp = 0;
+
+            sorted.forEach(m => {
+                const isTeam1 = m.team1.some(p => p.name === name);
+                const pData = isTeam1 ? m.team1.find(p => p.name === name) : m.team2.find(p => p.name === name);
+                const kills = (pData && pData.kills !== undefined && pData.kills !== null) ? pData.kills : 0;
+                total += kills;
+
+                if (lastTimestamp === 0) {
+                    currentSeriesKills = kills;
+                    lastTimestamp = m.timestamp;
+                } else if (m.timestamp - lastTimestamp <= 6 * 60 * 60 * 1000) {
+                    currentSeriesKills += kills;
+                    lastTimestamp = m.timestamp;
+                } else {
+                    if (currentSeriesKills > maxSeries) {
+                        maxSeries = currentSeriesKills;
+                    }
+                    currentSeriesKills = kills;
+                    lastTimestamp = m.timestamp;
+                }
+            });
+            if (currentSeriesKills > maxSeries) {
+                maxSeries = currentSeriesKills;
+            }
+
+            playerKillsStats[name] = {
+                total,
+                maxSeries
+            };
+        });
+
+        // 1. Лидер по серии убийств
+        let topKillsSeriesPlayer: { name: string, record: number } | null = null;
+        Object.entries(playerKillsStats).forEach(([name, stats]) => {
+            if (stats.maxSeries > 0) {
+                if (!topKillsSeriesPlayer || stats.maxSeries > topKillsSeriesPlayer.record) {
+                    topKillsSeriesPlayer = { name, record: stats.maxSeries };
+                }
+            }
+        });
+
+        // 2. Лидеры по общему числу убийств (топ-3)
+        const topTotalKillers = Object.entries(playerKillsStats)
+            .map(([name, stats]) => ({ name, total: stats.total }))
+            .filter(k => k.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 3);
+
+        // 3. Самый кровавый матч
+        let bloodiestMatch: { id: string, timestamp: number, totalKills: number, players: string } | null = null;
+        let totalKillsAll = 0;
+        history.forEach(m => {
+            const t1Kills = m.team1.reduce((sum, p) => sum + (p.kills || 0), 0);
+            const t2Kills = m.team2.reduce((sum, p) => sum + (p.kills || 0), 0);
+            const total = t1Kills + t2Kills;
+            totalKillsAll += total;
+
+            if (total > 0) {
+                if (!bloodiestMatch || total > bloodiestMatch.totalKills) {
+                    const playerNames = [...m.team1, ...m.team2].map(p => p.name).join(', ');
+                    bloodiestMatch = {
+                        id: m.id,
+                        timestamp: m.timestamp,
+                        totalKills: total,
+                        players: playerNames
+                    };
+                }
+            }
+        });
+
+        const avgKillsPerMatch = history.length > 0 ? totalKillsAll / history.length : 0;
+
+        return {
+            totalMatches,
+            sortedPlayers,
+            sortedHeroes,
+            mvp,
+            underdog,
+            streakStats,
+            bestStreakPlayer,
+            topKillsSeriesPlayer,
+            topTotalKillers,
+            bloodiestMatch,
+            totalKillsAll,
+            avgKillsPerMatch
+        };
     }, [history]);
 
     // Filtered & Sorted Heroes
@@ -1378,10 +1504,59 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     )}
 
+                                    {/* Боевая статистика */}
+                                    <div className="pt-2 col-span-2 border-t border-slate-100 dark:border-slate-800/60 mt-2">
+                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                                            <Skull size={16} className="text-red-500" /> Боевые рекорды
+                                        </h3>
+                                        
+                                        {/* Сетка карточек рекордов */}
+                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                            {/* Рекорд за серию */}
+                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-red-50 to-rose-50/50 dark:from-red-950/20 dark:to-rose-900/10 border border-red-100 dark:border-red-900/30 relative overflow-hidden">
+                                                <div className="text-[10px] font-bold text-red-500 uppercase mb-1">Рекорд за встречу</div>
+                                                {topKillsSeriesPlayer ? (
+                                                    <>
+                                                        <div className="text-base font-bold text-slate-900 dark:text-white truncate">{topKillsSeriesPlayer.name}</div>
+                                                        <div className="text-xs font-black text-red-600 dark:text-red-400 mt-0.5">
+                                                            {topKillsSeriesPlayer.record} 💀 за серию
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-xs text-slate-400 italic">Нет данных</div>
+                                                )}
+                                            </div>
+
+                                            {/* Король убийств */}
+                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-50 to-red-50/20 dark:from-slate-800/40 dark:to-red-950/10 border border-slate-100 dark:border-slate-800 relative overflow-hidden">
+                                                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">Король убийств</div>
+                                                {topTotalKillers && topTotalKillers.length > 0 ? (
+                                                    <>
+                                                        <div className="text-base font-bold text-slate-900 dark:text-white truncate">{topTotalKillers[0].name}</div>
+                                                        <div className="text-xs font-black text-slate-700 dark:text-slate-300 mt-0.5">
+                                                            Всего: {topTotalKillers[0].total} 💀
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-xs text-slate-400 italic">Нет данных</div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                    </div>
+
                                     {/* Top Efficiency Chart */}
-                                    <div className="pt-2 col-span-2">
-                                        <h3 data-testid="efficiency-top" className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                                            <TrendingUp size={16} className="text-primary-500" /> Топ эффективности
+                                    <div className="pt-2 col-span-2 border-t border-slate-100 dark:border-slate-800/60 mt-2">
+                                        <h3 data-testid="efficiency-top" className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2 select-none">
+                                            <TrendingUp size={16} className="text-primary-500" />
+                                            <span>Топ эффективности</span>
+                                            <button
+                                                onClick={() => { setShowEfficiencyInfo(true); triggerHaptic(10); }}
+                                                className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex items-center justify-center"
+                                                title="Как рассчитывается рейтинг?"
+                                            >
+                                                <HelpCircle size={14} />
+                                            </button>
                                         </h3>
                                         <div className="space-y-3">
                                             {sortedPlayers.filter(p => p.matches > 1).slice(0, 5).map((player, i) => {
@@ -1772,6 +1947,58 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                 </div>
             </div>
+
+            {/* Efficiency Info Overlay */}
+            {showEfficiencyInfo && createPortal(
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setShowEfficiencyInfo(false)}
+                >
+                    <div
+                        className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[85dvh] flex flex-col p-6 text-slate-700 dark:text-slate-300"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <TrendingUp size={20} className="text-primary-500" /> Топ эффективности
+                            </h3>
+                            <button
+                                onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
+                                className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="space-y-4 text-sm overflow-y-auto pr-1">
+                            <p>
+                                Рейтинг «Топ эффективности» рассчитывается по методу <strong>Байесовского среднего</strong>.
+                            </p>
+                            <p>
+                                В отличие от обычного процента побед (винрейта), эта формула учитывает <strong>количество матчей</strong>. Это нужно для того, чтобы в топе не оставались игроки, которые сыграли всего 2–3 матча и получили временный высокий винрейт, вытесняя активных участников.
+                            </p>
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 font-medium">
+                                <span className="text-xs text-slate-400 dark:text-slate-500 block mb-1">Математический принцип:</span>
+                                Каждому игроку условно добавляется 25 виртуальных игр с винрейтом 50% (12.5 побед и 12.5 поражений).
+                            </div>
+                            <p>
+                                🌟 <strong>Что это дает на практике?</strong>
+                            </p>
+                            <ul className="list-disc list-inside space-y-1.5 pl-2 text-slate-600 dark:text-slate-400">
+                                <li><strong>Активные игроки</strong> со временем раскрывают свой реальный винрейт, занимая заслуженно высокие места.</li>
+                                <li><strong>Редкие гости</strong> (например, сыгравшие 3 игры и выигравшие все) не «зависают» наверху, а плавно смещаются ниже активных игроков с хорошим винрейтом.</li>
+                            </ul>
+                        </div>
+                        <button
+                            onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
+                            className="mt-6 w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-primary-500/10 active:scale-98 transition-transform"
+                        >
+                            Понятно
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
             {matchFormOverlay}
         </>
     );
