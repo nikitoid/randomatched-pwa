@@ -239,10 +239,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         id?: string;
         date: string;
         time: string;
-        t1p1: string; t1p1h: string;
-        t1p2: string; t1p2h: string;
-        t2p1: string; t2p1h: string;
-        t2p2: string; t2p2h: string;
+        t1p1: string; t1p1h: string; t1p1k: string;
+        t1p2: string; t1p2h: string; t1p2k: string;
+        t2p1: string; t2p1h: string; t2p1k: string;
+        t2p2: string; t2p2h: string; t2p2k: string;
         winner: 'team1' | 'team2';
         errors: { [key: string]: boolean };
     } | null>(null);
@@ -576,10 +576,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         setMatchForm({
             date: dateStr,
             time: timeStr,
-            t1p1: '', t1p1h: '',
-            t1p2: '', t1p2h: '',
-            t2p1: '', t2p1h: '',
-            t2p2: '', t2p2h: '',
+            t1p1: '', t1p1h: '', t1p1k: '',
+            t1p2: '', t1p2h: '', t1p2k: '',
+            t2p1: '', t2p1h: '', t2p1k: '',
+            t2p2: '', t2p2h: '', t2p2k: '',
             winner: 'team1',
             errors: {}
         });
@@ -596,10 +596,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             id: match.id,
             date: dateStr,
             time: timeStr,
-            t1p1: match.team1[0]?.name || '', t1p1h: match.team1[0]?.heroName || '',
-            t1p2: match.team1[1]?.name || '', t1p2h: match.team1[1]?.heroName || '',
-            t2p1: match.team2[0]?.name || '', t2p1h: match.team2[0]?.heroName || '',
-            t2p2: match.team2[1]?.name || '', t2p2h: match.team2[1]?.heroName || '',
+            t1p1: match.team1[0]?.name || '', t1p1h: match.team1[0]?.heroName || '', t1p1k: match.team1[0]?.kills !== undefined ? String(match.team1[0].kills) : '',
+            t1p2: match.team1[1]?.name || '', t1p2h: match.team1[1]?.heroName || '', t1p2k: match.team1[1]?.kills !== undefined ? String(match.team1[1].kills) : '',
+            t2p1: match.team2[0]?.name || '', t2p1h: match.team2[0]?.heroName || '', t2p1k: match.team2[0]?.kills !== undefined ? String(match.team2[0].kills) : '',
+            t2p2: match.team2[1]?.name || '', t2p2h: match.team2[1]?.heroName || '', t2p2k: match.team2[1]?.kills !== undefined ? String(match.team2[1].kills) : '',
             winner: match.winner || 'team1',
             errors: {}
         });
@@ -609,6 +609,13 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         if (!name.trim()) return true; // allow empty if logical, but here we require heroes usually. Let's say empty is allowed but if filled must exist.
         return allHeroesList.some(h => h.name.toLowerCase() === name.trim().toLowerCase());
     }
+
+    const renderHeroWithKills = (player: MatchPlayer): string => {
+        if (player.kills !== undefined && player.kills !== null) {
+            return `${player.heroName} (${player.kills} 💀)`;
+        }
+        return player.heroName;
+    };
 
     const handleMatchSubmit = () => {
         if (!matchForm) return;
@@ -630,21 +637,49 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         const team1: MatchPlayer[] = [];
         if (matchForm.t1p1.trim()) {
             const hName = matchForm.t1p1h.trim();
-            team1.push({ name: matchForm.t1p1.trim(), heroName: hName, heroId: 'manual' });
+            const killsVal = matchForm.t1p1k.trim();
+            const kills = killsVal !== "" ? parseInt(killsVal, 10) : undefined;
+            team1.push({
+                name: matchForm.t1p1.trim(),
+                heroName: hName,
+                heroId: 'manual',
+                ...(kills !== undefined && !isNaN(kills) ? { kills } : {})
+            });
         }
         if (matchForm.t1p2.trim()) {
             const hName = matchForm.t1p2h.trim();
-            team1.push({ name: matchForm.t1p2.trim(), heroName: hName, heroId: 'manual' });
+            const killsVal = matchForm.t1p2k.trim();
+            const kills = killsVal !== "" ? parseInt(killsVal, 10) : undefined;
+            team1.push({
+                name: matchForm.t1p2.trim(),
+                heroName: hName,
+                heroId: 'manual',
+                ...(kills !== undefined && !isNaN(kills) ? { kills } : {})
+            });
         }
 
         const team2: MatchPlayer[] = [];
         if (matchForm.t2p1.trim()) {
             const hName = matchForm.t2p1h.trim();
-            team2.push({ name: matchForm.t2p1.trim(), heroName: hName, heroId: 'manual' });
+            const killsVal = matchForm.t2p1k.trim();
+            const kills = killsVal !== "" ? parseInt(killsVal, 10) : undefined;
+            team2.push({
+                name: matchForm.t2p1.trim(),
+                heroName: hName,
+                heroId: 'manual',
+                ...(kills !== undefined && !isNaN(kills) ? { kills } : {})
+            });
         }
         if (matchForm.t2p2.trim()) {
             const hName = matchForm.t2p2h.trim();
-            team2.push({ name: matchForm.t2p2.trim(), heroName: hName, heroId: 'manual' });
+            const killsVal = matchForm.t2p2k.trim();
+            const kills = killsVal !== "" ? parseInt(killsVal, 10) : undefined;
+            team2.push({
+                name: matchForm.t2p2.trim(),
+                heroName: hName,
+                heroId: 'manual',
+                ...(kills !== undefined && !isNaN(kills) ? { kills } : {})
+            });
         }
 
         if (team1.length === 0 || team2.length === 0) return;
@@ -838,6 +873,59 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         );
     };
 
+    const renderKillsInput = (valKey: 't1p1k' | 't1p2k' | 't2p1k' | 't2p2k') => {
+        if (!matchForm) return null;
+        const value = matchForm[valKey];
+
+        const adjustKills = (amount: number) => {
+            const current = parseInt(value, 10) || 0;
+            const next = Math.max(0, current + amount);
+            setMatchForm({
+                ...matchForm,
+                [valKey]: String(next)
+            });
+            triggerHaptic(10);
+        };
+
+        return (
+            <div className="w-[84px] shrink-0 relative group">
+                <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus-within:border-primary-500 focus-within:bg-white dark:focus-within:bg-slate-900 overflow-hidden transition-all h-[38px] px-1">
+                    <button
+                        type="button"
+                        onClick={() => adjustKills(-1)}
+                        className="h-full w-5 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold active:scale-75 transition-transform select-none"
+                    >
+                        -
+                    </button>
+                    <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={value}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d+$/.test(val)) {
+                                setMatchForm({
+                                    ...matchForm,
+                                    [valKey]: val
+                                });
+                            }
+                        }}
+                        placeholder="💀"
+                        className="w-full text-center bg-transparent outline-none text-xs font-bold text-slate-800 dark:text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => adjustKills(1)}
+                        className="h-full w-5 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold active:scale-75 transition-transform select-none"
+                    >
+                        +
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
     // Portal for Autocomplete Dropdown
     const renderAutocompletePortal = () => {
         if (!suggestions || !dropdownPosition) return null;
@@ -906,13 +994,15 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         </div>
                         <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team1' ? 'border-secondary-500/50 bg-secondary-50/50 dark:bg-secondary-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
                             <div className="space-y-3">
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-end">
                                     {renderInput("", "t1p1", <User size={14} />, "Игрок 1")}
                                     {renderInput("", "t1p1h", <Shield size={14} />, "Герой")}
+                                    {renderKillsInput("t1p1k")}
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-end">
                                     {renderInput("", "t1p2", <User size={14} />, "Игрок 2")}
                                     {renderInput("", "t1p2h", <Shield size={14} />, "Герой")}
+                                    {renderKillsInput("t1p2k")}
                                 </div>
                             </div>
                         </div>
@@ -937,13 +1027,15 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         </div>
                         <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team2' ? 'border-primary-500/50 bg-primary-50/50 dark:bg-primary-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
                             <div className="space-y-3">
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-end">
                                     {renderInput("", "t2p1", <User size={14} />, "Игрок 3")}
                                     {renderInput("", "t2p1h", <Shield size={14} />, "Герой")}
+                                    {renderKillsInput("t2p1k")}
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2 items-end">
                                     {renderInput("", "t2p2", <User size={14} />, "Игрок 4")}
                                     {renderInput("", "t2p2h", <Shield size={14} />, "Герой")}
+                                    {renderKillsInput("t2p2k")}
                                 </div>
                             </div>
                         </div>
@@ -1551,7 +1643,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                                         {match.winner === 'team1' && <Trophy size={10} className="text-yellow-500" />}
                                                                     </div>
                                                                     <div className="text-[10px] text-slate-500 flex gap-2">
-                                                                        {match.team1.map(p => p.heroName).join(' & ')}
+                                                                        {match.team1.map(p => renderHeroWithKills(p)).join(' & ')}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1565,7 +1657,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                                         {match.winner === 'team2' && <Trophy size={10} className="text-yellow-500" />}
                                                                     </div>
                                                                     <div className="text-[10px] text-slate-500 flex gap-2">
-                                                                        {match.team2.map(p => p.heroName).join(' & ')}
+                                                                         {match.team2.map(p => renderHeroWithKills(p)).join(' & ')}
                                                                     </div>
                                                                 </div>
                                                             </div>

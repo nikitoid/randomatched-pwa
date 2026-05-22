@@ -36,7 +36,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
     // ... (rest is same, but I need to make sure I don't cut off too much or too little)
     // Actually wait, I am replacing the top part up to props destructuring and state init.
 
-    const { recentMatches, topHeroes, partnerStats, bestStreak } = useMemo(() => {
+    const { recentMatches, topHeroes, partnerStats, bestStreak, totalKills, maxKills, matchesWithKillsCount, avgKills } = useMemo(() => {
         // Filter matches involving this player
         const playerMatches = history.filter(m =>
             m.team1.some(p => p.name === player.name) ||
@@ -45,6 +45,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
         // Top Heroes
         const heroesMap = new Map<string, { matches: number, wins: number }>();
+        let totalKills = 0;
+        let maxKills = 0;
+        let matchesWithKillsCount = 0;
+
         playerMatches.forEach(m => {
             const isTeam1 = m.team1.some(p => p.name === player.name);
             const pData = isTeam1 ? m.team1.find(p => p.name === player.name) : m.team2.find(p => p.name === player.name);
@@ -55,6 +59,14 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 hStart.matches++;
                 if (won) hStart.wins++;
                 heroesMap.set(pData.heroName, hStart);
+            }
+
+            if (pData && pData.kills !== undefined && pData.kills !== null) {
+                totalKills += pData.kills;
+                matchesWithKillsCount++;
+                if (pData.kills > maxKills) {
+                    maxKills = pData.kills;
+                }
             }
         });
 
@@ -101,13 +113,23 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             .sort((a, b) => (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches)
             .slice(0, 5);
 
+        const avgKills = matchesWithKillsCount > 0 ? totalKills / matchesWithKillsCount : 0;
+
         return {
             recentMatches: playerMatches.slice(0, 10),
             topHeroes,
             partnerStats,
-            bestStreak
+            bestStreak,
+            totalKills,
+            maxKills,
+            matchesWithKillsCount,
+            avgKills
         };
     }, [player, history]);
+
+    const getMatchesWord = (count: number) => {
+        return (count % 10 === 1 && count % 100 !== 11) ? 'матчу' : 'матчам';
+    };
 
     return (
         <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 animate-in slide-in-from-right duration-300">
@@ -169,6 +191,30 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                         </div>
                         <div className="text-[10px] text-slate-500 font-bold mt-1">
                             {player.wins}W - {player.losses}L
+                        </div>
+                    </div>
+                </div>
+
+                {/* Kills Stats Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="p-4 rounded-3xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm">
+                        <div className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
+                            <Skull size={12} className="text-red-500" /> Убийства
+                        </div>
+                        <div className="text-2xl font-black text-slate-900 dark:text-white">{totalKills}</div>
+                        <div className="text-[10px] text-red-500 font-bold mt-1">
+                            Рекорд: {maxKills}
+                        </div>
+                    </div>
+                    <div className="p-4 rounded-3xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm">
+                        <div className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
+                            <TrendingUp size={12} className="text-primary-500" /> Ср. убийств
+                        </div>
+                        <div className="text-2xl font-black text-slate-900 dark:text-white">
+                            {avgKills.toFixed(1)}
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-bold mt-1">
+                            По {matchesWithKillsCount} {getMatchesWord(matchesWithKillsCount)}
                         </div>
                     </div>
                 </div>
@@ -327,6 +373,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                     const myTeam = isTeam1 ? m.team1 : m.team2;
                                     const enemyTeam = isTeam1 ? m.team2 : m.team1;
                                     const won = (isTeam1 && m.winner === 'team1') || (!isTeam1 && m.winner === 'team2');
+                                    const me = myTeam.find(p => p.name === player.name);
 
                                     return (
                                         <div key={m.id} className={`p-3 rounded-2xl border ${won ? 'bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30' : 'bg-red-50/50 border-red-100 dark:bg-red-900/10 dark:border-red-900/30'}`}>
@@ -343,6 +390,14 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                                     {enemyTeam.map(p => p.name).join(', ')}
                                                 </div>
                                             </div>
+                                            {me && (
+                                                <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/80 text-[10px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
+                                                    <span>Герой: <span className="font-bold text-slate-700 dark:text-slate-300">{me.heroName}</span></span>
+                                                    {me.kills !== undefined && me.kills !== null && (
+                                                        <span className="font-bold text-red-500 flex items-center gap-0.5"><Skull size={10} /> {me.kills} {me.kills === 1 ? 'убийство' : [2, 3, 4].includes(me.kills % 10) && ![12, 13, 14].includes(me.kills % 100) ? 'убийства' : 'убийств'}</span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 })}
@@ -355,6 +410,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                                 const myTeam = isTeam1 ? m.team1 : m.team2;
                                                 const enemyTeam = isTeam1 ? m.team2 : m.team1;
                                                 const won = (isTeam1 && m.winner === 'team1') || (!isTeam1 && m.winner === 'team2');
+                                                const me = myTeam.find(p => p.name === player.name);
 
                                                 return (
                                                     <div key={m.id} className={`p-3 rounded-2xl border ${won ? 'bg-green-50/50 border-green-100 dark:bg-green-900/10 dark:border-green-900/30' : 'bg-red-50/50 border-red-100 dark:bg-red-900/10 dark:border-red-900/30'}`}>
@@ -371,6 +427,14 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                                                 {enemyTeam.map(p => p.name).join(', ')}
                                                             </div>
                                                         </div>
+                                                        {me && (
+                                                            <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-800/80 text-[10px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
+                                                                <span>Герой: <span className="font-bold text-slate-700 dark:text-slate-300">{me.heroName}</span></span>
+                                                                {me.kills !== undefined && me.kills !== null && (
+                                                                    <span className="font-bold text-red-500 flex items-center gap-0.5"><Skull size={10} /> {me.kills} {me.kills === 1 ? 'убийство' : [2, 3, 4].includes(me.kills % 10) && ![12, 13, 14].includes(me.kills % 100) ? 'убийства' : 'убийств'}</span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )
                                             })}

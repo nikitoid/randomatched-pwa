@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CloudBackup, MatchRecord } from '../types';
+import { CloudBackup, MatchRecord, MatchPlayer } from '../types';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Trophy, Trash2, Search } from 'lucide-react';
 
@@ -11,6 +11,13 @@ interface BackupViewerProps {
 
 export const BackupViewer: React.FC<BackupViewerProps> = ({ backup, onClose, isOpen }) => {
     const [search, setSearch] = useState('');
+
+    const renderHeroWithKills = (player: MatchPlayer): string => {
+        if (player.kills !== undefined && player.kills !== null) {
+            return `${player.heroName} (${player.kills} 💀)`;
+        }
+        return player.heroName;
+    };
 
     const filteredHistory = useMemo(() => {
         if (!search.trim()) return backup.history;
@@ -92,7 +99,7 @@ export const BackupViewer: React.FC<BackupViewerProps> = ({ backup, onClose, isO
                                                     {match.winner === 'team1' && <Trophy size={10} className="text-yellow-500" />}
                                                 </div>
                                                 <div className="text-[10px] text-slate-500 flex gap-2">
-                                                    {match.team1.map(p => p.heroName).join(' & ')}
+                                                    {match.team1.map(p => renderHeroWithKills(p)).join(' & ')}
                                                 </div>
                                             </div>
                                         </div>
@@ -105,7 +112,7 @@ export const BackupViewer: React.FC<BackupViewerProps> = ({ backup, onClose, isO
                                                     {match.winner === 'team2' && <Trophy size={10} className="text-yellow-500" />}
                                                 </div>
                                                 <div className="text-[10px] text-slate-500 flex gap-2">
-                                                    {match.team2.map(p => p.heroName).join(' & ')}
+                                                    {match.team2.map(p => renderHeroWithKills(p)).join(' & ')}
                                                 </div>
                                             </div>
                                         </div>

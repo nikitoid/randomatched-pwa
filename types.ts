@@ -46,6 +46,7 @@ export interface MatchPlayer {
   name: string;
   heroId: string;
   heroName: string;
+  kills?: number; // Новое поле для статистики убийств
 }
 
 export interface MatchRecord {
@@ -63,7 +64,7 @@ export interface MatchRecord {
 // Based on the instruction and the provided code snippet,
 // I will add a new interface `ResultOverlayProps` with the specified properties.
 export interface ResultOverlayProps {
-  onRecordResult?: (winner: 'team1' | 'team2') => void;
+  onRecordResult?: (winner: 'team1' | 'team2', playerKills?: Record<string, number>) => void;
   onManualSelect?: (playerNumber: number, hero: any) => void;
   availableHeroes?: any[];
 }

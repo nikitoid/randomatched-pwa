@@ -57,24 +57,33 @@ export const useMatchHistory = (
         localStorage.setItem(STORAGE_KEY_DELETED_HISTORY, JSON.stringify(deletedHistory));
     }, [deletedHistory, isLoaded]);
 
-    const addMatch = (assignments: AssignedPlayer[], winner: 'team1' | 'team2', playerNames: string[]) => {
+    const addMatch = (
+        assignments: AssignedPlayer[],
+        winner: 'team1' | 'team2',
+        playerNames: string[],
+        playerKills?: Record<string, number>
+    ) => {
         const team1Raw = assignments.filter(a => a.team === 'Odd').map(a => {
             const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
             const idx = positionToIndex[a.position];
+            const name = (playerNames[idx] || '').trim();
             return {
-                name: (playerNames[idx] || '').trim(),
+                name,
                 heroId: a.hero?.id || 'unknown',
-                heroName: a.hero?.name || 'Unknown'
+                heroName: a.hero?.name || 'Unknown',
+                ...(playerKills && playerKills[name] !== undefined ? { kills: playerKills[name] } : {})
             };
         });
 
         const team2Raw = assignments.filter(a => a.team === 'Even').map(a => {
             const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
             const idx = positionToIndex[a.position];
+            const name = (playerNames[idx] || '').trim();
             return {
-                name: (playerNames[idx] || '').trim(),
+                name,
                 heroId: a.hero?.id || 'unknown',
-                heroName: a.hero?.name || 'Unknown'
+                heroName: a.hero?.name || 'Unknown',
+                ...(playerKills && playerKills[name] !== undefined ? { kills: playerKills[name] } : {})
             };
         });
 

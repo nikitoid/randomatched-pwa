@@ -21,7 +21,7 @@ interface ResultOverlayProps {
     setBalanceThreshold?: (val: number) => void;
     playerNames?: string[];
     onSwapPositions?: (pos1: 'top' | 'bottom' | 'left' | 'right', pos2: 'top' | 'bottom' | 'left' | 'right') => void;
-    onRecordResult?: (winner: 'team1' | 'team2') => void;
+    onRecordResult?: (winner: 'team1' | 'team2', playerKills?: Record<string, number>) => void;
     onManualSelect?: (playerNumber: number, hero: Hero) => void;
     availableHeroes?: Hero[];
     prioritizeUnplayed?: boolean;
@@ -72,6 +72,17 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false);
     const [isWeightsModalOpen, setIsWeightsModalOpen] = useState(false);
     const [weightsSearchTerm, setWeightsSearchTerm] = useState('');
+    const [playerKills, setPlayerKills] = useState<Record<number, number>>({});
+
+    useEffect(() => {
+        if (isOpen) {
+            const initialKills: Record<number, number> = {};
+            assignments.forEach(a => {
+                initialKills[a.playerNumber] = 0;
+            });
+            setPlayerKills(initialKills);
+        }
+    }, [isOpen, assignments]);
 
     // Вычисление весов для отладки
     const weightsMap = useMemo(() => {
@@ -206,7 +217,18 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     };
 
     const handleRecordWin = (winner: 'team1' | 'team2') => {
-        if (onRecordResult) onRecordResult(winner);
+        if (onRecordResult) {
+            const killsByPlayerName: Record<string, number> = {};
+            assignments.forEach(a => {
+                const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+                const idx = positionToIndex[a.position];
+                const name = playerNames[idx]?.trim();
+                if (name) {
+                    killsByPlayerName[name] = playerKills[a.playerNumber] || 0;
+                }
+            });
+            onRecordResult(winner, killsByPlayerName);
+        }
         setConfirmModal(null);
         // Wait slightly then trigger ban all
         setTimeout(() => onBanAll(), 100);
@@ -726,32 +748,100 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
             {/* Confirmation Modal */}
             <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${showModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showModal ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+                <div className={`bg-white dark:bg-slate-900 w-full ${displayModal?.type === 'winner' ? 'max-w-md' : 'max-w-xs'} rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showModal ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
                     <div className="flex flex-col items-center text-center">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{getModalTitle()}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{getModalDescription()}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{getModalDescription()}</p>
                     </div>
 
                     {displayModal?.type === 'winner' ? (
-                        <div className="flex flex-col gap-2 w-full">
+                        <div className="flex flex-col gap-4 w-full">
                             {canRecordStats && (
-                                <>
-                                    <button data-testid="record-team1-win-btn" onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
-                                        <Trophy size={16} /> <span>{getTeamNames('Odd')}</span>
-                                    </button>
-                                    <button data-testid="record-team2-win-btn" onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm">
-                                        <Trophy size={16} /> <span>{getTeamNames('Even')}</span>
-                                    </button>
-                                    <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />
-                                </>
+                                <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                                    <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 text-left flex items-center gap-1.5">
+                                        <span>💀</span> Количество убийств
+                                    </h4>
+                                    {assignments.filter(p => {
+                                        const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+                                        const idx = positionToIndex[p.position];
+                                        return playerNames[idx]?.trim() !== '';
+                                    }).map(player => {
+                                        const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+                                        const idx = positionToIndex[player.position];
+                                        const playerName = playerNames[idx]?.trim() || `Игрок ${player.playerNumber}`;
+                                        return (
+                                            <div key={player.playerNumber} className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800/55 last:border-0">
+                                                <div className="flex flex-col text-left">
+                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
+                                                        {playerName}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                        {player.hero?.name || 'Без героя'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => {
+                                                            setPlayerKills(prev => ({
+                                                                ...prev,
+                                                                [player.playerNumber]: Math.max(0, (prev[player.playerNumber] || 0) - 1)
+                                                            }));
+                                                        }}
+                                                        className="w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black flex items-center justify-center active:scale-90 transition-transform text-xs"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        value={playerKills[player.playerNumber] ?? 0}
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value, 10);
+                                                            setPlayerKills(prev => ({
+                                                                ...prev,
+                                                                [player.playerNumber]: isNaN(val) ? 0 : Math.max(0, val)
+                                                            }));
+                                                        }}
+                                                        className="w-10 py-0.5 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            setPlayerKills(prev => ({
+                                                                ...prev,
+                                                                [player.playerNumber]: (prev[player.playerNumber] || 0) + 1
+                                                            }));
+                                                        }}
+                                                        className="w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black flex items-center justify-center active:scale-90 transition-transform text-xs"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             )}
 
-                            <button onClick={handleSkipRecord} className="py-3 font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl active:scale-95 transition-transform">
-                                Сбросить без записи
-                            </button>
-                            <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-400 dark:text-slate-500 bg-transparent rounded-xl active:scale-95 transition-transform">
-                                Отмена
-                            </button>
+                            <div className="flex flex-col gap-2 w-full">
+                                {canRecordStats && (
+                                    <>
+                                        <button data-testid="record-team1-win-btn" onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--secondary-500)/0.25)]">
+                                            <Trophy size={16} /> <span>{getTeamNames('Odd')}</span>
+                                        </button>
+                                        <button data-testid="record-team2-win-btn" onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--primary-500)/0.25)]">
+                                            <Trophy size={16} /> <span>{getTeamNames('Even')}</span>
+                                        </button>
+                                        <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />
+                                    </>
+                                )}
+
+                                <button onClick={handleSkipRecord} className="py-3 font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl active:scale-95 transition-transform text-sm">
+                                    Сбросить без записи
+                                </button>
+                                <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-400 dark:text-slate-500 bg-transparent rounded-xl active:scale-95 transition-transform text-sm">
+                                    Отмена
+                                </button>
+                            </div>
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-3">

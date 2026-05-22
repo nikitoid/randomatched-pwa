@@ -15,7 +15,7 @@ export default defineConfig({
         description: 'Генератор команд 2 на 2 для настольной игры Unmatched с удобным интерфейсом.',
         theme_color: '#059669',
         background_color: '#f8fafc',
-        display: 'fullscreen',
+        display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
         scope: '/',

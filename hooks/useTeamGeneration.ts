@@ -21,7 +21,7 @@ interface UseTeamGenerationProps {
     createTemporaryList: (heroes: Hero[], name?: string) => string;
     setSelectedListId: (id: string) => void;
     setIsGroupMode: (val: boolean) => void;
-    addMatch: (assignments: AssignedPlayer[], winner: 'team1' | 'team2', playerNames: string[]) => void;
+    addMatch: (assignments: AssignedPlayer[], winner: 'team1' | 'team2', playerNames: string[], playerKills?: Record<string, number>) => void;
     onSwapNames: (idx1: number, idx2: number) => void;
     history: MatchRecord[];
 }
@@ -220,8 +220,8 @@ export const useTeamGeneration = ({
         }
     };
 
-    const handleRecordResult = (winner: 'team1' | 'team2') => {
-        addMatch(assignments, winner, playerNames);
+    const handleRecordResult = (winner: 'team1' | 'team2', playerKills?: Record<string, number>) => {
+        addMatch(assignments, winner, playerNames, playerKills);
         addToast("Результат матча сохранен", "success");
         triggerHaptic(50);
     }
