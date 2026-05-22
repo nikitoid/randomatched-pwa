@@ -62,8 +62,13 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
         });
 
         const topPlayers = Array.from(playersMap.entries())
-            .map(([name, stats]) => ({ name, ...stats }))
-            .sort((a, b) => b.matches - a.matches || b.wins - a.wins)
+            .map(([name, stats]) => {
+                const C = 3;
+                const m = 0.5;
+                const score = (stats.wins + C * m) / (stats.matches + C);
+                return { name, ...stats, score };
+            })
+            .sort((a, b) => b.score - a.score || b.matches - a.matches)
             .slice(0, 5);
 
         // Best Synergies (Heroes played WITH this hero)
@@ -85,8 +90,13 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
 
         const topSynergies = Array.from(synergyMap.entries())
             .filter(([_, stats]) => stats.matches >= 3)
-            .map(([name, stats]) => ({ name, ...stats }))
-            .sort((a, b) => (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches)
+            .map(([name, stats]) => {
+                const C = 3;
+                const m = 0.5;
+                const score = (stats.wins + C * m) / (stats.matches + C);
+                return { name, ...stats, score };
+            })
+            .sort((a, b) => b.score - a.score || b.matches - a.matches)
             .slice(0, 5);
 
         return {

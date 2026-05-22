@@ -96,8 +96,13 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
         }
 
         const topHeroes = Array.from(heroesMap.entries())
-            .map(([name, stats]) => ({ name, ...stats }))
-            .sort((a, b) => b.matches - a.matches || b.wins - a.wins)
+            .map(([name, stats]) => {
+                const C = 3;
+                const m = 0.5;
+                const score = (stats.wins + C * m) / (stats.matches + C);
+                return { name, ...stats, score };
+            })
+            .sort((a, b) => b.score - a.score || b.matches - a.matches)
             .slice(0, 5);
 
         // Win streak
@@ -134,8 +139,13 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
         const partnerStats = Array.from(partnerMap.entries())
             .filter(([_, stats]) => stats.matches >= 3)
-            .map(([name, stats]) => ({ name, ...stats }))
-            .sort((a, b) => (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches)
+            .map(([name, stats]) => {
+                const C = 3;
+                const m = 0.5;
+                const score = (stats.wins + C * m) / (stats.matches + C);
+                return { name, ...stats, score };
+            })
+            .sort((a, b) => b.score - a.score || b.matches - a.matches)
             .slice(0, 5);
 
         const avgKills = matchesWithKillsCount > 0 ? totalKills / matchesWithKillsCount : 0;
