@@ -1,5 +1,6 @@
 import React from 'react';
 import { RotateCcw } from 'lucide-react';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface ResetConfirmModalProps {
     isOpen: boolean;
@@ -18,6 +19,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
     isOnline = true,
     checkConnectivity
 }) => {
+    useBackHandler(isOpen, onCancel, { id: 'reset-confirm-modal', priority: 30 });
 
 
     return (

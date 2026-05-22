@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, ChevronLeft, Search, Check, Database, Filter, Cloud } from 'lucide-react';
 import { HeroList, Hero } from '../types';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface AddHeroesModalProps {
     isOpen: boolean;
@@ -23,6 +24,19 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
     const [selectedList, setSelectedList] = useState<HeroList | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedHeroesByList, setSelectedHeroesByList] = useState<Record<string, Set<string>>>({});
+
+    const handleBack = () => {
+        if (triggerHaptic) triggerHaptic(10);
+        if (step === 'select-heroes') {
+            setStep('select-list');
+            setSelectedList(null);
+            setSearchQuery('');
+        } else {
+            onClose();
+        }
+    };
+
+    useBackHandler(isOpen, handleBack, { id: 'add-heroes-modal', priority: 20 });
 
     // Общее количество выбранных героев по всем спискам
     const totalSelectedCount = useMemo(() => {
@@ -137,12 +151,6 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
         }, 300);
     };
 
-    const handleBack = () => {
-        if (triggerHaptic) triggerHaptic(10);
-        setStep('select-list');
-        setSelectedList(null);
-        setSearchQuery('');
-    };
 
     if (!isOpen) return null;
 

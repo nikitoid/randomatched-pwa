@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronDown, X, SquareStack, Layers, BarChart3, Database, Filter, Cloud, Check, Plus } from 'lucide-react';
 import { HeroList } from '../types';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface SourceSelectorProps {
     lists: HeroList[];
@@ -37,6 +38,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
     selectedGroupCount,
     onOpenAddHeroes
 }) => {
+    useBackHandler(isListSelectorOpen, () => setIsListSelectorOpen(false), { id: 'source-selector', priority: 10 });
     // For UI display in main selector
     const groupableLists = lists.filter(l => l.isGroupable);
 

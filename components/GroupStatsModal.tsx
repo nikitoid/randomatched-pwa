@@ -1,6 +1,7 @@
 import React from 'react';
 import { BarChart3, X } from 'lucide-react';
 import { RANKS } from '../constants';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface GroupStatsModalProps {
     isOpen: boolean;
@@ -15,6 +16,7 @@ export const GroupStatsModal: React.FC<GroupStatsModalProps> = ({
     getSelectionStats,
     getRankBarColor,
 }) => {
+    useBackHandler(isOpen, onClose, { id: 'group-stats-modal', priority: 20 });
     return (
         <div
             className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}

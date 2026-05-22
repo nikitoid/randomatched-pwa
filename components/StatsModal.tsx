@@ -363,27 +363,17 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     }, [isOpen]);
 
     // Back Button Logic with useBackHandler
-    useBackHandler(isOpen, () => {
-        // 1. Close Detail Views if open
-        if (selectedPlayer || selectedHero) {
-            setSelectedPlayer(null);
-            setSelectedHero(null);
-            // Restore 'stats' view state if needed, or just let it be.
-            // Since we are "going back" from details, we conceptually stay in Stats.
-            // In the old logic we used history.back() which triggered popstate.
-            // Here we just update state.
-            // BUT: usage of pushState for details means we might have a browser history entry to pop?
-            // If we opened details with pushState, pressing physical back pops it.
-            // NavigationContext traps physical back.
-            // If we have a forward history for details, we should probably pop it to keep URL/state clean?
-            // ACTUALLY: The Context traps the event, so browser history IS popped (conceptually) or we trapped it.
-            // If we trapped it (pushState inserted), we are good.
-            return;
-        }
+    useBackHandler(!!selectedPlayer, () => {
+        setSelectedPlayer(null);
+    }, { id: 'player-details-modal', priority: 20 });
 
-        // 2. Close Modal
+    useBackHandler(!!selectedHero, () => {
+        setSelectedHero(null);
+    }, { id: 'hero-details-modal', priority: 20 });
+
+    useBackHandler(isOpen, () => {
         onClose();
-    }, { id: 'stats-modal', priority: 20 }); // Higher priority than App/Root
+    }, { id: 'stats-modal', priority: 10 });
 
     // We still need to handle "forward" navigation or state consistency if we rely on history.state.view
     // But since we are moving away from relying on history for logic, we just manage internal state.

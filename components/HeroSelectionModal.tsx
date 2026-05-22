@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Hero } from '../types';
 import { Search, X, User } from 'lucide-react';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface HeroSelectionModalProps {
     isOpen: boolean;
@@ -20,6 +21,8 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
     currentHeroId
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
+
+    useBackHandler(isOpen, onClose, { id: 'hero-selection-modal', priority: 20 });
 
     const filteredHeroes = useMemo(() => {
         return availableHeroes

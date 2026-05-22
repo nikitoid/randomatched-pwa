@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { CloudBackup, MatchRecord, MatchPlayer } from '../types';
 import { createPortal } from 'react-dom';
 import { X, Calendar, Trophy, Trash2, Search } from 'lucide-react';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface BackupViewerProps {
     backup: CloudBackup;
@@ -11,6 +12,8 @@ interface BackupViewerProps {
 
 export const BackupViewer: React.FC<BackupViewerProps> = ({ backup, onClose, isOpen }) => {
     const [search, setSearch] = useState('');
+
+    useBackHandler(isOpen, onClose, { id: 'backup-viewer', priority: 30 });
 
     const renderHeroWithKills = (player: MatchPlayer): string => {
         if (player.kills !== undefined && player.kills !== null) {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface GenConfirmModalProps {
     isOpen: boolean;
@@ -12,6 +13,7 @@ export const GenConfirmModal: React.FC<GenConfirmModalProps> = ({
     onCancel,
     onConfirm,
 }) => {
+    useBackHandler(isOpen, onCancel, { id: 'gen-confirm-modal', priority: 30 });
     return (
         <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
             <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>

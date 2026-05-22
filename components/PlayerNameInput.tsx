@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, Users, Clock, Trash2, X, User } from 'lucide-react';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 interface PlayerNameInputProps {
     isNamesOpen: boolean;
@@ -41,6 +42,8 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
     uniquePlayerNames,
 }) => {
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+    useBackHandler(isNamesOpen, () => setIsNamesOpen(false), { id: 'player-names-input', priority: 10 });
 
     const activeSuggestions = focusedIndex !== null
         ? uniquePlayerNames
