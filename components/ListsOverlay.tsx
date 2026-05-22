@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, Hero, MatchRecord } from '../types';
-import { RANKS } from '../constants';
+import { RANKS, RANK_VALUES } from '../constants';
 import { RankSelect } from './RankSelect';
 import { ListItem } from './ListItem';
 import { CustomScrollbar } from './CustomScrollbar';
@@ -105,6 +105,11 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     // Editor State
     const [editorHeroes, setEditorHeroes] = useState<Hero[]>([]);
     const [editorIsGroupable, setEditorIsGroupable] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+
+    // Sort State
+    const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+    const [heroSortType, setHeroSortType] = useState<'name' | 'rank'>('name');
 
     // Drag/Scroll refs
     const dragItem = useRef<number | null>(null);
@@ -112,10 +117,12 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const [isListDragging, setIsListDragging] = useState(false);
     const listContainerRef = useRef<HTMLDivElement>(null);
     const editorContainerRef = useRef<HTMLDivElement>(null);
+    const sortButtonRef = useRef<HTMLButtonElement>(null);
 
-    // Determine if current editor session is read-only (offline cloud list)
+    // Determine if current editor session is read-only (offline cloud list or not in edit mode)
     const currentList = lists.find(l => l.id === editingListId);
-    const isReadOnly = !!(currentList?.isCloud && !isOnline);
+    const isPermanentlyReadOnly = !!(currentList?.isCloud && !isOnline);
+    const isReadOnly = !isEditMode || isPermanentlyReadOnly;
 
     // --- CHANGE DETECTION LOGIC ---
     const hasFieldUpdate = (heroId: string, field: 'name' | 'rank') => {
@@ -162,6 +169,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             setEditorHeroes([]);
             setEditorIsGroupable(false);
             setOriginalHeroesJson('');
+            setIsEditMode(false);
         }
     };
 
@@ -489,6 +497,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             setEditorIsGroupable(false);
             setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(newHeroes), isGroupable: false }));
             setEditingListId(newId);
+            setIsEditMode(true);
         } else if (nameModalMode === 'rename' && targetListId) {
             if (checkConnectivity && addToast) { if (!(await checkConnectivity()) && lists.find(l => l.id === targetListId)?.isCloud) { addToast("Нет интернета", "error"); return; } }
             onUpdateList(targetListId, { name: trimmedName });
@@ -515,6 +524,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const handleOpenEditor = (list: HeroList) => {
         triggerHaptic(10);
         setEditingListId(list.id);
+        setIsEditMode(false);
         const heroes = JSON.parse(JSON.stringify(list.heroes));
         const isGroupable = !!list.isGroupable;
         setEditorIsGroupable(isGroupable);
@@ -552,13 +562,26 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         });
     };
 
-    const handleSortEditorHeroes = () => {
+    const handleSort = (type: 'name' | 'rank', direction: 'asc' | 'desc') => {
         triggerHaptic(10);
-        const nextDirection = heroSortDirection === 'asc' ? 'desc' : 'asc';
-        setHeroSortDirection(nextDirection);
+        setHeroSortType(type);
+        setHeroSortDirection(direction);
         setEditorHeroes(prev => {
             const filled = prev.filter(h => h.name.trim() !== '' || h.rank !== '');
-            filled.sort((a, b) => { return nextDirection === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name); });
+            filled.sort((a, b) => {
+                if (type === 'name') {
+                    return direction === 'asc'
+                        ? a.name.localeCompare(b.name)
+                        : b.name.localeCompare(a.name);
+                } else {
+                    const valA = RANK_VALUES[a.rank] || 0;
+                    const valB = RANK_VALUES[b.rank] || 0;
+                    if (valA !== valB) {
+                        return direction === 'desc' ? valB - valA : valA - valB;
+                    }
+                    return a.name.localeCompare(b.name);
+                }
+            });
             if (isReadOnly) return filled;
             return [...filled, { id: crypto.randomUUID(), name: '', rank: '' }];
         });
@@ -585,13 +608,41 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             onUpdateList(editingListId, { heroes: cleanHeroes, isGroupable: editorIsGroupable });
             isDirtyRef.current = false;
             setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(cleanHeroes), isGroupable: editorIsGroupable }));
-            manualGoBack();
+            setIsEditMode(false);
+            const nextHeroes = [...cleanHeroes, { id: crypto.randomUUID(), name: '', rank: '' }];
+            setEditorHeroes(nextHeroes);
         }
     };
 
     const handleCancelModal = () => { setNameModalOpen(false); setListToDelete(null); };
-    const handleCancelEditor = () => { if (isDirtyRef.current) { setDiscardModalOpen(true); } else { manualGoBack(); } };
-    const handleDiscardConfirm = () => { if (editingListId && onDismissHeroUpdates) onDismissHeroUpdates(editingListId); setEditingListId(null); setEditorHeroes([]); setEditorIsGroupable(false); setOriginalHeroesJson(''); setDiscardModalOpen(false); };
+
+    const handleCancelEditor = () => {
+        if (isEditMode) {
+            if (isDirty) {
+                setDiscardModalOpen(true);
+            } else {
+                setIsEditMode(false);
+            }
+        } else {
+            manualGoBack();
+        }
+    };
+
+    const handleDiscardConfirm = () => {
+        if (editingListId) {
+            const originalData = JSON.parse(originalHeroesJson);
+            const originalHeroes = originalData.heroes ? JSON.parse(JSON.stringify(originalData.heroes)) : [];
+            setEditorIsGroupable(originalData.isGroupable || false);
+            const isReadOnlyLocal = !!(lists.find(l => l.id === editingListId)?.isCloud && !isOnline);
+            if (!isReadOnlyLocal) {
+                originalHeroes.push({ id: crypto.randomUUID(), name: '', rank: '' });
+            }
+            setEditorHeroes(originalHeroes);
+            setIsEditMode(false);
+        }
+        setDiscardModalOpen(false);
+    };
+
     const handleDiscardCancel = () => { setDiscardModalOpen(false); };
 
     const activeListForMenu = lists.find(l => l.id === contextMenuTargetId);
@@ -622,15 +673,31 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                         <div className="flex flex-col w-full pb-1">
                             <div className="flex items-center justify-between min-h-[44px]">
                                 <button onClick={handleCancelEditor} className="p-2 -ml-2 rounded-full md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 text-slate-900 dark:text-white"> <ChevronLeft size={24} /> </button>
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white truncate flex-1 text-center px-4"> {lists.find(l => l.id === editingListId)?.name} {isReadOnly && <span className="ml-2 text-xs font-normal opacity-60">(Только чтение)</span>} </h2>
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white truncate flex-1 text-center px-4"> {currentList?.name} {isPermanentlyReadOnly && <span className="ml-2 text-xs font-normal opacity-60">(Только чтение)</span>} </h2>
                                 {!currentList?.isTemporary ? (<button onClick={handleToggleEditorMenu} className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'md:hover:bg-slate-100 dark:md:hover:bg-slate-100 active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}> <MoreVertical size={24} /> </button>) : (<div className="w-10" />)}
                             </div>
                             <div className="flex items-center justify-between mt-1">
                                 <button onClick={() => { if (!isReadOnly) { setEditorIsGroupable(!editorIsGroupable); triggerHaptic(10); } }} disabled={isReadOnly} className={`mr-2 flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}> <SquareStack size={14} className="shrink-0" /> <span className="truncate">{editorIsGroupable ? 'В группе' : 'Не в группе'}</span> <div className={`w-2 h-2 rounded-full ml-auto shrink-0 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} /> </button>
                                 <div className="flex gap-2 shrink-0">
                                     <button onClick={() => { setIsStatsModalOpen(true); triggerHaptic(10); }} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"> <BarChart3 size={18} /> </button>
-                                    <button onClick={handleSortEditorHeroes} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"> {heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />} </button>
-                                    {!isReadOnly && (<button onClick={handleSaveEditor} className="h-8 sm:h-9 px-3 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform"> <Save size={16} /> <span>Сохранить</span> </button>)}
+                                    <button 
+                                        ref={sortButtonRef}
+                                        onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); triggerHaptic(10); }} 
+                                        className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
+                                    > 
+                                        {heroSortType === 'name' ? (
+                                            heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />
+                                        ) : (
+                                            <ArrowLeftRight size={18} className="rotate-90" />
+                                        )} 
+                                    </button>
+                                    {!isReadOnly ? (
+                                        <button onClick={handleSaveEditor} className="h-8 sm:h-9 px-3 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform"> <Save size={16} /> <span>Сохранить</span> </button>
+                                    ) : (
+                                        !isPermanentlyReadOnly && (
+                                            <button onClick={() => { setIsEditMode(true); triggerHaptic(10); }} className="h-8 sm:h-9 px-3 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-transform"> <Edit2 size={16} /> <span>Редактировать</span> </button>
+                                        )
+                                    )}
                                 </div>
                             </div>
                             <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
@@ -657,6 +724,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     <div ref={editorContainerRef} className="absolute inset-0 overflow-y-auto no-scrollbar">
                         <div className="pb-safe-area-bottom px-4 pt-4">
                             {editorHeroes.map((hero, index) => {
+                                if (isReadOnly && index === editorHeroes.length - 1 && hero.name.trim() === '' && hero.rank === '') {
+                                    return null;
+                                }
+
                                 const isFocused = focusedRowIndex === index;
                                 const isDimmed = focusedRowIndex !== null && !isFocused;
                                 const isPlaceholderRow = !isReadOnly && index === editorHeroes.length - 1;
@@ -758,6 +829,63 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Sort Menu Portal */}
+            {isSortMenuOpen && sortButtonRef.current && createPortal(
+                <>
+                    <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsSortMenuOpen(false)} />
+                    <div 
+                        className="fixed z-[61] w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200" 
+                        style={{ 
+                            top: sortButtonRef.current.getBoundingClientRect().bottom + 8, 
+                            right: window.innerWidth - sortButtonRef.current.getBoundingClientRect().right, 
+                        }}
+                    >
+                        <button 
+                            onClick={() => { handleSort('name', 'asc'); setIsSortMenuOpen(false); }} 
+                            className="w-full text-left px-4 py-3 flex items-center justify-between md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                        >
+                            <span className="flex items-center gap-2">
+                                <ArrowDownAZ size={16} />
+                                Имя: А-Я
+                            </span>
+                            {heroSortType === 'name' && heroSortDirection === 'asc' && <Check size={16} className="text-primary-600" />}
+                        </button>
+                        <button 
+                            onClick={() => { handleSort('name', 'desc'); setIsSortMenuOpen(false); }} 
+                            className="w-full text-left px-4 py-3 flex items-center justify-between md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                        >
+                            <span className="flex items-center gap-2">
+                                <ArrowUpAZ size={16} />
+                                Имя: Я-А
+                            </span>
+                            {heroSortType === 'name' && heroSortDirection === 'desc' && <Check size={16} className="text-primary-600" />}
+                        </button>
+                        <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
+                        <button 
+                            onClick={() => { handleSort('rank', 'desc'); setIsSortMenuOpen(false); }} 
+                            className="w-full text-left px-4 py-3 flex items-center justify-between md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                        >
+                            <span className="flex items-center gap-2">
+                                <ArrowLeftRight size={16} className="rotate-90" />
+                                Ранг: по убыванию
+                            </span>
+                            {heroSortType === 'rank' && heroSortDirection === 'desc' && <Check size={16} className="text-primary-600" />}
+                        </button>
+                        <button 
+                            onClick={() => { handleSort('rank', 'asc'); setIsSortMenuOpen(false); }} 
+                            className="w-full text-left px-4 py-3 flex items-center justify-between md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                        >
+                            <span className="flex items-center gap-2">
+                                <ArrowLeftRight size={16} className="rotate-90" />
+                                Ранг: по возрастанию
+                            </span>
+                            {heroSortType === 'rank' && heroSortDirection === 'asc' && <Check size={16} className="text-primary-600" />}
+                        </button>
+                    </div>
+                </>,
+                document.body
+            )}
 
             {/* Editor Menu Portal */}
             {isEditorMenuOpen && editorMenuRect && createPortal(
