@@ -163,6 +163,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         }
     }, { id: 'lists-overlay', priority: 20 });
 
+    useBackHandler(isStatsModalOpen, () => {
+        setIsStatsModalOpen(false);
+    }, { id: 'list-hero-stats-modal', priority: 30 });
+
     const manualGoBack = () => {
         if (editingListId) {
             setEditingListId(null);
