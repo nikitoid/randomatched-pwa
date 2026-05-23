@@ -839,7 +839,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                     <button onClick={handleOpenCreate} className="h-9 px-4 flex items-center gap-2 bg-primary-600 text-white rounded-full shadow-md shadow-primary-600/20 active:scale-95 transition-transform" data-testid="new-list-btn"> <Plus size={18} /> <span className="text-sm font-bold">Новый</span> </button>
                                 </div>
                             </div>
-                            <div className="px-4 pb-4">
+                            <div className="px-4 pt-4 pb-4">
                                 {lists.length === 0 && <div className="text-center py-20 text-slate-400">Нет списков</div>}
                                 {lists.map((list, idx) => (
                                     <ListItem 
