@@ -64,6 +64,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 }) => {
     const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
     const [displayModal, setDisplayModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
+    const activeModal = confirmModal || displayModal;
     const [showInfo, setShowInfo] = useState(false);
     const [isRerollConfirm, setIsRerollConfirm] = useState(false);
 
@@ -529,13 +530,13 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     };
 
     const getModalTitle = () => {
-        if (displayModal?.type === 'single') return 'Забанить героя?';
-        if (displayModal?.type === 'winner') return 'Кто победил?';
+        if (activeModal?.type === 'single') return 'Забанить героя?';
+        if (activeModal?.type === 'winner') return 'Кто победил?';
         return 'Сбросить текущий расклад?';
     }
     const getModalDescription = () => {
-        if (displayModal?.type === 'single') return `"${displayModal.playerName}" будет убран из списка.`;
-        if (displayModal?.type === 'winner') return !canRecordStats
+        if (activeModal?.type === 'single') return `"${activeModal.playerName}" будет убран из списка.`;
+        if (activeModal?.type === 'winner') return !canRecordStats
             ? 'Для записи статистики нужно заполнить имена минимум 2 игроков.'
             : 'Запишите результат матча в историю перед сбросом.';
         return 'Все текущие герои будут убраны из списка.';
@@ -750,13 +751,13 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
             {/* Confirmation Modal */}
             <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${showModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-                <div className={`bg-white dark:bg-slate-900 w-full ${displayModal?.type === 'winner' ? 'max-w-md' : 'max-w-xs'} rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showModal ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+                <div className={`bg-white dark:bg-slate-900 w-full ${activeModal?.type === 'winner' ? 'max-w-md' : 'max-w-xs'} rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showModal ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
                     <div className="flex flex-col items-center text-center">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{getModalTitle()}</h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{getModalDescription()}</p>
                     </div>
 
-                    {displayModal?.type === 'winner' ? (
+                    {activeModal?.type === 'winner' ? (
                         <div className="flex flex-col gap-4 w-full">
                             {canRecordStats && (
                                 <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">

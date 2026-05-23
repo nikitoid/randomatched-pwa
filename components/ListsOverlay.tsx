@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
     X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, 
@@ -13,6 +13,7 @@ import { RANKS, RANK_VALUES } from '../constants';
 import { RankSelect } from './RankSelect';
 import { ListItem } from './ListItem';
 import { CustomScrollbar } from './CustomScrollbar';
+import { HeroEditorRow } from './HeroEditorRow';
 
 interface ListsOverlayProps {
     isOpen: boolean;
@@ -106,6 +107,25 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const [editorHeroes, setEditorHeroes] = useState<Hero[]>([]);
     const [editorIsGroupable, setEditorIsGroupable] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [editorRenderLimit, setEditorRenderLimit] = useState(15);
+
+    useEffect(() => {
+        if (editingListId) {
+            setEditorRenderLimit(15);
+            const timer1 = setTimeout(() => {
+                setEditorRenderLimit(45);
+            }, 350);
+            const timer2 = setTimeout(() => {
+                setEditorRenderLimit(1000);
+            }, 500);
+            return () => {
+                clearTimeout(timer1);
+                clearTimeout(timer2);
+            };
+        } else {
+            setEditorRenderLimit(15);
+        }
+    }, [editingListId]);
 
     // Sort State
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -574,7 +594,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         handleCloseMenu();
     };
 
-    const handleRemoveHero = (index: number) => {
+    const handleRemoveHero = useCallback((index: number) => {
         if (isReadOnly) return;
         setEditorHeroes(prev => {
             const newHeroes = prev.filter((_, i) => i !== index);
@@ -582,9 +602,9 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             if (!last || last.name.trim() !== '' || last.rank !== '') { newHeroes.push({ id: crypto.randomUUID(), name: '', rank: '' }); }
             return newHeroes;
         });
-    };
+    }, [isReadOnly]);
 
-    const handleHeroChange = (index: number, field: 'name' | 'rank', value: string) => {
+    const handleHeroChange = useCallback((index: number, field: 'name' | 'rank', value: string) => {
         if (isReadOnly) return;
         setEditorHeroes(prev => {
             const newHeroes = [...prev];
@@ -596,7 +616,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             }
             return newHeroes;
         });
-    };
+    }, [isReadOnly]);
 
     const handleSort = (type: 'name' | 'rank', direction: 'asc' | 'desc') => {
         triggerHaptic(10);
@@ -759,7 +779,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 <div className={`absolute inset-0 overflow-hidden transition-all duration-300 ease-out bg-slate-50 dark:bg-slate-950 bg-grid-pattern ${editingListId ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-[20%] opacity-0 pointer-events-none'}`}>
                     <div ref={editorContainerRef} className="absolute inset-0 overflow-y-auto no-scrollbar">
                         <div className="pb-safe-area-bottom px-4 pt-4">
-                            {editorHeroes.map((hero, index) => {
+                            {editorHeroes.slice(0, editorRenderLimit).map((hero, index) => {
                                 if (isReadOnly && index === editorHeroes.length - 1 && hero.name.trim() === '' && hero.rank === '') {
                                     return null;
                                 }
@@ -769,54 +789,21 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                 const isPlaceholderRow = !isReadOnly && index === editorHeroes.length - 1;
 
                                 return (
-                                    <div
+                                    <HeroEditorRow
                                         key={hero.id}
-                                        className={`flex items-center gap-2 mb-1.5 transition-all
-                                            ${isFocused ? 'relative z-50 scale-[1.02]' : 'relative z-0'}
-                                            ${isDimmed ? 'opacity-20 blur-[1px] grayscale pointer-events-none' : ''}
-                                        `}
-                                    >
-                                        {/* Rank Select */}
-                                        <div className="w-14 h-9 shrink-0 relative">
-                                            <RankSelect
-                                                value={hero.rank}
-                                                onChange={(val) => handleHeroChange(index, 'rank', val)}
-                                                isOpen={isFocused}
-                                                onOpen={() => setFocusedRowIndex(index)}
-                                                onClose={() => setFocusedRowIndex(null)}
-                                                readOnly={isReadOnly}
-                                            />
-                                            {hasFieldUpdate(hero.id, 'rank') && (
-                                                <div className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900 pointer-events-none z-10" />
-                                            )}
-                                        </div>
-
-                                        {/* Name Input */}
-                                        <div className="flex-1 relative">
-                                            <input
-                                                type="text"
-                                                value={hero.name}
-                                                onChange={(e) => handleHeroChange(index, 'name', e.target.value)}
-                                                placeholder={isPlaceholderRow ? "Добавить героя..." : "Имя героя"}
-                                                readOnly={isReadOnly || isFocused}
-                                                className={`w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border outline-none transition-all text-sm
-                                                    ${localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`) ? 'border-primary-300 dark:border-primary-700 shadow-[0_0_0_1px_rgba(var(--primary-500)/0.2)]' : 'border-slate-150 dark:border-slate-800 focus:border-primary-500'}
-                                                    ${isPlaceholderRow ? 'border-dashed border-slate-300 dark:border-slate-700 placeholder:italic placeholder:text-slate-400' : ''}
-                                                `}
-                                            />
-                                            {hasFieldUpdate(hero.id, 'name') && (
-                                                <div className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900 pointer-events-none z-10" />
-                                            )}
-                                            {!isReadOnly && !isFocused && (hero.name || hero.rank) && (
-                                                <button
-                                                    onClick={() => handleRemoveHero(index)}
-                                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-300 md:hover:text-red-500 transition-colors"
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
+                                        hero={hero}
+                                        index={index}
+                                        isReadOnly={isReadOnly}
+                                        isFocused={isFocused}
+                                        isDimmed={isDimmed}
+                                        isPlaceholderRow={isPlaceholderRow}
+                                        hasRankUpdate={hasFieldUpdate(hero.id, 'rank')}
+                                        hasNameUpdate={hasFieldUpdate(hero.id, 'name')}
+                                        hasLocalUpdate={localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`)}
+                                        onChange={handleHeroChange}
+                                        onRemove={handleRemoveHero}
+                                        setFocusedRowIndex={setFocusedRowIndex}
+                                    />
                                 );
                             })}
                             <div className="h-20" />

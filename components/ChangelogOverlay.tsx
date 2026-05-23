@@ -48,8 +48,8 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
     };
 
     return (
-        <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-md transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-            <div className={`bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl transition-transform duration-300 border border-slate-150 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col max-h-[85vh] ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
+        <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+            <div className={`bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl transform transition-transform duration-300 border border-slate-150 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col max-h-[85vh] ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
                 {/* Header */}
                 <div className="relative px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div className="flex items-center gap-3">
