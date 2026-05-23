@@ -158,12 +158,20 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
 
     // --- BACK BUTTON NAVIGATION (PWA/Android) ---
     useBackHandler(isOpen, () => {
-        if (editingListId) {
+        onClose();
+    }, { id: 'lists-overlay', priority: 20 });
+
+    useBackHandler(isOpen && !!editingListId, () => {
+        if (isEditMode) {
             handleCancelEditor();
         } else {
-            onClose();
+            manualGoBack();
         }
-    }, { id: 'lists-overlay', priority: 20 });
+    }, { id: 'list-details', priority: 25 });
+
+    useBackHandler(isOpen && !!editingListId && isEditMode, () => {
+        handleCancelEditor();
+    }, { id: 'list-editing', priority: 28 });
 
     useBackHandler(isStatsModalOpen, () => {
         setIsStatsModalOpen(false);
@@ -657,6 +665,12 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const handleCancelEditor = () => {
         if (isEditMode) {
             if (isDirty) {
+                // Если мы попали сюда через системную кнопку "Назад", история уже вернулась к 'list-details'.
+                // Чтобы при отмене модали подтверждения мы могли вернуться в редактор,
+                // восстанавливаем состояние редактора в истории перед показом модали.
+                if (window.history.state?.id !== 'list-editing') {
+                    window.history.pushState({ type: 'modal', id: 'list-editing' }, '');
+                }
                 setDiscardModalOpen(true);
             } else {
                 setIsEditMode(false);
