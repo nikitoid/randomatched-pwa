@@ -379,7 +379,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         return (
             <div
                 className={`
-                relative flex flex-col items-center justify-center p-3 backdrop-blur-md select-none ${transitionClass}
+                relative flex flex-col items-center justify-center p-3 select-none ${transitionClass}
                 ${gradient}
                 ${isFloating
                         ? `${cardSizeClass} rounded-2xl shadow-2xl ring-4 ring-white/50 z-[100]`

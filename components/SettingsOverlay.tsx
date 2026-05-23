@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate } from 'lucide-react';
+import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
-import { HeroList, ColorScheme, MatchRecord } from '../types';
+import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
 
 interface SettingsOverlayProps {
@@ -14,6 +14,10 @@ interface SettingsOverlayProps {
 interface ExpandedSettingsProps extends SettingsOverlayProps {
     colorScheme?: ColorScheme;
     setColorScheme?: (scheme: ColorScheme) => void;
+    roundness?: ThemeRoundness;
+    setRoundness?: (val: ThemeRoundness) => void;
+    bgPattern?: boolean;
+    setBgPattern?: (val: boolean) => void;
     checkForUpdate?: () => void;
     isCheckingUpdate?: boolean;
     isUpdateAvailable?: boolean;
@@ -35,6 +39,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     lists,
     colorScheme = 'emerald',
     setColorScheme,
+    roundness = 'medium',
+    setRoundness,
+    bgPattern = false,
+    setBgPattern,
     isCheckingUpdate = false,
     isUpdateAvailable = false,
     onUpdateApp,
@@ -259,6 +267,59 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                 </button>
                                             );
                                         })}
+                                    </div>
+
+                                    {/* Скругление углов */}
+                                    <div className="mt-6 w-full text-left">
+                                        <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Скругление углов</h3>
+                                        <div className="flex bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-1 rounded-2xl shadow-sm">
+                                            {(['sharp', 'medium', 'full'] as ThemeRoundness[]).map((r) => {
+                                                const labels: Record<ThemeRoundness, string> = {
+                                                    sharp: 'Острые',
+                                                    medium: 'Стандарт',
+                                                    full: 'Круглые'
+                                                };
+                                                const isSelected = roundness === r;
+                                                return (
+                                                    <button
+                                                        key={r}
+                                                        onClick={() => { setRoundness && setRoundness(r); triggerHaptic(10); }}
+                                                        className={`flex-1 py-2 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+                                                            isSelected 
+                                                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm' 
+                                                                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                                        }`}
+                                                    >
+                                                        {labels[r]}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Визуальные эффекты */}
+                                    <div className="mt-6 w-full text-left">
+                                        <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Визуальные эффекты</h3>
+                                        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+                                            {/* Фоновый узор */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgPattern ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                        <Grid size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">Фоновая сетка</h4>
+                                                        <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Текстурный точечный паттерн</p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => { setBgPattern && setBgPattern(!bgPattern); triggerHaptic(10); }}
+                                                    className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                >
+                                                    <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${bgPattern ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

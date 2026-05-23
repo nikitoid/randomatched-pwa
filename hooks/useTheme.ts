@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { ColorScheme } from '../types';
+import { ColorScheme, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
 
 export const useTheme = () => {
@@ -30,6 +30,18 @@ export const useTheme = () => {
     return 'emerald';
   });
 
+  // Personalization settings
+  const [roundness, setRoundness] = useState<ThemeRoundness>(() => {
+    if (typeof window === 'undefined') return 'medium';
+    return (localStorage.getItem('themeRoundness') as ThemeRoundness) || 'medium';
+  });
+
+  const [bgPattern, setBgPattern] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = localStorage.getItem('themeBgPattern');
+    return saved !== null ? saved === 'true' : false;
+  });
+
   useEffect(() => {
     // Apply theme class to document
     if (theme === 'dark') {
@@ -44,6 +56,8 @@ export const useTheme = () => {
   useEffect(() => {
     // Apply CSS variables for the selected color scheme
     const schemeData = COLOR_SCHEMES_DATA[colorScheme];
+    if (!schemeData) return;
+    
     const root = document.documentElement;
     
     // Set Primary Colors
@@ -65,9 +79,29 @@ export const useTheme = () => {
     localStorage.setItem('colorScheme', colorScheme);
   }, [colorScheme]);
 
+  // Effects for new settings
+  useEffect(() => {
+    document.documentElement.setAttribute('data-roundness', roundness);
+    localStorage.setItem('themeRoundness', roundness);
+  }, [roundness]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-bg-pattern', String(bgPattern));
+    localStorage.setItem('themeBgPattern', String(bgPattern));
+  }, [bgPattern]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  return { theme, toggleTheme, colorScheme, setColorScheme };
+  return {
+    theme,
+    toggleTheme,
+    colorScheme,
+    setColorScheme,
+    roundness,
+    setRoundness,
+    bgPattern,
+    setBgPattern
+  };
 };

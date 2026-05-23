@@ -57,7 +57,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                 <button
                     onClick={() => setIsListSelectorOpen(!isListSelectorOpen)}
                     disabled={lists.length === 0}
-                    className={`w-full relative bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-800 flex items-center p-5 gap-4 text-left transition-all duration-300 
+                    className={`w-full relative bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-800 flex items-center p-5 gap-4 text-left transition-all duration-300
                     ${isListSelectorOpen ? 'rounded-t-3xl rounded-b-none border-b-transparent' : 'rounded-3xl active:scale-[0.99]'}`}
                 >
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-colors

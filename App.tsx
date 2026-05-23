@@ -29,7 +29,16 @@ import { AddHeroesModal } from './components/AddHeroesModal';
 import { Hero } from './types';
 
 const App: React.FC = () => {
-    const { theme, toggleTheme, colorScheme, setColorScheme } = useTheme();
+    const {
+        theme,
+        toggleTheme,
+        colorScheme,
+        setColorScheme,
+        roundness,
+        setRoundness,
+        bgPattern,
+        setBgPattern
+    } = useTheme();
     const { toasts, addToast, removeToast } = useToast();
     const { trigger: triggerHaptic, toggle: toggleHaptics, isEnabled: hapticsEnabled } = useHaptics();
 
@@ -217,7 +226,7 @@ const App: React.FC = () => {
 
     return (
         <NavigationProvider>
-            <div className="relative h-[100dvh] w-full flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300 overflow-hidden">
+            <div className="relative h-[100dvh] w-full flex flex-col bg-transparent transition-colors duration-300 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary-50/50 to-transparent dark:from-primary-950/20 pointer-events-none" />
                 <ToastContainer toasts={toasts} removeToast={removeToast} />
 
@@ -355,6 +364,10 @@ const App: React.FC = () => {
                     lists={lists}
                     colorScheme={colorScheme}
                     setColorScheme={setColorScheme}
+                    roundness={roundness}
+                    setRoundness={setRoundness}
+                    bgPattern={bgPattern}
+                    setBgPattern={setBgPattern}
                     checkForUpdate={checkForUpdate}
                     isCheckingUpdate={isCheckingUpdate}
                     isUpdateAvailable={isUpdateAvailable}

@@ -55,6 +55,21 @@ const PALETTES: Record<string, Record<number, string>> = {
     50: '255 247 237', 100: '255 237 213', 200: '254 215 170', 300: '253 186 116',
     400: '251 146 60', 500: '249 115 22', 600: '234 88 12', 700: '194 65 12',
     800: '154 52 18', 900: '124 45 18', 950: '67 20 7'
+  },
+  slate: {
+    50: '248 250 252', 100: '241 245 249', 200: '226 232 240', 300: '203 213 225',
+    400: '148 163 184', 500: '100 116 139', 600: '71 85 105', 700: '51 65 85',
+    800: '30 41 59', 900: '15 23 42', 950: '2 6 23'
+  },
+  forest: {
+    50: '240 253 244', 100: '220 252 231', 200: '187 247 208', 300: '134 239 172',
+    400: '74 222 128', 500: '34 197 94', 600: '22 163 74', 700: '21 128 61',
+    800: '22 101 52', 900: '20 83 45', 950: '5 46 22'
+  },
+  fuchsia: {
+    50: '253 244 255', 100: '250 232 255', 200: '245 208 254', 300: '240 171 252',
+    400: '232 121 249', 500: '217 70 239', 600: '192 38 211', 700: '162 28 175',
+    800: '134 25 143', 900: '112 26 117', 950: '74 4 78'
   }
 };
 
@@ -92,5 +107,25 @@ export const COLOR_SCHEMES_DATA: Record<ColorScheme, {
     label: 'Небо',
     primary: PALETTES.sky,
     secondary: PALETTES.orange
+  },
+  slate: {
+    label: 'Уголь',
+    primary: PALETTES.slate,
+    secondary: PALETTES.emerald
+  },
+  forest: {
+    label: 'Лес',
+    primary: PALETTES.forest,
+    secondary: PALETTES.amber
+  },
+  cyberpunk: {
+    label: 'Киберпанк',
+    primary: PALETTES.fuchsia,
+    secondary: PALETTES.sky
+  },
+  sunset: {
+    label: 'Закат',
+    primary: PALETTES.orange,
+    secondary: PALETTES.rose
   }
 };

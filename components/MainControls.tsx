@@ -18,7 +18,7 @@ export const MainControls: React.FC<MainControlsProps> = ({
 }) => {
     return (
         <>
-            <div className="w-full relative z-0">
+            <div className="w-full relative z-0 rounded-3xl">
                 <button
                     onClick={handleGenerate}
                     disabled={isAnimating || !hasLists}
@@ -27,7 +27,7 @@ export const MainControls: React.FC<MainControlsProps> = ({
                 `}
                 >
                     <div className={`absolute inset-0 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 transition-all duration-300 ${isAnimating ? 'opacity-80' : 'md:group-hover:scale-105'}`} />
-                    <div className="relative bg-primary-600/10 backdrop-blur-[1px] rounded-[20px] py-6 flex flex-col items-center justify-center border border-white/10">
+                    <div className="relative bg-primary-600/10 backdrop-blur-[1px] rounded-2xl py-6 flex flex-col items-center justify-center border border-white/10">
                         {isAnimating ? <Dice5 size={48} className="text-white/90 animate-spin mb-2" /> : <Shuffle size={48} className="text-white mb-2 drop-shadow-md" />}
                         <span className="text-2xl font-black text-white tracking-wide drop-shadow-sm">{isAnimating ? 'ГЕНЕРАЦИЯ...' : 'ГЕНЕРИРОВАТЬ'}</span>
                         <span className="text-primary-200 text-sm font-medium mt-1">Случайные команды 2x2</span>

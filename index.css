@@ -6,6 +6,12 @@
 body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  background-color: rgb(248 250 252);
+  transition: background-color 300ms, background-image 300ms;
+}
+
+.dark body {
+  background-color: rgb(2 6 23);
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -252,4 +258,73 @@ body {
   .source-selector-dropdown {
     max-height: 540px;
   }
+}
+
+/* --- ВНЕШНИЙ ВИД И ПЕРСОНАЛИЗАЦИЯ (APPEARANCE CUSTOMIZATION) --- */
+
+/* Состояния скругления углов (Roundness Overrides) */
+
+/* Острые углы (Sharp) */
+[data-roundness="sharp"] .rounded-sm { border-radius: 2px !important; }
+[data-roundness="sharp"] .rounded-md { border-radius: 4px !important; }
+[data-roundness="sharp"] .rounded-lg { border-radius: 4px !important; }
+[data-roundness="sharp"] .rounded-xl { border-radius: 6px !important; }
+[data-roundness="sharp"] .rounded-2xl { border-radius: 6px !important; }
+[data-roundness="sharp"] .rounded-3xl { border-radius: 8px !important; }
+[data-roundness="sharp"] .rounded-t-3xl,
+[data-roundness="sharp"] .rounded-t-2xl {
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+}
+[data-roundness="sharp"] .rounded-b-3xl,
+[data-roundness="sharp"] .rounded-b-2xl {
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+/* Стандартные углы (Medium) - берем стандартные значения Tailwind */
+[data-roundness="medium"] .rounded-sm { border-radius: 0.125rem !important; }
+[data-roundness="medium"] .rounded-md { border-radius: 0.375rem !important; }
+[data-roundness="medium"] .rounded-lg { border-radius: 0.5rem !important; }
+[data-roundness="medium"] .rounded-xl { border-radius: 0.75rem !important; }
+[data-roundness="medium"] .rounded-2xl { border-radius: 1rem !important; }
+[data-roundness="medium"] .rounded-3xl { border-radius: 1.5rem !important; }
+[data-roundness="medium"] .rounded-t-3xl,
+[data-roundness="medium"] .rounded-t-2xl {
+  border-top-left-radius: 1.5rem !important;
+  border-top-right-radius: 1.5rem !important;
+}
+[data-roundness="medium"] .rounded-b-3xl,
+[data-roundness="medium"] .rounded-b-2xl {
+  border-bottom-left-radius: 1.5rem !important;
+  border-bottom-right-radius: 1.5rem !important;
+}
+
+/* Игривые круглые углы (Full) */
+[data-roundness="full"] .rounded-sm { border-radius: 8px !important; }
+[data-roundness="full"] .rounded-md { border-radius: 14px !important; }
+[data-roundness="full"] .rounded-lg { border-radius: 18px !important; }
+[data-roundness="full"] .rounded-xl { border-radius: 22px !important; }
+[data-roundness="full"] .rounded-2xl { border-radius: 28px !important; }
+[data-roundness="full"] .rounded-3xl { border-radius: 40px !important; }
+[data-roundness="full"] .rounded-t-3xl,
+[data-roundness="full"] .rounded-t-2xl {
+  border-top-left-radius: 40px !important;
+  border-top-right-radius: 40px !important;
+}
+[data-roundness="full"] .rounded-b-3xl,
+[data-roundness="full"] .rounded-b-2xl {
+  border-bottom-left-radius: 40px !important;
+  border-bottom-right-radius: 40px !important;
+}
+
+
+/* Фоновый узор (Background Pattern) - задается прямо на body для надежности */
+[data-bg-pattern="true"] body {
+  background-image: radial-gradient(rgb(var(--primary-500) / 0.12) 1.5px, transparent 1.5px) !important;
+  background-size: 24px 24px !important;
+}
+
+.dark[data-bg-pattern="true"] body {
+  background-image: radial-gradient(rgb(var(--primary-400) / 0.16) 1.5px, transparent 1.5px) !important;
 }

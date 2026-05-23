@@ -43,6 +43,7 @@ export default {
       fontFamily: {
         sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
       },
+
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },

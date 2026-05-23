@@ -39,7 +39,15 @@ export interface ToastMessage {
 
 export type GenerationMode = 'random' | 'balanced' | 'strict';
 
-export type ColorScheme = 'indigo' | 'emerald' | 'rose' | 'amber' | 'violet' | 'sky';
+export type ColorScheme = 'indigo' | 'emerald' | 'rose' | 'amber' | 'violet' | 'sky' | 'slate' | 'forest' | 'cyberpunk' | 'sunset';
+
+export type ThemeRoundness = 'sharp' | 'medium' | 'full';
+
+export interface AppearanceSettings {
+  colorScheme: ColorScheme;
+  roundness: ThemeRoundness;
+  bgPattern: boolean;
+}
 
 // History & Stats Types
 export interface MatchPlayer {
