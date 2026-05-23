@@ -77,7 +77,7 @@ export const ListItem: React.FC<ListItemProps> = ({
     >
       <div 
          ref={cardRef}
-         className={`bg-white dark:bg-slate-900 p-4 rounded-2xl flex items-center transition-shadow relative shadow-sm border border-slate-100 dark:border-slate-800 ${isCloudOffline ? 'bg-slate-50 dark:bg-slate-900/50' : ''}`}
+          className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 rounded-2xl flex items-center transition-shadow relative shadow-sm border border-slate-150 dark:border-slate-800/60 ${isCloudOffline ? 'bg-slate-50/80 dark:bg-slate-900/40' : ''}`}
       >
         {isReorderMode && (
           <div 

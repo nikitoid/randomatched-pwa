@@ -168,7 +168,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
-            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[80vh] overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 bg-grid-pattern w-full max-w-md rounded-3xl shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[80vh] overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-2">

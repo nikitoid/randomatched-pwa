@@ -34,7 +34,7 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div data-testid="hero-selection-modal" className="bg-white dark:bg-slate-900 w-full max-w-md h-[80vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/10 animate-in zoom-in-95 duration-200">
+            <div data-testid="hero-selection-modal" className="bg-white dark:bg-slate-900 bg-grid-pattern w-full max-w-md h-[80vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/10 animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-800/50">
                     <h3 className="font-bold text-slate-900 dark:text-white">Выберите героя</h3>

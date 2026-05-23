@@ -320,11 +320,13 @@ body {
 
 
 /* Фоновый узор (Background Pattern) - задается прямо на body для надежности */
-[data-bg-pattern="true"] body {
+[data-bg-pattern="true"] body,
+[data-bg-pattern="true"] .bg-grid-pattern {
   background-image: radial-gradient(rgb(var(--primary-500) / 0.12) 1.5px, transparent 1.5px) !important;
   background-size: 24px 24px !important;
 }
 
-.dark[data-bg-pattern="true"] body {
+.dark[data-bg-pattern="true"] body,
+.dark[data-bg-pattern="true"] .bg-grid-pattern {
   background-image: radial-gradient(rgb(var(--primary-400) / 0.16) 1.5px, transparent 1.5px) !important;
 }

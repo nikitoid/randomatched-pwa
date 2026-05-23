@@ -216,7 +216,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     };
 
     return (
-        <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
+        <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800 transition-all duration-300">
                 <div className="px-4 py-3 pt-safe-area-top">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
@@ -300,7 +300,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                     </div>
 
                                                     {/* Выбор списка */}
-                                                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/85 p-1.5 rounded-xl flex items-center justify-between shadow-sm">
+                                                    <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm border border-slate-150 dark:border-slate-800/70 p-1.5 rounded-xl flex items-center justify-between shadow-sm">
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-5 h-5 rounded-lg bg-primary-500/10 dark:bg-primary-500/20 flex items-center justify-center text-primary-500">
                                                                 <Palette size={10} />
@@ -349,7 +349,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                         <button
                                                             key={key}
                                                             onClick={() => { setColorScheme && setColorScheme(key as any); triggerHaptic(10); }}
-                                                            className={`relative flex items-center gap-1.5 sm:gap-3 py-1.5 px-2 sm:p-3 rounded-xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-sm ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800'} `}
+                                                            className={`relative flex items-center gap-1.5 sm:gap-3 py-1.5 px-2 sm:p-3 rounded-xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-sm ring-2 ring-primary-500/20' : 'border-transparent bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm md:hover:bg-slate-50 dark:md:hover:bg-slate-800'} `}
                                                         >
                                                             <div className="relative w-9 h-6 sm:w-12 sm:h-8 shrink-0 flex items-center">
                                                                 {/* Вторичный цвет (secondary) */}
@@ -382,7 +382,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                             {/* Скругление углов */}
                                             <div className="w-full">
                                                 <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Скругление углов</h3>
-                                                <div className="flex bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-1 rounded-2xl shadow-sm">
+                                                <div className="flex bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 p-1 rounded-2xl shadow-sm">
                                                     {(['sharp', 'medium', 'full'] as ThemeRoundness[]).map((r) => {
                                                         const labels: Record<ThemeRoundness, string> = {
                                                             sharp: 'Острые',
@@ -410,7 +410,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                             {/* Визуальные эффекты */}
                                             <div className="mt-6 w-full">
                                                 <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Визуальные эффекты</h3>
-                                                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+                                                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-slate-150 dark:border-slate-800/60 flex flex-col gap-4">
                                                     {/* Фоновый узор */}
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
@@ -441,7 +441,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             <div className="flex flex-col items-center justify-start min-h-full p-6 animate-in fade-in slide-in-from-bottom-2">
                                 <div className="w-full max-w-sm flex flex-col gap-4">
                                     {/* Haptics */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-slate-150 dark:border-slate-800/60">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${hapticsEnabled ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
@@ -462,7 +462,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                     </div>
 
                                     {/* Режим разработчика */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-slate-150 dark:border-slate-800/60">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDebugMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
@@ -494,7 +494,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 <div className="relative inline-block mb-8">
                                     <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.8.5</p>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
+                                <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-slate-150 dark:border-slate-800/60 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
                                     <p className="mb-3"> Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>. </p>
                                     <p> Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей. </p>
                                 </div>

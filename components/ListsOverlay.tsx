@@ -700,7 +700,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => { if (dragItem.current === null || !reorderLists) return; const touch = e.touches[0]; const targetElement = document.elementFromPoint(touch.clientX, touch.clientY); const listItem = targetElement?.closest('[data-list-index]'); if (listItem) { const index = parseInt(listItem.getAttribute('data-list-index') || '-1', 10); if (index !== -1 && index !== dragItem.current) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); triggerHaptic(5); } } };
 
     return (
-        <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
+        <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
             {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
 
             <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800 transition-all duration-300 ${focusedRowIndex !== null ? 'opacity-20 blur-[1px] pointer-events-none' : ''}`}>
@@ -756,7 +756,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
 
             <div className="flex-1 relative overflow-hidden">
                 {/* Editor Container */}
-                <div className={`absolute inset-0 overflow-hidden transition-all duration-300 ease-out bg-slate-50 dark:bg-slate-950 ${editingListId ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-[20%] opacity-0 pointer-events-none'}`}>
+                <div className={`absolute inset-0 overflow-hidden transition-all duration-300 ease-out bg-slate-50 dark:bg-slate-950 bg-grid-pattern ${editingListId ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-[20%] opacity-0 pointer-events-none'}`}>
                     <div ref={editorContainerRef} className="absolute inset-0 overflow-y-auto no-scrollbar">
                         <div className="pb-safe-area-bottom px-4 pt-4">
                             {editorHeroes.map((hero, index) => {
@@ -799,8 +799,8 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                                 onChange={(e) => handleHeroChange(index, 'name', e.target.value)}
                                                 placeholder={isPlaceholderRow ? "Добавить героя..." : "Имя героя"}
                                                 readOnly={isReadOnly || isFocused}
-                                                className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border outline-none transition-all text-sm
-                                                    ${localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`) ? 'border-primary-300 dark:border-primary-700 shadow-[0_0_0_1px_rgba(var(--primary-500)/0.2)]' : 'border-slate-200 dark:border-slate-800 focus:border-primary-500'}
+                                                className={`w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border outline-none transition-all text-sm
+                                                    ${localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`) ? 'border-primary-300 dark:border-primary-700 shadow-[0_0_0_1px_rgba(var(--primary-500)/0.2)]' : 'border-slate-150 dark:border-slate-800 focus:border-primary-500'}
                                                     ${isPlaceholderRow ? 'border-dashed border-slate-300 dark:border-slate-700 placeholder:italic placeholder:text-slate-400' : ''}
                                                 `}
                                             />

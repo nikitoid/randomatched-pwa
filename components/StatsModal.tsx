@@ -362,6 +362,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         }
     }, [isOpen]);
 
+    // Сбрасываем подробную статистику при смене вкладки
+    useEffect(() => {
+        setSelectedPlayer(null);
+        setSelectedHero(null);
+    }, [activeTab]);
+
     // Back Button Logic with useBackHandler
     useBackHandler(!!selectedPlayer, () => {
         setSelectedPlayer(null);
@@ -1388,7 +1394,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 onClick={onClose}
             >
                 <div
-                    className={`bg-slate-50 dark:bg-slate-950 w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
+                    className={`bg-slate-50 dark:bg-slate-950 bg-grid-pattern w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
                     onClick={e => e.stopPropagation()}
                 >
                     <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 sticky top-0">
@@ -1701,7 +1707,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     >
                         {activeTab === 'overview' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden">
+                                <div className="p-4 rounded-3xl bg-gradient-to-br from-white to-primary-500/10 dark:from-slate-900 dark:to-primary-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800/80 text-center relative overflow-hidden">
                                     <div className="relative z-10">
                                         <div className="text-4xl font-black text-slate-900 dark:text-white mb-1">{totalMatches}</div>
                                         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Всего матчей</div>
@@ -1711,7 +1717,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                 <div className="grid grid-cols-2 gap-4">
                                     {/* MVP Card */}
-                                    <div className="p-4 rounded-3xl bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/10 dark:to-orange-900/10 border border-yellow-100 dark:border-yellow-900/30 relative overflow-hidden h-full">
+                                    <div className="p-4 rounded-3xl bg-gradient-to-br from-white to-yellow-500/10 dark:from-slate-900 dark:to-yellow-500/10 border border-yellow-200/60 dark:border-yellow-900/30 relative overflow-hidden h-full">
                                         <div className="flex items-center gap-2 mb-3 text-yellow-600 dark:text-yellow-500">
                                             <Star size={18} fill="currentColor" />
                                             <span className="text-xs font-black uppercase tracking-wider">MVP</span>
@@ -1743,7 +1749,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             >
                                                 {/* Slide 1: Hot Streak */}
                                                 <div className="w-full h-full flex-shrink-0">
-                                                    <div className="p-4 h-full rounded-3xl bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/10 dark:to-red-900/10 border border-orange-100 dark:border-orange-900/30 relative overflow-hidden">
+                                                    <div className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-orange-500/10 dark:from-slate-900 dark:to-orange-500/10 border border-orange-200/60 dark:border-orange-900/30 relative overflow-hidden">
                                                         <div className="flex items-center gap-2 mb-3 text-orange-500">
                                                             <TrendingUp size={18} />
                                                             <span data-testid="on-fire-badge" className="text-xs font-black uppercase tracking-wider">В огне</span>
@@ -1788,7 +1794,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     ) : (
                                         /* No streak - just show Underdog */
-                                        <div className="p-4 h-full rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800">
+                                        <div className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-slate-500/10 dark:from-slate-900 dark:to-slate-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800 relative overflow-hidden">
                                             <div className="flex items-center gap-2 mb-3 text-slate-400">
                                                 <Skull size={18} />
                                                 <span className="text-xs font-black uppercase tracking-wider">Underdog</span>
@@ -1816,7 +1822,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         {/* Сетка карточек рекордов */}
                                         <div className="grid grid-cols-2 gap-3 mb-4">
                                             {/* Рекорд за серию */}
-                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-red-50 to-rose-50/50 dark:from-red-950/20 dark:to-rose-900/10 border border-red-100 dark:border-red-900/30 relative overflow-hidden">
+                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-rose-500/10 dark:from-slate-900 dark:to-rose-500/10 border border-rose-200/60 dark:border-rose-900/30 relative overflow-hidden">
                                                 <div className="text-[10px] font-bold text-red-500 uppercase mb-1">Рекорд за встречу</div>
                                                 {topKillsSeriesPlayer ? (
                                                     <>
@@ -1831,7 +1837,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             </div>
 
                                             {/* Король убийств */}
-                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-red-50/20 dark:from-slate-900 dark:to-red-950/10 border border-slate-100 dark:border-slate-800 relative overflow-hidden shadow-sm">
+                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-red-500/10 dark:from-slate-900 dark:to-red-500/10 border border-slate-200/60 dark:border-slate-800 relative overflow-hidden shadow-sm">
                                                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">Король убийств</div>
                                                 {topTotalKillers && topTotalKillers.length > 0 ? (
                                                     <>
@@ -1850,7 +1856,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                     {/* Top Efficiency Chart */}
                                     <div className="pt-2 col-span-2 border-t border-slate-100 dark:border-slate-800/60 mt-2">
-                                        <h3 data-testid="efficiency-top" className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2 select-none">
+                                        <h3 data-testid="efficiency-top" className="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2 select-none px-1">
                                             <TrendingUp size={16} className="text-primary-500" />
                                             <span>Топ эффективности</span>
                                             <button
@@ -1861,24 +1867,27 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 <HelpCircle size={14} />
                                             </button>
                                         </h3>
-                                        <div className="space-y-3">
-                                            {sortedPlayers.filter(p => p.matches > 1).slice(0, 5).map((player, i) => {
-                                                const winRate = (player.wins / player.matches) * 100;
-                                                return (
-                                                    <div key={player.name}>
-                                                        <div className="flex justify-between text-xs font-medium mb-1">
-                                                            <span className="text-slate-700 dark:text-slate-300">{i + 1}. {player.name}</span>
-                                                            <span className="text-slate-500">{Math.round(winRate)}% <span className="text-[9px] opacity-60">({player.wins}/{player.matches})</span></span>
+                                        
+                                        <div className="p-4 rounded-3xl bg-gradient-to-br from-white to-primary-500/5 dark:from-slate-900 dark:to-primary-500/5 border border-slate-200/60 dark:border-slate-800/80 shadow-sm relative overflow-hidden">
+                                            <div className="space-y-3 relative z-10">
+                                                {sortedPlayers.filter(p => p.matches > 1).slice(0, 5).map((player, i) => {
+                                                    const winRate = (player.wins / player.matches) * 100;
+                                                    return (
+                                                        <div key={player.name}>
+                                                            <div className="flex justify-between text-xs font-semibold mb-1.5">
+                                                                <span className="text-slate-700 dark:text-slate-300">{i + 1}. {player.name}</span>
+                                                                <span className="text-slate-500 dark:text-slate-400">{Math.round(winRate)}% <span className="text-[9px] opacity-65 font-normal">({player.wins}/{player.matches})</span></span>
+                                                            </div>
+                                                            <div className="h-2.5 w-full bg-slate-100/70 dark:bg-slate-800/50 rounded-full overflow-hidden">
+                                                                <div className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500" style={{ width: `${winRate}%` }}></div>
+                                                            </div>
                                                         </div>
-                                                        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-primary-500 rounded-full" style={{ width: `${winRate}%` }}></div>
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
-                                            {sortedPlayers.filter(p => p.matches > 1).length === 0 && (
-                                                <div className="text-xs text-slate-400 italic text-center py-4">Недостаточно матчей для статистики</div>
-                                            )}
+                                                    )
+                                                })}
+                                                {sortedPlayers.filter(p => p.matches > 1).length === 0 && (
+                                                    <div className="text-xs text-slate-400 italic text-center py-4">Недостаточно матчей для статистики</div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1906,7 +1915,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 onClick={() => {
                                                     openPlayerDetails(player);
                                                 }}
-                                                className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800/50 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                                                className="flex items-center justify-between p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-slate-200 text-slate-700' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -1962,7 +1971,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                     onClick={() => {
                                                         openHeroDetails(hero);
                                                     }}
-                                                    className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800/50 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                                                    className="flex items-center justify-between p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
                                                 >
                                                     <div className="flex items-center gap-3 overflow-hidden">
                                                         <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0">

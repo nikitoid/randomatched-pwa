@@ -55,7 +55,7 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
         const letter = rank[0];
         let colors = '';
         if (!rank) {
-            colors = 'text-slate-400 bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800';
+            colors = 'text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-slate-150 dark:border-slate-800/60';
         } else if (letter === 'S') {
             colors = 'text-yellow-800 bg-yellow-100 border-yellow-200 dark:text-yellow-300 dark:bg-yellow-400/20 dark:border-yellow-500/30';
         } else if (letter === 'A') {
@@ -94,7 +94,7 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
 
             {isOpen && !disabled && !readOnly && createPortal(
                 <div 
-                    className={`fixed bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden z-[102] rank-select-menu
+                    className={`fixed bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-150 dark:border-slate-800/60 overflow-hidden z-[102] rank-select-menu
                         ${menuStyle.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-left' : 'animate-menu-in origin-top-left'}
                     `}
                     style={{

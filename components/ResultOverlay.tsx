@@ -572,6 +572,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     return (
         <>
             <div data-testid="result-overlay" className={`fixed inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
+                {/* Мягкая фоновая сетка с размытием */}
+                <div className="absolute inset-0 bg-grid-pattern opacity-40 dark:opacity-30 pointer-events-none blur-[1.5px] z-0" />
 
                 {/* Backdrop for Mode Selector */}
                 <div
