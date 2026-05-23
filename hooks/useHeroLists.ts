@@ -9,8 +9,35 @@ const STORAGE_KEY = 'randomatched_lists_v1';
 export const useHeroLists = (
   addToast: (message: string, type: ToastType, duration?: number) => void
 ) => {
-  const [lists, setLists] = useState<HeroList[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [lists, setLists] = useState<HeroList[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsedLists = JSON.parse(stored);
+        if (Array.isArray(parsedLists)) {
+          return parsedLists.map((list: any) => {
+            if (list.heroes && list.heroes.length > 0 && typeof list.heroes[0] === 'string') {
+              return {
+                ...list,
+                heroes: list.heroes.map((name: string, idx: number) => ({
+                  id: `${list.id}_migrated_${idx}`,
+                  name: name,
+                  rank: 'C+'
+                }))
+              };
+            }
+            return list;
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse lists during initialization", e);
+    }
+    return [];
+  });
+
+  const [isLoaded, setIsLoaded] = useState(() => typeof window !== 'undefined');
 
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -55,38 +82,7 @@ export const useHeroLists = (
     });
   };
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsedLists = JSON.parse(stored);
-        if (Array.isArray(parsedLists)) {
-          const migratedLists = parsedLists.map((list: any) => {
-            if (list.heroes && list.heroes.length > 0 && typeof list.heroes[0] === 'string') {
-              return {
-                ...list,
-                heroes: list.heroes.map((name: string, idx: number) => ({
-                  id: `${list.id}_migrated_${idx}`,
-                  name: name,
-                  rank: 'C+'
-                }))
-              };
-            }
-            return list;
-          });
-          setLists(migratedLists);
-        } else {
-          setLists([]);
-        }
-      } else {
-        setLists([]);
-      }
-    } catch (e) {
-      console.error("Failed to parse lists", e);
-      setLists([]);
-    }
-    setIsLoaded(true);
-  }, []);
+
 
   useEffect(() => {
     if (isLoaded) {

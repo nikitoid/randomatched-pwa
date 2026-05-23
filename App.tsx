@@ -65,7 +65,37 @@ const App: React.FC = () => {
     } = useMatchHistory(addToast);
 
     // UI State
-    const [selectedListId, setSelectedListId] = useState<string>('');
+    const [selectedListId, setSelectedListId] = useState<string>(() => {
+        if (typeof window === 'undefined') return '';
+        const savedSelectedId = localStorage.getItem('randomatched_selected_list_id');
+        if (savedSelectedId) {
+            try {
+                const storedLists = localStorage.getItem('randomatched_lists_v1');
+                if (storedLists) {
+                    const parsedLists = JSON.parse(storedLists);
+                    if (Array.isArray(parsedLists) && parsedLists.some((l: any) => l.id === savedSelectedId)) {
+                        return savedSelectedId;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to parse lists for selectedListId check", e);
+            }
+        }
+        
+        try {
+            const storedLists = localStorage.getItem('randomatched_lists_v1');
+            if (storedLists) {
+                const parsedLists = JSON.parse(storedLists);
+                if (Array.isArray(parsedLists) && parsedLists.length > 0) {
+                    return parsedLists[0].id;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse lists for default selectedListId", e);
+        }
+        
+        return '';
+    });
     const [isListSelectorOpen, setIsListSelectorOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [isListsOpen, setIsListsOpen] = useState(false);
@@ -160,6 +190,15 @@ const App: React.FC = () => {
             setSelectedListId('');
         }
     }, [lists, isLoaded, selectedListId]);
+
+    // Save selected list ID to localStorage whenever it changes
+    useEffect(() => {
+        if (selectedListId) {
+            localStorage.setItem('randomatched_selected_list_id', selectedListId);
+        } else {
+            localStorage.removeItem('randomatched_selected_list_id');
+        }
+    }, [selectedListId]);
 
     // Handlers wrapped with haptics
     const handleSelectList = (id: string) => {
