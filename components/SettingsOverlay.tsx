@@ -74,12 +74,6 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         onClose();
     }, { id: 'settings-overlay', priority: 20 });
 
-    useEffect(() => {
-        if (isOpen) {
-            window.history.pushState({ overlay: 'settings' }, '');
-        }
-    }, [isOpen]);
-
     const handleMouseDown = (e: React.MouseEvent) => {
         const el = tabsContainerRef.current;
         if (!el) return;

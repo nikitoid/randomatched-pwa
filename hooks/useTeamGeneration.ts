@@ -166,7 +166,6 @@ export const useTeamGeneration = ({
 
             setAssignments(newAssignments);
             setIsAnimating(false);
-            window.history.pushState({ view: 'result' }, '');
             setShowResult(true);
             triggerHaptic(50);
         }, 400);
@@ -214,7 +213,6 @@ export const useTeamGeneration = ({
 
     const handleShowLastResult = () => {
         if (assignments.length > 0) {
-            window.history.pushState({ view: 'result' }, '');
             setShowResult(true);
             triggerHaptic(10);
         }

@@ -143,7 +143,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 const now = Date.now();
                 if (now - lastBackPressTime.current < 3000) {
                     // Повторное нажатие в течение 3 секунд - позволяем выйти из приложения
-                    window.history.go(-2);
+                    window.history.go(-1);
                 } else {
                     lastBackPressTime.current = now;
                     addToast('Нажмите еще раз, чтобы выйти', 'info');
