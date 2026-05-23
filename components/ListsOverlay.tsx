@@ -720,7 +720,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => { if (dragItem.current === null || !reorderLists) return; const touch = e.touches[0]; const targetElement = document.elementFromPoint(touch.clientX, touch.clientY); const listItem = targetElement?.closest('[data-list-index]'); if (listItem) { const index = parseInt(listItem.getAttribute('data-list-index') || '-1', 10); if (index !== -1 && index !== dragItem.current) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); triggerHaptic(5); } } };
 
     return (
-        <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col transition-[transform,opacity] duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
+        <div 
+            style={{ willChange: 'transform, opacity' }}
+            className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 flex flex-col transition-[transform,opacity] duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}
+        >
             {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
 
             <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-opacity duration-200 ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}>
@@ -776,7 +779,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
 
             <div className="flex-1 relative overflow-hidden">
                 {/* Editor Container */}
-                <div className={`absolute inset-0 overflow-hidden transition-[transform,opacity] duration-300 ease-out bg-slate-50 dark:bg-slate-950 ${editingListId ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-[20%] opacity-0 pointer-events-none'}`}>
+                <div 
+                    style={{ willChange: 'transform, opacity' }}
+                    className={`absolute inset-0 overflow-hidden transition-[transform,opacity] duration-300 ease-out bg-slate-50 dark:bg-slate-950 ${editingListId ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-[20%] opacity-0 pointer-events-none'}`}
+                >
                     <div ref={editorContainerRef} className="absolute inset-0 overflow-y-auto no-scrollbar">
                         <div className="pb-safe-area-bottom px-4 pt-4">
                             {editorHeroes.slice(0, editorRenderLimit).map((hero, index) => {
@@ -795,7 +801,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                             hero={hero}
                                             hasRankUpdate={hasFieldUpdate(hero.id, 'rank')}
                                             hasNameUpdate={hasFieldUpdate(hero.id, 'name')}
-                                            rankColor={getRankBarColor(hero.rank)}
+                                            hasLocalUpdate={localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`)}
                                         />
                                     );
                                 }
