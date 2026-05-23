@@ -2197,7 +2197,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         </div>
                         <button
                             onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
-                            className="mt-6 w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-primary-500/10 active:scale-98 transition-transform"
+                            className="mt-6 w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/10 active:scale-98"
                         >
                             Понятно
                         </button>
