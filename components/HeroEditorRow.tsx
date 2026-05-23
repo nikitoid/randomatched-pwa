@@ -54,9 +54,9 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
 
     return (
         <div
-            className={`flex items-center gap-2 mb-1.5 transition-all
+            className={`flex items-center gap-2 mb-1.5 transition-opacity duration-200
                 ${isFocused ? 'relative z-50 scale-[1.02]' : 'relative z-0'}
-                ${isDimmed ? 'opacity-20 blur-[1px] grayscale pointer-events-none' : ''}
+                ${isDimmed ? 'opacity-30 pointer-events-none' : ''}
             `}
         >
             {/* Rank Select */}
@@ -82,7 +82,7 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
                     onChange={handleNameChange}
                     placeholder={isPlaceholderRow ? "Добавить героя..." : "Имя героя"}
                     readOnly={isReadOnly || isFocused}
-                    className={`w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border outline-none transition-all text-sm
+                    className={`w-full px-3 py-2 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border outline-none transition-colors duration-200 text-sm
                         ${hasLocalUpdate ? 'border-primary-300 dark:border-primary-700 shadow-[0_0_0_1px_rgba(var(--primary-500)/0.2)]' : 'border-slate-150 dark:border-slate-800 focus:border-primary-500'}
                         ${isPlaceholderRow ? 'border-dashed border-slate-300 dark:border-slate-700 placeholder:italic placeholder:text-slate-400' : ''}
                     `}
