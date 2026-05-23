@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useLayoutEffect } from 'react';
 import { ColorScheme, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
 
@@ -42,7 +42,7 @@ export const useTheme = () => {
     return saved !== null ? saved === 'true' : false;
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Apply theme class to document
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -53,21 +53,28 @@ export const useTheme = () => {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Apply CSS variables for the selected color scheme
     const schemeData = COLOR_SCHEMES_DATA[colorScheme];
     if (!schemeData) return;
     
     const root = document.documentElement;
+    const vars: Record<string, string> = {};
     
     // Set Primary Colors
     Object.entries(schemeData.primary).forEach(([shade, value]) => {
-      root.style.setProperty(`--primary-${shade}`, value as string);
+      const propName = `--primary-${shade}`;
+      const valStr = value as string;
+      root.style.setProperty(propName, valStr);
+      vars[propName] = valStr;
     });
 
     // Set Secondary Colors
     Object.entries(schemeData.secondary).forEach(([shade, value]) => {
-      root.style.setProperty(`--secondary-${shade}`, value as string);
+      const propName = `--secondary-${shade}`;
+      const valStr = value as string;
+      root.style.setProperty(propName, valStr);
+      vars[propName] = valStr;
     });
 
     // Also update meta theme-color for mobile browsers
@@ -77,15 +84,16 @@ export const useTheme = () => {
     }
 
     localStorage.setItem('colorScheme', colorScheme);
+    localStorage.setItem('themeVariables', JSON.stringify(vars));
   }, [colorScheme]);
 
   // Effects for new settings
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute('data-roundness', roundness);
     localStorage.setItem('themeRoundness', roundness);
   }, [roundness]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute('data-bg-pattern', String(bgPattern));
     localStorage.setItem('themeBgPattern', String(bgPattern));
   }, [bgPattern]);
