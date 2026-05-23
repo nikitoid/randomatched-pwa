@@ -107,25 +107,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const [editorHeroes, setEditorHeroes] = useState<Hero[]>([]);
     const [editorIsGroupable, setEditorIsGroupable] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [editorRenderLimit, setEditorRenderLimit] = useState(20);
 
-    useEffect(() => {
-        if (editingListId) {
-            setEditorRenderLimit(20);
-            const timer1 = setTimeout(() => {
-                setEditorRenderLimit(50);
-            }, 350);
-            const timer2 = setTimeout(() => {
-                setEditorRenderLimit(1000);
-            }, 500);
-            return () => {
-                clearTimeout(timer1);
-                clearTimeout(timer2);
-            };
-        } else {
-            setEditorRenderLimit(20);
-        }
-    }, [editingListId]);
 
     // Sort State
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -780,12 +762,11 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             <div className="flex-1 relative overflow-hidden">
                 {/* Editor Container */}
                 <div 
-                    style={{ willChange: 'transform, opacity' }}
-                    className={`absolute inset-0 overflow-hidden transition-[transform,opacity] duration-300 ease-out bg-slate-50 dark:bg-slate-950 ${editingListId ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-[20%] opacity-0 pointer-events-none'}`}
+                    className={`absolute inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 ${editingListId ? 'block pointer-events-auto' : 'hidden pointer-events-none'}`}
                 >
                     <div ref={editorContainerRef} className="absolute inset-0 overflow-y-auto no-scrollbar">
                         <div className="pb-safe-area-bottom px-4 pt-4">
-                            {editorHeroes.slice(0, editorRenderLimit).map((hero, index) => {
+                            {editorHeroes.map((hero, index) => {
                                 if (isReadOnly && index === editorHeroes.length - 1 && hero.name.trim() === '' && hero.rank === '') {
                                     return null;
                                 }
@@ -831,7 +812,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 </div>
 
                 {/* Lists Main Screen */}
-                <div ref={listContainerRef} onTouchMove={handleTouchMove} className={`absolute inset-0 overflow-y-auto no-scrollbar transition-transform duration-300 ease-out ${editingListId ? '-translate-x-[20%] opacity-0 pointer-events-none' : 'translate-x-0 opacity-100 pointer-events-auto'}`}>
+                <div ref={listContainerRef} onTouchMove={handleTouchMove} className={`absolute inset-0 overflow-y-auto no-scrollbar ${editingListId ? 'hidden pointer-events-none' : 'block pointer-events-auto'}`}>
                     <div className="pb-safe-area-bottom">
                         <div className="animate-in fade-in slide-in-from-bottom-2">
                             <div className="flex items-center justify-between sticky top-0 z-30 px-4 pt-4 pb-3 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/60">
