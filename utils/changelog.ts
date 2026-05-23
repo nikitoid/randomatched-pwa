@@ -11,24 +11,9 @@ export interface ChangelogRelease {
   sections: ChangelogSection[];
 }
 
-export const APP_VERSION = '2.2.5';
+export const APP_VERSION = '2.2.4';
 
 export const CHANGELOG: ChangelogRelease[] = [
-  {
-    version: '2.2.5',
-    date: '23.05.2026',
-    title: 'Бесшовное обновление PWA',
-    sections: [
-      {
-        type: 'changed',
-        title: 'Улучшения',
-        items: [
-          'Оптимизирована фоновая проверка и процесс установки обновлений приложения.',
-          'Повышена стабильность кэширования файлов для надежного оффлайн-доступа.'
-        ]
-      }
-    ]
-  },
   {
     version: '2.2.4',
     date: '23.05.2026',
