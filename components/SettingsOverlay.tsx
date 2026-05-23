@@ -56,6 +56,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     addToast,
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('appearance');
+    const [appearanceSubTab, setAppearanceSubTab] = useState<'colors' | 'effects'>('colors');
 
     // Drag/Scroll refs for tabs
     const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -69,6 +70,14 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     const touchEndX = useRef(0);
     const touchStartY = useRef(0);
     const touchEndY = useRef(0);
+
+    // Reset settings state on open
+    React.useEffect(() => {
+        if (isOpen) {
+            setActiveTab('appearance');
+            setAppearanceSubTab('colors');
+        }
+    }, [isOpen]);
 
     useBackHandler(isOpen, () => {
         onClose();
@@ -237,84 +246,193 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 <div className="absolute inset-0 overflow-y-auto no-scrollbar">
                     <div className="pb-safe-area-bottom">
                         {activeTab === 'appearance' && (
-                            <div className="flex flex-col items-center justify-start min-h-full p-6 text-center animate-in fade-in slide-in-from-bottom-2">
+                            <div className="flex flex-col items-center justify-start min-h-full px-4 py-3 sm:p-6 text-center animate-in fade-in slide-in-from-bottom-2">
                                 <div className="w-full max-w-sm">
-                                    <h3 className="text-left text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4">Цветовая схема</h3>
-                                    <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                                        {Object.entries(COLOR_SCHEMES_DATA).map(([key, data]) => {
-                                            const isSelected = colorScheme === key;
-                                            const colorValue = `rgb(${data.primary[500]})`;
-                                            return (
-                                                <button
-                                                    key={key}
-                                                    onClick={() => { setColorScheme && setColorScheme(key as any); triggerHaptic(10); }}
-                                                    className={`relative flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-md ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800'} `}
-                                                >
-                                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full shrink-0 shadow-sm flex items-center justify-center" style={{ backgroundColor: colorValue }}>
-                                                        {isSelected && <Check size={20} className="text-white drop-shadow-md" />}
+                                    {/* Переключатель подвкладок */}
+                                    <div className="flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-2xl mb-4 border border-slate-200/20 dark:border-slate-800/50">
+                                        <button
+                                            onClick={() => { setAppearanceSubTab('colors'); triggerHaptic(10); }}
+                                            className={`flex-1 py-1.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ease-in-out border ${
+                                                appearanceSubTab === 'colors'
+                                                    ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/50'
+                                                    : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                            }`}
+                                        >
+                                            Цветовая схема
+                                        </button>
+                                        <button
+                                            onClick={() => { setAppearanceSubTab('effects'); triggerHaptic(10); }}
+                                            className={`flex-1 py-1.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ease-in-out border ${
+                                                appearanceSubTab === 'effects'
+                                                    ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/50'
+                                                    : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                            }`}
+                                        >
+                                            Оформление
+                                        </button>
+                                    </div>
+
+                                    {appearanceSubTab === 'colors' && (
+                                        <div className="animate-in fade-in duration-200">
+                                            <h3 className="text-left text-xs sm:text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Предпросмотр темы</h3>
+                                            
+                                            <div className="mb-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/80 shadow-sm relative overflow-hidden">
+                                                {/* Фоновый градиент темы */}
+                                                <div className="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-primary-500/10 to-transparent dark:from-primary-500/5 pointer-events-none" />
+
+                                                {/* Заголовок демо-окна */}
+                                                <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-200/50 dark:border-slate-800/50 relative z-10">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <div className="w-2 h-2 rounded-full bg-red-400" />
+                                                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                                                        <div className="w-2 h-2 rounded-full bg-green-400" />
                                                     </div>
-                                                    <div className="text-left min-w-0">
-                                                        <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                            {data.label}
+                                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Интерфейс</span>
+                                                    <div className="w-8 h-2.5 rounded bg-slate-200 dark:bg-slate-800" />
+                                                </div>
+
+                                                {/* Имитация UI */}
+                                                <div className="space-y-2.5 relative z-10 text-left">
+                                                    {/* Хедер mini-интерфейса */}
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[11px] font-black text-slate-800 dark:text-white">RandoMatched</span>
+                                                        <span className="text-[8px] font-bold text-primary-600 dark:text-primary-400 bg-primary-100/50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded-full">v2.8</span>
+                                                    </div>
+
+                                                    {/* Выбор списка */}
+                                                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/85 p-1.5 rounded-xl flex items-center justify-between shadow-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-5 h-5 rounded-lg bg-primary-500/10 dark:bg-primary-500/20 flex items-center justify-center text-primary-500">
+                                                                <Palette size={10} />
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[8px] text-slate-400 dark:text-slate-500 font-bold">Список героев</div>
+                                                                <div className="text-[9px] font-bold text-slate-800 dark:text-slate-200">Все персонажи (12)</div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="w-1 h-1 rounded-full bg-primary-500 animate-pulse" />
+                                                    </div>
+
+                                                    {/* Карточки команд с primary & secondary акцентами */}
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {/* Команда 1 (Primary) */}
+                                                        <div className="bg-primary-50/15 dark:bg-primary-950/15 border border-primary-500/25 dark:border-primary-500/20 p-1.5 rounded-xl">
+                                                            <span className="text-[7px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest block mb-0.5">Команда 1</span>
+                                                            <div className="space-y-1">
+                                                                <div className="w-8 h-1 bg-primary-300/40 dark:bg-primary-800/40 rounded animate-pulse" />
+                                                                <div className="w-6 h-1 bg-primary-200/40 dark:bg-primary-900/40 rounded animate-pulse" />
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        {/* Команда 2 (Secondary) */}
+                                                        <div className="bg-secondary-50/15 dark:bg-secondary-950/15 border border-secondary-500/25 dark:border-secondary-500/20 p-1.5 rounded-xl">
+                                                            <span className="text-[7px] font-black text-secondary-600 dark:text-secondary-400 uppercase tracking-widest block mb-0.5">Команда 2</span>
+                                                            <div className="space-y-1">
+                                                                <div className="w-8 h-1 bg-secondary-300/40 dark:bg-secondary-800/40 rounded animate-pulse" />
+                                                                <div className="w-6 h-1 bg-secondary-200/40 dark:bg-secondary-900/40 rounded animate-pulse" />
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
 
-                                    {/* Скругление углов */}
-                                    <div className="mt-6 w-full text-left">
-                                        <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Скругление углов</h3>
-                                        <div className="flex bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-1 rounded-2xl shadow-sm">
-                                            {(['sharp', 'medium', 'full'] as ThemeRoundness[]).map((r) => {
-                                                const labels: Record<ThemeRoundness, string> = {
-                                                    sharp: 'Острые',
-                                                    medium: 'Стандарт',
-                                                    full: 'Круглые'
-                                                };
-                                                const isSelected = roundness === r;
-                                                return (
-                                                    <button
-                                                        key={r}
-                                                        onClick={() => { setRoundness && setRoundness(r); triggerHaptic(10); }}
-                                                        className={`flex-1 py-2 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
-                                                            isSelected 
-                                                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm' 
-                                                                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                                                        }`}
-                                                    >
-                                                        {labels[r]}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* Визуальные эффекты */}
-                                    <div className="mt-6 w-full text-left">
-                                        <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Визуальные эффекты</h3>
-                                        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
-                                            {/* Фоновый узор */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgPattern ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
-                                                        <Grid size={20} />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">Фоновая сетка</h4>
-                                                        <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Текстурный точечный паттерн</p>
+                                                    {/* Кнопка действия */}
+                                                    <div className="w-full bg-primary-500 text-white rounded-xl py-1 text-[9px] font-bold shadow-md shadow-primary-500/10 flex items-center justify-center gap-1 cursor-default pointer-events-none select-none">
+                                                        <span>Генерировать</span>
                                                     </div>
                                                 </div>
-                                                <button
-                                                    onClick={() => { setBgPattern && setBgPattern(!bgPattern); triggerHaptic(10); }}
-                                                    className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
-                                                >
-                                                    <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${bgPattern ? 'translate-x-6' : 'translate-x-1'}`} />
-                                                </button>
+                                            </div>
+
+                                            <h3 className="text-left text-xs sm:text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Выберите цветовую схему</h3>
+                                            <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+                                                {Object.entries(COLOR_SCHEMES_DATA).map(([key, data]) => {
+                                                    const isSelected = colorScheme === key;
+                                                    return (
+                                                        <button
+                                                            key={key}
+                                                            onClick={() => { setColorScheme && setColorScheme(key as any); triggerHaptic(10); }}
+                                                            className={`relative flex items-center gap-1.5 sm:gap-3 py-1.5 px-2 sm:p-3 rounded-xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-sm ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800'} `}
+                                                        >
+                                                            <div className="relative w-9 h-6 sm:w-12 sm:h-8 shrink-0 flex items-center">
+                                                                {/* Вторичный цвет (secondary) */}
+                                                                <div 
+                                                                    className="absolute right-0.5 w-[18px] h-[18px] sm:w-6 sm:h-6 rounded-full shadow-sm border border-slate-100/20 dark:border-slate-800/50" 
+                                                                    style={{ backgroundColor: `rgb(${data.secondary[500]})` }}
+                                                                />
+                                                                {/* Основной цвет (primary) */}
+                                                                <div 
+                                                                    className="absolute left-0 w-[24px] h-[24px] sm:w-8 sm:h-8 rounded-full shadow-sm flex items-center justify-center border border-slate-100/20 dark:border-slate-800/50 z-10" 
+                                                                    style={{ backgroundColor: `rgb(${data.primary[500]})` }}
+                                                                >
+                                                                    {isSelected && <Check size={12} className="text-white drop-shadow-md sm:size-16" />}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-left min-w-0">
+                                                                <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                                    {data.label}
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
+
+                                    {appearanceSubTab === 'effects' && (
+                                        <div className="animate-in fade-in duration-200 text-left">
+                                            {/* Скругление углов */}
+                                            <div className="w-full">
+                                                <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Скругление углов</h3>
+                                                <div className="flex bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-1 rounded-2xl shadow-sm">
+                                                    {(['sharp', 'medium', 'full'] as ThemeRoundness[]).map((r) => {
+                                                        const labels: Record<ThemeRoundness, string> = {
+                                                            sharp: 'Острые',
+                                                            medium: 'Стандарт',
+                                                            full: 'Круглые'
+                                                        };
+                                                        const isSelected = roundness === r;
+                                                        return (
+                                                            <button
+                                                                key={r}
+                                                                onClick={() => { setRoundness && setRoundness(r); triggerHaptic(10); }}
+                                                                className={`flex-1 py-2 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+                                                                    isSelected 
+                                                                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm' 
+                                                                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                                                }`}
+                                                            >
+                                                                {labels[r]}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Визуальные эффекты */}
+                                            <div className="mt-6 w-full">
+                                                <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Визуальные эффекты</h3>
+                                                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+                                                    {/* Фоновый узор */}
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgPattern ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                                <Grid size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Фоновая сетка</h4>
+                                                                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Текстурный точечный паттерн</p>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => { setBgPattern && setBgPattern(!bgPattern); triggerHaptic(10); }}
+                                                            className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                        >
+                                                            <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${bgPattern ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
