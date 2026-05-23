@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle } from 'lucide-react';
+import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
+import { APP_VERSION } from '../utils/changelog';
 
 interface SettingsOverlayProps {
     isOpen: boolean;
@@ -29,6 +30,7 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     triggerHaptic: (pattern?: number | number[]) => void;
     onImportData?: (data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => boolean;
     addToast?: (message: string, type: 'info' | 'success' | 'error' | 'warning', duration?: number) => void;
+    onOpenChangelog: () => void;
 }
 
 type TabType = 'appearance' | 'app_settings' | 'info' | 'debug';
@@ -54,6 +56,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     history = [],
     onImportData,
     addToast,
+    onOpenChangelog,
 }) => {
     const [activeTab, setActiveTab] = useState<TabType>('appearance');
     const [appearanceSubTab, setAppearanceSubTab] = useState<'colors' | 'effects'>('colors');
@@ -491,15 +494,22 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                     <Dice5 size={48} />
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
-                                <div className="relative inline-block mb-8">
-                                    <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v2.8.5</p>
+                                <div className="relative inline-block mb-4">
+                                    <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v{APP_VERSION}</p>
                                 </div>
+                                <button
+                                    onClick={() => { onOpenChangelog(); triggerHaptic(10); }}
+                                    className="mb-6 px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all"
+                                >
+                                    <Sparkles size={14} className="text-amber-500 fill-amber-500/20" />
+                                    <span>Что нового?</span>
+                                </button>
                                 <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-6 shadow-sm border border-slate-150 dark:border-slate-800/60 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
                                     <p className="mb-3"> Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>. </p>
                                     <p> Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей. </p>
                                 </div>
                                 {isUpdateAvailable && onUpdateApp && (
-                                    <button onClick={onUpdateApp} className="mb-8 px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-transform">
+                                    <button onClick={onUpdateApp} className="mb-6 px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-transform">
                                         <Download size={14} /> Обновить и перезапустить
                                     </button>
                                 )}

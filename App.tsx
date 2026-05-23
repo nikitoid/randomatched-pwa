@@ -26,6 +26,8 @@ import { GenConfirmModal } from './components/GenConfirmModal';
 import { getUniqueHeroesFromLists } from './utils/generator';
 import { NavigationProvider } from './context/NavigationContext';
 import { AddHeroesModal } from './components/AddHeroesModal';
+import { ChangelogOverlay } from './components/ChangelogOverlay';
+import { APP_VERSION } from './utils/changelog';
 import { Hero } from './types';
 
 const App: React.FC = () => {
@@ -103,6 +105,7 @@ const App: React.FC = () => {
     const [isHistoryStatsOpen, setIsHistoryStatsOpen] = useState(false);
     const [isGenConfirmOpen, setIsGenConfirmOpen] = useState(false);
     const [isAddHeroesOpen, setIsAddHeroesOpen] = useState(false);
+    const [isChangelogOpen, setIsChangelogOpen] = useState(false);
 
     // Custom Hooks
     // const { consoleLogs, isDebugMode, setIsDebugMode } = useDebugLogs(); // REMOVED
@@ -199,6 +202,19 @@ const App: React.FC = () => {
             localStorage.removeItem('randomatched_selected_list_id');
         }
     }, [selectedListId]);
+
+    // Показ чейнджлога при первом входе после обновления
+    useEffect(() => {
+        if (isLoaded) {
+            const lastSeenVersion = localStorage.getItem('randomatched_last_seen_version');
+            if (!lastSeenVersion) {
+                localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
+            } else if (lastSeenVersion !== APP_VERSION) {
+                setIsChangelogOpen(true);
+                localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
+            }
+        }
+    }, [isLoaded]);
 
     // Handlers wrapped with haptics
     const handleSelectList = (id: string) => {
@@ -419,6 +435,7 @@ const App: React.FC = () => {
                     history={history}
                     onImportData={importData}
                     addToast={addToast}
+                    onOpenChangelog={() => setIsChangelogOpen(true)}
                 />
 
                 <StatsModal
@@ -495,6 +512,12 @@ const App: React.FC = () => {
                     isVisible={showUpdateBanner}
                     onUpdate={handleUpdateApp}
                     onClose={() => setShowUpdateBanner(false)}
+                />
+
+                <ChangelogOverlay
+                    isOpen={isChangelogOpen}
+                    onClose={() => setIsChangelogOpen(false)}
+                    triggerHaptic={triggerHaptic}
                 />
 
                 <ToastContainer toasts={toasts} removeToast={removeToast} />
