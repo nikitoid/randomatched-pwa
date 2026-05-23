@@ -212,14 +212,14 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
                 {/* Main Stats Cards */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 shadow-sm">
+                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1">Матчи</div>
                         <div className="text-2xl font-black text-slate-900 dark:text-white">{player.matches}</div>
                         <div className="text-[10px] text-green-500 font-bold flex items-center gap-1 mt-1">
                             <TrendingUp size={12} /> Лучшая серия: {bestStreak}
                         </div>
                     </div>
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 shadow-sm">
+                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1">Винрейт</div>
                         <div className={`text-2xl font-black ${player.wins / player.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>
                             {Math.round((player.wins / player.matches) * 100)}%
@@ -232,7 +232,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
                 {/* Kills Stats Cards */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 shadow-sm">
+                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
                             <Skull size={12} className="text-red-500" /> Убийства
                         </div>
@@ -241,7 +241,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                             Рекорд серии: {maxKills}
                         </div>
                     </div>
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 shadow-sm">
+                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
                             <TrendingUp size={12} className="text-primary-500" /> Ср. убийств
                         </div>
@@ -257,7 +257,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 {/* Top Heroes */}
                 <div>
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none"
+                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
                         onClick={() => setHeroesState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
@@ -272,11 +272,11 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${heroesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${heroesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {topHeroes.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {topHeroes.slice(0, 3).map(h => (
                                             <div key={h.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{h.name}</div>
@@ -289,7 +289,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                         ))}
 
                                         {topHeroes.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${heroesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${heroesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {topHeroes.slice(3).map(h => (
                                                         <div key={h.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
@@ -306,7 +306,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
                                 )}
 
                                 {topHeroes.length > 3 && (
@@ -325,7 +325,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 {/* Top Partners */}
                 <div>
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none"
+                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
                         onClick={() => setPartnersState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
@@ -340,11 +340,11 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${partnersState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${partnersState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {partnerStats.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {partnerStats.slice(0, 3).map(s => (
                                             <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
@@ -357,7 +357,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                         ))}
 
                                         {partnerStats.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${partnersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${partnersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {partnerStats.slice(3).map(s => (
                                                         <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
@@ -374,7 +374,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Недостаточно данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Недостаточно данных</div>
                                 )}
 
                                 {partnerStats.length > 3 && (
@@ -391,7 +391,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 </div>
                 <div>
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none"
+                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
                         onClick={() => setMatchesState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
@@ -406,11 +406,11 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${matchesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${matchesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {recentMatches.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {recentMatches.slice(0, 3).map(m => {
                                             const isTeam1 = m.team1.some(p => p.name === player.name);
                                             const myTeam = isTeam1 ? m.team1 : m.team2;
@@ -447,7 +447,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                         })}
 
                                         {recentMatches.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${matchesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${matchesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {recentMatches.slice(3).map(m => {
                                                         const isTeam1 = m.team1.some(p => p.name === player.name);
@@ -488,7 +488,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
                                 )}
 
                                 {recentMatches.length > 3 && (

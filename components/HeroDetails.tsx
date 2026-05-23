@@ -146,11 +146,11 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
             <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 shadow-sm">
+                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1">Популярность</div>
                         <div className="text-2xl font-black text-slate-900 dark:text-white">{hero.matches} <span className="text-sm text-slate-400 font-normal">игр</span></div>
                     </div>
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 shadow-sm">
+                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1">Общий Винрейт</div>
                         <div className={`text-2xl font-black ${hero.wins / hero.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>
                             {Math.round((hero.wins / hero.matches) * 100)}%
@@ -161,7 +161,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                 {/* Top Players */}
                 <div>
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none"
+                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
                         onClick={() => setPlayersState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
@@ -176,11 +176,11 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${playersState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${playersState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {topPlayers.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {topPlayers.slice(0, 3).map(p => (
                                             <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{p.name}</div>
@@ -193,7 +193,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         ))}
 
                                         {topPlayers.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${playersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${playersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {topPlayers.slice(3).map(p => (
                                                         <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
@@ -210,7 +210,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
                                 )}
 
                                 {topPlayers.length > 3 && (
@@ -229,7 +229,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                 {/* Top Synergies */}
                 <div>
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none"
+                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
                         onClick={() => setSynergiesState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
@@ -244,11 +244,11 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${synergiesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${synergiesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {topSynergies.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {topSynergies.slice(0, 3).map(s => (
                                             <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
@@ -261,7 +261,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         ))}
 
                                         {topSynergies.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${synergiesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${synergiesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {topSynergies.slice(3).map(s => (
                                                         <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
@@ -278,7 +278,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Недостаточно данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Недостаточно данных</div>
                                 )}
 
                                 {topSynergies.length > 3 && (
@@ -295,7 +295,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                 </div>
                 <div>
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none"
+                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
                         onClick={() => setMatchesState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
@@ -310,11 +310,11 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${matchesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${matchesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {recentMatches.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {recentMatches.slice(0, 3).map(m => {
                                             const t1HasHero = m.team1.some(p => p.heroName === hero.name);
                                             const t2HasHero = m.team2.some(p => p.heroName === hero.name);
@@ -353,7 +353,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         })}
 
                                         {recentMatches.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${matchesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${matchesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {recentMatches.slice(3).map(m => {
                                                         const t1HasHero = m.team1.some(p => p.heroName === hero.name);
@@ -396,7 +396,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
                                 )}
 
                                 {recentMatches.length > 3 && (

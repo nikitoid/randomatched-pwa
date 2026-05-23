@@ -1456,7 +1456,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     <div className="border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
                         <button
                             onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
-                            className="w-full px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors"
+                            className="w-full px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors transform-gpu will-change-transform"
                         >
                             <div className="flex items-center gap-2">
                                 <Calendar size={14} className={filterStartDate || filterEndDate ? 'text-primary-500' : 'text-slate-400'} />
@@ -1483,7 +1483,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         </button>
 
                         <div
-                            className="grid transition-all duration-300 ease-in-out"
+                            className="grid transition-all duration-300 ease-in-out transform-gpu will-change-[grid-template-rows]"
                             style={{
                                 gridTemplateRows: isDateFilterOpen ? '1fr' : '0fr',
                                 opacity: isDateFilterOpen ? 1 : 0,
@@ -1915,7 +1915,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 onClick={() => {
                                                     openPlayerDetails(player);
                                                 }}
-                                                className="flex items-center justify-between p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                                                className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-slate-200 text-slate-700' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500'}`}>
@@ -1971,7 +1971,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                     onClick={() => {
                                                         openHeroDetails(hero);
                                                     }}
-                                                    className="flex items-center justify-between p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                                                    className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
                                                 >
                                                     <div className="flex items-center gap-3 overflow-hidden">
                                                         <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center shrink-0">
@@ -2009,7 +2009,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 return (
                                                     <div
                                                         key={match.id}
-                                                        className={`relative overflow-hidden p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm border border-slate-150 dark:border-slate-800/60 transition-all ${editMode ? 'pr-12' : ''}`}
+                                                        className={`relative overflow-hidden p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-150 dark:border-slate-800/60 transition-all ${editMode ? 'pr-12' : ''}`}
                                                     >
                                                         <div className="flex justify-between items-start mb-3 border-b border-slate-50 dark:border-slate-700 pb-2">
                                                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Calendar size={10} /> {date} <span className="opacity-50">|</span> {time}</span>
@@ -2046,7 +2046,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                         </div>
 
                                                         {editMode && (
-                                                            <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col items-center justify-center gap-2 bg-slate-50/90 dark:bg-slate-900/90 border-l border-slate-150 dark:border-slate-800/60 backdrop-blur-sm z-10">
+                                                            <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col items-center justify-center gap-2 bg-slate-50 dark:bg-slate-900 border-l border-slate-150 dark:border-slate-800/60 z-10">
                                                                 <button onClick={() => openEditMatch(match)} className="p-2 text-blue-500 active:scale-90 transition-transform"><Edit2 size={16} /></button>
                                                                 <button onClick={() => { setDeleteConfirmId(match.id); setDeleteConfirmAction('move-to-trash'); }} className="p-2 text-red-500 active:scale-90 transition-transform"><Trash2 size={16} /></button>
                                                             </div>
@@ -2073,7 +2073,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 return (
                                                     <div
                                                         key={match.id}
-                                                        className="relative overflow-hidden p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-900/40 backdrop-blur-sm shadow-sm border border-red-200/60 dark:border-red-950/40 pr-20"
+                                                        className="relative overflow-hidden p-3 rounded-2xl bg-slate-50/90 dark:bg-slate-900/60 shadow-sm border border-red-200/60 dark:border-red-950/40 pr-20"
                                                     >
                                                         <div className="flex justify-between items-start mb-3 border-b border-slate-100 dark:border-slate-700/50 pb-2">
                                                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Trash2 size={10} /> {date} <span className="opacity-50">|</span> {time}</span>
@@ -2101,7 +2101,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                             </div>
                                                         </div>
 
-                                                        <div className="absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center gap-1 bg-slate-100 dark:bg-slate-800 border-l border-red-100 dark:border-red-900/30 backdrop-blur-sm z-10">
+                                                        <div className="absolute right-0 top-0 bottom-0 w-20 flex flex-col items-center justify-center gap-1 bg-slate-100 dark:bg-slate-800 border-l border-red-100 dark:border-red-900/30 z-10">
                                                             <button onClick={() => { onRestoreMatch(match.id); triggerHaptic(20); }} className="p-2 text-green-500 active:scale-90 transition-transform" title="Восстановить">
                                                                 <RefreshCw size={16} />
                                                             </button>
