@@ -107,9 +107,9 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
     }, [hero, history]);
 
     return (
-        <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-900 bg-grid-pattern animate-in slide-in-from-right duration-300">
+        <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 bg-grid-pattern animate-in slide-in-from-right duration-300">
             {/* Header */}
-            <div className="py-3 px-4 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 shrink-0 sticky top-0 z-10">
+            <div className="py-3 px-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/60 flex items-center gap-3 shrink-0 sticky top-0 z-10">
                 {!isEditing && (
                     <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                         <ChevronLeft size={24} className="text-slate-600 dark:text-slate-300" />
@@ -146,11 +146,11 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
             <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 shadow-sm">
+                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1">Популярность</div>
                         <div className="text-2xl font-black text-slate-900 dark:text-white">{hero.matches} <span className="text-sm text-slate-400 font-normal">игр</span></div>
                     </div>
-                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 shadow-sm">
+                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1">Общий Винрейт</div>
                         <div className={`text-2xl font-black ${hero.wins / hero.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>
                             {Math.round((hero.wins / hero.matches) * 100)}%
@@ -180,7 +180,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {topPlayers.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {topPlayers.slice(0, 3).map(p => (
                                             <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{p.name}</div>
@@ -210,7 +210,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 rounded-2xl shadow-sm">Нет данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
                                 )}
 
                                 {topPlayers.length > 3 && (
@@ -248,7 +248,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {topSynergies.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {topSynergies.slice(0, 3).map(s => (
                                             <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
@@ -278,7 +278,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 rounded-2xl shadow-sm">Недостаточно данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Недостаточно данных</div>
                                 )}
 
                                 {topSynergies.length > 3 && (
@@ -314,7 +314,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         <div className="overflow-hidden">
                             <div className="pt-1">
                                 {recentMatches.length > 0 ? (
-                                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {recentMatches.slice(0, 3).map(m => {
                                             const t1HasHero = m.team1.some(p => p.heroName === hero.name);
                                             const t2HasHero = m.team2.some(p => p.heroName === hero.name);
@@ -396,7 +396,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-150 dark:border-slate-700/60 rounded-2xl shadow-sm">Нет данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
                                 )}
 
                                 {recentMatches.length > 3 && (

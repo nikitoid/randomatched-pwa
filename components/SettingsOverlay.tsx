@@ -217,7 +217,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
     return (
         <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800 transition-all duration-300">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300">
                 <div className="px-4 py-3 pt-safe-area-top">
                     <div className="relative flex items-center justify-center w-full min-h-[44px]">
                         <button
@@ -276,7 +276,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                         <div className="animate-in fade-in duration-200">
                                             <h3 className="text-left text-xs sm:text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Предпросмотр темы</h3>
                                             
-                                            <div className="mb-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/80 shadow-sm relative overflow-hidden">
+                                            <div className="mb-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm rounded-2xl p-3 border border-slate-150/60 dark:border-slate-800/60 shadow-sm relative overflow-hidden">
                                                 {/* Фоновый градиент темы */}
                                                 <div className="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-primary-500/10 to-transparent dark:from-primary-500/5 pointer-events-none" />
 
@@ -300,7 +300,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                     </div>
 
                                                     {/* Выбор списка */}
-                                                    <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm border border-slate-150 dark:border-slate-800/70 p-1.5 rounded-xl flex items-center justify-between shadow-sm">
+                                                    <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm border border-slate-150/60 dark:border-slate-800/50 p-1.5 rounded-xl flex items-center justify-between shadow-sm">
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-5 h-5 rounded-lg bg-primary-500/10 dark:bg-primary-500/20 flex items-center justify-center text-primary-500">
                                                                 <Palette size={10} />
@@ -514,11 +514,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             <div className="flex flex-col items-center justify-start min-h-full p-6 animate-in fade-in slide-in-from-bottom-2">
                                 <div className="w-full max-w-sm flex flex-col gap-4">
                                     {/* LocalStorage Summary */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-150 dark:border-slate-800/60 shadow-sm">
                                         <h3 className="font-bold mb-3 flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                                             <Database size={16} /> Сводка LocalStorage
                                         </h3>
-                                        <div className="text-xs font-mono space-y-1.5 max-h-40 overflow-y-auto no-scrollbar bg-slate-50 dark:bg-slate-950/50 p-3 rounded-xl border border-slate-100 dark:border-slate-900">
+                                        <div className="text-xs font-mono space-y-1.5 max-h-40 overflow-y-auto no-scrollbar bg-slate-50/50 dark:bg-slate-950/30 p-3 rounded-xl border border-slate-150 dark:border-slate-900/60">
                                             {Object.keys(localStorage).map(key => {
                                                 const val = localStorage.getItem(key) || '';
                                                 let displaySize = `${(val.length * 2) / 1024}`;
@@ -534,7 +534,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 space-y-3">
+                                    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl p-4 border border-slate-150 dark:border-slate-800/60 space-y-3 shadow-sm">
                                         <h3 className="font-bold flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
                                             Быстрые действия
                                         </h3>

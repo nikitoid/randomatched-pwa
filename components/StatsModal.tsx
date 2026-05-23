@@ -1554,7 +1554,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                     {/* Matches Tab Action Bar - Sticky under tabs */}
                     {activeTab === 'matches' && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-2 duration-300">
                             {/* Поле поиска матчей */}
                             <div className="relative flex-1">
                                 <input
@@ -1610,7 +1610,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                     {/* Heroes Tab Action Bar - Sticky under tabs */}
                     {activeTab === 'heroes' && !selectedHero && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 border-b border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-2 duration-300">
                             {/* Поле поиска героев */}
                             <div className="relative flex-1">
                                 <input
@@ -2009,7 +2009,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 return (
                                                     <div
                                                         key={match.id}
-                                                        className={`relative overflow-hidden p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 transition-all ${editMode ? 'pr-12' : ''}`}
+                                                        className={`relative overflow-hidden p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm border border-slate-150 dark:border-slate-800/60 transition-all ${editMode ? 'pr-12' : ''}`}
                                                     >
                                                         <div className="flex justify-between items-start mb-3 border-b border-slate-50 dark:border-slate-700 pb-2">
                                                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Calendar size={10} /> {date} <span className="opacity-50">|</span> {time}</span>
@@ -2046,7 +2046,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                         </div>
 
                                                         {editMode && (
-                                                            <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col items-center justify-center gap-2 bg-slate-50 dark:bg-slate-800/80 border-l border-slate-100 dark:border-slate-700 backdrop-blur-sm z-10">
+                                                            <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col items-center justify-center gap-2 bg-slate-50/90 dark:bg-slate-900/90 border-l border-slate-150 dark:border-slate-800/60 backdrop-blur-sm z-10">
                                                                 <button onClick={() => openEditMatch(match)} className="p-2 text-blue-500 active:scale-90 transition-transform"><Edit2 size={16} /></button>
                                                                 <button onClick={() => { setDeleteConfirmId(match.id); setDeleteConfirmAction('move-to-trash'); }} className="p-2 text-red-500 active:scale-90 transition-transform"><Trash2 size={16} /></button>
                                                             </div>
@@ -2073,7 +2073,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 return (
                                                     <div
                                                         key={match.id}
-                                                        className="relative overflow-hidden p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 shadow-sm border border-red-200 dark:border-red-900/30 pr-20"
+                                                        className="relative overflow-hidden p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-900/40 backdrop-blur-sm shadow-sm border border-red-200/60 dark:border-red-950/40 pr-20"
                                                     >
                                                         <div className="flex justify-between items-start mb-3 border-b border-slate-100 dark:border-slate-700/50 pb-2">
                                                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Trash2 size={10} /> {date} <span className="opacity-50">|</span> {time}</span>

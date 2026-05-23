@@ -703,7 +703,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
             {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
 
-            <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800 transition-all duration-300 ${focusedRowIndex !== null ? 'opacity-20 blur-[1px] pointer-events-none' : ''}`}>
+            <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300 ${focusedRowIndex !== null ? 'opacity-20 blur-[1px] pointer-events-none' : ''}`}>
                 <div className="px-4 py-3 pt-safe-area-top">
                     {editingListId ? (
                         <div className="flex flex-col w-full pb-1">
@@ -829,7 +829,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 <div ref={listContainerRef} onTouchMove={handleTouchMove} className={`absolute inset-0 overflow-y-auto no-scrollbar transition-transform duration-300 ease-out ${editingListId ? '-translate-x-[20%] opacity-0 pointer-events-none' : 'translate-x-0 opacity-100 pointer-events-auto'}`}>
                     <div className="pb-safe-area-bottom">
                         <div className="animate-in fade-in slide-in-from-bottom-2">
-                            <div className="flex items-center justify-between sticky top-0 z-30 px-4 pt-4 pb-4 bg-slate-50 dark:bg-slate-950">
+                            <div className="flex items-center justify-between sticky top-0 z-30 px-4 pt-4 pb-3 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/60">
                                 <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border ${isOnline ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30' : 'bg-slate-200 text-slate-500 border-slate-300'}`}>
                                     {isSyncing ? <><Loader2 size={10} className="animate-spin" /> Sync</> : isOnline ? <><Wifi size={10} /> Online</> : <><WifiOff size={10} /> Offline</>}
                                 </div>
