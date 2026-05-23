@@ -13,7 +13,7 @@ import { RANKS, RANK_VALUES } from '../constants';
 import { RankSelect } from './RankSelect';
 import { ListItem } from './ListItem';
 import { CustomScrollbar } from './CustomScrollbar';
-import { HeroEditorRow } from './HeroEditorRow';
+import { HeroEditorRow, HeroViewRow } from './HeroEditorRow';
 
 interface ListsOverlayProps {
     isOpen: boolean;
@@ -787,6 +787,18 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                 const isFocused = focusedRowIndex === index;
                                 const isDimmed = focusedRowIndex !== null && !isFocused;
                                 const isPlaceholderRow = !isReadOnly && index === editorHeroes.length - 1;
+
+                                if (isReadOnly) {
+                                    return (
+                                        <HeroViewRow
+                                            key={hero.id}
+                                            hero={hero}
+                                            hasRankUpdate={hasFieldUpdate(hero.id, 'rank')}
+                                            hasNameUpdate={hasFieldUpdate(hero.id, 'name')}
+                                            rankColor={getRankBarColor(hero.rank)}
+                                        />
+                                    );
+                                }
 
                                 return (
                                     <HeroEditorRow

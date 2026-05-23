@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, memo } from 'react';
 import { HeroList } from '../types';
 import { GripVertical, Filter, Cloud, Database, MoreVertical, AlertTriangle, SquareStack, Eye } from 'lucide-react';
 
@@ -20,7 +20,7 @@ interface ListItemProps {
   isReorderMode?: boolean;
 }
 
-export const ListItem: React.FC<ListItemProps> = ({ 
+export const ListItem: React.FC<ListItemProps> = memo(({ 
   list, 
   index, 
   isOnline,
@@ -142,4 +142,6 @@ export const ListItem: React.FC<ListItemProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ListItem.displayName = 'ListItem';

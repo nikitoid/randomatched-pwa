@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Hero } from '../types';
 import { RankSelect } from './RankSelect';
 
+// --- COMPONENT FOR EDITING HERO ---
 interface HeroEditorRowProps {
     hero: Hero;
     index: number;
@@ -104,3 +105,41 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
 });
 
 HeroEditorRow.displayName = 'HeroEditorRow';
+
+
+// --- COMPONENT FOR VIEWING HERO (READ-ONLY) ---
+interface HeroViewRowProps {
+    hero: Hero;
+    hasRankUpdate: boolean;
+    hasNameUpdate: boolean;
+    rankColor: string;
+}
+
+export const HeroViewRow: React.FC<HeroViewRowProps> = memo(({
+    hero,
+    hasRankUpdate,
+    hasNameUpdate,
+    rankColor
+}) => {
+    return (
+        <div className="flex items-center gap-2 mb-1.5 min-h-[38px] w-full py-1">
+            {/* Rank badge */}
+            <div className={`w-14 h-8 shrink-0 rounded-xl flex items-center justify-center font-bold text-xs text-white relative ${rankColor}`}>
+                {hero.rank || '—'}
+                {hasRankUpdate && (
+                    <div className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900 pointer-events-none z-10" />
+                )}
+            </div>
+
+            {/* Name display */}
+            <div className="flex-1 min-w-0 bg-white/40 dark:bg-slate-900/40 backdrop-blur-[1px] border border-slate-100/50 dark:border-slate-800/30 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 font-medium truncate relative">
+                {hero.name}
+                {hasNameUpdate && (
+                    <div className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900 pointer-events-none z-10" />
+                )}
+            </div>
+        </div>
+    );
+});
+
+HeroViewRow.displayName = 'HeroViewRow';
