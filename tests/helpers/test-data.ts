@@ -1,4 +1,5 @@
 import { Hero, HeroList } from '../../types';
+import { APP_VERSION } from '../../utils/changelog';
 export type { Hero, HeroList };
 
 /**
@@ -80,12 +81,13 @@ export const TEST_LIST_SECONDARY: HeroList = createTestList(
  * ВАЖНО: должна вызываться ПЕРЕД page.goto()
  * Данные устанавливаются через addInitScript на контексте
  */
-export async function injectTestData(page: any, lists: HeroList[] = [TEST_LIST_PRIMARY]) {
+export async function injectTestData(page: any, lists: HeroList[] = [TEST_LIST_PRIMARY], appVersion: string = APP_VERSION) {
     // Используем addInitScript на контексте браузера - это выполняется ДО загрузки любой страницы
-    await page.context().addInitScript((listsData: HeroList[]) => {
+    await page.context().addInitScript(([listsData, version]: [HeroList[], string]) => {
         // ПРАВИЛЬНЫЕ КЛЮЧИ localStorage (из хуков приложения)
         // Сохраняем списки героев
         localStorage.setItem('randomatched_lists_v1', JSON.stringify(listsData));
+        localStorage.setItem('randomatched_last_seen_version', version);
 
         // Тема и цветовая схема (хранятся напрямую, не в JSON)
         localStorage.setItem('theme', 'dark');
@@ -105,7 +107,7 @@ export async function injectTestData(page: any, lists: HeroList[] = [TEST_LIST_P
 
         // Очищаем последнюю сессию
         localStorage.removeItem('randomatched_last_session_v1');
-    }, lists);
+    }, [lists, appVersion]);
 }
 
 /**

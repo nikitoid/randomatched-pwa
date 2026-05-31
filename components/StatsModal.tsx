@@ -271,6 +271,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [heroSort, setHeroSort] = useState<'winrate' | 'matches' | 'az' | 'za' | 'pop'>('winrate');
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
 
+    // Player Tab State
+    const [playerSearch, setPlayerSearch] = useState('');
+    const [playerSort, setPlayerSort] = useState<'efficiency' | 'winrate' | 'matches' | 'az' | 'za'>('efficiency');
+    const [isPlayerSortMenuOpen, setIsPlayerSortMenuOpen] = useState(false);
+    const [playerDropdownPosition, setPlayerDropdownPosition] = useState<{ top: number, left: number, width: number } | null>(null);
+
     // Match Tab State
     const [matchSearch, setMatchSearch] = useState('');
 
@@ -529,7 +535,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         const sortedPlayers = Object.values(playerStats).sort((a, b) => b.score - a.score || b.wins - a.wins);
         const sortedHeroes = Object.values(heroStats).sort((a, b) => (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches);
 
-        const qualifiedPlayers = sortedPlayers.filter(p => p.matches >= 2);
+        const qualifiedPlayers = sortedPlayers.filter(p => p.matches >= 3);
         const mvp = qualifiedPlayers.length > 0 ? qualifiedPlayers[0] : (sortedPlayers.length > 0 ? sortedPlayers[0] : null);
         // Базовый underdog по винрейту (fallback) — минимум 3 матча для объективности
         const qualifiedForUnderdog = sortedPlayers.filter(p => p.matches >= 3);
@@ -730,6 +736,37 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             avgKillsPerMatch
         };
     }, [filteredHistory]);
+
+    // Filtered & Sorted Players
+    const processedPlayers = useMemo(() => {
+        let result = [...sortedPlayers];
+
+        if (playerSearch.trim()) {
+            const lower = playerSearch.toLowerCase().trim();
+            result = result.filter(p => p.name.toLowerCase().includes(lower));
+        }
+
+        result.sort((a, b) => {
+            if (playerSort === 'efficiency') {
+                const aQual = a.matches >= 3;
+                const bQual = b.matches >= 3;
+                if (aQual && !bQual) return -1;
+                if (!aQual && bQual) return 1;
+                return b.score - a.score || b.wins - a.wins;
+            } else if (playerSort === 'winrate') {
+                return (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches;
+            } else if (playerSort === 'matches') {
+                return b.matches - a.matches || (b.wins / b.matches) - (a.wins / a.matches);
+            } else if (playerSort === 'az') {
+                return a.name.localeCompare(b.name);
+            } else if (playerSort === 'za') {
+                return b.name.localeCompare(a.name);
+            }
+            return 0;
+        });
+
+        return result;
+    }, [sortedPlayers, playerSearch, playerSort]);
 
     // Filtered & Sorted Heroes
     const processedHeroes = useMemo(() => {
@@ -1733,9 +1770,105 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         </div>
                     )}
 
+                    {/* Players Tab Action Bar - Sticky under tabs */}
+                    {activeTab === 'players' && !selectedPlayer && (
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-2 duration-300">
+                            {/* Поле поиска игроков */}
+                            <div className="relative flex-1">
+                                <input
+                                    type="text"
+                                    value={playerSearch}
+                                    onChange={(e) => setPlayerSearch(e.target.value)}
+                                    placeholder="Поиск игрока..."
+                                    className="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
+                                />
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                {playerSearch && (
+                                    <button onClick={() => { setPlayerSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                        <X size={12} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Кнопка сортировки */}
+                            <div className="relative shrink-0">
+                                <button
+                                    ref={(el) => {
+                                        if (el && isPlayerSortMenuOpen && !playerDropdownPosition) {
+                                            const rect = el.getBoundingClientRect();
+                                            setPlayerDropdownPosition({
+                                                top: rect.bottom + 8,
+                                                left: rect.right - 192,
+                                                width: 192
+                                            });
+                                        }
+                                    }}
+                                    onClick={(e) => {
+                                        if (!isPlayerSortMenuOpen) {
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setPlayerDropdownPosition({
+                                                top: rect.bottom + 8,
+                                                left: rect.right - 192,
+                                                width: 192
+                                            });
+                                        }
+                                        setIsPlayerSortMenuOpen(!isPlayerSortMenuOpen);
+                                        triggerHaptic(10);
+                                    }}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-colors ${isPlayerSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                                    title="Сортировка"
+                                >
+                                    {playerSort === 'efficiency' && <TrendingUp size={16} />}
+                                    {playerSort === 'winrate' && <TrendingUp size={16} />}
+                                    {playerSort === 'matches' && <BarChart3 size={16} />}
+                                    {playerSort === 'az' && <ArrowDownAZ size={16} />}
+                                    {playerSort === 'za' && <ArrowUpAZ size={16} />}
+                                </button>
+
+                                {/* Player Sort Dropdown Portal */}
+                                {isPlayerSortMenuOpen && playerDropdownPosition && createPortal(
+                                    <>
+                                        <div className="fixed inset-0 z-[9990]" onClick={() => setIsPlayerSortMenuOpen(false)}></div>
+                                        <div
+                                            className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
+                                            style={{
+                                                top: playerDropdownPosition.top,
+                                                left: playerDropdownPosition.left,
+                                                width: playerDropdownPosition.width
+                                            }}
+                                        >
+                                            <button onClick={() => { setPlayerSort('efficiency'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'efficiency' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По эффективности</span>
+                                                {playerSort === 'efficiency' && <Check size={14} />}
+                                            </button>
+                                            <button onClick={() => { setPlayerSort('winrate'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
+                                                {playerSort === 'winrate' && <Check size={14} />}
+                                            </button>
+                                            <button onClick={() => { setPlayerSort('matches'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-55 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
+                                                {playerSort === 'matches' && <Check size={14} />}
+                                            </button>
+                                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
+                                            <button onClick={() => { setPlayerSort('az'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
+                                                {playerSort === 'az' && <Check size={14} />}
+                                            </button>
+                                            <button onClick={() => { setPlayerSort('za'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
+                                                {playerSort === 'za' && <Check size={14} />}
+                                            </button>
+                                        </div>
+                                    </>,
+                                    document.body
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <div
                         ref={contentContainerRef}
-                        className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' || activeTab === 'heroes' || selectedPlayer || selectedHero ? 'p-0' : 'p-4'}`}
+                        className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' || activeTab === 'heroes' || activeTab === 'players' || selectedPlayer || selectedHero ? 'p-0' : 'p-4'}`}
                     >
                         {activeTab === 'overview' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -1902,7 +2035,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         
                                         <div className="p-4 rounded-3xl bg-gradient-to-br from-white to-primary-500/5 dark:from-slate-900 dark:to-primary-500/5 border border-slate-200/60 dark:border-slate-800/80 shadow-sm relative overflow-hidden">
                                             <div className="space-y-3 relative z-10">
-                                                {sortedPlayers.filter(p => p.matches > 1).slice(0, 5).map((player, i) => {
+                                                {sortedPlayers.filter(p => p.matches >= 3).slice(0, 5).map((player, i) => {
                                                     const winRate = (player.wins / player.matches) * 100;
                                                     return (
                                                         <div key={player.name}>
@@ -1916,7 +2049,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                         </div>
                                                     )
                                                 })}
-                                                {sortedPlayers.filter(p => p.matches > 1).length === 0 && (
+                                                {sortedPlayers.filter(p => p.matches >= 3).length === 0 && (
                                                     <div className="text-xs text-slate-400 italic text-center py-4">Недостаточно матчей для статистики</div>
                                                 )}
                                             </div>
@@ -1941,7 +2074,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     />
                                 ) : (
                                     <>
-                                        {sortedPlayers.map((player, idx) => (
+                                        {processedPlayers.map((player, idx) => (
                                             <div
                                                 key={player.name}
                                                 onClick={() => {
@@ -1975,7 +2108,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 </div>
                                             </div>
                                         ))}
-                                        {sortedPlayers.length === 0 && <div className="text-center text-slate-400 py-10">Нет данных об игроках</div>}
+                                        {processedPlayers.length === 0 && <div className="text-center text-slate-400 py-10">Нет данных об игроках</div>}
                                     </>
                                 )}
                             </div>

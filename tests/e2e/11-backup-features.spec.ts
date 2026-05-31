@@ -20,7 +20,7 @@ test.describe('Резервное копирование статистики', 
 
     test('должно открываться меню бэкапов по тройному клику на заголовке', async ({ app }) => {
         await app.openBackupMenu();
-        await expect(app.page.locator('text=Резервное копирование').first()).toBeVisible();
+        await expect(app.page.locator('h3:has-text("Резервное копирование")')).toBeVisible();
     });
 
     test('меню бэкапов должно содержать кнопки локального и облачного бэкапа', async ({ app }) => {
@@ -36,10 +36,10 @@ test.describe('Резервное копирование статистики', 
 
     test('меню должно закрываться по кнопке Закрыть', async ({ app }) => {
         await app.openBackupMenu();
-        await expect(app.page.locator('text=Резервное копирование').first()).toBeVisible();
+        await expect(app.page.locator('h3:has-text("Резервное копирование")')).toBeVisible();
 
         await app.backupCloseButton.click();
-        await expect(app.page.locator('text=Резервное копирование').first()).toBeHidden();
+        await expect(app.page.locator('h3:has-text("Резервное копирование")')).toBeHidden();
     });
 
     test('должно отображаться сообщение об отсутствии бэкапов', async ({ app }) => {

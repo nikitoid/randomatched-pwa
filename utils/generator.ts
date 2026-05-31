@@ -87,8 +87,13 @@ export const getHeroHistoryWeights = (
     return weights;
   }
 
-  const DEPTH = Math.min(20, history.length);
+  // Динамическая глубина на основе пула героев
+  const DEPTH = Math.min(
+    Math.max(20, Math.floor(allHeroes.length * 1.5)),
+    history.length
+  );
   const lastPlayedIndices = new Map<string, number>();
+  const playCounts = new Map<string, number>();
 
   for (let i = 0; i < DEPTH; i++) {
     const match = history[i];
@@ -101,6 +106,7 @@ export const getHeroHistoryWeights = (
       if (!lastPlayedIndices.has(heroId)) {
         lastPlayedIndices.set(heroId, i);
       }
+      playCounts.set(heroId, (playCounts.get(heroId) || 0) + 1);
     }
   }
 
@@ -112,8 +118,14 @@ export const getHeroHistoryWeights = (
       inactivityScore = lastPlayedIndex;
     }
 
-    const weight = 1 + inactivityScore * 1.5;
-    weights.set(hero.id, weight);
+    // Степенная зависимость давности (1.5) для лучшего контраста
+    const recencyWeight = 1 + Math.pow(inactivityScore, 1.5) * 1.5;
+
+    // Штраф за частоту игр в анализируемом периоде
+    const playCount = playCounts.get(hero.id) || 0;
+    const finalWeight = recencyWeight / (1 + playCount * 0.5);
+
+    weights.set(hero.id, finalWeight);
   });
 
   return weights;
