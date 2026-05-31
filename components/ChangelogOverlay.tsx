@@ -85,7 +85,7 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                                     v{release.version}
                                 </div>
                                 <div className="min-w-0">
-                                    <h4 className="text-sm sm:text-base font-black text-slate-800 dark:text-white truncate">
+                                    <h4 className="text-sm sm:text-base font-black text-slate-800 dark:text-white">
                                         {release.title || `Версия ${release.version}`}
                                     </h4>
                                     <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 font-bold">{release.date}</p>

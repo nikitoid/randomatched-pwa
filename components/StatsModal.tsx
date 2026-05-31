@@ -754,6 +754,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 if (!aQual && bQual) return 1;
                 return b.score - a.score || b.wins - a.wins;
             } else if (playerSort === 'winrate') {
+                const aQual = a.matches >= 3;
+                const bQual = b.matches >= 3;
+                if (aQual && !bQual) return -1;
+                if (!aQual && bQual) return 1;
                 return (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches;
             } else if (playerSort === 'matches') {
                 return b.matches - a.matches || (b.wins / b.matches) - (a.wins / a.matches);
@@ -2104,7 +2108,25 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className={`text-sm font-bold ${player.wins / player.matches >= 0.5 ? 'text-green-600' : 'text-slate-500'}`}>{Math.round((player.wins / player.matches) * 100)}%</div>
+                                                    {playerSort === 'matches' ? (
+                                                        <>
+                                                            <div className="text-sm font-bold text-slate-700 dark:text-slate-350">
+                                                                {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                                {Math.round((player.wins / player.matches) * 100)}% побед
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className={`text-sm font-bold ${player.wins / player.matches >= 0.5 ? 'text-green-600' : 'text-slate-500'}`}>
+                                                                {Math.round((player.wins / player.matches) * 100)}%
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                                игры: {player.matches}
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}

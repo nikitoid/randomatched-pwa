@@ -64,8 +64,20 @@ export const useTeamGeneration = ({
             return [];
         }
     });
-
-    const [generationMode, setGenerationMode] = useState<GenerationMode>('balanced');
+    const [generationMode, setGenerationMode] = useState<GenerationMode>(() => {
+        try {
+            const saved = localStorage.getItem('randomatched_generation_mode_v1');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed === 'random' || parsed === 'balanced' || parsed === 'strict') {
+                    return parsed;
+                }
+            }
+            return 'balanced';
+        } catch (e) {
+            return 'balanced';
+        }
+    });
     const [balanceThreshold, setBalanceThreshold] = useState<number>(1);
     const [prioritizeUnplayed, setPrioritizeUnplayed] = useState<boolean>(() => {
         try {
@@ -90,6 +102,10 @@ export const useTeamGeneration = ({
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY_ASSIGNMENTS, JSON.stringify(assignments));
     }, [assignments]);
+
+    useEffect(() => {
+        localStorage.setItem('randomatched_generation_mode_v1', JSON.stringify(generationMode));
+    }, [generationMode]);
 
     useEffect(() => {
         localStorage.setItem('randomatched_prioritize_unplayed_v1', JSON.stringify(prioritizeUnplayed));
