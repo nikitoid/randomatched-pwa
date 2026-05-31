@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye, HelpCircle } from 'lucide-react';
+import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye, HelpCircle, Crown, Flame } from 'lucide-react';
 import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBackup } from '../types';
 import { PlayerDetails } from './PlayerDetails';
 import { HeroDetails } from './HeroDetails';
@@ -80,6 +80,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
     const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
     const [showEfficiencyInfo, setShowEfficiencyInfo] = useState(false);
+    const [activeNominationModal, setActiveNominationModal] = useState<'mvp' | 'underdog' | 'streak' | 'seriesKills' | 'totalKills' | null>(null);
 
     // Date filter state
     const [filterStartDate, setFilterStartDate] = useState('');
@@ -155,6 +156,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     useBackHandler(showEfficiencyInfo, () => {
         setShowEfficiencyInfo(false);
     }, { id: 'stats-efficiency-info', priority: 40 });
+
+    useBackHandler(!!activeNominationModal, () => {
+        setActiveNominationModal(null);
+    }, { id: 'stats-nomination-modal', priority: 50 });
 
     const titleClickCount = useRef(0);
     const titleClickTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -493,7 +498,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         topTotalKillers,
         bloodiestMatch,
         totalKillsAll,
-        avgKillsPerMatch
+        avgKillsPerMatch,
+        mvpCandidates,
+        underdogCandidates,
+        streakCandidates,
+        seriesKillsCandidates,
+        totalKillsCandidates
     } = useMemo(() => {
         const playerStats: Record<string, PlayerStat> = {};
         const heroStats: Record<string, HeroStat> = {};
@@ -545,10 +555,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         const qualifiedPlayers = sortedPlayers.filter(p => p.matches >= 3);
         const mvp = qualifiedPlayers.length > 0 ? qualifiedPlayers[0] : (sortedPlayers.length > 0 ? sortedPlayers[0] : null);
         // Базовый underdog по винрейту (fallback) — минимум 3 матча для объективности
-        const qualifiedForUnderdog = sortedPlayers.filter(p => p.matches >= 3);
+        const qualifiedForUnderdog = sortedPlayers.filter(p => p.matches >= 3 && (!mvp || p.name !== mvp.name));
         const fallbackUnderdog = qualifiedForUnderdog.length > 0
             ? qualifiedForUnderdog[qualifiedForUnderdog.length - 1]
-            : (qualifiedPlayers.length > 0 ? qualifiedPlayers[qualifiedPlayers.length - 1] : null);
+            : (qualifiedPlayers.length > 1 ? qualifiedPlayers[qualifiedPlayers.length - 1] : null);
 
         // Streak Calculation (победы и поражения)
         // lastStreakMatchIndex отслеживает индекс последнего матча в серии игрока
@@ -620,7 +630,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         Object.entries(streakStats).forEach(([name, stats]) => {
             if (stats.loseStreak >= 3) {
                 const player = playerStats[name];
-                if (player) {
+                if (player && (!mvp || player.name !== mvp.name)) {
                     if (!underdogByLoseStreak ||
                         stats.loseStreak > underdogByLoseStreak.loseStreak ||
                         (stats.loseStreak === underdogByLoseStreak.loseStreak && stats.lastLoseStreakMatchIndex > underdogLoseStreakMatchIndex)) {
@@ -728,6 +738,44 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
         const avgKillsPerMatch = filteredHistory.length > 0 ? totalKillsAll / filteredHistory.length : 0;
 
+        // 1. Кандидаты на MVP (топ-5 по эффективности из игроков с >= 3 матчами)
+        const mvpCandidates = sortedPlayers.filter(p => p.matches >= 3).slice(0, 5);
+
+        // 2. Кандидаты на Underdog (топ-5)
+        const playersWithStats = sortedPlayers.filter(p => p.matches >= 3 && (!mvp || p.name !== mvp.name));
+        const withLoseStreak = playersWithStats
+            .filter(p => (streakStats[p.name]?.loseStreak || 0) >= 3)
+            .sort((a, b) => {
+                const sA = streakStats[a.name];
+                const sB = streakStats[b.name];
+                return sB.loseStreak - sA.loseStreak || sB.lastLoseStreakMatchIndex - sA.lastLoseStreakMatchIndex;
+            });
+        const withoutLoseStreak = playersWithStats
+            .filter(p => (streakStats[p.name]?.loseStreak || 0) < 3)
+            .reverse();
+        const underdogCandidates = [...withLoseStreak, ...withoutLoseStreak].slice(0, 5);
+
+        // 3. Кандидаты на "В огне" (топ-5 по текущей серии побед >= 3)
+        const streakCandidates = Object.entries(streakStats)
+            .map(([name, stats]) => ({ name, streak: stats.current }))
+            .filter(s => s.streak >= 3)
+            .sort((a, b) => b.streak - a.streak || (streakStats[b.name]?.lastStreakMatchIndex || 0) - (streakStats[a.name]?.lastStreakMatchIndex || 0))
+            .slice(0, 5);
+
+        // 4. Кандидаты на Рекорд за встречу (серия убийств, топ-5)
+        const seriesKillsCandidates = Object.entries(playerKillsStats)
+            .map(([name, stats]) => ({ name, record: stats.maxSeries }))
+            .filter(k => k.record > 0)
+            .sort((a, b) => b.record - a.record)
+            .slice(0, 5);
+
+        // 5. Кандидаты на Короля убийств (топ-5 по общему числу убийств)
+        const totalKillsCandidates = Object.entries(playerKillsStats)
+            .map(([name, stats]) => ({ name, total: stats.total }))
+            .filter(k => k.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+
         return {
             totalMatches,
             sortedPlayers,
@@ -740,7 +788,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             topTotalKillers,
             bloodiestMatch,
             totalKillsAll,
-            avgKillsPerMatch
+            avgKillsPerMatch,
+            mvpCandidates,
+            underdogCandidates,
+            streakCandidates,
+            seriesKillsCandidates,
+            totalKillsCandidates
         };
     }, [filteredHistory]);
 
@@ -1893,7 +1946,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                 <div className="grid grid-cols-2 gap-4">
                                     {/* MVP Card */}
-                                    <div className="p-4 rounded-3xl bg-gradient-to-br from-white to-yellow-500/10 dark:from-slate-900 dark:to-yellow-500/10 border border-yellow-200/60 dark:border-yellow-900/30 relative overflow-hidden h-full">
+                                    <div
+                                        onClick={() => { setActiveNominationModal('mvp'); triggerHaptic(10); }}
+                                        className="p-4 rounded-3xl bg-gradient-to-br from-white to-yellow-500/10 dark:from-slate-900 dark:to-yellow-500/10 border border-yellow-200/60 dark:border-yellow-900/30 relative overflow-hidden h-full cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                                    >
                                         <div className="flex items-center gap-2 mb-3 text-yellow-600 dark:text-yellow-500">
                                             <Star size={18} fill="currentColor" />
                                             <span className="text-xs font-black uppercase tracking-wider">MVP</span>
@@ -1925,9 +1981,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             >
                                                 {/* Slide 1: Hot Streak */}
                                                 <div className="w-full h-full flex-shrink-0">
-                                                    <div className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-orange-500/10 dark:from-slate-900 dark:to-orange-500/10 border border-orange-200/60 dark:border-orange-900/30 relative overflow-hidden">
+                                                    <div
+                                                        onClick={() => { setActiveNominationModal('streak'); triggerHaptic(10); }}
+                                                        className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-orange-500/10 dark:from-slate-900 dark:to-orange-500/10 border border-orange-200/60 dark:border-orange-900/30 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                                                    >
                                                         <div className="flex items-center gap-2 mb-3 text-orange-500">
-                                                            <TrendingUp size={18} />
+                                                            <Flame size={18} className="animate-pulse text-orange-500" />
                                                             <span data-testid="on-fire-badge" className="text-xs font-black uppercase tracking-wider">В огне</span>
                                                         </div>
                                                         <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{bestStreakPlayer.name}</div>
@@ -1942,7 +2001,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                                 {/* Slide 2: Underdog */}
                                                 <div className="w-full h-full flex-shrink-0">
-                                                    <div className="p-4 h-full rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden">
+                                                    <div
+                                                        onClick={() => { setActiveNominationModal('underdog'); triggerHaptic(10); }}
+                                                        className="p-4 h-full rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                                                    >
                                                         <div className="flex items-center gap-2 mb-3 text-slate-400">
                                                             <Skull size={18} />
                                                             <span className="text-xs font-black uppercase tracking-wider">Underdog</span>
@@ -1970,7 +2032,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     ) : (
                                         /* No streak - just show Underdog */
-                                        <div className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-slate-500/10 dark:from-slate-900 dark:to-slate-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800 relative overflow-hidden">
+                                        <div
+                                            onClick={() => { setActiveNominationModal('underdog'); triggerHaptic(10); }}
+                                            className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-slate-500/10 dark:from-slate-900 dark:to-slate-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                                        >
                                             <div className="flex items-center gap-2 mb-3 text-slate-400">
                                                 <Skull size={18} />
                                                 <span className="text-xs font-black uppercase tracking-wider">Underdog</span>
@@ -1998,7 +2063,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         {/* Сетка карточек рекордов */}
                                         <div className="grid grid-cols-2 gap-3 mb-4">
                                             {/* Рекорд за серию */}
-                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-rose-500/10 dark:from-slate-900 dark:to-rose-500/10 border border-rose-200/60 dark:border-rose-900/30 relative overflow-hidden">
+                                            <div
+                                                onClick={() => { setActiveNominationModal('seriesKills'); triggerHaptic(10); }}
+                                                className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-rose-500/10 dark:from-slate-900 dark:to-rose-500/10 border border-rose-200/60 dark:border-rose-900/30 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                                            >
                                                 <div className="text-[10px] font-bold text-red-500 uppercase mb-1">Рекорд за встречу</div>
                                                 {topKillsSeriesPlayer ? (
                                                     <>
@@ -2013,7 +2081,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             </div>
 
                                             {/* Король убийств */}
-                                            <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-red-500/10 dark:from-slate-900 dark:to-red-500/10 border border-slate-200/60 dark:border-slate-800 relative overflow-hidden shadow-sm">
+                                            <div
+                                                onClick={() => { setActiveNominationModal('totalKills'); triggerHaptic(10); }}
+                                                className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-red-500/10 dark:from-slate-900 dark:to-red-500/10 border border-slate-200/60 dark:border-slate-800 relative overflow-hidden shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                                            >
                                                 <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">Король убийств</div>
                                                 {topTotalKillers && topTotalKillers.length > 0 ? (
                                                     <>
@@ -2394,6 +2465,217 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <button
                             onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
                             className="mt-6 w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/10 active:scale-98"
+                        >
+                            Понятно
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Nomination Modal Overlay */}
+            {activeNominationModal && createPortal(
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setActiveNominationModal(null)}
+                >
+                    <div
+                        className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[85dvh] flex flex-col p-6 text-slate-700 dark:text-slate-300"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                {activeNominationModal === 'mvp' && (
+                                    <>
+                                        <Star size={20} fill="currentColor" className="text-yellow-500" />
+                                        <span>Самый ценный игрок (MVP)</span>
+                                    </>
+                                )}
+                                {activeNominationModal === 'underdog' && (
+                                    <>
+                                        <Skull size={20} className="text-red-500" />
+                                        <span>Андердог (Underdog)</span>
+                                    </>
+                                )}
+                                {activeNominationModal === 'streak' && (
+                                    <>
+                                        <Flame size={20} className="text-orange-500 animate-pulse" />
+                                        <span>В огне (Серия побед)</span>
+                                    </>
+                                )}
+                                {activeNominationModal === 'seriesKills' && (
+                                    <>
+                                        <Swords size={20} className="text-rose-500" />
+                                        <span>Рекорд за встречу</span>
+                                    </>
+                                )}
+                                {activeNominationModal === 'totalKills' && (
+                                    <>
+                                        <Crown size={20} className="text-yellow-600 dark:text-yellow-500" />
+                                        <span>Король убийств</span>
+                                    </>
+                                )}
+                            </h3>
+                            <button
+                                onClick={() => { setActiveNominationModal(null); triggerHaptic(10); }}
+                                className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="space-y-4 text-sm overflow-y-auto pr-1 flex-1 no-scrollbar">
+                            <p className="text-slate-650 dark:text-slate-400">
+                                {activeNominationModal === 'mvp' &&
+                                    'MVP — это наиболее эффективный игрок, определяемый на основе Байесовского среднего рейтинга. Данный метод учитывает как винрейт, так и количество сыгранных матчей (требуется минимум 3 матча), чтобы сбалансировать результаты активных игроков и редких гостей.'
+                                }
+                                {activeNominationModal === 'underdog' &&
+                                    'Underdog — номинация для игрока, который переживает полосу неудач или имеет наименьшую эффективность. В первую очередь номинируется игрок с наибольшей активной серией поражений (от 3-х матчей). Если таких серий нет, номинируется игрок с худшим винрейтом (требуется минимум 3 матча).'
+                                }
+                                {activeNominationModal === 'streak' &&
+                                    'В огне — это игрок с лучшей активной серией побед на данный момент (требуется минимум 3 победы подряд). При равенстве серий приоритет отдается тому, кто сыграл свой победный матч позже остальных.'
+                                }
+                                {activeNominationModal === 'seriesKills' &&
+                                    'Рекорд за встречу — это наибольшее количество убийств, совершенное игроком за одну игровую сессию. Сессией считается череда матчей с интервалом между ними не более 6 часов.'
+                                }
+                                {activeNominationModal === 'totalKills' &&
+                                    'Король убийств — это игрок, совершивший наибольшее суммарное количество убийств за все матчи в выбранном периоде времени.'
+                                }
+                            </p>
+
+                            {/* Список кандидатов */}
+                            <div className="space-y-2.5">
+                                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                    {activeNominationModal === 'underdog' ? 'Очередь кандидатов (Underdog внизу)' : 'Претенденты на номинацию'}
+                                </h4>
+
+                                {activeNominationModal === 'mvp' && (
+                                    <div className="space-y-2">
+                                        {mvpCandidates.map((player, idx) => {
+                                            const isHighlighted = mvp?.name === player.name;
+                                            return (
+                                                <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-yellow-500/10 border-yellow-500/30 dark:border-yellow-500/20 text-yellow-950 dark:text-yellow-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-yellow-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
+                                                        <span className="truncate">{player.name}</span>
+                                                    </div>
+                                                    <div className="text-xs">
+                                                        <span>{Math.round((player.wins / player.matches) * 100)}% </span>
+                                                        <span className="text-[10px] opacity-60">({player.wins}/{player.matches} игр)</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {mvpCandidates.length === 0 && (
+                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих игроков</div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeNominationModal === 'underdog' && (
+                                    <div className="space-y-2">
+                                        {(() => {
+                                            const reversedList = [...underdogCandidates].reverse();
+                                            return reversedList.map((player, idx) => {
+                                                const originalIndex = underdogCandidates.findIndex(p => p.name === player.name);
+                                                const place = originalIndex !== -1 ? originalIndex + 1 : underdogCandidates.length - idx;
+                                                const isHighlighted = underdog?.name === player.name;
+                                                const loseStreak = streakStats[player.name]?.loseStreak || 0;
+                                                const subText = loseStreak >= 3
+                                                    ? `${loseStreak} поражений подряд`
+                                                    : `${Math.round((player.wins / player.matches) * 100)}% винрейт (${player.wins}/${player.matches} игр)`;
+
+                                                return (
+                                                    <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-red-500/10 border-red-500/30 dark:border-red-500/20 text-red-955 dark:text-red-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{place}</span>
+                                                            <span className="truncate">{player.name}</span>
+                                                        </div>
+                                                        <span className="text-xs opacity-80">{subText}</span>
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
+                                        {underdogCandidates.length === 0 && (
+                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих игроков</div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeNominationModal === 'streak' && (
+                                    <div className="space-y-2">
+                                        {streakCandidates.map((player, idx) => {
+                                            const isHighlighted = bestStreakPlayer?.name === player.name;
+                                            return (
+                                                <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-orange-500/10 border-orange-500/30 dark:border-orange-500/20 text-orange-950 dark:text-orange-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-orange-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
+                                                        <span className="truncate">{player.name}</span>
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">{player.streak} побед подряд</span>
+                                                </div>
+                                            );
+                                        })}
+                                        {streakCandidates.length === 0 && (
+                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет игроков с активной серией побед &gt;= 3</div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeNominationModal === 'seriesKills' && (
+                                    <div className="space-y-2">
+                                        {seriesKillsCandidates.map((player, idx) => {
+                                            const isHighlighted = topKillsSeriesPlayer?.name === player.name;
+                                            return (
+                                                <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-rose-500/10 border-rose-500/30 dark:border-rose-500/20 text-rose-955 dark:text-rose-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
+                                                        <span className="truncate">{player.name}</span>
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">{player.record} 💀 за серию</span>
+                                                </div>
+                                            );
+                                        })}
+                                        {seriesKillsCandidates.length === 0 && (
+                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих данных</div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeNominationModal === 'totalKills' && (
+                                    <div className="space-y-2">
+                                        {totalKillsCandidates.map((player, idx) => {
+                                            const isHighlighted = topTotalKillers[0]?.name === player.name;
+                                            return (
+                                                <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-red-500/10 border-red-500/30 dark:border-red-500/20 text-red-955 dark:text-red-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
+                                                        <span className="truncate">{player.name}</span>
+                                                    </div>
+                                                    <span className="text-xs font-semibold text-red-600 dark:text-red-400 font-bold">Всего: {player.total} 💀</span>
+                                                </div>
+                                            );
+                                        })}
+                                        {totalKillsCandidates.length === 0 && (
+                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих данных</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <button
+                            onClick={() => { setActiveNominationModal(null); triggerHaptic(10); }}
+                            className={`mt-6 w-full py-3 text-white font-bold rounded-2xl transition shadow-lg active:scale-98 ${
+                                activeNominationModal === 'mvp' ? 'bg-yellow-500 hover:bg-yellow-600 shadow-yellow-500/10' :
+                                activeNominationModal === 'underdog' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/10' :
+                                activeNominationModal === 'streak' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/10' :
+                                activeNominationModal === 'seriesKills' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/10' :
+                                'bg-red-500 hover:bg-red-600 shadow-red-500/10'
+                            }`}
                         >
                             Понятно
                         </button>
