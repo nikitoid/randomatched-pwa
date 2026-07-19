@@ -92,14 +92,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toLocaleDateString('en-CA');
-        
+
         let lastEveningStr = '';
         if (history.length > 0) {
             const maxTimestamp = history.reduce((max, m) => m.timestamp > max ? m.timestamp : max, 0);
             const adjustedTime = maxTimestamp - 6 * 60 * 60 * 1000;
             lastEveningStr = new Date(adjustedTime).toLocaleDateString('en-CA');
         }
-        
+
         return { todayStr: today, yesterdayStr, lastEveningDateStr: lastEveningStr };
     }, [history]);
 
@@ -130,13 +130,13 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     const formatPeriodLabel = () => {
         if (!filterStartDate && !filterEndDate) return 'Все время';
-        
+
         const formatDate = (dateStr: string) => {
             if (!dateStr) return '...';
             const [y, m, d] = dateStr.split('-');
             return `${d}.${m}.${y}`;
         };
-        
+
         if (filterStartDate && filterEndDate) {
             if (filterStartDate === filterEndDate) {
                 return formatDate(filterStartDate);
@@ -284,6 +284,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     // Match Tab State
     const [matchSearch, setMatchSearch] = useState('');
+    const [visibleMatchesCount, setVisibleMatchesCount] = useState(15);
+
 
     // Overview Card State
     const [activeOverviewCard, setActiveOverviewCard] = useState(0); // 0 = Streak, 1 = Underdog
@@ -374,10 +376,35 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         }
     }, [isOpen]);
 
-    // Сбрасываем подробную статистику при смене вкладки
+    // Сбрасываем подробную статистику и лимит матчей при смене вкладки
     useEffect(() => {
         setSelectedPlayer(null);
         setSelectedHero(null);
+        setVisibleMatchesCount(15);
+    }, [activeTab]);
+
+    // Сбрасываем лимит матчей при изменении поиска
+    useEffect(() => {
+        setVisibleMatchesCount(15);
+    }, [matchSearch]);
+
+    // Обработчик автоподгрузки матчей при скролле (Infinite Scroll)
+    useEffect(() => {
+        if (activeTab !== 'matches') return;
+        const container = contentContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            // Если осталось меньше 120 пикселей до низа контейнера, подгружаем еще матчи
+            if (container.scrollHeight - container.scrollTop - container.clientHeight < 120) {
+                setVisibleMatchesCount(prev => prev + 15);
+            }
+        };
+
+        container.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+        };
     }, [activeTab]);
 
     // Сбрасываем скролл контейнера при смене вкладки или переходе в детали
@@ -386,6 +413,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             contentContainerRef.current.scrollTop = 0;
         }
     }, [activeTab, selectedPlayer, selectedHero]);
+
 
     // Back Button Logic with useBackHandler
     useBackHandler(!!selectedPlayer, () => {
@@ -468,19 +496,19 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         return history.filter(match => {
             // Сдвигаем время матча на 6 часов назад
             const adjustedTime = match.timestamp - 6 * 60 * 60 * 1000;
-            
+
             if (filterStartDate) {
                 const [year, month, day] = filterStartDate.split('-').map(Number);
                 const startLimit = new Date(year, month - 1, day, 0, 0, 0, 0).getTime();
                 if (adjustedTime < startLimit) return false;
             }
-            
+
             if (filterEndDate) {
                 const [year, month, day] = filterEndDate.split('-').map(Number);
                 const endLimit = new Date(year, month - 1, day, 23, 59, 59, 999).getTime();
                 if (adjustedTime > endLimit) return false;
             }
-            
+
             return true;
         });
     }, [history, filterStartDate, filterEndDate]);
@@ -880,6 +908,60 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             return false;
         });
     }, [filteredHistory, matchSearch]);
+
+    // Matches slice for pagination/lazy loading
+    const matchesToShow = useMemo(() => {
+        return processedMatches.slice(0, visibleMatchesCount);
+    }, [processedMatches, visibleMatchesCount]);
+
+    const hasMoreMatches = processedMatches.length > visibleMatchesCount;
+
+    // Group matches by day (shifting by 6 hours for gaming evening)
+    const groupedMatches = useMemo(() => {
+        const groups: { [key: string]: MatchRecord[] } = {};
+
+        matchesToShow.forEach(match => {
+            const adjustedTime = match.timestamp - 6 * 60 * 60 * 1000;
+            const dateObj = new Date(adjustedTime);
+            const groupKey = dateObj.toLocaleDateString('en-CA');
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = [];
+            }
+            groups[groupKey].push(match);
+        });
+
+        return Object.entries(groups)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([dateStr, matches]) => {
+                let label = '';
+                const today = new Date().toLocaleDateString('en-CA');
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+
+                if (dateStr === today) {
+                    label = 'Сегодня';
+                } else if (dateStr === yesterdayStr) {
+                    label = 'Вчера';
+                } else {
+                    const [y, m, d] = dateStr.split('-');
+                    const months = [
+                        'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+                        'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+                    ];
+                    const monthName = months[parseInt(m, 10) - 1];
+                    label = `${parseInt(d, 10)} ${monthName} ${y}`;
+                }
+
+                return {
+                    dateStr,
+                    label,
+                    matches
+                };
+            });
+    }, [matchesToShow]);
+
 
 
 
@@ -1459,8 +1541,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     }}
                                     disabled={isDebugMode}
                                     className={`w-full flex items-center justify-center gap-3 p-3.5 rounded-2xl font-medium transition-colors ${isDebugMode
-                                            ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
-                                            : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40'
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
+                                        : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40'
                                         }`}
                                     title={isDebugMode ? "Облачный бэкап отключен в режиме разработчика" : ""}
                                     data-testid="backup-open-manager-btn"
@@ -1601,7 +1683,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             </div>
                             <div className="flex items-center gap-2">
                                 {(filterStartDate || filterEndDate) && (
-                                    <span 
+                                    <span
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleResetDateFilter();
@@ -1646,36 +1728,33 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             />
                                         </div>
                                     </div>
-                                    
+
                                     <div className="flex flex-wrap gap-2 pt-1">
                                         <button
                                             onClick={handlePresetToday}
-                                            className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${
-                                                filterStartDate === todayStr && filterEndDate === todayStr
+                                            className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === todayStr && filterEndDate === todayStr
                                                     ? 'bg-primary-500 text-white'
                                                     : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
-                                            }`}
+                                                }`}
                                         >
                                             Сегодня
                                         </button>
                                         <button
                                             onClick={handlePresetYesterday}
-                                            className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${
-                                                filterStartDate === yesterdayStr && filterEndDate === yesterdayStr
+                                            className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === yesterdayStr && filterEndDate === yesterdayStr
                                                     ? 'bg-primary-500 text-white'
                                                     : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
-                                            }`}
+                                                }`}
                                         >
                                             Вчера
                                         </button>
                                         {history.length > 0 && (
                                             <button
                                                 onClick={handlePresetLastEvening}
-                                                className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${
-                                                    filterStartDate === lastEveningDateStr && filterEndDate === lastEveningDateStr
+                                                className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === lastEveningDateStr && filterEndDate === lastEveningDateStr
                                                         ? 'bg-primary-500 text-white'
                                                         : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
-                                                }`}
+                                                    }`}
                                             >
                                                 Посл. игровой вечер
                                             </button>
@@ -2059,7 +2138,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                                             <Skull size={16} className="text-red-500" /> Боевые рекорды
                                         </h3>
-                                        
+
                                         {/* Сетка карточек рекордов */}
                                         <div className="grid grid-cols-2 gap-3 mb-4">
                                             {/* Рекорд за серию */}
@@ -2114,7 +2193,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 <HelpCircle size={14} />
                                             </button>
                                         </h3>
-                                        
+
                                         <div className="p-4 rounded-3xl bg-gradient-to-br from-white to-primary-500/5 dark:from-slate-900 dark:to-primary-500/5 border border-slate-200/60 dark:border-slate-800/80 shadow-sm relative overflow-hidden">
                                             <div className="space-y-3 relative z-10">
                                                 {sortedPlayers.filter(p => p.matches >= 3).slice(0, 5).map((player, i) => {
@@ -2266,62 +2345,204 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {activeTab === 'matches' && (
                             <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4 pb-4 pt-3">
 
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {!showTrashOnly && (
                                         <>
-                                            {processedMatches.map(match => {
-                                                const date = new Date(match.timestamp).toLocaleDateString();
-                                                const time = new Date(match.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                                                return (
-                                                    <div
-                                                        key={match.id}
-                                                        className={`relative overflow-hidden p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-150 dark:border-slate-800/60 transition-all ${editMode ? 'pr-12' : ''}`}
-                                                    >
-                                                        <div className="flex justify-between items-start mb-3 border-b border-slate-50 dark:border-slate-700 pb-2">
-                                                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Calendar size={10} /> {date} <span className="opacity-50">|</span> {time}</span>
-                                                        </div>
-
-                                                        <div className="space-y-2">
-                                                            {/* Team 1 */}
-                                                            <div className={`flex items-center gap-2 ${match.winner === 'team1' ? 'opacity-100' : 'opacity-60'}`}>
-                                                                <div className={`w-1.5 h-8 rounded-full ${match.winner === 'team1' ? 'bg-secondary-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-                                                                <div className="flex-1">
-                                                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
-                                                                        {match.team1.map(p => p.name).join(', ')}
-                                                                        {match.winner === 'team1' && <Trophy size={10} className="text-yellow-500" />}
-                                                                    </div>
-                                                                    <div className="text-[10px] text-slate-500 flex gap-2">
-                                                                        {match.team1.map(p => renderHeroWithKills(p)).join(' & ')}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Team 2 */}
-                                                            <div className={`flex items-center gap-2 ${match.winner === 'team2' ? 'opacity-100' : 'opacity-60'}`}>
-                                                                <div className={`w-1.5 h-8 rounded-full ${match.winner === 'team2' ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-                                                                <div className="flex-1">
-                                                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white">
-                                                                        {match.team2.map(p => p.name).join(', ')}
-                                                                        {match.winner === 'team2' && <Trophy size={10} className="text-yellow-500" />}
-                                                                    </div>
-                                                                    <div className="text-[10px] text-slate-500 flex gap-2">
-                                                                         {match.team2.map(p => renderHeroWithKills(p)).join(' & ')}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        {editMode && (
-                                                            <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col items-center justify-center gap-2 bg-slate-50 dark:bg-slate-900 border-l border-slate-150 dark:border-slate-800/60 z-10">
-                                                                <button onClick={() => openEditMatch(match)} className="p-2 text-blue-500 active:scale-90 transition-transform"><Edit2 size={16} /></button>
-                                                                <button onClick={() => { setDeleteConfirmId(match.id); setDeleteConfirmAction('move-to-trash'); }} className="p-2 text-red-500 active:scale-90 transition-transform"><Trash2 size={16} /></button>
-                                                            </div>
-                                                        )}
+                                            {groupedMatches.map(group => (
+                                                <div key={group.dateStr} className="space-y-2.5">
+                                                    {/* Заголовок группы (Игровой вечер) */}
+                                                    <div className="flex items-center gap-2 px-1 pt-3">
+                                                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                                            {group.label}
+                                                        </span>
+                                                        <div className="flex-1 h-px bg-slate-100 dark:bg-slate-800/60"></div>
                                                     </div>
-                                                );
-                                            })}
+
+                                                    {group.matches.map(match => {
+                                                        const time = new Date(match.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                                                        // Расчет счета и достижений
+                                                        const t1Kills = match.team1.reduce((sum, p) => sum + (p.kills || 0), 0);
+                                                        const t2Kills = match.team2.reduce((sum, p) => sum + (p.kills || 0), 0);
+                                                        const hasKills = match.team1.some(p => p.kills !== undefined) || match.team2.some(p => p.kills !== undefined);
+
+                                                        const winnerKills = match.winner === 'team1' ? t1Kills : t2Kills;
+                                                        const loserKills = match.winner === 'team1' ? t2Kills : t1Kills;
+
+                                                        const isFlawless = hasKills && winnerKills === 2 && loserKills === 0;
+                                                        const isTrade = hasKills && winnerKills === 2 && loserKills === 1;
+
+                                                        const t1Teamwork = match.winner === 'team1' && match.team1.length === 2 && match.team1.every(p => p.kills === 1);
+                                                        const t2Teamwork = match.winner === 'team2' && match.team2.length === 2 && match.team2.every(p => p.kills === 1);
+
+                                                        return (
+                                                            <div
+                                                                key={match.id}
+                                                                className={`relative overflow-hidden p-3.5 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-150/80 dark:border-slate-800/60 transition-all ${editMode ? 'pr-12' : ''}`}
+                                                            >
+                                                                {/* Шапка карточки матча */}
+                                                                <div className="flex justify-between items-center mb-3 border-b border-slate-50 dark:border-slate-700/50 pb-2">
+                                                                    <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                                                                        <Calendar size={10} /> {time}
+                                                                    </span>
+
+                                                                    {/* Вывод общего счета и бейджа */}
+                                                                    {hasKills && (
+                                                                        <div className="flex items-center gap-2">
+                                                                            {isFlawless && (
+                                                                                <span className="text-[9px] font-black px-1.5 py-0.5 bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400 rounded-md border border-green-100 dark:border-green-900/30">
+                                                                                    Всухую ⚡
+                                                                                </span>
+                                                                            )}
+                                                                            {isTrade && (
+                                                                                <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 rounded-md border border-orange-100 dark:border-orange-900/30">
+                                                                                    Размен ⚔️
+                                                                                </span>
+                                                                            )}
+                                                                            <span className="text-xs font-black text-slate-700 dark:text-slate-355 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 px-2 py-0.5 rounded-lg">
+                                                                                {t1Kills} : {t2Kills}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+
+                                                                <div className="space-y-3">
+                                                                    {/* Team 1 */}
+                                                                    <div className={`flex gap-3 ${match.winner === 'team1' ? 'opacity-100' : 'opacity-60'}`}>
+                                                                        <div className={`w-1 rounded-full shrink-0 ${match.winner === 'team1' ? 'bg-secondary-500' : 'bg-slate-200 dark:bg-slate-800'}`}></div>
+                                                                        <div className="flex-1 min-w-0 space-y-1">
+                                                                            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                                                                <span>Команда 1</span>
+                                                                                {match.winner === 'team1' && <Trophy size={9} className="text-yellow-500" />}
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                {match.team1.map(p => {
+                                                                                    const isWinner = match.winner === 'team1';
+                                                                                    return (
+                                                                                        <div key={p.name} className="flex items-center justify-between text-xs">
+                                                                                            <div className="flex items-center gap-1.5 truncate">
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const playerStat = sortedPlayers.find(ps => ps.name === p.name);
+                                                                                                        if (playerStat) openPlayerDetails(playerStat);
+                                                                                                    }}
+                                                                                                    className="font-bold text-slate-800 dark:text-slate-200 hover:text-primary-500 transition-colors truncate text-left"
+                                                                                                >
+                                                                                                    {p.name}
+                                                                                                </button>
+                                                                                                <span className="text-slate-400 text-[10px] shrink-0">на</span>
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const heroStat = sortedHeroes.find(hs => hs.name === p.heroName);
+                                                                                                        if (heroStat) openHeroDetails(heroStat);
+                                                                                                    }}
+                                                                                                    className="font-semibold text-slate-500 dark:text-slate-450 hover:text-primary-500 transition-colors flex items-center gap-1 bg-slate-50 dark:bg-slate-850 px-1.5 py-0.5 rounded-md border border-slate-100 dark:border-slate-800/80 text-[10px] truncate"
+                                                                                                >
+                                                                                                    <Shield size={9} className="text-slate-400" />
+                                                                                                    {p.heroName}
+                                                                                                </button>
+                                                                                            </div>
+                                                                                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                                                                                {p.kills !== undefined && (
+                                                                                                    <span className="font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-850 px-1.5 py-0.5 rounded text-[10px]" title="Количество убийств">
+                                                                                                        {p.kills} 💀
+                                                                                                    </span>
+                                                                                                )}
+                                                                                                {isWinner && p.kills === 2 && (
+                                                                                                    <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-md" title="Совершил оба убийства команды">
+                                                                                                        Double Kill 🔥
+                                                                                                    </span>
+                                                                                                )}
+                                                                                                {isWinner && t1Teamwork && (
+                                                                                                    <span className="text-[9px] font-black px-1.5 py-0.5 bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400 rounded-md" title="Каждый игрок сделал по убийству">
+                                                                                                        🤝
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Team 2 */}
+                                                                    <div className={`flex gap-3 ${match.winner === 'team2' ? 'opacity-100' : 'opacity-60'}`}>
+                                                                        <div className={`w-1 rounded-full shrink-0 ${match.winner === 'team2' ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-800'}`}></div>
+                                                                        <div className="flex-1 min-w-0 space-y-1">
+                                                                            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                                                                <span>Команда 2</span>
+                                                                                {match.winner === 'team2' && <Trophy size={9} className="text-yellow-500" />}
+                                                                            </div>
+                                                                            <div className="space-y-1.5">
+                                                                                {match.team2.map(p => {
+                                                                                    const isWinner = match.winner === 'team2';
+                                                                                    return (
+                                                                                        <div key={p.name} className="flex items-center justify-between text-xs">
+                                                                                            <div className="flex items-center gap-1.5 truncate">
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const playerStat = sortedPlayers.find(ps => ps.name === p.name);
+                                                                                                        if (playerStat) openPlayerDetails(playerStat);
+                                                                                                    }}
+                                                                                                    className="font-bold text-slate-800 dark:text-slate-200 hover:text-primary-500 transition-colors truncate text-left"
+                                                                                                >
+                                                                                                    {p.name}
+                                                                                                </button>
+                                                                                                <span className="text-slate-400 text-[10px] shrink-0">на</span>
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const heroStat = sortedHeroes.find(hs => hs.name === p.heroName);
+                                                                                                        if (heroStat) openHeroDetails(heroStat);
+                                                                                                    }}
+                                                                                                    className="font-semibold text-slate-500 dark:text-slate-450 hover:text-primary-500 transition-colors flex items-center gap-1 bg-slate-50 dark:bg-slate-850 px-1.5 py-0.5 rounded-md border border-slate-100 dark:border-slate-800/80 text-[10px] truncate"
+                                                                                                >
+                                                                                                    <Shield size={9} className="text-slate-400" />
+                                                                                                    {p.heroName}
+                                                                                                </button>
+                                                                                            </div>
+                                                                                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                                                                                {p.kills !== undefined && (
+                                                                                                    <span className="font-bold text-slate-500 dark:text-slate-450 bg-slate-50 dark:bg-slate-850 px-1.5 py-0.5 rounded text-[10px]" title="Количество убийств">
+                                                                                                        {p.kills} 💀
+                                                                                                    </span>
+                                                                                                )}
+                                                                                                {isWinner && p.kills === 2 && (
+                                                                                                    <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-md" title="Совершил оба убийства команды">
+                                                                                                        Double Kill 🔥
+                                                                                                    </span>
+                                                                                                )}
+                                                                                                {isWinner && t2Teamwork && (
+                                                                                                    <span className="text-[9px] font-black px-1.5 py-0.5 bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400 rounded-md" title="Каждый игрок сделал по убийству">
+                                                                                                        🤝
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {editMode && (
+                                                                    <div className="absolute right-0 top-0 bottom-0 w-12 flex flex-col items-center justify-center gap-2 bg-slate-50 dark:bg-slate-900 border-l border-slate-150 dark:border-slate-800/60 z-10">
+                                                                        <button onClick={() => openEditMatch(match)} className="p-2 text-blue-500 active:scale-90 transition-transform"><Edit2 size={16} /></button>
+                                                                        <button onClick={() => { setDeleteConfirmId(match.id); setDeleteConfirmAction('move-to-trash'); }} className="p-2 text-red-500 active:scale-90 transition-transform"><Trash2 size={16} /></button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
                                             {processedMatches.length === 0 && <div className="text-center text-slate-400 py-10">Матчи не найдены</div>}
+                                            {hasMoreMatches && (
+                                                <div className="text-center py-4 text-xs text-slate-450 dark:text-slate-500 flex items-center justify-center gap-2 animate-pulse">
+                                                    <Loader2 size={12} className="animate-spin" /> Загрузка матчей...
+                                                </div>
+                                            )}
                                         </>
                                     )}
                                 </div>
@@ -2654,7 +2875,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                         <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
                                                         <span className="truncate">{player.name}</span>
                                                     </div>
-                                                    <span className="text-xs font-semibold text-red-600 dark:text-red-400 font-bold">Всего: {player.total} 💀</span>
+                                                    <span className="text-xs font-semibold text-red-600 dark:text-red-400">Всего: {player.total} 💀</span>
                                                 </div>
                                             );
                                         })}
@@ -2669,13 +2890,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {/* Footer */}
                         <button
                             onClick={() => { setActiveNominationModal(null); triggerHaptic(10); }}
-                            className={`mt-6 w-full py-3 text-white font-bold rounded-2xl transition shadow-lg active:scale-98 ${
-                                activeNominationModal === 'mvp' ? 'bg-yellow-500 hover:bg-yellow-600 shadow-yellow-500/10' :
-                                activeNominationModal === 'underdog' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/10' :
-                                activeNominationModal === 'streak' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/10' :
-                                activeNominationModal === 'seriesKills' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/10' :
-                                'bg-red-500 hover:bg-red-600 shadow-red-500/10'
-                            }`}
+                            className={`mt-6 w-full py-3 text-white font-bold rounded-2xl transition shadow-lg active:scale-98 ${activeNominationModal === 'mvp' ? 'bg-yellow-500 hover:bg-yellow-600 shadow-yellow-500/10' :
+                                    activeNominationModal === 'underdog' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/10' :
+                                        activeNominationModal === 'streak' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/10' :
+                                            activeNominationModal === 'seriesKills' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/10' :
+                                                'bg-red-500 hover:bg-red-600 shadow-red-500/10'
+                                }`}
                         >
                             Понятно
                         </button>
