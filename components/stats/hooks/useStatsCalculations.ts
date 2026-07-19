@@ -1,0 +1,297 @@
+import { useMemo } from 'react';
+import { MatchRecord, PlayerStat, HeroStat, MatchPlayer } from '../../../types';
+
+export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
+    return useMemo(() => {
+        const playerStats: Record<string, PlayerStat> = {};
+        const heroStats: Record<string, HeroStat> = {};
+        let totalMatches = 0;
+
+        filteredHistory.forEach(match => {
+            totalMatches++;
+            const winner = match.winner;
+
+            const processPlayer = (name: string, won: boolean, heroName: string) => {
+                const cleanName = name.trim();
+                const cleanHero = heroName.trim() || 'Unknown';
+                if (!cleanName) return;
+
+                if (!playerStats[cleanName]) {
+                    playerStats[cleanName] = { name: cleanName, matches: 0, wins: 0, losses: 0, heroesPlayed: {}, score: 0 };
+                }
+                playerStats[cleanName].matches++;
+                if (won) playerStats[cleanName].wins++;
+                else playerStats[cleanName].losses++;
+
+                playerStats[cleanName].heroesPlayed[cleanHero] = (playerStats[cleanName].heroesPlayed[cleanHero] || 0) + 1;
+
+                // Hero Stats
+                if (cleanHero !== 'Unknown') {
+                    if (!heroStats[cleanHero]) {
+                        heroStats[cleanHero] = { name: cleanHero, matches: 0, wins: 0, losses: 0 };
+                    }
+                    heroStats[cleanHero].matches++;
+                    if (won) heroStats[cleanHero].wins++;
+                    else heroStats[cleanHero].losses++;
+                }
+            };
+
+            match.team1.forEach(p => processPlayer(p.name, winner === 'team1', p.heroName));
+            match.team2.forEach(p => processPlayer(p.name, winner === 'team2', p.heroName));
+        });
+
+        // Calculate Weighted Score for Players (Bayesian Average with C = 25, m = 0.5)
+        Object.values(playerStats).forEach(p => {
+            const C = 25;
+            const m = 0.5;
+            p.score = (p.wins + C * m) / (p.matches + C);
+        });
+
+        const sortedPlayers = Object.values(playerStats).sort((a, b) => b.score - a.score || b.wins - a.wins);
+        const sortedHeroes = Object.values(heroStats).sort((a, b) => (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches);
+
+        const qualifiedPlayers = sortedPlayers.filter(p => p.matches >= 3);
+        const mvp = qualifiedPlayers.length > 0 ? qualifiedPlayers[0] : (sortedPlayers.length > 0 ? sortedPlayers[0] : null);
+        // Базовый underdog по винрейту (fallback) — минимум 3 матча для объективности
+        const qualifiedForUnderdog = sortedPlayers.filter(p => p.matches >= 3 && (!mvp || p.name !== mvp.name));
+        const fallbackUnderdog = qualifiedForUnderdog.length > 0
+            ? qualifiedForUnderdog[qualifiedForUnderdog.length - 1]
+            : (qualifiedPlayers.length > 1 ? qualifiedPlayers[qualifiedPlayers.length - 1] : null);
+
+        // Streak Calculation (победы и поражения)
+        // lastStreakMatchIndex отслеживает индекс последнего матча в серии игрока
+        const streakStats: Record<string, {
+            current: number, // текущая серия побед (положительное) 
+            max: number,
+            lastStreakMatchIndex: number,
+            loseStreak: number, // текущая серия поражений
+            lastLoseStreakMatchIndex: number
+        }> = {};
+        // History is Newest -> Oldest. Reverse to process chronologically.
+        const reversedHistory = [...filteredHistory].reverse();
+        reversedHistory.forEach((match, matchIndex) => {
+            const winner = match.winner;
+            const processStreak = (p: MatchPlayer, won: boolean) => {
+                const name = p.name;
+                if (!streakStats[name]) streakStats[name] = {
+                    current: 0,
+                    max: 0,
+                    lastStreakMatchIndex: -1,
+                    loseStreak: 0,
+                    lastLoseStreakMatchIndex: -1
+                };
+
+                if (won) {
+                    streakStats[name].current += 1;
+                    streakStats[name].lastStreakMatchIndex = matchIndex;
+                    if (streakStats[name].current > streakStats[name].max) {
+                        streakStats[name].max = streakStats[name].current;
+                    }
+                    // Сбрасываем серию поражений при победе
+                    streakStats[name].loseStreak = 0;
+                    streakStats[name].lastLoseStreakMatchIndex = -1;
+                } else {
+                    // Сбрасываем серию побед при поражении
+                    streakStats[name].current = 0;
+                    streakStats[name].lastStreakMatchIndex = -1;
+                    // Увеличиваем серию поражений
+                    streakStats[name].loseStreak += 1;
+                    streakStats[name].lastLoseStreakMatchIndex = matchIndex;
+                }
+            };
+
+            match.team1.forEach(p => processStreak(p, winner === 'team1'));
+            match.team2.forEach(p => processStreak(p, winner === 'team2'));
+        });
+
+        // Find Best Active Win Streak ("В огне")
+        // При равных сериях приоритет отдаётся тому, кто последним получил этот статус
+        let bestStreakPlayer: { name: string, streak: number } | null = null;
+        let bestStreakMatchIndex = -1;
+        Object.entries(streakStats).forEach(([name, stats]) => {
+            if (stats.current >= 3) {
+                if (!bestStreakPlayer ||
+                    stats.current > bestStreakPlayer.streak ||
+                    (stats.current === bestStreakPlayer.streak && stats.lastStreakMatchIndex > bestStreakMatchIndex)) {
+                    bestStreakPlayer = { name, streak: stats.current };
+                    bestStreakMatchIndex = stats.lastStreakMatchIndex;
+                }
+            }
+        });
+
+        // Find Underdog (комбинированный подход)
+        // Приоритет 1: Игрок с активной серией поражений >= 3
+        // Приоритет 2: При равных сериях — последний получивший этот статус
+        // Fallback: Игрок с худшим винрейтом (>= 3 матчей)
+        let underdogByLoseStreak: { name: string, loseStreak: number, player: PlayerStat } | null = null;
+        let underdogLoseStreakMatchIndex = -1;
+        Object.entries(streakStats).forEach(([name, stats]) => {
+            if (stats.loseStreak >= 3) {
+                const player = playerStats[name];
+                if (player && (!mvp || player.name !== mvp.name)) {
+                    if (!underdogByLoseStreak ||
+                        stats.loseStreak > underdogByLoseStreak.loseStreak ||
+                        (stats.loseStreak === underdogByLoseStreak.loseStreak && stats.lastLoseStreakMatchIndex > underdogLoseStreakMatchIndex)) {
+                        underdogByLoseStreak = { name, loseStreak: stats.loseStreak, player };
+                        underdogLoseStreakMatchIndex = stats.lastLoseStreakMatchIndex;
+                    }
+                }
+            }
+        });
+
+        // Финальный underdog: приоритет серии поражений, иначе fallback
+        const underdog = underdogByLoseStreak ? underdogByLoseStreak.player : fallbackUnderdog;
+
+        // --- РАСЧЕТ БОЕВОЙ СТАТИСТИКИ (КИЛЛОВ) ---
+        const playerMatchesMap: Record<string, MatchRecord[]> = {};
+        filteredHistory.forEach(match => {
+            const processPlayerMatch = (p: MatchPlayer) => {
+                const name = p.name.trim();
+                if (!name) return;
+                if (!playerMatchesMap[name]) {
+                    playerMatchesMap[name] = [];
+                }
+                playerMatchesMap[name].push(match);
+            };
+            match.team1.forEach(processPlayerMatch);
+            match.team2.forEach(processPlayerMatch);
+        });
+
+        const playerKillsStats: Record<string, { total: number, maxSeries: number }> = {};
+        Object.entries(playerMatchesMap).forEach(([name, matches]) => {
+            const sorted = [...matches].sort((a, b) => a.timestamp - b.timestamp);
+            let total = 0;
+            let maxSeries = 0;
+            let currentSeriesKills = 0;
+            let lastTimestamp = 0;
+
+            sorted.forEach(m => {
+                const isTeam1 = m.team1.some(p => p.name === name);
+                const pData = isTeam1 ? m.team1.find(p => p.name === name) : m.team2.find(p => p.name === name);
+                const kills = (pData && pData.kills !== undefined && pData.kills !== null) ? pData.kills : 0;
+                total += kills;
+
+                if (lastTimestamp === 0) {
+                    currentSeriesKills = kills;
+                    lastTimestamp = m.timestamp;
+                } else if (m.timestamp - lastTimestamp <= 6 * 60 * 60 * 1000) {
+                    currentSeriesKills += kills;
+                    lastTimestamp = m.timestamp;
+                } else {
+                    if (currentSeriesKills > maxSeries) {
+                        maxSeries = currentSeriesKills;
+                    }
+                    currentSeriesKills = kills;
+                    lastTimestamp = m.timestamp;
+                }
+            });
+            if (currentSeriesKills > maxSeries) {
+                maxSeries = currentSeriesKills;
+            }
+
+            playerKillsStats[name] = {
+                total,
+                maxSeries
+            };
+        });
+
+        // 1. Лидер по серии убийств
+        let topKillsSeriesPlayer: { name: string, record: number } | null = null;
+        Object.entries(playerKillsStats).forEach(([name, stats]) => {
+            if (stats.maxSeries > 0) {
+                if (!topKillsSeriesPlayer || stats.maxSeries > topKillsSeriesPlayer.record) {
+                    topKillsSeriesPlayer = { name, record: stats.maxSeries };
+                }
+            }
+        });
+
+        // 2. Лидеры по общему числу убийств (топ-3)
+        const topTotalKillers = Object.entries(playerKillsStats)
+            .map(([name, stats]) => ({ name, total: stats.total }))
+            .filter(k => k.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 3);
+
+        // 3. Самый кровавый матч
+        let bloodiestMatch: { id: string, timestamp: number, totalKills: number, players: string } | null = null;
+        let totalKillsAll = 0;
+        filteredHistory.forEach(m => {
+            const t1Kills = m.team1.reduce((sum, p) => sum + (p.kills || 0), 0);
+            const t2Kills = m.team2.reduce((sum, p) => sum + (p.kills || 0), 0);
+            const total = t1Kills + t2Kills;
+            totalKillsAll += total;
+
+            if (total > 0) {
+                if (!bloodiestMatch || total > bloodiestMatch.totalKills) {
+                    const playerNames = [...m.team1, ...m.team2].map(p => p.name).join(', ');
+                    bloodiestMatch = {
+                        id: m.id,
+                        timestamp: m.timestamp,
+                        totalKills: total,
+                        players: playerNames
+                    };
+                }
+            }
+        });
+
+        const avgKillsPerMatch = filteredHistory.length > 0 ? totalKillsAll / filteredHistory.length : 0;
+
+        // 1. Кандидаты на MVP (топ-5 по эффективности из игроков с >= 3 матчами)
+        const mvpCandidates = sortedPlayers.filter(p => p.matches >= 3).slice(0, 5);
+
+        // 2. Кандидаты на Underdog (топ-5)
+        const playersWithStats = sortedPlayers.filter(p => p.matches >= 3 && (!mvp || p.name !== mvp.name));
+        const withLoseStreak = playersWithStats
+            .filter(p => (streakStats[p.name]?.loseStreak || 0) >= 3)
+            .sort((a, b) => {
+                const sA = streakStats[a.name];
+                const sB = streakStats[b.name];
+                return sB.loseStreak - sA.loseStreak || sB.lastLoseStreakMatchIndex - sA.lastLoseStreakMatchIndex;
+            });
+        const withoutLoseStreak = playersWithStats
+            .filter(p => (streakStats[p.name]?.loseStreak || 0) < 3)
+            .reverse();
+        const underdogCandidates = [...withLoseStreak, ...withoutLoseStreak].slice(0, 5);
+
+        // 3. Кандидаты на "В огне" (топ-5 по текущей серии побед >= 3)
+        const streakCandidates = Object.entries(streakStats)
+            .map(([name, stats]) => ({ name, streak: stats.current }))
+            .filter(s => s.streak >= 3)
+            .sort((a, b) => b.streak - a.streak || (streakStats[b.name]?.lastStreakMatchIndex || 0) - (streakStats[a.name]?.lastStreakMatchIndex || 0))
+            .slice(0, 5);
+
+        // 4. Кандидаты на Рекорд за встречу (серия убийств, топ-5)
+        const seriesKillsCandidates = Object.entries(playerKillsStats)
+            .map(([name, stats]) => ({ name, record: stats.maxSeries }))
+            .filter(k => k.record > 0)
+            .sort((a, b) => b.record - a.record)
+            .slice(0, 5);
+
+        // 5. Кандидаты на Короля убийств (топ-5 по общему числу убийств)
+        const totalKillsCandidates = Object.entries(playerKillsStats)
+            .map(([name, stats]) => ({ name, total: stats.total }))
+            .filter(k => k.total > 0)
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 5);
+
+        return {
+            totalMatches,
+            sortedPlayers,
+            sortedHeroes,
+            mvp,
+            underdog,
+            streakStats,
+            bestStreakPlayer,
+            topKillsSeriesPlayer,
+            topTotalKillers,
+            bloodiestMatch,
+            totalKillsAll,
+            avgKillsPerMatch,
+            mvpCandidates,
+            underdogCandidates,
+            streakCandidates,
+            seriesKillsCandidates,
+            totalKillsCandidates
+        };
+    }, [filteredHistory]);
+};
