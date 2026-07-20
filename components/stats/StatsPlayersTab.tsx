@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, Flame, Skull, Percent } from 'lucide-react';
+import { Star, Flame, Skull, Percent, HelpCircle } from 'lucide-react';
 import { PlayerStat, MatchRecord } from '../../types';
 import { PlayerDetails } from '../PlayerDetails';
 
@@ -15,6 +15,7 @@ interface StatsPlayersTabProps {
     openPlayerDetails: (player: PlayerStat) => void;
     closeDetails: () => void;
     handleTitleClick?: (e: React.MouseEvent) => void;
+    onOpenEfficiencyBreakdown?: () => void;
 }
 
 const getWinsText = (count: number) => {
@@ -44,7 +45,8 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
     playerSort,
     openPlayerDetails,
     closeDetails,
-    handleTitleClick
+    handleTitleClick,
+    onOpenEfficiencyBreakdown
 }) => {
     return (
         <div className={`animate-in fade-in slide-in-from-right-4 duration-300 ${selectedPlayer ? 'p-0' : 'px-4 pb-4 pt-3'}`}>
@@ -62,6 +64,20 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                     />
                 ) : (
                     <>
+                        {playerSort === 'efficiency' && onOpenEfficiencyBreakdown && (
+                            <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400">
+                                <span className="font-semibold text-slate-600 dark:text-slate-400">
+                                    Сортировка по эффективности
+                                </span>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onOpenEfficiencyBreakdown(); }}
+                                    className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-bold hover:underline active:opacity-80 transition-opacity"
+                                >
+                                    <HelpCircle size={13} />
+                                    <span>Расшифровка расчёта</span>
+                                </button>
+                            </div>
+                        )}
                         {processedPlayers.map((player, idx) => (
                             <div
                                 key={player.name}
@@ -89,6 +105,11 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                             {mvp?.name === player.name && (
                                                 <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-md flex items-center gap-0.5">
                                                     <Star size={10} fill="currentColor" /> MVP
+                                                </div>
+                                            )}
+                                            {player.isInactive && (
+                                                <div className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-md flex items-center gap-0.5" title="Не играл(а) более 60 дней">
+                                                    Неактивен
                                                 </div>
                                             )}
                                         </div>

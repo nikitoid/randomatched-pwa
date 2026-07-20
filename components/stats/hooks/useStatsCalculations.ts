@@ -7,9 +7,19 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
         const heroStats: Record<string, HeroStat> = {};
         let totalMatches = 0;
 
+        const playerWeightedStats: Record<string, { weightedWins: number; weightedMatches: number }> = {};
+        const now = Date.now();
+        const INACTIVITY_DAYS = 60;
+        const INACTIVITY_MS = INACTIVITY_DAYS * 24 * 60 * 60 * 1000;
+        const HALF_LIFE_DAYS = 60;
+
         filteredHistory.forEach(match => {
             totalMatches++;
             const winner = match.winner;
+            const matchTimestamp = match.timestamp || now;
+            const ageInDays = Math.max(0, (now - matchTimestamp) / (1000 * 60 * 60 * 24));
+            // Экспоненциальное затухание по времени: W = 2^(-ageInDays / HALF_LIFE_DAYS)
+            const weight = Math.pow(2, -ageInDays / HALF_LIFE_DAYS);
 
             const processPlayer = (name: string, won: boolean, heroName: string, kills?: number) => {
                 const cleanName = name.trim();
@@ -17,11 +27,32 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
                 if (!cleanName) return;
 
                 if (!playerStats[cleanName]) {
-                    playerStats[cleanName] = { name: cleanName, matches: 0, wins: 0, losses: 0, heroesPlayed: {}, score: 0, totalKills: 0, avgKills: 0 };
+                    playerStats[cleanName] = {
+                        name: cleanName,
+                        matches: 0,
+                        wins: 0,
+                        losses: 0,
+                        heroesPlayed: {},
+                        score: 0,
+                        totalKills: 0,
+                        avgKills: 0,
+                        lastMatchTimestamp: 0,
+                        isInactive: false
+                    };
+                    playerWeightedStats[cleanName] = { weightedWins: 0, weightedMatches: 0 };
                 }
                 playerStats[cleanName].matches++;
                 if (won) playerStats[cleanName].wins++;
                 else playerStats[cleanName].losses++;
+
+                playerWeightedStats[cleanName].weightedMatches += weight;
+                if (won) {
+                    playerWeightedStats[cleanName].weightedWins += weight;
+                }
+
+                if (!playerStats[cleanName].lastMatchTimestamp || matchTimestamp > playerStats[cleanName].lastMatchTimestamp!) {
+                    playerStats[cleanName].lastMatchTimestamp = matchTimestamp;
+                }
 
                 if (kills !== undefined && kills !== null) {
                     playerStats[cleanName].totalKills = (playerStats[cleanName].totalKills || 0) + kills;
@@ -44,21 +75,41 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             match.team2.forEach(p => processPlayer(p.name, winner === 'team2', p.heroName, p.kills));
         });
 
-        // Calculate Weighted Score for Players (Bayesian Average with C = 25, m = 0.5)
+        // Calculate Weighted Score for Players (Bayesian Average with Time-Decay: C = 25, m = 0.5)
         Object.values(playerStats).forEach(p => {
             const C = 25;
             const m = 0.5;
-            p.score = (p.wins + C * m) / (p.matches + C);
+            const weighted = playerWeightedStats[p.name] || { weightedWins: p.wins, weightedMatches: p.matches };
+            p.weightedWins = Number(weighted.weightedWins.toFixed(2));
+            p.weightedMatches = Number(weighted.weightedMatches.toFixed(2));
+            p.score = (weighted.weightedWins + C * m) / (weighted.weightedMatches + C);
             p.avgKills = p.matches > 0 ? (p.totalKills || 0) / p.matches : 0;
+            if (p.lastMatchTimestamp && (now - p.lastMatchTimestamp > INACTIVITY_MS)) {
+                p.isInactive = true;
+            } else {
+                p.isInactive = false;
+            }
         });
 
-        const sortedPlayers = Object.values(playerStats).sort((a, b) => b.score - a.score || b.wins - a.wins);
+        const isQualified = (p: PlayerStat) => !p.isInactive && p.matches >= 3 && (p.weightedMatches ?? p.matches) >= 3.0;
+
+        const sortedPlayers = Object.values(playerStats).sort((a, b) => {
+            const aActive = !a.isInactive ? 1 : 0;
+            const bActive = !b.isInactive ? 1 : 0;
+            if (aActive !== bActive) return bActive - aActive;
+
+            const aQual = isQualified(a) ? 1 : 0;
+            const bQual = isQualified(b) ? 1 : 0;
+            if (aQual !== bQual) return bQual - aQual;
+
+            return b.score - a.score || b.wins - a.wins;
+        });
         const sortedHeroes = Object.values(heroStats).sort((a, b) => (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches);
 
-        const qualifiedPlayers = sortedPlayers.filter(p => p.matches >= 3);
+        const qualifiedPlayers = sortedPlayers.filter(isQualified);
         const mvp = qualifiedPlayers.length > 0 ? qualifiedPlayers[0] : (sortedPlayers.length > 0 ? sortedPlayers[0] : null);
         // Базовый underdog по винрейту (fallback) — минимум 3 матча для объективности
-        const qualifiedForUnderdog = sortedPlayers.filter(p => p.matches >= 3 && (!mvp || p.name !== mvp.name));
+        const qualifiedForUnderdog = sortedPlayers.filter(p => isQualified(p) && (!mvp || p.name !== mvp.name));
         const fallbackUnderdog = qualifiedForUnderdog.length > 0
             ? qualifiedForUnderdog[qualifiedForUnderdog.length - 1]
             : (qualifiedPlayers.length > 1 ? qualifiedPlayers[qualifiedPlayers.length - 1] : null);

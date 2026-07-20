@@ -259,12 +259,19 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
 
                     <div className="p-4 rounded-3xl bg-gradient-to-br from-white to-primary-500/5 dark:from-slate-900 dark:to-primary-500/5 border border-slate-200/60 dark:border-slate-800/80 shadow-sm relative overflow-hidden">
                         <div className="space-y-3 relative z-10">
-                            {sortedPlayers.filter(p => p.matches >= 3).slice(0, 5).map((player, i) => {
+                            {sortedPlayers.slice(0, 5).map((player, i) => {
                                 const winRate = (player.wins / player.matches) * 100;
                                 return (
                                     <div key={player.name}>
                                         <div className="flex justify-between text-xs font-semibold mb-1.5">
-                                            <span className="text-slate-700 dark:text-slate-300">{i + 1}. {player.name}</span>
+                                            <span className="text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                                <span>{i + 1}. {player.name}</span>
+                                                {player.isInactive && (
+                                                    <span className="text-[9px] font-normal px-1 py-0.2 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded">
+                                                        Неактивен
+                                                    </span>
+                                                )}
+                                            </span>
                                             <span className="text-slate-500 dark:text-slate-400">{Math.round(winRate)}% <span className="text-[9px] opacity-65 font-normal">({player.wins}/{player.matches})</span></span>
                                         </div>
                                         <div className="h-2.5 w-full bg-slate-100/70 dark:bg-slate-800/50 rounded-full overflow-hidden">
@@ -273,7 +280,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                                     </div>
                                 )
                             })}
-                            {sortedPlayers.filter(p => p.matches >= 3).length === 0 && (
+                            {sortedPlayers.length === 0 && (
                                 <div className="text-xs text-slate-400 italic text-center py-4">Недостаточно матчей для статистики</div>
                             )}
                         </div>

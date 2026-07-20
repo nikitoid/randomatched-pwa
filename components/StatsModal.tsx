@@ -89,6 +89,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
     const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
     const [showEfficiencyInfo, setShowEfficiencyInfo] = useState(false);
+    const [showEfficiencyBreakdown, setShowEfficiencyBreakdown] = useState(false);
     const [activeNominationModal, setActiveNominationModal] = useState<'mvp' | 'underdog' | 'streak' | 'seriesKills' | 'totalKills' | null>(null);
 
 
@@ -108,6 +109,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     useBackHandler(showEfficiencyInfo, () => {
         setShowEfficiencyInfo(false);
     }, { id: 'stats-efficiency-info', priority: 40 });
+
+    useBackHandler(showEfficiencyBreakdown, () => {
+        setShowEfficiencyBreakdown(false);
+    }, { id: 'stats-efficiency-breakdown', priority: 45 });
 
     useBackHandler(!!activeNominationModal, () => {
         setActiveNominationModal(null);
@@ -449,17 +454,26 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         }
 
         result.sort((a, b) => {
+            const isQual = (p: PlayerStat) => !p.isInactive && p.matches >= 3 && (p.weightedMatches ?? p.matches) >= 3.0;
             if (playerSort === 'efficiency') {
-                const aQual = a.matches >= 3;
-                const bQual = b.matches >= 3;
-                if (aQual && !bQual) return -1;
-                if (!aQual && bQual) return 1;
+                const aActive = !a.isInactive ? 1 : 0;
+                const bActive = !b.isInactive ? 1 : 0;
+                if (aActive !== bActive) return bActive - aActive;
+
+                const aQual = isQual(a) ? 1 : 0;
+                const bQual = isQual(b) ? 1 : 0;
+                if (aQual !== bQual) return bQual - aQual;
+
                 return b.score - a.score || b.wins - a.wins;
             } else if (playerSort === 'winrate') {
-                const aQual = a.matches >= 3;
-                const bQual = b.matches >= 3;
-                if (aQual && !bQual) return -1;
-                if (!aQual && bQual) return 1;
+                const aActive = !a.isInactive ? 1 : 0;
+                const bActive = !b.isInactive ? 1 : 0;
+                if (aActive !== bActive) return bActive - aActive;
+
+                const aQual = isQual(a) ? 1 : 0;
+                const bQual = isQual(b) ? 1 : 0;
+                if (aQual !== bQual) return bQual - aQual;
+
                 return (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches;
             } else if (playerSort === 'matches') {
                 return b.matches - a.matches || (b.wins / b.matches) - (a.wins / a.matches);
@@ -1229,6 +1243,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 }}
                                 closeDetails={() => setSelectedPlayer(null)}
                                 handleTitleClick={handleTitleClick}
+                                onOpenEfficiencyBreakdown={() => { setShowEfficiencyBreakdown(true); triggerHaptic(10); }}
                             />
                         )}
 
@@ -1651,11 +1666,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750">
                                 <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                    Дополнительные правила
+                                    Правила квалификации
                                 </div>
                                 <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400 pl-0.5">
-                                    <li>Игроки с <strong>3+ матчами</strong> всегда располагаются в рейтинге выше игроков с 1–2 играми.</li>
-                                    <li>При одинаковом балле выше ставится игрок с большим числом побед.</li>
+                                    <li>Для попадания в основной ТОП требуется минимум <strong>3 активных (весовых) матча</strong>.</li>
+                                    <li>Неактивные игроки, не посещавшие игры более 2 месяцев, опускаются ниже активных квалифицированных участников.</li>
+                                    <li>При одинаковом рейтинге выше ставится игрок с большим числом побед.</li>
                                 </ul>
                             </div>
                         </div>
@@ -1663,6 +1679,120 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {/* Footer */}
                         <button
                             onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
+                            className="mt-4 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/20 active:scale-98 text-sm shrink-0"
+                        >
+                            Понятно
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Efficiency Breakdown Modal */}
+            {showEfficiencyBreakdown && createPortal(
+                <div data-testid="stats-efficiency-breakdown-modal" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-2xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+                                    <TrendingUp size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight">
+                                        Расшифровка эффективности
+                                    </h3>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                                        Подробный расчёт рейтинга игроков
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => { setShowEfficiencyBreakdown(false); triggerHaptic(10); }}
+                                className="p-1.5 rounded-full text-slate-400 active:text-slate-700 dark:active:text-white active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+                                aria-label="Закрыть"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Formula legend */}
+                        <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750 text-xs text-slate-600 dark:text-slate-300 mb-3 shrink-0 flex flex-col items-center">
+                            <div className="inline-flex items-center gap-2 font-bold text-primary-600 dark:text-primary-400 text-[11px] my-1 select-none">
+                                <span className="text-slate-500 dark:text-slate-400 font-semibold">Рейтинг =</span>
+                                <div className="inline-flex flex-col items-center leading-tight">
+                                    <span className="px-1.5 pb-0.5 border-b border-primary-500/50 dark:border-primary-400/50 w-full text-center">Победы с учётом времени + 12.5</span>
+                                    <span className="px-1.5 pt-0.5 w-full text-center">Матчи с учётом времени + 25</span>
+                                </div>
+                            </div>
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-1.5">
+                                *Для квалификации в ТОП требуется минимум 3.0 весовых матча
+                            </div>
+                        </div>
+
+                        {/* Player list breakdown */}
+                        <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 no-scrollbar">
+                            {sortedPlayers.map((player, idx) => {
+                                const rawWinrate = player.matches > 0 ? Math.round((player.wins / player.matches) * 100) : 0;
+                                const effScore = Math.round(player.score * 100);
+                                const wWins = player.weightedWins ?? player.wins;
+                                const wMatches = player.weightedMatches ?? player.matches;
+
+                                return (
+                                    <div key={player.name} className="p-3 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-150 dark:border-slate-750 shadow-xs space-y-2">
+                                        {/* Player Header */}
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="text-xs font-bold text-slate-400 shrink-0">#{idx + 1}</span>
+                                                <span className="font-bold text-sm text-slate-900 dark:text-white truncate">{player.name}</span>
+                                                {player.isInactive && (
+                                                    <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded-md shrink-0">
+                                                        Неактивен
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="text-sm font-black text-primary-600 dark:text-primary-400">{effScore}%</span>
+                                                <span className="text-[10px] text-slate-400 block leading-none">Рейтинг</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Math breakdown row */}
+                                        <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/60 text-center">
+                                            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-xl">
+                                                <div className="text-[10px] text-slate-400 font-medium">Процент побед</div>
+                                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                    {rawWinrate}% <span className="text-[10px] font-normal opacity-70">({player.wins}/{player.matches})</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-xl">
+                                                <div className="text-[10px] text-slate-400 font-medium">Победы с учётом времени</div>
+                                                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                                    {wWins}
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-xl">
+                                                <div className="text-[10px] text-slate-400 font-medium">Матчи с учётом времени</div>
+                                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                                    {wMatches}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Applied formula text */}
+                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center bg-slate-50/70 dark:bg-slate-900/40 p-1 rounded-lg">
+                                            Расчёт: ({wWins} + 12.5) ÷ ({wMatches} + 25) = {(player.score * 100).toFixed(1)}%
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer button */}
+                        <button
+                            onClick={() => { setShowEfficiencyBreakdown(false); triggerHaptic(10); }}
                             className="mt-4 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/20 active:scale-98 text-sm shrink-0"
                         >
                             Понятно

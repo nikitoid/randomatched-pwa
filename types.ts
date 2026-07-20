@@ -86,6 +86,10 @@ export interface PlayerStat {
   score: number; // Weighted score for MVP calculation
   totalKills?: number;
   avgKills?: number;
+  lastMatchTimestamp?: number;
+  isInactive?: boolean;
+  weightedWins?: number;
+  weightedMatches?: number;
 }
 
 export interface HeroStat {
