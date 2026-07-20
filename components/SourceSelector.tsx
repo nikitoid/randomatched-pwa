@@ -103,13 +103,13 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                             <div className="flex-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
                                 <button
                                     onClick={() => setIsGroupMode(false)}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${!isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 md:hover:text-slate-700 dark:md:hover:text-slate-300 active:text-slate-700'}`}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${!isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 active:text-slate-700'}`}
                                 >
                                     <Layers size={16} /> Один
                                 </button>
                                 <button
                                     onClick={() => setIsGroupMode(true)}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400 md:hover:text-slate-700 dark:md:hover:text-slate-300 active:text-slate-700'}`}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400 active:text-slate-700'}`}
                                 >
                                     <SquareStack size={16} /> Группа
                                 </button>
@@ -157,7 +157,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                     <button
                                         key={list.id}
                                         onClick={() => handleSelectList(list.id)}
-                                        className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-slate-50 dark:bg-slate-800/50' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:bg-slate-50 dark:active:bg-slate-800'}`}
+                                        className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-slate-50 dark:bg-slate-800/50' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
                                     >
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
                                             <Icon size={18} />
@@ -209,7 +209,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                         <button
                                             key={list.id}
                                             onClick={() => handleToggleGroupItem(list.id)}
-                                            className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/10' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:bg-slate-50 dark:active:bg-slate-800'}`}
+                                            className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/10' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
                                         >
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-primary-500 text-white' : `${iconBg} ${iconColor}`}`}>
                                                 {isSelected ? <Check size={18} /> : <Icon size={18} />}
@@ -246,7 +246,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                     setIsListSelectorOpen(false);
                                     onOpenAddHeroes();
                                 }}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-bold bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/10 active:scale-[0.98] transition-all"
+                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-bold bg-primary-600 active:bg-primary-700 text-white shadow-lg shadow-primary-600/10 active:scale-[0.98] transition-all"
                             >
                                 <Plus size={14} />
                                 <span>Докинуть героев точечно</span>

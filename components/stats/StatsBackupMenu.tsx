@@ -47,13 +47,13 @@ export const StatsBackupMenu: React.FC<StatsBackupMenuProps> = ({
                             <button
                                 onClick={handleExport}
                                 data-testid="backup-export-btn"
-                                className="w-full flex items-center gap-3 p-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                className="w-full flex items-center gap-3 p-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white font-medium active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
                             >
                                 <ArrowUp className="text-green-500" size={20} />
                                 <span>Экспорт в файл</span>
                             </button>
 
-                            <label className="w-full flex items-center gap-3 p-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer relative overflow-hidden">
+                            <label className="w-full flex items-center gap-3 p-3.5 bg-slate-100 dark:bg-slate-800 rounded-2xl text-slate-900 dark:text-white font-medium active:bg-slate-200 dark:active:bg-slate-700 transition-colors cursor-pointer relative overflow-hidden">
                                 <ArrowDown className="text-blue-500" size={20} />
                                 <span>Импорт из файла</span>
                                 <input
@@ -80,9 +80,9 @@ export const StatsBackupMenu: React.FC<StatsBackupMenuProps> = ({
                             disabled={isDebugMode}
                             className={`w-full flex items-center justify-center gap-3 p-3.5 rounded-2xl font-medium transition-colors ${isDebugMode
                                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none'
-                                : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40'
+                                : 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 active:bg-primary-100 dark:active:bg-primary-900/40'
                                 }`}
-                            title={isDebugMode ? "Облачный бэкап отключен в режиме разработчика" : ""}
+                            aria-label={isDebugMode ? "Облачный бэкап отключен в режиме разработчика" : "Управление облачными бэкапами"}
                             data-testid="backup-open-manager-btn"
                         >
                             <RefreshCw size={20} className={isDebugMode ? "opacity-50" : ""} />
@@ -107,7 +107,7 @@ export const StatsBackupMenu: React.FC<StatsBackupMenuProps> = ({
                     <button
                         onClick={() => setIsDataMenuOpen(false)}
                         data-testid="backup-close-btn"
-                        className="w-full p-3 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white font-medium transition-colors bg-slate-100 dark:bg-slate-800"
+                        className="w-full p-3 rounded-xl text-slate-500 active:text-slate-900 dark:active:text-white font-medium transition-colors bg-slate-100 dark:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700"
                     >
                         Закрыть
                     </button>

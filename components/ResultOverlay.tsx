@@ -369,7 +369,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             ? "bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white shadow-[0_0_25px_rgba(var(--secondary-500)/0.4)] border border-secondary-200/30"
             : "bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white shadow-[0_0_25px_rgba(var(--primary-500)/0.4)] border border-primary-200/30";
 
-        const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 md:hover:from-white/30 md:hover:to-white/10 active:from-white/30 active:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
+        const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 active:from-white/30 active:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
 
         const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
@@ -386,7 +386,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         ? `${cardSizeClass} rounded-2xl shadow-2xl ring-4 ring-white/50 z-[100]`
                         : `${cardSizeClass} rounded-3xl`}
                 ${isHoveredTarget ? 'scale-90 opacity-80 ring-4 ring-white/50' : ''}
-                ${isDragMode && !isFloating ? 'cursor-grab active:cursor-grabbing hover:scale-105 animate-pulse-slow ring-2 ring-white ring-offset-2 ring-offset-slate-200 dark:ring-offset-slate-900' : ''}
+                ${isDragMode && !isFloating ? 'cursor-grab active:cursor-grabbing animate-pulse-slow ring-2 ring-white ring-offset-2 ring-offset-slate-200 dark:ring-offset-slate-900' : ''}
             `}
                 style={isFloating ? {
                     position: 'fixed',
@@ -606,7 +606,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                             <button
                                 onClick={() => setIsModeSelectorOpen(!isModeSelectorOpen)}
-                                className="relative h-full flex items-center pl-2 pr-3 gap-2 outline-none cursor-pointer rounded-l-2xl md:hover:bg-slate-50 dark:md:hover:bg-slate-700/50 active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
+                                className="relative h-full flex items-center pl-2 pr-3 gap-2 outline-none cursor-pointer rounded-l-2xl active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
                             >
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${currentMode.bg} ${currentMode.color}`}>
                                     <currentMode.icon size={16} />
@@ -623,7 +623,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                         <button
                                             key={mode.id}
                                             onClick={() => { setGenerationMode(mode.id as GenerationMode); setIsModeSelectorOpen(false); }}
-                                            className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors ${generationMode === mode.id ? 'bg-slate-100 dark:bg-slate-800' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:bg-slate-50 dark:active:bg-slate-800'}`}
+                                            className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors ${generationMode === mode.id ? 'bg-slate-100 dark:bg-slate-800' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
                                         >
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${generationMode === mode.id ? 'bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5' : 'bg-slate-50 dark:bg-slate-800'} ${mode.color}`}>
                                                 <mode.icon size={20} />
@@ -663,9 +663,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                     onClick={() => setPrioritizeUnplayed(!prioritizeUnplayed)}
                                     className={`p-2 rounded-full transition-all duration-200 ${prioritizeUnplayed
                                         ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-500/20'
-                                        : 'text-slate-400 md:hover:text-slate-600 dark:md:hover:text-slate-200 md:hover:bg-slate-100 dark:md:hover:bg-slate-700'
+                                        : 'text-slate-400 active:text-slate-600 dark:active:text-slate-200 active:bg-slate-100 dark:active:bg-slate-700'
                                         }`}
-                                    title="Приоритет редко игравших героев"
+                                    aria-label="Приоритет редко игравших героев"
                                 >
                                     <History size={20} />
                                 </button>
@@ -674,14 +674,14 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             {isDebugMode && (
                                 <button
                                     onClick={() => setIsWeightsModalOpen(true)}
-                                    className="p-2 rounded-full text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-100 dark:md:hover:bg-slate-700 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"
-                                    title="Таблица весов героев"
+                                    className="p-2 rounded-full text-slate-400 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"
+                                    aria-label="Таблица весов героев"
                                 >
                                     <Terminal size={20} />
                                 </button>
                             )}
 
-                            <button onClick={() => setShowInfo(true)} className="mr-1 p-2 rounded-full text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-100 dark:md:hover:bg-slate-700 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"><HelpCircle size={20} /></button>
+                            <button onClick={() => setShowInfo(true)} className="mr-1 p-2 rounded-full text-slate-400 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"><HelpCircle size={20} /></button>
                         </div>
                     )}
                     <button data-testid="close-result-overlay" onClick={onClose} className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative z-50"><X size={24} /></button>
@@ -730,8 +730,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             disabled={isDragMode}
                             className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white active:scale-95 transition-all border-4 shadow-[0_0_40px_rgba(0,0,0,0.3)]
                     ${isDragMode ? 'opacity-20 grayscale cursor-not-allowed bg-slate-500 border-slate-400' :
-                                    isRerollConfirm ? 'bg-red-500 border-red-300 md:hover:bg-red-600 shadow-[0_0_50px_rgba(239,68,68,0.8)]'
-                                        : 'bg-primary-600 border-primary-400/50 md:hover:bg-primary-500 shadow-[0_0_40px_rgba(var(--primary-500)/0.6)] md:hover:shadow-[0_0_50px_rgba(var(--primary-500)/0.8)]'}`}
+                                    isRerollConfirm ? 'bg-red-500 border-red-300 active:bg-red-600 shadow-[0_0_50px_rgba(239,68,68,0.8)]'
+                                        : 'bg-primary-600 border-primary-400/50 active:bg-primary-500 shadow-[0_0_40px_rgba(var(--primary-500)/0.6)]'}`}
                         >
                             <div className="flex flex-col items-center">
                                 {heroesRevealed ? (isRerollConfirm ? <Check size={28} className="mb-1 animate-pulse" /> : <RefreshCw size={28} className="mb-1" />) : <Dice5 size={28} className="mb-1" />}
@@ -749,18 +749,18 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                     {hasCustomNames && (
                         <>
-                            <button onClick={() => setIsDragMode(!isDragMode)} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${isDragMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-2 ring-primary-500 dark:ring-primary-400 shadow-inner' : 'md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                            <button onClick={() => setIsDragMode(!isDragMode)} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${isDragMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-2 ring-primary-500 dark:ring-primary-400 shadow-inner' : 'active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                                 <Move size={20} className="mb-1" /> <span className="text-[10px] font-bold">Двигать</span>
                             </button>
                             <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
                         </>
                     )}
 
-                    <button data-testid="shuffle-teams-btn" onClick={onShuffleTeams} disabled={isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                    <button data-testid="shuffle-teams-btn" onClick={onShuffleTeams} disabled={isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                         <Shuffle size={20} className="mb-1" /> <span className="text-[10px] font-bold">Команды</span>
                     </button>
                     <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
-                    <button data-testid="finish-match-btn" onClick={handleResetClick} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
+                    <button data-testid="finish-match-btn" onClick={handleResetClick} disabled={!heroesRevealed || isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${!heroesRevealed || isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'active:bg-red-50 dark:active:bg-red-900/20 text-red-500'}`}>
                         <CheckCircle2 size={20} className="mb-1" /> <span className="text-[10px] font-bold">Завершить</span>
                     </button>
                 </div>
@@ -911,7 +911,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         </div>
                         <button
                             onClick={() => { setIsWeightsModalOpen(false); setWeightsSearchTerm(''); }}
-                            className="p-2 rounded-xl text-slate-400 md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+                            className="p-2 rounded-xl text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
                         >
                             <X size={20} />
                         </button>
@@ -930,7 +930,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         {weightsSearchTerm && (
                             <button
                                 onClick={() => setWeightsSearchTerm('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 md:hover:text-slate-600 dark:md:hover:text-slate-200 transition-colors"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 active:text-slate-600 dark:active:text-slate-200 transition-colors"
                             >
                                 Очистить
                             </button>
@@ -957,7 +957,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                                 key={hero.id}
                                                 className={`transition-colors ${isSelected
                                                     ? 'bg-primary-50/50 dark:bg-primary-950/20 font-medium'
-                                                    : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-800/30'
+                                                    : ''
                                                     }`}
                                             >
                                                 <td className="py-2.5 px-2 flex items-center gap-2">
@@ -1002,7 +1002,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         </div>
                         <button
                             onClick={() => { setIsWeightsModalOpen(false); setWeightsSearchTerm(''); }}
-                            className="py-2 px-4 bg-slate-100 dark:bg-slate-800 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition-colors"
+                            className="py-2 px-4 bg-slate-100 dark:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition-colors"
                         >
                             Закрыть
                         </button>

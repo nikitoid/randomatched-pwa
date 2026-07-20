@@ -171,7 +171,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             {/* Header */}
             <div className="py-3 px-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/60 flex items-center gap-3 shrink-0 sticky top-0 z-10">
                 {!isEditing && (
-                    <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <button onClick={onBack} className="p-2 -ml-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
                         <ChevronLeft size={24} className="text-slate-600 dark:text-slate-300" />
                     </button>
                 )}
@@ -195,7 +195,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                         <h2 className="text-xl font-black text-slate-900 dark:text-white truncate flex-1">{player.name}</h2>
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="p-2 text-slate-400 hover:text-primary-500 transition-colors"
+                            className="p-2 text-slate-400 active:text-primary-500 transition-colors"
                         >
                             <Edit2 size={18} />
                         </button>
@@ -237,7 +237,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                             <Skull size={12} className="text-red-500" /> Убийства
                         </div>
                         <div className="text-2xl font-black text-slate-900 dark:text-white">{totalKills}</div>
-                        <div className="text-[10px] text-red-500 font-bold mt-1" title="Максимальное количество убийств за серию игр с интервалом не более 6 часов">
+                        <div className="text-[10px] text-red-500 font-bold mt-1" aria-label="Максимальное количество убийств за серию игр с интервалом не более 6 часов">
                             Рекорд серии: {maxKills}
                         </div>
                     </div>
@@ -278,7 +278,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                 {topHeroes.length > 0 ? (
                                     <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {topHeroes.slice(0, 3).map(h => (
-                                            <div key={h.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                                            <div key={h.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{h.name}</div>
                                                 <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                     <span className={`${h.wins / h.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((h.wins / h.matches) * 100)}%</span>
@@ -292,7 +292,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                             <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${heroesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {topHeroes.slice(3).map(h => (
-                                                        <div key={h.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                                                        <div key={h.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                             <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{h.name}</div>
                                                             <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                                 <span className={`${h.wins / h.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((h.wins / h.matches) * 100)}%</span>
@@ -312,7 +312,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                 {topHeroes.length > 3 && (
                                     <button
                                         onClick={() => setHeroesState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 hover:text-primary-500 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
                                     >
                                         {heroesState === 'partial' ? 'Показать все' : 'Свернуть'}
                                     </button>
@@ -346,7 +346,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                 {partnerStats.length > 0 ? (
                                     <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {partnerStats.slice(0, 3).map(s => (
-                                            <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                                            <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
                                                 <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                     <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((s.wins / s.matches) * 100)}%</span>
@@ -360,7 +360,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                             <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${partnersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {partnerStats.slice(3).map(s => (
-                                                        <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                                                        <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                             <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
                                                             <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                                 <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((s.wins / s.matches) * 100)}%</span>
@@ -380,7 +380,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                 {partnerStats.length > 3 && (
                                     <button
                                         onClick={() => setPartnersState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 hover:text-primary-500 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
                                     >
                                         {partnersState === 'partial' ? 'Показать все' : 'Свернуть'}
                                     </button>
@@ -419,7 +419,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                             const me = myTeam.find(p => p.name === player.name);
 
                                             return (
-                                                <div key={m.id} className="relative pl-5 pr-3.5 py-3 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors flex flex-col">
+                                                <div key={m.id} className="relative pl-5 pr-3.5 py-3 transition-colors flex flex-col">
                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${won ? 'bg-green-500' : 'bg-red-500'}`} />
                                                     <div className="flex justify-between items-center mb-1.5">
                                                         <span className={`text-[10px] font-black uppercase tracking-wider ${won ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>{won ? 'Победа' : 'Поражение'}</span>
@@ -457,7 +457,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                                         const me = myTeam.find(p => p.name === player.name);
 
                                                         return (
-                                                            <div key={m.id} className="relative pl-5 pr-3.5 py-3 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors flex flex-col">
+                                                            <div key={m.id} className="relative pl-5 pr-3.5 py-3 transition-colors flex flex-col">
                                                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${won ? 'bg-green-500' : 'bg-red-500'}`} />
                                                                 <div className="flex justify-between items-center mb-1.5">
                                                                     <span className={`text-[10px] font-black uppercase tracking-wider ${won ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>{won ? 'Победа' : 'Поражение'}</span>
@@ -494,7 +494,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                 {recentMatches.length > 3 && (
                                     <button
                                         onClick={() => setMatchesState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 hover:text-primary-500 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
                                     >
                                         {matchesState === 'partial' ? 'Показать все' : 'Свернуть'}
                                     </button>

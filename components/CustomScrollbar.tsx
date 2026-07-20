@@ -145,7 +145,7 @@ export const CustomScrollbar: React.FC<CustomScrollbarProps> = ({ containerRef, 
         >
             <div
                 ref={trackRef}
-                className="absolute w-1.5 right-0.5 rounded-full bg-slate-300/80 dark:bg-slate-500/80 hover:bg-slate-400 active:bg-slate-500 backdrop-blur-sm transition-colors cursor-pointer touch-none pointer-events-auto"
+                className="absolute w-1.5 right-0.5 rounded-full bg-slate-300/80 dark:bg-slate-500/80 active:bg-slate-500 backdrop-blur-sm transition-colors cursor-pointer touch-none pointer-events-auto"
                 style={{
                     height: thumbHeight,
                     top: thumbTop,

@@ -136,7 +136,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                             {backups.length} {backups.length === 1 ? 'бэкап' : 'бэкапов'} доступно
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <button onClick={onClose} className="p-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
                         <X size={24} className="text-slate-500" />
                     </button>
                 </div>
@@ -201,7 +201,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                             const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
                             return (
-                                <div key={backup.id} className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 transition-all hover:border-primary-500/30 flex flex-col sm:flex-row gap-4 items-start sm:items-center" data-testid="backup-item">
+                                <div key={backup.id} className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 transition-all flex flex-col sm:flex-row gap-4 items-start sm:items-center" data-testid="backup-item">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <Calendar size={14} className="text-primary-500" />
@@ -218,8 +218,8 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                                         <button
                                             onClick={() => handleView(backup.id)}
                                             disabled={isLoadingDetailsId === backup.id || isRestoringBackup}
-                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-primary-400 rounded-xl transition-colors disabled:opacity-50"
-                                            title="Просмотреть"
+                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 active:bg-white dark:active:bg-slate-700 active:text-primary-600 dark:active:text-primary-400 rounded-xl transition-colors disabled:opacity-50"
+                                            aria-label="Просмотреть"
                                         >
                                             {isLoadingDetailsId === backup.id ? <Loader2 size={18} className="animate-spin" /> : <Eye size={18} />}
                                             <span className="hidden sm:inline text-xs font-bold">Просмотр</span>
@@ -232,9 +232,9 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                                                 setRestoreConfirmInput('');
                                             }}
                                             disabled={isRestoringBackup}
-                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-primary-600 bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/40 rounded-xl transition-colors disabled:opacity-50 font-bold text-xs"
+                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-primary-600 bg-primary-50 dark:bg-primary-900/20 active:bg-primary-100 dark:active:bg-primary-900/40 rounded-xl transition-colors disabled:opacity-50 font-bold text-xs"
                                             data-testid="backup-manager-restore-btn"
-                                            title="Восстановить"
+                                            aria-label="Восстановить"
                                         >
                                             <RefreshCw size={18} />
                                             <span className="hidden sm:inline">Восстановить</span>
@@ -247,8 +247,8 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                                                 setDeleteBackupInput('');
                                             }}
                                             disabled={isRestoringBackup}
-                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50"
-                                            title="Удалить"
+                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/10 active:bg-red-100 dark:active:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50"
+                                            aria-label="Удалить"
                                         >
                                             <Trash2 size={18} />
                                             <span className="hidden sm:inline text-xs font-bold">Удалить</span>

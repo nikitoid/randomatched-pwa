@@ -115,8 +115,8 @@ export const ListItem: React.FC<ListItemProps> = memo(({
                 )}
 
                 {isTemp && <span className="text-primary-500 dark:text-primary-400">временный</span>}
-                {isCloudOffline && <span className="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-500" title="Только чтение"><Eye size={12} /></span>}
-                {hasMissingRanks && <span className="text-amber-500 dark:text-amber-400 ml-1" title="Не указаны ранги"><AlertTriangle size={14} /></span>}
+                {isCloudOffline && <span className="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-500" aria-label="Только чтение"><Eye size={12} /></span>}
+                {hasMissingRanks && <span className="text-amber-500 dark:text-amber-400 ml-1" aria-label="Не указаны ранги"><AlertTriangle size={14} /></span>}
             </div>
         </div>
         
@@ -133,7 +133,7 @@ export const ListItem: React.FC<ListItemProps> = memo(({
                 className={`p-2.5 rounded-xl transition-colors shrink-0 ${
                     isMenuOpen 
                     ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300' 
-                    : 'text-slate-400 md:hover:text-primary-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800 active:text-primary-500 active:bg-slate-50 dark:active:bg-slate-800'
+                    : 'text-slate-400 active:text-primary-500 active:bg-slate-50 dark:active:bg-slate-800'
                 }`}
             >
                 <MoreVertical size={20} />

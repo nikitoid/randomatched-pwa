@@ -251,6 +251,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const touchEndX = useRef(0);
     const touchStartY = useRef(0);
     const touchEndY = useRef(0);
+    const isIgnoredSwipe = useRef(false);
 
     // Auto-sync Logic
     // We need a stable reference to syncWithAnimation to use in useEffect
@@ -660,11 +661,18 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
         const handleTouchStartRaw = (e: TouchEvent) => {
             if (!e.targetTouches || e.targetTouches.length === 0) return;
+            const target = e.target as HTMLElement | null;
+            if (target?.closest('[data-no-tab-swipe="true"]')) {
+                isIgnoredSwipe.current = true;
+                return;
+            }
+            isIgnoredSwipe.current = false;
             touchStartX.current = e.targetTouches[0].clientX;
             touchStartY.current = e.targetTouches[0].clientY;
         };
 
         const handleTouchMoveRaw = (e: TouchEvent) => {
+            if (isIgnoredSwipe.current) return;
             if (!touchStartX.current || !touchStartY.current || !e.touches || e.touches.length === 0) return;
             const currentX = e.touches[0].clientX;
             const currentY = e.touches[0].clientY;
@@ -680,6 +688,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         };
 
         const handleTouchEndRaw = (e: TouchEvent) => {
+            if (isIgnoredSwipe.current) {
+                isIgnoredSwipe.current = false;
+                return;
+            }
             if (!e.changedTouches || e.changedTouches.length === 0) return;
             touchEndX.current = e.changedTouches[0].clientX;
             touchEndY.current = e.changedTouches[0].clientY;
@@ -845,8 +857,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 disabled={!isOnline || visualSyncState !== 'idle' || isDebugMode}
                                 className={`p-2 rounded-full transition-all duration-300 ${(!isOnline || isDebugMode) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
                                     visualSyncState === 'success' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' :
-                                        'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'}`}
-                                title={isDebugMode ? "Синхронизация отключена в режиме разработчика" : "Синхронизация"}
+                                        'text-slate-500 active:bg-slate-100 dark:text-slate-400 dark:active:bg-slate-800'}`}
+                                aria-label={isDebugMode ? "Синхронизация отключена в режиме разработчика" : "Синхронизация"}
                             >
                                 {visualSyncState === 'syncing' ? (
                                     <Loader2 size={20} className="animate-spin" />
@@ -860,7 +872,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 onClick={onClose}
                                 data-testid="stats-close-btn"
                                 aria-label="Закрыть"
-                                className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -879,7 +891,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     setSelectedHero(null);
                                     triggerHaptic(10);
                                 }}
-                                className={`flex-1 min-w-[80px] py-2 text-sm font-bold border-b-2 transition-colors capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 md:hover:bg-slate-50 dark:md:hover:bg-slate-800/50'}`}
+                                className={`flex-1 min-w-[80px] py-2 text-sm font-bold border-b-2 transition-colors capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 active:bg-slate-50 dark:active:bg-slate-800/50'}`}
                             >
                                 {tab === 'overview' ? 'Обзор' : tab === 'players' ? 'Игроки' : tab === 'heroes' ? 'Герои' : 'Матчи'}
                             </button>
@@ -920,7 +932,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 />
                                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                 {matchSearch && (
-                                    <button onClick={() => { setMatchSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                    <button onClick={() => { setMatchSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200">
                                         <X size={12} />
                                     </button>
                                 )}
@@ -932,7 +944,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <button
                                         onClick={() => { setShowTrashOnly(!showTrashOnly); triggerHaptic(10); }}
                                         className={`p-1.5 rounded-xl border transition-colors flex items-center justify-center relative ${showTrashOnly ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-900/50' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
-                                        title={showTrashOnly ? 'Все матчи' : `Корзина (${deletedHistory.length})`}
+                                        aria-label={showTrashOnly ? 'Все матчи' : `Корзина (${deletedHistory.length})`}
                                     >
                                         <Trash2 size={16} />
                                         {!showTrashOnly && (
@@ -946,7 +958,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <button
                                         onClick={openAddMatch}
                                         className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 active:scale-95 transition-transform"
-                                        title="Добавить матч"
+                                        aria-label="Добавить матч"
                                     >
                                         <Plus size={16} />
                                     </button>
@@ -954,7 +966,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 <button
                                     onClick={() => { setEditMode(!editMode); setShowTrashOnly(false); triggerHaptic(10); }}
                                     className={`p-1.5 rounded-xl border transition-colors flex items-center justify-center ${editMode ? 'bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
-                                    title={editMode ? 'Готово' : 'Редактировать'}
+                                    aria-label={editMode ? 'Готово' : 'Редактировать'}
                                 >
                                     {editMode ? <Check size={16} /> : <Edit2 size={16} />}
                                 </button>
@@ -976,7 +988,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 />
                                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                 {heroSearch && (
-                                    <button onClick={() => { setHeroSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                    <button onClick={() => { setHeroSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200">
                                         <X size={12} />
                                     </button>
                                 )}
@@ -1008,7 +1020,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         triggerHaptic(10);
                                     }}
                                     className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-colors ${isSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                                    title="Сортировка"
+                                    aria-label="Сортировка"
                                 >
                                     {heroSort === 'winrate' && <TrendingUp size={16} />}
                                     {heroSort === 'matches' && <BarChart3 size={16} />}
@@ -1029,20 +1041,20 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 width: dropdownPosition.width
                                             }}
                                         >
-                                            <button onClick={() => { setHeroSort('winrate'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setHeroSort('winrate'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
                                                 {heroSort === 'winrate' && <Check size={14} />}
                                             </button>
-                                            <button onClick={() => { setHeroSort('matches'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setHeroSort('matches'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
                                                 {heroSort === 'matches' && <Check size={14} />}
                                             </button>
                                             <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
-                                            <button onClick={() => { setHeroSort('az'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setHeroSort('az'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
                                                 {heroSort === 'az' && <Check size={14} />}
                                             </button>
-                                            <button onClick={() => { setHeroSort('za'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setHeroSort('za'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
                                                 {heroSort === 'za' && <Check size={14} />}
                                             </button>
@@ -1068,7 +1080,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 />
                                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                 {playerSearch && (
-                                    <button onClick={() => { setPlayerSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                    <button onClick={() => { setPlayerSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200">
                                         <X size={12} />
                                     </button>
                                 )}
@@ -1100,7 +1112,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         triggerHaptic(10);
                                     }}
                                     className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-colors ${isPlayerSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                                    title="Сортировка"
+                                    aria-label="Сортировка"
                                 >
                                     {playerSort === 'efficiency' && <TrendingUp size={16} />}
                                     {playerSort === 'winrate' && <TrendingUp size={16} />}
@@ -1121,24 +1133,24 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 width: playerDropdownPosition.width
                                             }}
                                         >
-                                            <button onClick={() => { setPlayerSort('efficiency'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'efficiency' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setPlayerSort('efficiency'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'efficiency' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><TrendingUp size={14} /> По эффективности</span>
                                                 {playerSort === 'efficiency' && <Check size={14} />}
                                             </button>
-                                            <button onClick={() => { setPlayerSort('winrate'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setPlayerSort('winrate'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
                                                 {playerSort === 'winrate' && <Check size={14} />}
                                             </button>
-                                            <button onClick={() => { setPlayerSort('matches'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-55 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setPlayerSort('matches'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
                                                 {playerSort === 'matches' && <Check size={14} />}
                                             </button>
                                             <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
-                                            <button onClick={() => { setPlayerSort('az'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setPlayerSort('az'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
                                                 {playerSort === 'az' && <Check size={14} />}
                                             </button>
-                                            <button onClick={() => { setPlayerSort('za'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                                            <button onClick={() => { setPlayerSort('za'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
                                                 {playerSort === 'za' && <Check size={14} />}
                                             </button>
@@ -1268,7 +1280,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             </h3>
                             <button
                                 onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
-                                className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                className="p-1 rounded-full active:bg-slate-100 dark:active:bg-slate-800 text-slate-500 active:text-slate-900 dark:active:text-white transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -1294,7 +1306,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         </div>
                         <button
                             onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
-                            className="mt-6 w-full py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/10 active:scale-98"
+                            className="mt-6 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/10 active:scale-98"
                         >
                             Понятно
                         </button>
@@ -1349,7 +1361,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             </h3>
                             <button
                                 onClick={() => { setActiveNominationModal(null); triggerHaptic(10); }}
-                                className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                className="p-1 rounded-full active:bg-slate-100 dark:active:bg-slate-800 text-slate-500 active:text-slate-900 dark:active:text-white transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -1499,11 +1511,11 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {/* Footer */}
                         <button
                             onClick={() => { setActiveNominationModal(null); triggerHaptic(10); }}
-                            className={`mt-6 w-full py-3 text-white font-bold rounded-2xl transition shadow-lg active:scale-98 ${activeNominationModal === 'mvp' ? 'bg-yellow-500 hover:bg-yellow-600 shadow-yellow-500/10' :
-                                    activeNominationModal === 'underdog' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/10' :
-                                        activeNominationModal === 'streak' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/10' :
-                                            activeNominationModal === 'seriesKills' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/10' :
-                                                'bg-red-500 hover:bg-red-600 shadow-red-500/10'
+                            className={`mt-6 w-full py-3 text-white font-bold rounded-2xl transition shadow-lg active:scale-98 ${activeNominationModal === 'mvp' ? 'bg-yellow-500 active:bg-yellow-600 shadow-yellow-500/10' :
+                                    activeNominationModal === 'underdog' ? 'bg-red-500 active:bg-red-600 shadow-red-500/10' :
+                                        activeNominationModal === 'streak' ? 'bg-orange-500 active:bg-orange-600 shadow-orange-500/10' :
+                                            activeNominationModal === 'seriesKills' ? 'bg-rose-500 active:bg-rose-600 shadow-rose-500/10' :
+                                                'bg-red-500 active:bg-red-600 shadow-red-500/10'
                                 }`}
                         >
                             Понятно

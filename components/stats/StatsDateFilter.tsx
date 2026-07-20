@@ -43,7 +43,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
         <div className="border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
             <button
                 onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
-                className="w-full px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors transform-gpu will-change-transform"
+                className="w-full px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-500 active:bg-slate-50 dark:active:bg-slate-800/30 transition-colors transform-gpu will-change-transform"
             >
                 <div className="flex items-center gap-2">
                     <Calendar size={14} className={filterStartDate || filterEndDate ? 'text-primary-500' : 'text-slate-400'} />
@@ -60,7 +60,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                 handleResetDateFilter();
                             }}
                             data-testid="reset-date-filter-btn"
-                            className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-500 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
                         >
                             Сбросить
                         </span>
@@ -105,7 +105,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                 onClick={handlePresetToday}
                                 className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === todayStr && filterEndDate === todayStr
                                     ? 'bg-primary-500 text-white'
-                                    : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                    : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
                                     }`}
                             >
                                 Сегодня
@@ -114,7 +114,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                 onClick={handlePresetYesterday}
                                 className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === yesterdayStr && filterEndDate === yesterdayStr
                                     ? 'bg-primary-500 text-white'
-                                    : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                    : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
                                     }`}
                             >
                                 Вчера
@@ -124,7 +124,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                     onClick={handlePresetLastEvening}
                                     className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === lastEveningDateStr && filterEndDate === lastEveningDateStr
                                         ? 'bg-primary-500 text-white'
-                                        : 'bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                        : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
                                         }`}
                                 >
                                     Посл. игровой вечер

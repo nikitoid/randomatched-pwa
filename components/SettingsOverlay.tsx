@@ -227,7 +227,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             onClick={onClose}
                             aria-label="Закрыть"
                             data-testid="settings-close-btn"
-                            className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                            className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
                         >
                             <ChevronLeft size={24} />
                         </button>
@@ -258,7 +258,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                             className={`flex-1 py-1.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ease-in-out border ${
                                                 appearanceSubTab === 'colors'
                                                     ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/50'
-                                                    : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                                    : 'bg-transparent text-slate-500 border-transparent active:text-slate-800 dark:text-slate-400 dark:active:text-slate-200'
                                             }`}
                                         >
                                             Цветовая схема
@@ -268,7 +268,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                             className={`flex-1 py-1.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ease-in-out border ${
                                                 appearanceSubTab === 'effects'
                                                     ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/50'
-                                                    : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                                                    : 'bg-transparent text-slate-500 border-transparent active:text-slate-800 dark:text-slate-400 dark:active:text-slate-200'
                                             }`}
                                         >
                                             Оформление
@@ -352,7 +352,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                         <button
                                                             key={key}
                                                             onClick={() => { setColorScheme && setColorScheme(key as any); triggerHaptic(10); }}
-                                                            className={`relative flex items-center gap-1.5 sm:gap-3 py-1.5 px-2 sm:p-3 rounded-xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-sm ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900 md:hover:bg-slate-50 dark:md:hover:bg-slate-800'} `}
+                                                            className={`relative flex items-center gap-1.5 sm:gap-3 py-1.5 px-2 sm:p-3 rounded-xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-sm ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900'} `}
                                                         >
                                                             <div className="relative w-9 h-6 sm:w-12 sm:h-8 shrink-0 flex items-center">
                                                                 {/* Вторичный цвет (secondary) */}
@@ -400,7 +400,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                                 className={`flex-1 py-2 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
                                                                     isSelected 
                                                                         ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm' 
-                                                                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                                                                        : 'text-slate-500 active:text-slate-900 dark:active:text-white'
                                                                 }`}
                                                             >
                                                                 {labels[r]}
@@ -499,7 +499,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 </div>
                                 <button
                                     onClick={() => { onOpenChangelog(); triggerHaptic(10); }}
-                                    className="mb-6 px-4 py-2 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all"
+                                    className="mb-6 px-4 py-2 border border-slate-200 dark:border-slate-800 active:bg-slate-50 dark:active:bg-slate-900/40 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all"
                                 >
                                     <Sparkles size={14} className="text-amber-500 fill-amber-500/20" />
                                     <span>Что нового?</span>

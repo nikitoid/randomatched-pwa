@@ -89,7 +89,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                 {/* MVP Card */}
                 <div
                     onClick={() => { setActiveNominationModal('mvp'); triggerHaptic(10); }}
-                    className="p-4 rounded-3xl bg-gradient-to-br from-white to-yellow-500/10 dark:from-slate-900 dark:to-yellow-500/10 border border-yellow-200/60 dark:border-yellow-900/30 relative overflow-hidden h-full cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                    className="p-4 rounded-3xl bg-gradient-to-br from-white to-yellow-500/10 dark:from-slate-900 dark:to-yellow-500/10 border border-yellow-200/60 dark:border-yellow-900/30 relative overflow-hidden h-full cursor-pointer active:scale-[0.98] transition-all select-none"
                 >
                     <div className="flex items-center gap-2 mb-3 text-yellow-600 dark:text-yellow-500">
                         <Star size={18} fill="currentColor" />
@@ -111,6 +111,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                 {/* Scrollable Card Area */}
                 {bestStreakPlayer ? (
                     <div
+                        data-no-tab-swipe="true"
                         className="relative overflow-hidden h-full rounded-3xl"
                         onTouchStart={handleCardTouchStart}
                         onTouchMove={handleCardTouchMove}
@@ -124,7 +125,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                             <div className="w-full h-full flex-shrink-0">
                                 <div
                                     onClick={() => { setActiveNominationModal('streak'); triggerHaptic(10); }}
-                                    className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-orange-500/10 dark:from-slate-900 dark:to-orange-500/10 border border-orange-200/60 dark:border-orange-900/30 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                                    className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-orange-500/10 dark:from-slate-900 dark:to-orange-500/10 border border-orange-200/60 dark:border-orange-900/30 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
                                 >
                                     <div className="flex items-center gap-2 mb-3 text-orange-500">
                                         <Flame size={18} className="animate-pulse text-orange-500" />
@@ -144,7 +145,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                             <div className="w-full h-full flex-shrink-0">
                                 <div
                                     onClick={() => { setActiveNominationModal('underdog'); triggerHaptic(10); }}
-                                    className="p-4 h-full rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                                    className="p-4 h-full rounded-3xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
                                 >
                                     <div className="flex items-center gap-2 mb-3 text-slate-400">
                                         <Skull size={18} />
@@ -175,7 +176,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                     /* No streak - just show Underdog */
                     <div
                         onClick={() => { setActiveNominationModal('underdog'); triggerHaptic(10); }}
-                        className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-slate-500/10 dark:from-slate-900 dark:to-slate-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                        className="p-4 h-full rounded-3xl bg-gradient-to-br from-white to-slate-500/10 dark:from-slate-900 dark:to-slate-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
                     >
                         <div className="flex items-center gap-2 mb-3 text-slate-400">
                             <Skull size={18} />
@@ -202,11 +203,11 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                     </h3>
 
                     {/* Сетка карточек рекордов */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="grid grid-cols-2 gap-4 mb-4">
                         {/* Рекорд за серию */}
                         <div
                             onClick={() => { setActiveNominationModal('seriesKills'); triggerHaptic(10); }}
-                            className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-rose-500/10 dark:from-slate-900 dark:to-rose-500/10 border border-rose-200/60 dark:border-rose-900/30 relative overflow-hidden cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                            className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-rose-500/10 dark:from-slate-900 dark:to-rose-500/10 border border-rose-200/60 dark:border-rose-900/30 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
                         >
                             <div className="text-[10px] font-bold text-red-500 uppercase mb-1">Рекорд за встречу</div>
                             {topKillsSeriesPlayer ? (
@@ -224,7 +225,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                         {/* Король убийств */}
                         <div
                             onClick={() => { setActiveNominationModal('totalKills'); triggerHaptic(10); }}
-                            className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-red-500/10 dark:from-slate-900 dark:to-red-500/10 border border-slate-200/60 dark:border-slate-800 relative overflow-hidden shadow-sm cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all select-none"
+                            className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-red-500/10 dark:from-slate-900 dark:to-red-500/10 border border-slate-200/60 dark:border-slate-800 relative overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all select-none"
                         >
                             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">Король убийств</div>
                             {topTotalKillers && topTotalKillers.length > 0 ? (
@@ -249,8 +250,8 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                         <span>Топ эффективности</span>
                         <button
                             onClick={() => { setShowEfficiencyInfo(true); triggerHaptic(10); }}
-                            className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors inline-flex items-center justify-center"
-                            title="Как рассчитывается рейтинг?"
+                            className="p-1 rounded-full text-slate-400 active:text-slate-600 dark:active:text-slate-200 active:bg-slate-100 dark:active:bg-slate-800 transition-colors inline-flex items-center justify-center"
+                            aria-label="Как рассчитывается рейтинг?"
                         >
                             <HelpCircle size={14} />
                         </button>

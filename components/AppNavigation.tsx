@@ -23,7 +23,7 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
         >
             <button 
                 onClick={onOpenStats} 
-                className="flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300 active:text-primary-600"
+                className="flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300 active:text-primary-600"
             >
                 <Trophy size={20} strokeWidth={2} className="mb-1" /> 
                 <span className="text-[10px] font-bold">Статистика</span>
@@ -36,7 +36,7 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
                 disabled={!hasResult} 
                 className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${
                     hasResult 
-                        ? 'text-primary-600 dark:text-primary-400 md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800' 
+                        ? 'text-primary-600 dark:text-primary-400 active:bg-white dark:active:bg-slate-800' 
                         : 'opacity-40 cursor-not-allowed text-slate-400'
                 }`}
             >
@@ -48,7 +48,7 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
 
             <button 
                 onClick={onOpenLists} 
-                className="flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300 active:text-primary-600"
+                className="flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300 active:text-primary-600"
             >
                 <Files size={20} strokeWidth={2} className="mb-1" /> 
                 <span className="text-[10px] font-bold">Списки</span>
@@ -58,7 +58,7 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
             
             <button 
                 onClick={onOpenSettings} 
-                className="flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors md:hover:bg-white dark:md:hover:bg-slate-800 active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300 active:text-primary-600"
+                className="flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300 active:text-primary-600"
             >
                 <Settings size={20} strokeWidth={2} className="mb-1" /> 
                 <span className="text-[10px] font-bold">Настройки</span>

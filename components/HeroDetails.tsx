@@ -111,7 +111,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
             {/* Header */}
             <div className="py-3 px-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/60 flex items-center gap-3 shrink-0 sticky top-0 z-10">
                 {!isEditing && (
-                    <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <button onClick={onBack} className="p-2 -ml-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
                         <ChevronLeft size={24} className="text-slate-600 dark:text-slate-300" />
                     </button>
                 )}
@@ -135,7 +135,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         <h2 className="text-xl font-black text-slate-900 dark:text-white truncate flex-1">{hero.name}</h2>
                         <button
                             onClick={() => setIsEditing(true)}
-                            className="p-2 text-slate-400 hover:text-primary-500 transition-colors"
+                            className="p-2 text-slate-400 active:text-primary-500 transition-colors"
                         >
                             <Edit2 size={18} />
                         </button>
@@ -182,7 +182,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                 {topPlayers.length > 0 ? (
                                     <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {topPlayers.slice(0, 3).map(p => (
-                                            <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                                            <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{p.name}</div>
                                                 <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                     <span className={`${p.wins / p.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((p.wins / p.matches) * 100)}%</span>
@@ -196,7 +196,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                             <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${playersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {topPlayers.slice(3).map(p => (
-                                                        <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                                                        <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                             <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{p.name}</div>
                                                             <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                                 <span className={`${p.wins / p.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((p.wins / p.matches) * 100)}%</span>
@@ -216,7 +216,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                 {topPlayers.length > 3 && (
                                     <button
                                         onClick={() => setPlayersState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 hover:text-primary-500 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
                                     >
                                         {playersState === 'partial' ? 'Показать все' : 'Свернуть'}
                                     </button>
@@ -250,7 +250,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                 {topSynergies.length > 0 ? (
                                     <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                         {topSynergies.slice(0, 3).map(s => (
-                                            <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                                            <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
                                                 <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                     <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((s.wins / s.matches) * 100)}%</span>
@@ -264,7 +264,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                             <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${synergiesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                                                 <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
                                                     {topSynergies.slice(3).map(s => (
-                                                        <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors">
+                                                        <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                             <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
                                                             <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
                                                                 <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((s.wins / s.matches) * 100)}%</span>
@@ -284,7 +284,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                 {topSynergies.length > 3 && (
                                     <button
                                         onClick={() => setSynergiesState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 hover:text-primary-500 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
                                     >
                                         {synergiesState === 'partial' ? 'Показать все' : 'Свернуть'}
                                     </button>
@@ -325,7 +325,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                             const playerOnHero = myTeam.find(p => p.heroName === hero.name);
 
                                             return (
-                                                <div key={m.id} className="relative pl-5 pr-3.5 py-3 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors flex flex-col">
+                                                <div key={m.id} className="relative pl-5 pr-3.5 py-3 transition-colors flex flex-col">
                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${won ? 'bg-green-500' : 'bg-red-500'}`} />
                                                     <div className="flex justify-between items-center mb-1.5">
                                                         <span className={`text-[10px] font-black uppercase tracking-wider ${won ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>{won ? 'Победа' : 'Поражение'}</span>
@@ -365,7 +365,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                                         const playerOnHero = myTeam.find(p => p.heroName === hero.name);
 
                                                         return (
-                                                            <div key={m.id} className="relative pl-5 pr-3.5 py-3 hover:bg-slate-50 dark:hover:bg-slate-750 transition-colors flex flex-col">
+                                                            <div key={m.id} className="relative pl-5 pr-3.5 py-3 transition-colors flex flex-col">
                                                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${won ? 'bg-green-500' : 'bg-red-500'}`} />
                                                                 <div className="flex justify-between items-center mb-1.5">
                                                                     <span className={`text-[10px] font-black uppercase tracking-wider ${won ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>{won ? 'Победа' : 'Поражение'}</span>
@@ -402,7 +402,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                 {recentMatches.length > 3 && (
                                     <button
                                         onClick={() => setMatchesState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 hover:text-primary-500 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
                                     >
                                         {matchesState === 'partial' ? 'Показать все' : 'Свернуть'}
                                     </button>

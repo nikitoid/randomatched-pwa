@@ -40,7 +40,7 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
                     <h3 className="font-bold text-slate-900 dark:text-white">Выберите героя</h3>
                     <button
                         onClick={onClose}
-                        className="p-2 -mr-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                        className="p-2 -mr-2 rounded-xl text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 active:text-slate-600 dark:active:text-slate-200 transition-colors"
                     >
                         <X size={24} />
                     </button>
@@ -83,7 +83,7 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
                                                 ? 'bg-primary-50 dark:bg-primary-900/20 ring-1 ring-primary-500/50 cursor-default'
                                                 : isUsed
                                                     ? 'opacity-40 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50'
-                                                    : 'hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] active:bg-slate-100 dark:active:bg-slate-700'}
+                                                    : 'active:scale-[0.98] active:bg-slate-100 dark:active:bg-slate-700'}
                                         `}
                                     >
                                         <div className={`
@@ -92,7 +92,7 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
                                                 ? 'bg-primary-500 text-white shadow-md'
                                                 : isUsed
                                                     ? 'bg-slate-200 dark:bg-slate-700 text-slate-400'
-                                                    : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform'}
+                                                    : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 transition-transform'}
                                         `}>
                                             {hero.name.charAt(0).toUpperCase()}
                                         </div>

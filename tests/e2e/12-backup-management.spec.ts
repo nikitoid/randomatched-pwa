@@ -63,8 +63,8 @@ test.describe('Управление облачными бэкапами', () => 
 
         // 4. Проверяем наличие кнопок действий в элементах списка
         const backupItem = page.getByTestId('backup-item').first();
-        const viewBtn = backupItem.locator('button[title="Просмотреть"]');
-        const deleteBtn = backupItem.locator('button[title="Удалить"]');
+        const viewBtn = backupItem.locator('button[aria-label="Просмотреть"]');
+        const deleteBtn = backupItem.locator('button[aria-label="Удалить"]');
 
         await expect(viewBtn).toBeVisible();
         await expect(deleteBtn).toBeVisible();

@@ -94,7 +94,7 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
                 {!isReadOnly && !isFocused && (hero.name || hero.rank) && (
                     <button
                         onClick={handleRemove}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-300 md:hover:text-red-500 transition-colors"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-300 active:text-red-500 transition-colors"
                     >
                         <X size={16} />
                     </button>

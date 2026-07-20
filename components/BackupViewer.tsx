@@ -56,7 +56,7 @@ export const BackupViewer: React.FC<BackupViewerProps> = ({ backup, onClose, isO
                             от {new Date(backup.createdAt).toLocaleString('ru-RU')} • {backup.matchCount} матчей
                         </p>
                     </div>
-                    <button onClick={onClose} data-testid="backup-viewer-close-btn" className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <button onClick={onClose} data-testid="backup-viewer-close-btn" className="p-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
                         <X size={20} className="text-slate-500" />
                     </button>
                 </div>

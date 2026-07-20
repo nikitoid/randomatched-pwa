@@ -30,7 +30,7 @@ export const GroupStatsModal: React.FC<GroupStatsModalProps> = ({
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white">Баланс героев</h3>
                     </div>
-                    <button onClick={onClose} className="p-2 -mr-2 text-slate-400 md:hover:text-slate-900 dark:md:hover:text-white active:text-slate-900 rounded-full">
+                    <button onClick={onClose} className="p-2 -mr-2 text-slate-400 active:text-slate-900 rounded-full">
                         <X size={20} />
                     </button>
                 </div>

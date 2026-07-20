@@ -71,7 +71,7 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
         }
 
         if (isButton) {
-           return `${colors} hover:brightness-95 dark:hover:brightness-125`;
+           return `${colors} active:brightness-95 dark:active:brightness-125`;
         }
         return colors;
     };

@@ -63,7 +63,7 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                     </div>
                     <button
                         onClick={handleClose}
-                        className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all"
+                        className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 active:bg-slate-200 dark:active:bg-slate-700 active:scale-95 transition-all"
                         aria-label="Закрыть"
                     >
                         <X size={18} />
@@ -120,7 +120,7 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                 <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 rounded-b-3xl">
                     <button
                         onClick={handleClose}
-                        className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm sm:text-base rounded-2xl active:scale-[0.98] transition-all shadow-lg shadow-primary-500/10 flex items-center justify-center gap-2"
+                        className="w-full py-3.5 bg-primary-500 active:bg-primary-600 text-white font-bold text-sm sm:text-base rounded-2xl active:scale-[0.98] transition-all shadow-lg shadow-primary-500/10 flex items-center justify-center gap-2"
                     >
                         <Check size={18} />
                         <span>Понятно, класс!</span>

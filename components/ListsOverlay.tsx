@@ -727,9 +727,9 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     {editingListId ? (
                         <div className="flex flex-col w-full pb-1">
                             <div className="flex items-center justify-between min-h-[44px]">
-                                <button onClick={handleCancelEditor} className="p-2 -ml-2 rounded-full md:hover:bg-slate-100 dark:md:hover:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-800 text-slate-900 dark:text-white"> <ChevronLeft size={24} /> </button>
+                                <button onClick={handleCancelEditor} className="p-2 -ml-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800 text-slate-900 dark:text-white"> <ChevronLeft size={24} /> </button>
                                 <h2 className="text-lg font-bold text-slate-900 dark:text-white truncate flex-1 text-center px-4"> {currentList?.name} {isPermanentlyReadOnly && <span className="ml-2 text-xs font-normal opacity-60">(Только чтение)</span>} </h2>
-                                {!currentList?.isTemporary ? (<button onClick={handleToggleEditorMenu} className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'md:hover:bg-slate-100 dark:md:hover:bg-slate-100 active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}> <MoreVertical size={24} /> </button>) : (<div className="w-10" />)}
+                                {!currentList?.isTemporary ? (<button onClick={handleToggleEditorMenu} className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}> <MoreVertical size={24} /> </button>) : (<div className="w-10" />)}
                             </div>
                             <div className="flex items-center justify-between mt-1">
                                 <button onClick={() => { if (!isReadOnly) { setEditorIsGroupable(!editorIsGroupable); triggerHaptic(10); } }} disabled={isReadOnly} className={`mr-2 flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}> <SquareStack size={14} className="shrink-0" /> <span className="truncate">{editorIsGroupable ? 'В группе' : 'Не в группе'}</span> <div className={`w-2 h-2 rounded-full ml-auto shrink-0 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} /> </button>
@@ -763,7 +763,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                 onClick={onClose} 
                                 aria-label="Закрыть списки"
                                 data-testid="lists-close-btn"
-                                className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                                className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
                             > 
                                 <ChevronLeft size={24} /> 
                             </button>
@@ -879,7 +879,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     >
                         <button 
                             onClick={() => { handleSort('name', 'asc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-4 py-3 flex items-center justify-between md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                            className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
                         >
                             <span className="flex items-center gap-2">
                                 <ArrowDownAZ size={16} />
@@ -889,7 +889,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                         </button>
                         <button 
                             onClick={() => { handleSort('name', 'desc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-4 py-3 flex items-center justify-between md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                            className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
                         >
                             <span className="flex items-center gap-2">
                                 <ArrowUpAZ size={16} />
@@ -900,7 +900,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                         <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
                         <button 
                             onClick={() => { handleSort('rank', 'desc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-4 py-3 flex items-center justify-between md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                            className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
                         >
                             <span className="flex items-center gap-2">
                                 <ArrowLeftRight size={16} className="rotate-90" />
@@ -910,7 +910,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                         </button>
                         <button 
                             onClick={() => { handleSort('rank', 'asc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-4 py-3 flex items-center justify-between md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                            className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
                         >
                             <span className="flex items-center gap-2">
                                 <ArrowLeftRight size={16} className="rotate-90" />
@@ -928,19 +928,19 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 <>
                     <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsEditorMenuOpen(false)} /> 
                     <div className="fixed z-[61] w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-menu-in origin-top-right" style={{ top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right, }}> 
-                        <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileJson size={16} /> Экспорт в файл </button> 
+                        <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileJson size={16} /> Экспорт в файл </button> 
                         {!isReadOnly && !currentList?.isTemporary && (
                             <> 
-                                <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Upload size={16} /> Импорт из файла </button> 
+                                <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Upload size={16} /> Импорт из файла </button> 
                             </>
                         )} 
                         <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" /> 
-                        <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Copy size={16} /> Экспорт (Текст) </button> 
+                        <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Copy size={16} /> Экспорт (Текст) </button> 
                         {!isReadOnly && !currentList?.isTemporary && (
                             <> 
-                                <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileText size={16} /> Импорт (Текст) </button> 
+                                <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileText size={16} /> Импорт (Текст) </button> 
                                 <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" /> 
-                                <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium"> <ArrowLeftRight size={16} /> Импорт рангов </button> 
+                                <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium"> <ArrowLeftRight size={16} /> Импорт рангов </button> 
                             </>
                         )} 
                     </div> 
@@ -970,12 +970,12 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                         </div> 
                     </div> 
                     <div className={`fixed z-[62] w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden ${menuPosition.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-right' : 'animate-menu-in origin-top-right'}`} style={{ top: menuPosition.top, bottom: menuPosition.bottom, right: menuPosition.right }}> 
-                        {!activeListForMenu.isCloud && !activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleUpload(activeListForMenu.id); }} disabled={!isOnline} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium border-b border-slate-50 dark:border-slate-700/50 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-sky-600 dark:text-sky-400'}`}> <UploadCloud size={16} /> Выгрузить в облако </button>)} 
-                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleOpenRename(activeListForMenu); }} disabled={(!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${(!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200'}`}> <Edit2 size={16} /> Переименовать </button>)} 
-                        <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}> <Copy size={16} /> Экспорт (Текст) </button> 
-                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 md:hover:bg-slate-50 dark:md:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}> <FileJson size={16} /> Экспорт в файл </button>)} 
+                        {!activeListForMenu.isCloud && !activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleUpload(activeListForMenu.id); }} disabled={!isOnline} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium border-b border-slate-50 dark:border-slate-700/50 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'active:bg-slate-50 dark:active:bg-slate-700 text-sky-600 dark:text-sky-400'}`}> <UploadCloud size={16} /> Выгрузить в облако </button>)} 
+                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleOpenRename(activeListForMenu); }} disabled={(!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${(!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200'}`}> <Edit2 size={16} /> Переименовать </button>)} 
+                        <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}> <Copy size={16} /> Экспорт (Текст) </button> 
+                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}> <FileJson size={16} /> Экспорт в файл </button>)} 
                         <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" /> 
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(activeListForMenu); }} disabled={activeListForMenu.isCloud && !isOnline} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isCloud && !isOnline ? 'opacity-40 cursor-not-allowed text-slate-400' : 'md:hover:bg-red-50 dark:md:hover:bg-red-900/20 text-red-600 dark:text-red-400'}`}> <Trash2 size={16} /> {activeListForMenu.isCloud ? 'Удалить из облака' : 'Удалить'} </button> 
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(activeListForMenu); }} disabled={activeListForMenu.isCloud && !isOnline} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isCloud && !isOnline ? 'opacity-40 cursor-not-allowed text-slate-400' : 'active:bg-red-50 dark:active:bg-red-900/20 text-red-600 dark:text-red-400'}`}> <Trash2 size={16} /> {activeListForMenu.isCloud ? 'Удалить из облака' : 'Удалить'} </button> 
                     </div> 
                 </>, 
                 document.body
@@ -994,7 +994,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                     <span className="text-[10px] uppercase text-slate-400 font-bold">Или</span> 
                                     <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800"></div> 
                                 </div> 
-                                <button type="button" onClick={triggerCreateListFileUpload} className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold border border-slate-200 dark:border-slate-700 md:hover:bg-slate-100 dark:md:hover:bg-slate-700 transition-colors"> <Upload size={16} /> Загрузить из файла </button> 
+                                <button type="button" onClick={triggerCreateListFileUpload} className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold border border-slate-200 dark:border-slate-700 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"> <Upload size={16} /> Загрузить из файла </button> 
                                 <input type="file" ref={createListFileInputRef} className="hidden" accept=".json" onChange={handleNewListImport} /> 
                             </div>
                         )} 
@@ -1089,7 +1089,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                                         <button
                                                             key={list.id}
                                                             onClick={() => { setRankSourceListId(list.id); setIsRankSourceDropdownOpen(false); }}
-                                                            className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center justify-between ${rankSourceListId === list.id ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-slate-200 md:hover:bg-slate-50 dark:md:hover:bg-slate-700'}`}
+                                                            className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center justify-between ${rankSourceListId === list.id ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-slate-200 active:bg-slate-50 dark:active:bg-slate-700'}`}
                                                         >
                                                             <span className="truncate">{list.name}</span>
                                                             {rankSourceListId === list.id && <Check size={14} className="text-violet-500" />}
@@ -1113,7 +1113,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                 </p>
                                 <button
                                     onClick={() => setIsRankInfoOpen(!isRankInfoOpen)}
-                                    className={`p-2 rounded-xl transition-colors ${isRankInfoOpen ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                    className={`p-2 rounded-xl transition-colors ${isRankInfoOpen ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 active:text-slate-600 dark:active:text-slate-300'}`}
                                 >
                                     <Info size={18} />
                                 </button>
@@ -1211,7 +1211,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                             <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400"> <BarChart3 size={20} /> </div> 
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Баланс героев</h3> 
                         </div> 
-                        <button onClick={() => setIsStatsModalOpen(false)} className="p-2 -mr-2 text-slate-400 md:hover:text-slate-900 dark:md:hover:text-white active:text-slate-900 rounded-full"> <X size={20} /> </button> 
+                        <button onClick={() => setIsStatsModalOpen(false)} className="p-2 -mr-2 text-slate-400 active:text-slate-900 rounded-full"> <X size={20} /> </button> 
                     </div> 
                     <div className="overflow-y-auto no-scrollbar flex-1 -mr-2 pr-2"> 
                         {(() => { 

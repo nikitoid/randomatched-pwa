@@ -175,7 +175,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                         {step === 'select-heroes' && (
                             <button 
                                 onClick={handleBack}
-                                className="p-1.5 -ml-1 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                className="p-1.5 -ml-1 rounded-full text-slate-500 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
                             >
                                 <ChevronLeft size={20} />
                             </button>
@@ -186,7 +186,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                     </div>
                     <button 
                         onClick={handleClose}
-                        className="p-1.5 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        className="p-1.5 rounded-full text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
                     >
                         <X size={20} />
                     </button>
@@ -224,8 +224,8 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                                             onClick={() => handleSelectList(list)}
                                             className={`w-full p-4 flex items-center gap-4 rounded-2xl border active:scale-[0.99] transition-all text-left ${
                                                 hasSelected
-                                                    ? 'border-primary-200 dark:border-primary-900/50 bg-primary-50/10 dark:bg-primary-950/5 hover:bg-primary-50/20 dark:hover:bg-primary-950/10 shadow-sm'
-                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                                    ? 'border-primary-200 dark:border-primary-900/50 bg-primary-50/10 dark:bg-primary-950/5 shadow-sm'
+                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50'
                                             }`}
                                         >
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
@@ -270,13 +270,13 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={handleSelectAll}
-                                        className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                        className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
                                     >
                                         Выбрать всех
                                     </button>
                                     <button 
                                         onClick={handleDeselectAll}
-                                        className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                                        className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
                                     >
                                         Снять все
                                     </button>
@@ -295,7 +295,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                                                 className={`p-3 rounded-xl border flex items-center justify-between text-left transition-all active:scale-[0.98] ${
                                                     isSelected 
                                                         ? 'bg-primary-50 border-primary-200 dark:bg-primary-950/20 dark:border-primary-800/50 text-slate-800 dark:text-slate-200' 
-                                                        : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300'
+                                                        : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300'
                                                 }`}
                                             >
                                                 <div className="flex flex-col min-w-0 mr-2">
@@ -329,7 +329,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                     <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex gap-3">
                         <button 
                             onClick={handleConfirm}
-                            className="flex-1 py-3 font-bold text-sm text-white rounded-xl shadow-lg active:scale-95 transition-all bg-primary-600 hover:bg-primary-700 shadow-primary-600/20"
+                            className="flex-1 py-3 font-bold text-sm text-white rounded-xl shadow-lg active:scale-95 transition-all bg-primary-600 active:bg-primary-700 shadow-primary-600/20"
                         >
                             Добавить ({totalSelectedCount})
                         </button>
@@ -350,7 +350,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                             className={`flex-1 py-3 font-bold text-sm text-white rounded-xl shadow-lg active:scale-95 transition-all ${
                                 totalSelectedCount === 0 
                                     ? 'bg-slate-300 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none' 
-                                    : 'bg-primary-600 hover:bg-primary-700 shadow-primary-600/20'
+                                    : 'bg-primary-600 active:bg-primary-700 shadow-primary-600/20'
                             }`}
                         >
                             Добавить ({totalSelectedCount})

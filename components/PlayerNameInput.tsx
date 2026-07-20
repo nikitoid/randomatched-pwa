@@ -68,7 +68,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
         <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-50' : 'z-20'}`}>
             <button
                 onClick={() => setIsNamesOpen(!isNamesOpen)}
-                className={`w-full p-4 flex items-center justify-between text-left bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-all duration-300 ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm hover:shadow-md'}`}
+                className={`w-full p-4 flex items-center justify-between text-left bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-all duration-300 ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm'}`}
             >
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${filledNamesCount > 0 ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
@@ -120,7 +120,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                                 className={`pl-3 pr-8 py-2 rounded-xl text-xs font-medium transition-colors border select-none
                                                     ${isConfirmingDelete
                                                         ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border-red-200 dark:border-red-900/50'
-                                                        : 'bg-slate-100 dark:bg-slate-800 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:bg-slate-200 dark:active:bg-slate-700 text-slate-600 dark:text-slate-300 border-transparent active:border-primary-500'
+                                                        : 'bg-slate-100 dark:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-600 dark:text-slate-300 border-transparent active:border-primary-500'
                                                     }
                                                 `}
                                                 style={{ pointerEvents: 'auto' }}
@@ -131,8 +131,8 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                                 onClick={(e) => handleDeleteHistoryItem(e, idx)}
                                                 className={`absolute right-1 p-1.5 rounded-lg transition-colors
                                                     ${isConfirmingDelete
-                                                        ? 'text-red-600 md:hover:bg-red-100 dark:text-red-400 dark:md:hover:bg-red-900/40 active:bg-red-100'
-                                                        : 'text-slate-400 md:hover:text-red-500 md:hover:bg-slate-200 dark:md:hover:bg-slate-700 active:text-red-500 active:bg-slate-200'
+                                                        ? 'text-red-600 active:bg-red-100 dark:text-red-400'
+                                                        : 'text-slate-400 active:text-red-500 active:bg-slate-200'
                                                     }
                                                 `}
                                             >
@@ -172,7 +172,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                                         handleNameChange(index, name);
                                                         setFocusedIndex(null);
                                                     }}
-                                                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-950/30 dark:hover:text-primary-400 rounded-xl transition-colors flex items-center gap-2"
+                                                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 active:bg-primary-50 active:text-primary-600 dark:active:bg-primary-950/30 dark:active:text-primary-400 rounded-xl transition-colors flex items-center gap-2"
                                                 >
                                                     <User size={12} className="text-slate-400" />
                                                     <span>{name}</span>

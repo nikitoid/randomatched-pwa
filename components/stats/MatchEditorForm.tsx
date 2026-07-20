@@ -233,7 +233,7 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                     <button
                         type="button"
                         onClick={() => adjustKills(-1)}
-                        className="h-full w-5 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold active:scale-75 transition-transform select-none"
+                        className="h-full w-5 flex items-center justify-center text-slate-400 active:text-slate-600 dark:active:text-slate-200 text-sm font-bold active:scale-75 transition-transform select-none"
                     >
                         -
                     </button>
@@ -257,7 +257,7 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                     <button
                         type="button"
                         onClick={() => adjustKills(1)}
-                        className="h-full w-5 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold active:scale-75 transition-transform select-none"
+                        className="h-full w-5 flex items-center justify-center text-slate-400 active:text-slate-600 dark:active:text-slate-200 text-sm font-bold active:scale-75 transition-transform select-none"
                     >
                         +
                     </button>
@@ -285,7 +285,7 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                         key={item}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applySuggestion(item)}
-                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors truncate border-b border-slate-50 dark:border-slate-700 last:border-0"
+                        className="w-full text-left px-3 py-2.5 text-sm active:bg-slate-50 dark:active:bg-slate-700 transition-colors truncate border-b border-slate-50 dark:border-slate-700 last:border-0"
                     >
                         {item}
                     </button>
