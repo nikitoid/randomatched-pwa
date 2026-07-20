@@ -11,17 +11,21 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             totalMatches++;
             const winner = match.winner;
 
-            const processPlayer = (name: string, won: boolean, heroName: string) => {
+            const processPlayer = (name: string, won: boolean, heroName: string, kills?: number) => {
                 const cleanName = name.trim();
                 const cleanHero = heroName.trim() || 'Unknown';
                 if (!cleanName) return;
 
                 if (!playerStats[cleanName]) {
-                    playerStats[cleanName] = { name: cleanName, matches: 0, wins: 0, losses: 0, heroesPlayed: {}, score: 0 };
+                    playerStats[cleanName] = { name: cleanName, matches: 0, wins: 0, losses: 0, heroesPlayed: {}, score: 0, totalKills: 0, avgKills: 0 };
                 }
                 playerStats[cleanName].matches++;
                 if (won) playerStats[cleanName].wins++;
                 else playerStats[cleanName].losses++;
+
+                if (kills !== undefined && kills !== null) {
+                    playerStats[cleanName].totalKills = (playerStats[cleanName].totalKills || 0) + kills;
+                }
 
                 playerStats[cleanName].heroesPlayed[cleanHero] = (playerStats[cleanName].heroesPlayed[cleanHero] || 0) + 1;
 
@@ -36,8 +40,8 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
                 }
             };
 
-            match.team1.forEach(p => processPlayer(p.name, winner === 'team1', p.heroName));
-            match.team2.forEach(p => processPlayer(p.name, winner === 'team2', p.heroName));
+            match.team1.forEach(p => processPlayer(p.name, winner === 'team1', p.heroName, p.kills));
+            match.team2.forEach(p => processPlayer(p.name, winner === 'team2', p.heroName, p.kills));
         });
 
         // Calculate Weighted Score for Players (Bayesian Average with C = 25, m = 0.5)
@@ -45,6 +49,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             const C = 25;
             const m = 0.5;
             p.score = (p.wins + C * m) / (p.matches + C);
+            p.avgKills = p.matches > 0 ? (p.totalKills || 0) / p.matches : 0;
         });
 
         const sortedPlayers = Object.values(playerStats).sort((a, b) => b.score - a.score || b.wins - a.wins);

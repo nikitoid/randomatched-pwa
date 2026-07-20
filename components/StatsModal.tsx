@@ -230,7 +230,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     // Player Tab State
     const [playerSearch, setPlayerSearch] = useState('');
-    const [playerSort, setPlayerSort] = useState<'efficiency' | 'winrate' | 'matches' | 'az' | 'za'>('efficiency');
+    const [playerSort, setPlayerSort] = useState<'efficiency' | 'winrate' | 'matches' | 'kills' | 'killPercent' | 'az' | 'za'>('efficiency');
     const [isPlayerSortMenuOpen, setIsPlayerSortMenuOpen] = useState(false);
     const [playerDropdownPosition, setPlayerDropdownPosition] = useState<{ top: number, left: number, width: number } | null>(null);
 
@@ -463,6 +463,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 return (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches;
             } else if (playerSort === 'matches') {
                 return b.matches - a.matches || (b.wins / b.matches) - (a.wins / a.matches);
+            } else if (playerSort === 'kills') {
+                return (b.totalKills || 0) - (a.totalKills || 0) || (b.avgKills || 0) - (a.avgKills || 0) || b.matches - a.matches;
+            } else if (playerSort === 'killPercent') {
+                const aPct = a.matches > 0 ? (((a.totalKills || 0) * 100) / a.matches) / 2 : 0;
+                const bPct = b.matches > 0 ? (((b.totalKills || 0) * 100) / b.matches) / 2 : 0;
+                return bPct - aPct || (b.totalKills || 0) - (a.totalKills || 0) || b.matches - a.matches;
             } else if (playerSort === 'az') {
                 return a.name.localeCompare(b.name);
             } else if (playerSort === 'za') {
@@ -1117,6 +1123,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     {playerSort === 'efficiency' && <TrendingUp size={16} />}
                                     {playerSort === 'winrate' && <TrendingUp size={16} />}
                                     {playerSort === 'matches' && <BarChart3 size={16} />}
+                                    {playerSort === 'kills' && <Skull size={16} />}
+                                    {playerSort === 'killPercent' && <Percent size={16} />}
                                     {playerSort === 'az' && <ArrowDownAZ size={16} />}
                                     {playerSort === 'za' && <ArrowUpAZ size={16} />}
                                 </button>
@@ -1144,6 +1152,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             <button onClick={() => { setPlayerSort('matches'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
                                                 <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
                                                 {playerSort === 'matches' && <Check size={14} />}
+                                            </button>
+                                            <button onClick={() => { setPlayerSort('kills'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'kills' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><Skull size={14} /> По убийствам</span>
+                                                {playerSort === 'kills' && <Check size={14} />}
+                                            </button>
+                                            <button onClick={() => { setPlayerSort('killPercent'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'killPercent' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                <span className="flex items-center gap-2"><Percent size={14} /> По % убийств</span>
+                                                {playerSort === 'killPercent' && <Check size={14} />}
                                             </button>
                                             <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
                                             <button onClick={() => { setPlayerSort('az'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>

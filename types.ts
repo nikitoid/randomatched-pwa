@@ -84,6 +84,8 @@ export interface PlayerStat {
   losses: number;
   heroesPlayed: Record<string, number>;
   score: number; // Weighted score for MVP calculation
+  totalKills?: number;
+  avgKills?: number;
 }
 
 export interface HeroStat {
