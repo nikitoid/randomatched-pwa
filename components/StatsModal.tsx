@@ -1665,7 +1665,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             <div className="p-3 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl space-y-2">
                                 <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                    Почему метод Уилсона точнее?
+                                    Почему этот расчёт справедлив?
                                 </div>
                                 <p className="text-slate-600 dark:text-slate-400">
                                     Алгоритм вычисляет надежную нижнюю границу рейтинга и объективно ранжирует игроков:
