@@ -167,16 +167,24 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
                 // Hero Stats
                 if (cleanHero !== 'Unknown') {
                     if (!heroStats[cleanHero]) {
-                        heroStats[cleanHero] = { name: cleanHero, matches: 0, wins: 0, losses: 0 };
+                        heroStats[cleanHero] = { name: cleanHero, matches: 0, wins: 0, losses: 0, totalKills: 0, avgKills: 0 };
                     }
                     heroStats[cleanHero].matches++;
                     if (won) heroStats[cleanHero].wins++;
                     else heroStats[cleanHero].losses++;
+                    if (kills !== undefined && kills !== null) {
+                        heroStats[cleanHero].totalKills = (heroStats[cleanHero].totalKills || 0) + kills;
+                    }
                 }
             };
 
             match.team1.forEach(p => processPlayer(p.name, winner === 'team1', p.heroName, p.kills));
             match.team2.forEach(p => processPlayer(p.name, winner === 'team2', p.heroName, p.kills));
+        });
+
+        // Calculate avgKills for Heroes
+        Object.values(heroStats).forEach(h => {
+            h.avgKills = h.matches > 0 ? (h.totalKills || 0) / h.matches : 0;
         });
 
         // Calculate Weighted Score for Players (Wilson Score Interval with Time-Decay)
@@ -203,6 +211,14 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             return b.score - a.score || b.wins - a.wins;
         });
         const sortedHeroes = Object.values(heroStats).sort((a, b) => (b.wins / b.matches) - (a.wins / a.matches) || b.matches - a.matches);
+
+        // Hero Nominations
+        const qualifiedHeroes = sortedHeroes.filter(h => h.matches >= 3);
+        const topWinrateHero = qualifiedHeroes.length > 0 ? qualifiedHeroes[0] : (sortedHeroes.length > 0 ? sortedHeroes[0] : null);
+        const mostPopularHero = [...sortedHeroes].sort((a, b) => b.matches - a.matches || (b.wins / b.matches) - (a.wins / a.matches))[0] || null;
+        const mostDeadlyHero = [...(qualifiedHeroes.length > 0 ? qualifiedHeroes : sortedHeroes)]
+            .filter(h => (h.totalKills || 0) > 0)
+            .sort((a, b) => (b.avgKills || 0) - (a.avgKills || 0) || (b.totalKills || 0) - (a.totalKills || 0))[0] || null;
 
         const qualifiedPlayers = sortedPlayers.filter(isQualified);
         const mvp = qualifiedPlayers.length > 0 ? qualifiedPlayers[0] : (sortedPlayers.length > 0 ? sortedPlayers[0] : null);
@@ -432,6 +448,9 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             totalMatches,
             sortedPlayers,
             sortedHeroes,
+            topWinrateHero,
+            mostPopularHero,
+            mostDeadlyHero,
             mvp,
             underdog,
             streakStats,

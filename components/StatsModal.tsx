@@ -475,6 +475,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         totalMatches,
         sortedPlayers,
         sortedHeroes,
+        topWinrateHero,
+        mostPopularHero,
+        mostDeadlyHero,
         mvp,
         underdog,
         streakStats,
@@ -1300,6 +1303,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 heroSort={heroSort}
                                 openHeroDetails={openHeroDetails}
                                 closeDetails={() => setSelectedHero(null)}
+                                topWinrateHero={topWinrateHero}
+                                mostPopularHero={mostPopularHero}
+                                mostDeadlyHero={mostDeadlyHero}
                             />
                         )}
 

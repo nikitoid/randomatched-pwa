@@ -97,6 +97,8 @@ export interface HeroStat {
   matches: number;
   wins: number;
   losses: number;
+  totalKills?: number;
+  avgKills?: number;
 }
 
 export interface CloudBackup {
