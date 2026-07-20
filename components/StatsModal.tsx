@@ -460,10 +460,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 const bActive = !b.isInactive ? 1 : 0;
                 if (aActive !== bActive) return bActive - aActive;
 
-                const aQual = isQual(a) ? 1 : 0;
-                const bQual = isQual(b) ? 1 : 0;
-                if (aQual !== bQual) return bQual - aQual;
-
                 return b.score - a.score || b.wins - a.wins;
             } else if (playerSort === 'winrate') {
                 const aActive = !a.isInactive ? 1 : 0;
@@ -1334,21 +1330,22 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         </div>
                         <div className="space-y-4 text-sm overflow-y-auto pr-1">
                             <p>
-                                Рейтинг «Топ эффективности» рассчитывается по методу <strong>Байесовского среднего</strong>.
+                                Рейтинг «Топ эффективности» рассчитывается по <strong>методу Уилсона (Wilson Score Interval)</strong> с экспоненциальным затуханием по времени.
                             </p>
                             <p>
-                                В отличие от обычного процента побед (винрейта), эта формула учитывает <strong>количество матчей</strong>. Это нужно для того, чтобы в топе не оставались игроки, которые сыграли всего 2–3 матча и получили временный высокий винрейт, вытесняя активных участников.
+                                Алгоритм рассчитывает нижнюю границу доверительного интервала Бернулли с 95% надежностью. Он учитывает <strong>винрейт</strong>, <strong>объем матчей</strong> и их <strong>давность</strong>.
                             </p>
                             <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 font-medium">
                                 <span className="text-xs text-slate-400 dark:text-slate-500 block mb-1">Математический принцип:</span>
-                                Каждому игроку условно добавляется 25 виртуальных игр с винрейтом 50% (12.5 побед и 12.5 поражений).
+                                Малая выборка опускает рейтинг вниз из-за высокой неопределенности, а большая выборка с хорошим качеством позволяет раскрыть реальную силу игрока.
                             </div>
                             <p>
                                 🌟 <strong>Что это дает на практике?</strong>
                             </p>
                             <ul className="list-disc list-inside space-y-1.5 pl-2 text-slate-600 dark:text-slate-400">
-                                <li><strong>Активные игроки</strong> со временем раскрывают свой реальный винрейт, занимая заслуженно высокие места.</li>
-                                <li><strong>Редкие гости</strong> (например, сыгравшие 3 игры и выигравшие все) не «зависают» наверху, а плавно смещаются ниже активных игроков с хорошим винрейтом.</li>
+                                <li><strong>Активные игроки с дистанцией</strong> занимают честные высокие места.</li>
+                                <li><strong>Редкие гости</strong> с малым числом матчей не взлетают искусственно в ТОП.</li>
+                                <li><strong>Неактивные игроки</strong> (&gt;60 дней) уходят в конец списка.</li>
                             </ul>
                         </div>
                         <button
@@ -1418,7 +1415,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <div className="space-y-4 text-sm overflow-y-auto pr-1 flex-1 no-scrollbar">
                             <p className="text-slate-650 dark:text-slate-400">
                                 {activeNominationModal === 'mvp' &&
-                                    'MVP — это наиболее эффективный игрок, определяемый на основе Байесовского среднего рейтинга. Данный метод учитывает как винрейт, так и количество сыгранных матчей (требуется минимум 3 матча), чтобы сбалансировать результаты активных игроков и редких гостей.'
+                                    'MVP — это наиболее эффективный игрок, определяемый на основе метода Уилсона (Wilson Score Interval). Данный метод рассчитывает нижнюю границу рейтинга с 95% надежностью, учитывая винрейт, количество матчей и затухание по времени.'
                                 }
                                 {activeNominationModal === 'underdog' &&
                                     'Underdog — номинация для игрока, который переживает полосу неудач или имеет наименьшую эффективность. В первую очередь номинируется игрок с наибольшей активной серией поражений (от 3-х матчей). Если таких серий нет, номинируется игрок с худшим винрейтом (требуется минимум 3 матча).'
@@ -1609,10 +1606,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     Как рассчитывается балл
                                 </div>
                                 <div className="text-slate-700 dark:text-slate-300">
-                                    Используется метод <strong>Байесовского среднего</strong>: к реальным результатам игрока прибавляется стартовый задел из <strong>25 виртуальных игр с 50% побед</strong> (т.е. +12.5 побед):
+                                    Используется <strong>Нижняя граница интервала Уилсона (95% надежность)</strong> с затуханием давности игр (период полураспада 60 дней):
                                 </div>
                                 <div className="mt-2 text-center py-2 px-3 bg-white dark:bg-slate-900 rounded-xl font-mono text-[11px] font-bold text-primary-700 dark:text-primary-300 border border-primary-100 dark:border-primary-900/80 shadow-xs">
-                                    Эффективность = (Победы + 12.5) / (Матчи + 25)
+                                    Score = WilsonLowerBound(Wins_weighted, Matches_weighted)
                                 </div>
                             </div>
 
@@ -1620,58 +1617,57 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750 space-y-2">
                                 <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                    Почему этот расчёт справедлив
+                                    Почему метод Уилсона точнее?
                                 </div>
                                 <p className="text-slate-600 dark:text-slate-400">
-                                    При обычном проценте побед игрок с 1 победой (100%) стоял бы выше игрока с 10 играми и 7 победами (70%). С алгоритмом эффективности:
+                                    Алгоритм вычисляет надежную нижнюю границу рейтинга и объективно ранжирует игроков:
                                 </p>
 
                                 <div className="space-y-1.5 pt-1">
                                     <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px]">
                                         <div>
-                                            <span className="font-semibold text-slate-800 dark:text-slate-200">1 игра / 1 победа</span>
-                                            <span className="text-[10px] text-slate-400 ml-1">(Винрейт 100%)</span>
+                                            <span className="font-semibold text-slate-800 dark:text-slate-200">2 победы / 10 матчей</span>
+                                            <span className="text-[10px] text-slate-400 ml-1">(20% винрейт)</span>
                                         </div>
                                         <div className="font-mono font-bold text-slate-500">
-                                            (1 + 12.5) / 26 = <span className="text-slate-900 dark:text-white">51.9%</span>
+                                            Нижняя граница: <span className="text-red-500">~6.0%</span>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center justify-between p-2 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200/50 dark:border-emerald-900/40 text-[11px]">
                                         <div>
-                                            <span className="font-semibold text-emerald-900 dark:text-emerald-300">10 игр / 7 побед</span>
-                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">(Винрейт 70%)</span>
+                                            <span className="font-semibold text-emerald-900 dark:text-emerald-300">39 побед / 95 матчей</span>
+                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">(41% винрейт)</span>
                                         </div>
                                         <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                                            (7 + 12.5) / 35 = <span className="text-emerald-900 dark:text-emerald-200">55.7%</span>
+                                            Нижняя граница: <span className="text-emerald-900 dark:text-emerald-200">~31.6%</span>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center justify-between p-2 bg-primary-50/60 dark:bg-primary-950/30 rounded-xl border border-primary-200/50 dark:border-primary-900/40 text-[11px]">
                                         <div>
-                                            <span className="font-semibold text-primary-900 dark:text-primary-300">50 игр / 35 побед</span>
-                                            <span className="text-[10px] text-primary-600 dark:text-primary-400 ml-1">(Винрейт 70%)</span>
+                                            <span className="font-semibold text-primary-900 dark:text-primary-300">3 победы / 4 матча</span>
+                                            <span className="text-[10px] text-primary-600 dark:text-primary-400 ml-1">(75% винрейт)</span>
                                         </div>
                                         <div className="font-mono font-bold text-primary-700 dark:text-primary-400">
-                                            (35 + 12.5) / 75 = <span className="text-primary-900 dark:text-primary-200">63.3%</span>
+                                            Нижняя граница: <span className="text-primary-900 dark:text-primary-200">~30.1%</span>
                                         </div>
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1">
-                                    * Чем больше игр сыграно с высоким результатом, тем ближе эффективный балл к реальному проценту побед.
+                                    * Игрок с 39/95 по праву стоит выше игрока с 2/10 и выше 3/4 на малой дистанции.
                                 </p>
                             </div>
 
-                            {/* Правила квалификации */}
+                            {/* Правила активности */}
                             <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750">
                                 <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                    Правила квалификации
+                                    Временное затухание и активность
                                 </div>
                                 <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400 pl-0.5">
-                                    <li>Для попадания в основной ТОП требуется минимум <strong>3 активных (весовых) матча</strong>.</li>
-                                    <li>Неактивные игроки, не посещавшие игры более 2 месяцев, опускаются ниже активных квалифицированных участников.</li>
-                                    <li>При одинаковом рейтинге выше ставится игрок с большим числом побед.</li>
+                                    <li>Каждый матч имеет вес W = 2^(-дни / 60). Вес матча снижается в 2 раза каждые 60 дней.</li>
+                                    <li>Неактивные игроки, не посещавшие игры более 60 дней, уходят в конец списка.</li>
                                 </ul>
                             </div>
                         </div>
@@ -1716,22 +1712,27 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             </button>
                         </div>
 
-                        {/* Formula legend */}
-                        <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750 text-xs text-slate-600 dark:text-slate-300 mb-3 shrink-0 flex flex-col items-center">
-                            <div className="inline-flex items-center gap-2 font-bold text-primary-600 dark:text-primary-400 text-[11px] my-1 select-none">
-                                <span className="text-slate-500 dark:text-slate-400 font-semibold">Рейтинг =</span>
-                                <div className="inline-flex flex-col items-center leading-tight">
-                                    <span className="px-1.5 pb-0.5 border-b border-primary-500/50 dark:border-primary-400/50 w-full text-center">Победы с учётом времени + 12.5</span>
-                                    <span className="px-1.5 pt-0.5 w-full text-center">Матчи с учётом времени + 25</span>
+                        {/* Player list breakdown & explanation */}
+                        <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 no-scrollbar">
+                            {/* Simple Algorithm Explanation */}
+                            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750 text-xs text-slate-600 dark:text-slate-300 space-y-2">
+                                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-primary-500"></span>
+                                    Алгоритм Уилсона
+                                </div>
+                                <p className="leading-relaxed">
+                                    Рейтинг рассчитывается по математическому <strong>алгоритму Уилсона</strong> с учётом процента побед, количества игр и их свежести.
+                                </p>
+                                <div className="pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">🌟 Плюсы алгоритма:</span>
+                                    <ul className="list-disc list-inside space-y-1 text-slate-500 dark:text-slate-400 pl-0.5">
+                                        <li><strong>Объективность:</strong> не даёт игрокам с 2–3 случайными победами взлетать на верхние места без дистанции.</li>
+                                        <li><strong>Справедливость:</strong> поощряет постоянных участников с хорошим стабильным процентом побед.</li>
+                                        <li><strong>Учёт времени:</strong> свежие матчи влияют на рейтинг сильнее старых.</li>
+                                    </ul>
                                 </div>
                             </div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 text-center mt-1.5">
-                                *Для квалификации в ТОП требуется минимум 3.0 весовых матча
-                            </div>
-                        </div>
 
-                        {/* Player list breakdown */}
-                        <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 no-scrollbar">
                             {sortedPlayers.map((player, idx) => {
                                 const rawWinrate = player.matches > 0 ? Math.round((player.wins / player.matches) * 100) : 0;
                                 const effScore = Math.round(player.score * 100);
@@ -1767,14 +1768,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                             </div>
 
                                             <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-xl">
-                                                <div className="text-[10px] text-slate-400 font-medium">Победы с учётом времени</div>
+                                                <div className="text-[10px] text-slate-400 font-medium">Взвешенные победы</div>
                                                 <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                                     {wWins}
                                                 </div>
                                             </div>
 
                                             <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-xl">
-                                                <div className="text-[10px] text-slate-400 font-medium">Матчи с учётом времени</div>
+                                                <div className="text-[10px] text-slate-400 font-medium">Взвешенные матчи</div>
                                                 <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                                     {wMatches}
                                                 </div>
@@ -1783,7 +1784,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                                         {/* Applied formula text */}
                                         <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center bg-slate-50/70 dark:bg-slate-900/40 p-1 rounded-lg">
-                                            Расчёт: ({wWins} + 12.5) ÷ ({wMatches} + 25) = {(player.score * 100).toFixed(1)}%
+                                            Итоговый балл: {(player.score * 100).toFixed(1)}% ({wWins} побед / {wMatches} игр)
                                         </div>
                                     </div>
                                 );

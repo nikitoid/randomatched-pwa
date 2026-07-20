@@ -83,7 +83,7 @@ export interface PlayerStat {
   wins: number;
   losses: number;
   heroesPlayed: Record<string, number>;
-  score: number; // Weighted score for MVP calculation
+  score: number; // Wilson Score Interval Lower Bound (0..1)
   totalKills?: number;
   avgKills?: number;
   lastMatchTimestamp?: number;

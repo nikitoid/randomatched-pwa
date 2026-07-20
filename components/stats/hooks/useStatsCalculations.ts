@@ -1,6 +1,15 @@
 import { useMemo } from 'react';
 import { MatchRecord, PlayerStat, HeroStat, MatchPlayer } from '../../../types';
 
+export const calculateWilsonScore = (wins: number, total: number, z = 1.28): number => {
+    if (total <= 0) return 0;
+    const p = wins / total;
+    const z2 = z * z;
+    const numerator = p + z2 / (2 * total) - z * Math.sqrt((p * (1 - p) + z2 / (4 * total)) / total);
+    const denominator = 1 + z2 / total;
+    return Math.max(0, numerator / denominator);
+};
+
 export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
     return useMemo(() => {
         const playerStats: Record<string, PlayerStat> = {};
@@ -11,7 +20,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
         const now = Date.now();
         const INACTIVITY_DAYS = 60;
         const INACTIVITY_MS = INACTIVITY_DAYS * 24 * 60 * 60 * 1000;
-        const HALF_LIFE_DAYS = 60;
+        const HALF_LIFE_DAYS = 180;
 
         filteredHistory.forEach(match => {
             totalMatches++;
@@ -75,14 +84,12 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             match.team2.forEach(p => processPlayer(p.name, winner === 'team2', p.heroName, p.kills));
         });
 
-        // Calculate Weighted Score for Players (Bayesian Average with Time-Decay: C = 25, m = 0.5)
+        // Calculate Weighted Score for Players (Wilson Score Interval with Time-Decay)
         Object.values(playerStats).forEach(p => {
-            const C = 25;
-            const m = 0.5;
             const weighted = playerWeightedStats[p.name] || { weightedWins: p.wins, weightedMatches: p.matches };
             p.weightedWins = Number(weighted.weightedWins.toFixed(2));
             p.weightedMatches = Number(weighted.weightedMatches.toFixed(2));
-            p.score = (weighted.weightedWins + C * m) / (weighted.weightedMatches + C);
+            p.score = calculateWilsonScore(weighted.weightedWins, weighted.weightedMatches);
             p.avgKills = p.matches > 0 ? (p.totalKills || 0) / p.matches : 0;
             if (p.lastMatchTimestamp && (now - p.lastMatchTimestamp > INACTIVITY_MS)) {
                 p.isInactive = true;
@@ -97,10 +104,6 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             const aActive = !a.isInactive ? 1 : 0;
             const bActive = !b.isInactive ? 1 : 0;
             if (aActive !== bActive) return bActive - aActive;
-
-            const aQual = isQualified(a) ? 1 : 0;
-            const bQual = isQualified(b) ? 1 : 0;
-            if (aQual !== bQual) return bQual - aQual;
 
             return b.score - a.score || b.wins - a.wins;
         });
