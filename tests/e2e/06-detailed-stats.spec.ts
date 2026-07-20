@@ -6,15 +6,15 @@ const MOCK_HISTORY = [
     {
         id: 'match-1',
         timestamp: Date.now() - 10000,
-        team1: [{ name: 'Алекс', heroName: 'Герой S+' }, { name: 'Борис', heroName: 'Герой S-' }],
-        team2: [{ name: 'Виктор', heroName: 'Герой A+' }, { name: 'Григорий', heroName: 'Герой A-' }],
+        team1: [{ name: 'Алекс', heroName: 'Герой S+', kills: 5 }, { name: 'Борис', heroName: 'Герой S-', kills: 1 }],
+        team2: [{ name: 'Виктор', heroName: 'Герой A+', kills: 0 }, { name: 'Григорий', heroName: 'Герой A-', kills: 0 }],
         winner: 'team1'
     },
     {
         id: 'match-2',
         timestamp: Date.now() - 5000,
-        team1: [{ name: 'Алекс', heroName: 'Герой S+' }, { name: 'Борис', heroName: 'Герой S-' }],
-        team2: [{ name: 'Виктор', heroName: 'Герой A+' }, { name: 'Григорий', heroName: 'Герой A-' }],
+        team1: [{ name: 'Алекс', heroName: 'Герой S+', kills: 3 }, { name: 'Борис', heroName: 'Герой S-', kills: 1 }],
+        team2: [{ name: 'Виктор', heroName: 'Герой A+', kills: 0 }, { name: 'Григорий', heroName: 'Герой A-', kills: 0 }],
         winner: 'team1'
     }
 ];
@@ -82,5 +82,21 @@ test.describe('Детальная статистика', () => {
         await app.page.locator('button[aria-label="Сортировка"]').click();
         await app.page.locator('button:has-text("По винрейту")').click();
         await expect(infoBtn).toBeHidden();
+    });
+
+    test('на вкладке "Игроки" должен отображаться бейдж "Ебака парень" для топ-киллера', async ({ app }) => {
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        await app.page.locator('button:has-text("Игроки")').click();
+        await expect(app.statsModal.getByText('Ебака парень', { exact: true })).toBeVisible();
+    });
+
+    test('на вкладке "Игроки" должен отображаться бейдж "Underdog" для андердога', async ({ app }) => {
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        await app.page.locator('button:has-text("Игроки")').click();
+        await expect(app.statsModal.getByText('Underdog', { exact: true })).toBeVisible();
     });
 });

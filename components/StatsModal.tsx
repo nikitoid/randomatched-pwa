@@ -1282,6 +1282,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 onRenamePlayer={onRenamePlayer}
                                 streakStats={streakStats}
                                 mvp={mvp}
+                                underdog={underdog}
+                                topTotalKillers={topTotalKillers}
                                 playerSort={playerSort}
                                 openPlayerDetails={(player) => {
                                     triggerHaptic(10);

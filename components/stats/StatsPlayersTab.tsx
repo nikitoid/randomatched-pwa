@@ -1,5 +1,5 @@
-import React from 'react';
-import { Star, Flame, Skull, Percent, HelpCircle } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Star, Flame, Skull, Percent, HelpCircle, TrendingDown } from 'lucide-react';
 import { PlayerStat, MatchRecord } from '../../types';
 import { PlayerDetails } from '../PlayerDetails';
 
@@ -11,6 +11,8 @@ interface StatsPlayersTabProps {
     onRenamePlayer: (oldName: string, newName: string) => void;
     streakStats: Record<string, { current: number }>;
     mvp: PlayerStat | null;
+    underdog?: PlayerStat | null;
+    topTotalKillers?: { name: string; total: number }[];
     playerSort: 'efficiency' | 'winrate' | 'matches' | 'kills' | 'killPercent' | 'az' | 'za';
     openPlayerDetails: (player: PlayerStat) => void;
     closeDetails: () => void;
@@ -55,12 +57,30 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
     onRenamePlayer,
     streakStats,
     mvp,
+    underdog,
+    topTotalKillers,
     playerSort,
     openPlayerDetails,
     closeDetails,
     handleTitleClick,
     onOpenEfficiencyBreakdown
 }) => {
+    const topKillerName = useMemo(() => {
+        if (topTotalKillers && topTotalKillers.length > 0 && topTotalKillers[0].total > 0) {
+            return topTotalKillers[0].name;
+        }
+        let maxKills = 0;
+        let topName: string | null = null;
+        processedPlayers.forEach(p => {
+            const k = p.totalKills || 0;
+            if (k > maxKills) {
+                maxKills = k;
+                topName = p.name;
+            }
+        });
+        return topName;
+    }, [topTotalKillers, processedPlayers]);
+
     return (
         <div className={`animate-in fade-in slide-in-from-right-4 duration-300 ${selectedPlayer ? 'p-0' : 'px-4 pb-4 pt-3'}`}>
             <div className="space-y-2">
@@ -118,6 +138,16 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                             {mvp?.name === player.name && (
                                                 <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-md flex items-center gap-0.5">
                                                     <Star size={10} fill="currentColor" /> MVP
+                                                </div>
+                                            )}
+                                            {topKillerName === player.name && (
+                                                <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400 rounded-md flex items-center gap-0.5" title={`Больше всех убийств (${player.totalKills || 0} 💀)`}>
+                                                    <Skull size={10} fill="currentColor" /> Ебака парень
+                                                </div>
+                                            )}
+                                            {underdog?.name === player.name && (
+                                                <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 rounded-md flex items-center gap-0.5" title="Underdog — тяжёлые времена">
+                                                    <TrendingDown size={10} /> Underdog
                                                 </div>
                                             )}
                                             {player.isInactive && (
