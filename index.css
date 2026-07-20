@@ -169,6 +169,14 @@ body {
   --tw-enter-translate-y: -0.5rem;
 }
 
+.slide-in-from-bottom {
+  --tw-enter-translate-y: 100%;
+}
+
+.slide-out-to-bottom {
+  --tw-exit-translate-y: 100%;
+}
+
 .slide-in-from-right-4 {
   --tw-enter-translate-x: 1rem;
 }

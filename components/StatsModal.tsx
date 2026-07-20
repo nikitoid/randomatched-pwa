@@ -7,7 +7,7 @@ import { PlayerDetails } from './PlayerDetails';
 import { HeroDetails } from './HeroDetails';
 import { CloudBackupManager } from './CloudBackupManager';
 import { useBackHandler } from '../hooks/useBackHandler';
-import { useStatsCalculations } from './stats/hooks/useStatsCalculations';
+import { useStatsCalculations, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
 import { useMatchFilters } from './stats/hooks/useMatchFilters';
 import { StatsOverviewTab } from './stats/StatsOverviewTab';
 import { MatchEditorForm, MatchFormState } from './stats/MatchEditorForm';
@@ -91,6 +91,49 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [showEfficiencyInfo, setShowEfficiencyInfo] = useState(false);
     const [showEfficiencyBreakdown, setShowEfficiencyBreakdown] = useState(false);
     const [activeNominationModal, setActiveNominationModal] = useState<'mvp' | 'underdog' | 'streak' | 'seriesKills' | 'totalKills' | null>(null);
+    const [selectedWeightedPlayer, setSelectedWeightedPlayer] = useState<{ player: PlayerStat; focusType: 'wins' | 'matches' } | null>(null);
+    const [isClosingSheet, setIsClosingSheet] = useState(false);
+
+    // Swipe down gesture state for weighted player bottomsheet
+    const [sheetDragY, setSheetDragY] = useState(0);
+    const [isDraggingSheet, setIsDraggingSheet] = useState(false);
+    const sheetTouchStartYRef = useRef<number | null>(null);
+
+    const closeWeightedSheet = () => {
+        if (isClosingSheet) return;
+        setIsClosingSheet(true);
+        triggerHaptic(10);
+        setTimeout(() => {
+            setSelectedWeightedPlayer(null);
+            setIsClosingSheet(false);
+            setSheetDragY(0);
+            setIsDraggingSheet(false);
+        }, 220);
+    };
+
+    const handleSheetTouchStart = (e: React.TouchEvent) => {
+        sheetTouchStartYRef.current = e.touches[0].clientY;
+        setIsDraggingSheet(true);
+    };
+
+    const handleSheetTouchMove = (e: React.TouchEvent) => {
+        if (sheetTouchStartYRef.current === null) return;
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - sheetTouchStartYRef.current;
+        if (deltaY > 0) {
+            setSheetDragY(deltaY);
+        }
+    };
+
+    const handleSheetTouchEnd = () => {
+        if (sheetDragY > 70) {
+            closeWeightedSheet();
+        } else {
+            setSheetDragY(0);
+            setIsDraggingSheet(false);
+        }
+        sheetTouchStartYRef.current = null;
+    };
 
 
     const {
@@ -117,6 +160,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     useBackHandler(!!activeNominationModal, () => {
         setActiveNominationModal(null);
     }, { id: 'stats-nomination-modal', priority: 50 });
+
+    useBackHandler(!!selectedWeightedPlayer && !isClosingSheet, () => {
+        closeWeightedSheet();
+    }, { id: 'stats-weighted-player-breakdown', priority: 55 });
 
     const titleClickCount = useRef(0);
     const titleClickTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -1760,27 +1807,49 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
 
                                         {/* Math breakdown row */}
-                                        <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-                                            <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl">
-                                                <div className="text-[10px] text-slate-400 font-medium">Процент побед</div>
-                                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                                    {rawWinrate}% <span className="text-[10px] font-normal opacity-70">({player.wins}/{player.matches})</span>
+                                        <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
+                                            <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl flex flex-col items-center justify-center text-center border border-transparent min-h-[50px]">
+                                                <div className="text-[10px] text-slate-400 font-medium leading-tight">
+                                                    Процент побед
+                                                </div>
+                                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">
+                                                    {rawWinrate}% <span className="text-[9px] font-normal opacity-70">({player.wins}/{player.matches})</span>
                                                 </div>
                                             </div>
 
-                                            <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl">
-                                                <div className="text-[10px] text-slate-400 font-medium">Взвешенные победы</div>
-                                                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedWeightedPlayer({ player, focusType: 'wins' });
+                                                    triggerHaptic(10);
+                                                }}
+                                                className="relative bg-emerald-50/80 active:bg-emerald-100 dark:bg-emerald-950/30 dark:active:bg-emerald-900/40 border border-emerald-200/50 dark:border-emerald-800/40 p-1.5 rounded-xl cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group min-h-[50px]"
+                                            >
+                                                <HelpCircle size={10} className="absolute top-1 right-1 text-emerald-600/70 dark:text-emerald-400/70 group-active:scale-110 shrink-0 pointer-events-none" />
+                                                <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium leading-tight px-1">
+                                                    Взвеш. победы
+                                                </div>
+                                                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
                                                     {wWins}
                                                 </div>
-                                            </div>
+                                            </button>
 
-                                            <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl">
-                                                <div className="text-[10px] text-slate-400 font-medium">Взвешенные матчи</div>
-                                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedWeightedPlayer({ player, focusType: 'matches' });
+                                                    triggerHaptic(10);
+                                                }}
+                                                className="relative bg-slate-50 active:bg-slate-100 dark:bg-slate-900/70 dark:active:bg-slate-800 border border-slate-200/50 dark:border-slate-800/40 p-1.5 rounded-xl cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group min-h-[50px]"
+                                            >
+                                                <HelpCircle size={10} className="absolute top-1 right-1 text-slate-400/70 dark:text-slate-400/60 group-active:scale-110 shrink-0 pointer-events-none" />
+                                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight px-1">
+                                                    Взвеш. матчи
+                                                </div>
+                                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">
                                                     {wMatches}
                                                 </div>
-                                            </div>
+                                            </button>
                                         </div>
 
                                         {/* Applied formula text */}
@@ -1795,6 +1864,160 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {/* Footer button */}
                         <button
                             onClick={() => { setShowEfficiencyBreakdown(false); triggerHaptic(10); }}
+                            className="mt-4 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/20 active:scale-98 text-sm shrink-0"
+                        >
+                            Понятно
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Weighted Player Breakdown Bottomsheet */}
+            {selectedWeightedPlayer && createPortal(
+                <div
+                    className={`fixed inset-0 z-[10000] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 fill-mode-forwards ${isClosingSheet ? 'animate-out fade-out duration-200' : 'animate-in fade-in duration-300'}`}
+                    onClick={closeWeightedSheet}
+                >
+                    <div
+                        className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 dark:border-slate-800 max-h-[85vh] flex flex-col p-5 pb-6 text-slate-700 dark:text-slate-300 fill-mode-forwards ${
+                            isDraggingSheet ? '' : 'transition-transform duration-200 ease-out'
+                        } ${
+                            isClosingSheet ? 'animate-out slide-out-to-bottom duration-200 ease-in' : 'animate-in slide-in-from-bottom duration-300 ease-out'
+                        }`}
+                        style={{ transform: sheetDragY > 0 ? `translateY(${sheetDragY}px)` : undefined }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Drag Handle & Header (Swipe down zone) */}
+                        <div
+                            className="w-full cursor-grab active:cursor-grabbing shrink-0 select-none touch-none"
+                            onTouchStart={handleSheetTouchStart}
+                            onTouchMove={handleSheetTouchMove}
+                            onTouchEnd={handleSheetTouchEnd}
+                        >
+                            {/* Drag Handle Bar */}
+                            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-3 shrink-0" />
+
+                            {/* Header */}
+                            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                        <TrendingUp size={20} />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight truncate flex items-center gap-1.5">
+                                            <span>{selectedWeightedPlayer.player.name}</span>
+                                            {selectedWeightedPlayer.player.isInactive && (
+                                                <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-md font-normal shrink-0">
+                                                    Неактивен
+                                                </span>
+                                            )}
+                                        </h3>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                                            Свайпните вниз для закрытия
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={closeWeightedSheet}
+                                    className="p-1.5 rounded-full text-slate-400 active:text-slate-700 dark:active:text-white active:bg-slate-100 dark:active:bg-slate-800 transition-colors shrink-0 ml-2"
+                                    aria-label="Закрыть"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        {(() => {
+                            const breakdown = getPlayerWeightedBreakdown(selectedWeightedPlayer.player.name, filteredHistory);
+                            const rawWinrate = breakdown.totalMatches > 0 ? Math.round((breakdown.totalWins / breakdown.totalMatches) * 100) : 0;
+                            const effScore = Math.round(selectedWeightedPlayer.player.score * 100);
+
+                            return (
+                                <div className="space-y-3.5 overflow-y-auto pr-1 flex-1 no-scrollbar">
+                                    {/* KPI Summary Cards */}
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                        <div className={`p-3 rounded-2xl border transition-colors ${selectedWeightedPlayer.focusType === 'matches' ? 'bg-primary-50/80 dark:bg-primary-950/40 border-primary-300 dark:border-primary-700' : 'bg-slate-50 dark:bg-slate-800/80 border-slate-100 dark:border-slate-700/50'}`}>
+                                            <div className="text-[10px] text-slate-400 dark:text-slate-400 font-medium">Матчи (Факт ➔ Взвешенные)</div>
+                                            <div className="text-base font-black text-slate-900 dark:text-white flex items-baseline gap-1 mt-0.5">
+                                                <span>{breakdown.totalMatches} игр</span>
+                                                <span className="text-xs font-normal text-slate-400">➔</span>
+                                                <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{breakdown.totalWeightedMatches}</span>
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 mt-1">
+                                                Ср. вес игры: <span className="font-semibold text-slate-700 dark:text-slate-300">{breakdown.totalMatches > 0 ? Math.round((breakdown.totalWeightedMatches / breakdown.totalMatches) * 100) : 0}%</span>
+                                            </div>
+                                        </div>
+
+                                        <div className={`p-3 rounded-2xl border transition-colors ${selectedWeightedPlayer.focusType === 'wins' ? 'bg-emerald-100/70 dark:bg-emerald-900/40 border-emerald-400 dark:border-emerald-600' : 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/30'}`}>
+                                            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">Победы (Факт ➔ Взвешенные)</div>
+                                            <div className="text-base font-black text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1 mt-0.5">
+                                                <span>{breakdown.totalWins} побед</span>
+                                                <span className="text-xs font-normal opacity-60">➔</span>
+                                                <span className="text-sm font-bold">{breakdown.totalWeightedWins}</span>
+                                            </div>
+                                            <div className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-1">
+                                                Винрейт: <span className="font-semibold">{rawWinrate}%</span> (Рейтинг: <span className="font-bold">{effScore}%</span>)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Period breakdown */}
+                                    <div className="space-y-2">
+                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 px-0.5">
+                                            <BarChart3 size={14} className="text-primary-500" />
+                                            <span>Разбивка сыгранных матчей по периодам</span>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            {breakdown.periods.map(period => (
+                                                <div
+                                                    key={period.key}
+                                                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/40 flex items-center justify-between text-xs"
+                                                >
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span className="text-base leading-none">{period.icon}</span>
+                                                        <div className="min-w-0">
+                                                            <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                                                                {period.label}
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-400">
+                                                                Вес игры: <span className="font-medium text-slate-600 dark:text-slate-300">{period.weightRange}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-right shrink-0">
+                                                        <div className="font-bold text-slate-900 dark:text-white">
+                                                            {period.wins} из {period.matches} побед
+                                                        </div>
+                                                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                                            + {period.weightedWins} побед / + {period.weightedMatches} игр
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Explanatory note */}
+                                    <div className="p-3 bg-primary-50/70 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800/30 rounded-2xl text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                                        <div className="font-bold flex items-center gap-1 text-primary-700 dark:text-primary-300">
+                                            <HelpCircle size={13} />
+                                            <span>Как это работает?</span>
+                                        </div>
+                                        <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
+                                            Чем свежее матч, тем больше баллов он даёт (от <strong>1.0</strong> за новые игры до <strong>0.5</strong> за игры 6-месячной давности). <strong>Взвешенные победы</strong> — это реальная суммарная ценность побед с учётом их даты.
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* Footer button */}
+                        <button
+                            onClick={closeWeightedSheet}
                             className="mt-4 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/20 active:scale-98 text-sm shrink-0"
                         >
                             Понятно

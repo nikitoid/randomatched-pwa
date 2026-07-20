@@ -10,6 +10,101 @@ export const calculateWilsonScore = (wins: number, total: number, z = 1.28): num
     return Math.max(0, numerator / denominator);
 };
 
+export interface PeriodBreakdown {
+    key: string;
+    label: string;
+    weightRange: string;
+    icon: string;
+    matches: number;
+    wins: number;
+    weightedMatches: number;
+    weightedWins: number;
+}
+
+export interface PlayerWeightedBreakdown {
+    playerName: string;
+    totalMatches: number;
+    totalWins: number;
+    totalWeightedMatches: number;
+    totalWeightedWins: number;
+    periods: PeriodBreakdown[];
+}
+
+export const getPlayerWeightedBreakdown = (
+    playerName: string,
+    history: MatchRecord[],
+    now: number = Date.now()
+): PlayerWeightedBreakdown => {
+    const HALF_LIFE_DAYS = 180;
+    const cleanTargetName = playerName.trim().toLowerCase();
+
+    const periods: PeriodBreakdown[] = [
+        { key: 'fresh', label: 'Свежие (< 30 дн.)', weightRange: '100%–89%', icon: '⚡', matches: 0, wins: 0, weightedMatches: 0, weightedWins: 0 },
+        { key: 'recent', label: 'Недавние (1–6 мес.)', weightRange: '88%–50%', icon: '⌛', matches: 0, wins: 0, weightedMatches: 0, weightedWins: 0 },
+        { key: 'old', label: 'Старые (6–12 мес.)', weightRange: '49%–25%', icon: '📜', matches: 0, wins: 0, weightedMatches: 0, weightedWins: 0 },
+        { key: 'ancient', label: 'Давние (> 1 года)', weightRange: '< 25%', icon: '⏳', matches: 0, wins: 0, weightedMatches: 0, weightedWins: 0 },
+    ];
+
+    let totalMatches = 0;
+    let totalWins = 0;
+    let totalWeightedMatches = 0;
+    let totalWeightedWins = 0;
+
+    history.forEach(match => {
+        const winner = match.winner;
+        const matchTimestamp = match.timestamp || now;
+        const ageInDays = Math.max(0, (now - matchTimestamp) / (1000 * 60 * 60 * 24));
+        const weight = Math.pow(2, -ageInDays / HALF_LIFE_DAYS);
+
+        const inTeam1 = match.team1.some(p => p.name.trim().toLowerCase() === cleanTargetName);
+        const inTeam2 = match.team2.some(p => p.name.trim().toLowerCase() === cleanTargetName);
+
+        if (!inTeam1 && !inTeam2) return;
+
+        const won = (inTeam1 && winner === 'team1') || (inTeam2 && winner === 'team2');
+
+        totalMatches++;
+        totalWeightedMatches += weight;
+        if (won) {
+            totalWins++;
+            totalWeightedWins += weight;
+        }
+
+        let periodIndex = 0;
+        if (ageInDays <= 30) {
+            periodIndex = 0;
+        } else if (ageInDays <= 180) {
+            periodIndex = 1;
+        } else if (ageInDays <= 365) {
+            periodIndex = 2;
+        } else {
+            periodIndex = 3;
+        }
+
+        periods[periodIndex].matches++;
+        periods[periodIndex].weightedMatches += weight;
+        if (won) {
+            periods[periodIndex].wins++;
+            periods[periodIndex].weightedWins += weight;
+        }
+    });
+
+    periods.forEach(p => {
+        p.weightedMatches = Number(p.weightedMatches.toFixed(2));
+        p.weightedWins = Number(p.weightedWins.toFixed(2));
+    });
+
+    return {
+        playerName,
+        totalMatches,
+        totalWins,
+        totalWeightedMatches: Number(totalWeightedMatches.toFixed(2)),
+        totalWeightedWins: Number(totalWeightedWins.toFixed(2)),
+        periods
+    };
+};
+
+
 export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
     return useMemo(() => {
         const playerStats: Record<string, PlayerStat> = {};
