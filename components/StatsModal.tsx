@@ -278,10 +278,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [matchFormClosing, setMatchFormClosing] = useState(false);
 
     // Autocomplete State
-    
+
     const [dropdownPosition, setDropdownPosition] = useState<{ top: number, left: number, width: number } | null>(null);
 
-    
+
     // Reset states on close & Open first tab
     useEffect(() => {
         if (!isOpen) {
@@ -438,7 +438,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         seriesKillsCandidates,
         totalKillsCandidates
     } = useStatsCalculations(filteredHistory);
-    
+
     // Filtered & Sorted Players
     const processedPlayers = useMemo(() => {
         let result = [...sortedPlayers];
@@ -624,7 +624,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         });
     };
 
-    
+
 
     const renderHeroWithKills = (player: MatchPlayer): string => {
         if (player.kills !== undefined && player.kills !== null) {
@@ -633,7 +633,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         return player.heroName;
     };
 
-    
+
 
     const confirmDeleteMatch = () => {
         if (deleteConfirmAction === 'clear-trash') {
@@ -654,9 +654,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         }
     };
 
-    
 
-    
+
+
 
 
 
@@ -777,12 +777,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         setSwipeOffset(0);
     };
 
-    
 
-    
+
+
 
     // Portal for Autocomplete Dropdown
-    
+
 
     // Match Form Overlay
     const matchFormOverlay = matchForm ? (
@@ -904,7 +904,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         ))}
                     </div>
 
-                    
+
                     <StatsDateFilter
                         isDateFilterOpen={isDateFilterOpen}
                         setIsDateFilterOpen={setIsDateFilterOpen}
@@ -1092,6 +1092,22 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 )}
                             </div>
 
+                            {/* Кнопка справки об алгоритме эффективности (только при сортировке по эффективности) */}
+                            {playerSort === 'efficiency' && (
+                                <button
+                                    data-testid="stats-efficiency-info-btn"
+                                    onClick={() => {
+                                        setShowEfficiencyInfo(true);
+                                        triggerHaptic(10);
+                                    }}
+                                    className="w-8 h-8 flex items-center justify-center rounded-xl border bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 active:bg-primary-50 active:border-primary-200 active:text-primary-600 dark:active:bg-primary-900/30 dark:active:border-primary-800 dark:active:text-primary-400 transition-colors shrink-0 animate-in fade-in zoom-in-95 duration-150"
+                                    title="Информация об алгоритме эффективности"
+                                    aria-label="Информация об алгоритме эффективности"
+                                >
+                                    <HelpCircle size={16} />
+                                </button>
+                            )}
+
                             {/* Кнопка сортировки */}
                             <div className="relative shrink-0">
                                 <button
@@ -1251,8 +1267,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             />
                         )}
                     </div>
-                    
-    {/* Delete Confirmation Modal */}
+
+                    {/* Delete Confirmation Modal */}
                     <div
                         className={`fixed inset-0 z-[80] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${deleteConfirmId ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                         onClick={(e) => e.stopPropagation()}
@@ -1528,11 +1544,126 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <button
                             onClick={() => { setActiveNominationModal(null); triggerHaptic(10); }}
                             className={`mt-6 w-full py-3 text-white font-bold rounded-2xl transition shadow-lg active:scale-98 ${activeNominationModal === 'mvp' ? 'bg-yellow-500 active:bg-yellow-600 shadow-yellow-500/10' :
-                                    activeNominationModal === 'underdog' ? 'bg-red-500 active:bg-red-600 shadow-red-500/10' :
-                                        activeNominationModal === 'streak' ? 'bg-orange-500 active:bg-orange-600 shadow-orange-500/10' :
-                                            activeNominationModal === 'seriesKills' ? 'bg-rose-500 active:bg-rose-600 shadow-rose-500/10' :
-                                                'bg-red-500 active:bg-red-600 shadow-red-500/10'
+                                activeNominationModal === 'underdog' ? 'bg-red-500 active:bg-red-600 shadow-red-500/10' :
+                                    activeNominationModal === 'streak' ? 'bg-orange-500 active:bg-orange-600 shadow-orange-500/10' :
+                                        activeNominationModal === 'seriesKills' ? 'bg-rose-500 active:bg-rose-600 shadow-rose-500/10' :
+                                            'bg-red-500 active:bg-red-600 shadow-red-500/10'
                                 }`}
+                        >
+                            Понятно
+                        </button>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* Efficiency Info Modal */}
+            {showEfficiencyInfo && createPortal(
+                <div data-testid="stats-efficiency-modal" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-2xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+                                    <TrendingUp size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight">
+                                        Алгоритм эффективности
+                                    </h3>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                                        Ранжирование игроков в статистике
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
+                                className="p-1.5 rounded-full text-slate-400 active:text-slate-700 dark:active:text-white active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+                                aria-label="Закрыть"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300 overflow-y-auto pr-1 flex-1 leading-relaxed no-scrollbar">
+                            {/* Формула */}
+                            <div className="p-3 bg-primary-50/60 dark:bg-primary-950/40 rounded-2xl border border-primary-200/60 dark:border-primary-900/50">
+                                <div className="font-bold text-primary-900 dark:text-primary-300 mb-1.5 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-primary-500"></span>
+                                    Как рассчитывается балл
+                                </div>
+                                <div className="text-slate-700 dark:text-slate-300">
+                                    Используется метод <strong>Байесовского среднего</strong>: к реальным результатам игрока прибавляется стартовый задел из <strong>25 виртуальных игр с 50% побед</strong> (т.е. +12.5 побед):
+                                </div>
+                                <div className="mt-2 text-center py-2 px-3 bg-white dark:bg-slate-900 rounded-xl font-mono text-[11px] font-bold text-primary-700 dark:text-primary-300 border border-primary-100 dark:border-primary-900/80 shadow-xs">
+                                    Эффективность = (Победы + 12.5) / (Матчи + 25)
+                                </div>
+                            </div>
+
+                            {/* Сравнение и примеры корректности */}
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750 space-y-2">
+                                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    Почему этот расчёт справедлив
+                                </div>
+                                <p className="text-slate-600 dark:text-slate-400">
+                                    При обычном проценте побед игрок с 1 победой (100%) стоял бы выше игрока с 10 играми и 7 победами (70%). С алгоритмом эффективности:
+                                </p>
+
+                                <div className="space-y-1.5 pt-1">
+                                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px]">
+                                        <div>
+                                            <span className="font-semibold text-slate-800 dark:text-slate-200">1 игра / 1 победа</span>
+                                            <span className="text-[10px] text-slate-400 ml-1">(Винрейт 100%)</span>
+                                        </div>
+                                        <div className="font-mono font-bold text-slate-500">
+                                            (1 + 12.5) / 26 = <span className="text-slate-900 dark:text-white">51.9%</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-2 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200/50 dark:border-emerald-900/40 text-[11px]">
+                                        <div>
+                                            <span className="font-semibold text-emerald-900 dark:text-emerald-300">10 игр / 7 побед</span>
+                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">(Винрейт 70%)</span>
+                                        </div>
+                                        <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                                            (7 + 12.5) / 35 = <span className="text-emerald-900 dark:text-emerald-200">55.7%</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between p-2 bg-primary-50/60 dark:bg-primary-950/30 rounded-xl border border-primary-200/50 dark:border-primary-900/40 text-[11px]">
+                                        <div>
+                                            <span className="font-semibold text-primary-900 dark:text-primary-300">50 игр / 35 побед</span>
+                                            <span className="text-[10px] text-primary-600 dark:text-primary-400 ml-1">(Винрейт 70%)</span>
+                                        </div>
+                                        <div className="font-mono font-bold text-primary-700 dark:text-primary-400">
+                                            (35 + 12.5) / 75 = <span className="text-primary-900 dark:text-primary-200">63.3%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1">
+                                    * Чем больше игр сыграно с высоким результатом, тем ближе эффективный балл к реальному проценту побед.
+                                </p>
+                            </div>
+
+                            {/* Правила квалификации */}
+                            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750">
+                                <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    Дополнительные правила
+                                </div>
+                                <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400 pl-0.5">
+                                    <li>Игроки с <strong>3+ матчами</strong> всегда располагаются в рейтинге выше игроков с 1–2 играми.</li>
+                                    <li>При одинаковом балле выше ставится игрок с большим числом побед.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <button
+                            onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
+                            className="mt-4 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/20 active:scale-98 text-sm shrink-0"
                         >
                             Понятно
                         </button>

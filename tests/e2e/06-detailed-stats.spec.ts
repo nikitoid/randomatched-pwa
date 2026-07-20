@@ -53,4 +53,34 @@ test.describe('Детальная статистика', () => {
         
         await expect(app.statsModal).toBeHidden();
     });
+
+    test('на вкладке "Игроки" должна быть кнопка справки и открываться модалка алгоритма эффективности', async ({ app }) => {
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        // Переходим на вкладку "Игроки"
+        await app.page.locator('button:has-text("Игроки")').click();
+
+        // Кнопка справки должна быть видна
+        const infoBtn = app.page.locator('[data-testid="stats-efficiency-info-btn"]');
+        await expect(infoBtn).toBeVisible();
+
+        // Кликаем по кнопке справки
+        await infoBtn.click();
+
+        // Модалка должна открыться
+        const modal = app.page.locator('[data-testid="stats-efficiency-modal"]');
+        await expect(modal).toBeVisible();
+        await expect(modal.locator('text=Алгоритм эффективности')).toBeVisible();
+        await expect(modal.locator('text=Почему этот расчёт справедлив')).toBeVisible();
+
+        // Закрываем модалку по кнопке "Понятно"
+        await modal.locator('button:has-text("Понятно")').click();
+        await expect(modal).toBeHidden();
+
+        // Сменяем сортировку на "По винрейту" - кнопка справки должна скрыться
+        await app.page.locator('button[aria-label="Сортировка"]').click();
+        await app.page.locator('button:has-text("По винрейту")').click();
+        await expect(infoBtn).toBeHidden();
+    });
 });
