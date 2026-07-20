@@ -9,9 +9,21 @@ interface StatsHeroesTabProps {
     setSelectedHero: React.Dispatch<React.SetStateAction<HeroStat | null>>;
     filteredHistory: MatchRecord[];
     onRenameHero: (oldName: string, newName: string) => void;
+    heroSort?: 'winrate' | 'matches' | 'az' | 'za' | 'pop';
     openHeroDetails: (hero: HeroStat) => void;
     closeDetails: () => void;
 }
+
+const getHeroSortLabel = (sort?: 'winrate' | 'matches' | 'az' | 'za' | 'pop') => {
+    switch (sort) {
+        case 'winrate': return 'Сортировка по винрейту';
+        case 'matches':
+        case 'pop': return 'Сортировка по популярности';
+        case 'az': return 'Сортировка по алфавиту (А-Я)';
+        case 'za': return 'Сортировка по алфавиту (Я-А)';
+        default: return 'Сортировка по винрейту';
+    }
+};
 
 export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     processedHeroes,
@@ -19,6 +31,7 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     setSelectedHero,
     filteredHistory,
     onRenameHero,
+    heroSort,
     openHeroDetails,
     closeDetails
 }) => {
@@ -38,6 +51,11 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                     />
                 ) : (
                     <>
+                        <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-semibold text-slate-600 dark:text-slate-400">
+                                {getHeroSortLabel(heroSort)}
+                            </span>
+                        </div>
                         {processedHeroes.map((hero, idx) => (
                             <div
                                 key={hero.name}

@@ -1250,6 +1250,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 setSelectedHero={setSelectedHero}
                                 filteredHistory={filteredHistory}
                                 onRenameHero={onRenameHero}
+                                heroSort={heroSort}
                                 openHeroDetails={openHeroDetails}
                                 closeDetails={() => setSelectedHero(null)}
                             />
@@ -1335,7 +1336,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             <p>
                                 Алгоритм рассчитывает нижнюю границу доверительного интервала Бернулли с 95% надежностью. Он учитывает <strong>винрейт</strong>, <strong>объем матчей</strong> и их <strong>давность</strong>.
                             </p>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 font-medium">
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl font-medium">
                                 <span className="text-xs text-slate-400 dark:text-slate-500 block mb-1">Математический принцип:</span>
                                 Малая выборка опускает рейтинг вниз из-за высокой неопределенности, а большая выборка с хорошим качеством позволяет раскрыть реальную силу игрока.
                             </div>
@@ -1600,7 +1601,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {/* Content */}
                         <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300 overflow-y-auto pr-1 flex-1 leading-relaxed no-scrollbar">
                             {/* Формула */}
-                            <div className="p-3 bg-primary-50/60 dark:bg-primary-950/40 rounded-2xl border border-primary-200/60 dark:border-primary-900/50">
+                            <div className="p-3 bg-primary-50/80 dark:bg-primary-950/50 rounded-2xl">
                                 <div className="font-bold text-primary-900 dark:text-primary-300 mb-1.5 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-primary-500"></span>
                                     Как рассчитывается балл
@@ -1608,13 +1609,13 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 <div className="text-slate-700 dark:text-slate-300">
                                     Используется <strong>Нижняя граница интервала Уилсона (95% надежность)</strong> с затуханием давности игр (период полураспада 60 дней):
                                 </div>
-                                <div className="mt-2 text-center py-2 px-3 bg-white dark:bg-slate-900 rounded-xl font-mono text-[11px] font-bold text-primary-700 dark:text-primary-300 border border-primary-100 dark:border-primary-900/80 shadow-xs">
+                                <div className="mt-2 text-center py-2 px-3 bg-white dark:bg-slate-900 rounded-xl font-mono text-[11px] font-bold text-primary-700 dark:text-primary-300">
                                     Score = WilsonLowerBound(Wins_weighted, Matches_weighted)
                                 </div>
                             </div>
 
                             {/* Сравнение и примеры корректности */}
-                            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750 space-y-2">
+                            <div className="p-3 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl space-y-2">
                                 <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                                     Почему метод Уилсона точнее?
@@ -1624,7 +1625,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 </p>
 
                                 <div className="space-y-1.5 pt-1">
-                                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px]">
+                                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl text-[11px]">
                                         <div>
                                             <span className="font-semibold text-slate-800 dark:text-slate-200">2 победы / 10 матчей</span>
                                             <span className="text-[10px] text-slate-400 ml-1">(20% винрейт)</span>
@@ -1634,7 +1635,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-2 bg-emerald-50/60 dark:bg-emerald-950/30 rounded-xl border border-emerald-200/50 dark:border-emerald-900/40 text-[11px]">
+                                    <div className="flex items-center justify-between p-2 bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl text-[11px]">
                                         <div>
                                             <span className="font-semibold text-emerald-900 dark:text-emerald-300">39 побед / 95 матчей</span>
                                             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">(41% винрейт)</span>
@@ -1644,7 +1645,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-2 bg-primary-50/60 dark:bg-primary-950/30 rounded-xl border border-primary-200/50 dark:border-primary-900/40 text-[11px]">
+                                    <div className="flex items-center justify-between p-2 bg-primary-50/80 dark:bg-primary-950/40 rounded-xl text-[11px]">
                                         <div>
                                             <span className="font-semibold text-primary-900 dark:text-primary-300">3 победы / 4 матча</span>
                                             <span className="text-[10px] text-primary-600 dark:text-primary-400 ml-1">(75% винрейт)</span>
@@ -1660,7 +1661,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                             </div>
 
                             {/* Правила активности */}
-                            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750">
+                            <div className="p-3 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl">
                                 <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                                     Временное затухание и активность
@@ -1715,7 +1716,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {/* Player list breakdown & explanation */}
                         <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 no-scrollbar">
                             {/* Simple Algorithm Explanation */}
-                            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-150 dark:border-slate-750 text-xs text-slate-600 dark:text-slate-300 space-y-2">
+                            <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/80 rounded-2xl text-xs text-slate-600 dark:text-slate-300 space-y-2 shadow-sm dark:shadow-slate-950/40 shadow-slate-200/50">
                                 <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-primary-500"></span>
                                     Алгоритм Уилсона
@@ -1723,7 +1724,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 <p className="leading-relaxed">
                                     Рейтинг рассчитывается по математическому <strong>алгоритму Уилсона</strong> с учётом процента побед, количества игр и их свежести.
                                 </p>
-                                <div className="pt-1.5 border-t border-slate-200/50 dark:border-slate-700/50">
+                                <div className="pt-1.5 border-t border-slate-200/40 dark:border-slate-700/40">
                                     <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">🌟 Плюсы алгоритма:</span>
                                     <ul className="list-disc list-inside space-y-1 text-slate-500 dark:text-slate-400 pl-0.5">
                                         <li><strong>Объективность:</strong> не даёт игрокам с 2–3 случайными победами взлетать на верхние места без дистанции.</li>
@@ -1740,7 +1741,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 const wMatches = player.weightedMatches ?? player.matches;
 
                                 return (
-                                    <div key={player.name} className="p-3 rounded-2xl bg-white dark:bg-slate-800/50 border border-slate-150 dark:border-slate-750 shadow-xs space-y-2">
+                                    <div key={player.name} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 space-y-2.5 transition-all shadow-md dark:shadow-slate-950/50 shadow-slate-200/60 ring-1 ring-black/5 dark:ring-white/5">
                                         {/* Player Header */}
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2 min-w-0">
@@ -1759,22 +1760,22 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
 
                                         {/* Math breakdown row */}
-                                        <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100 dark:border-slate-700/60 text-center">
-                                            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-xl">
+                                        <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                                            <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl">
                                                 <div className="text-[10px] text-slate-400 font-medium">Процент побед</div>
                                                 <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                                     {rawWinrate}% <span className="text-[10px] font-normal opacity-70">({player.wins}/{player.matches})</span>
                                                 </div>
                                             </div>
 
-                                            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-xl">
+                                            <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl">
                                                 <div className="text-[10px] text-slate-400 font-medium">Взвешенные победы</div>
                                                 <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                                                     {wWins}
                                                 </div>
                                             </div>
 
-                                            <div className="bg-slate-50 dark:bg-slate-900/60 p-1.5 rounded-xl">
+                                            <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl">
                                                 <div className="text-[10px] text-slate-400 font-medium">Взвешенные матчи</div>
                                                 <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
                                                     {wMatches}
@@ -1783,7 +1784,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
 
                                         {/* Applied formula text */}
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center bg-slate-50/70 dark:bg-slate-900/40 p-1 rounded-lg">
+                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center bg-slate-50/80 dark:bg-slate-900/50 p-1.5 rounded-xl">
                                             Итоговый балл: {(player.score * 100).toFixed(1)}% ({wWins} побед / {wMatches} игр)
                                         </div>
                                     </div>

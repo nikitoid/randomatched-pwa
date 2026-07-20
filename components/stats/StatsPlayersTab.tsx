@@ -34,6 +34,19 @@ const getLossesText = (count: number) => {
     return `${count} поражений`;
 };
 
+const getPlayerSortLabel = (sort: StatsPlayersTabProps['playerSort']) => {
+    switch (sort) {
+        case 'efficiency': return 'Сортировка по эффективности';
+        case 'winrate': return 'Сортировка по винрейту';
+        case 'matches': return 'Сортировка по популярности';
+        case 'kills': return 'Сортировка по убийствам';
+        case 'killPercent': return 'Сортировка по % убийств';
+        case 'az': return 'Сортировка по алфавиту (А-Я)';
+        case 'za': return 'Сортировка по алфавиту (Я-А)';
+        default: return 'Сортировка игроков';
+    }
+};
+
 export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
     processedPlayers,
     selectedPlayer,
@@ -64,11 +77,11 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                     />
                 ) : (
                     <>
-                        {playerSort === 'efficiency' && onOpenEfficiencyBreakdown && (
-                            <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400">
-                                <span className="font-semibold text-slate-600 dark:text-slate-400">
-                                    Сортировка по эффективности
-                                </span>
+                        <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400">
+                            <span className="font-semibold text-slate-600 dark:text-slate-400">
+                                {getPlayerSortLabel(playerSort)}
+                            </span>
+                            {playerSort === 'efficiency' && onOpenEfficiencyBreakdown && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onOpenEfficiencyBreakdown(); }}
                                     className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-bold hover:underline active:opacity-80 transition-opacity"
@@ -76,8 +89,8 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                     <HelpCircle size={13} />
                                     <span>Расшифровка расчёта</span>
                                 </button>
-                            </div>
-                        )}
+                            )}
+                        </div>
                         {processedPlayers.map((player, idx) => (
                             <div
                                 key={player.name}
