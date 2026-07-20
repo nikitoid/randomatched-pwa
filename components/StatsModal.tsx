@@ -1654,10 +1654,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     Как рассчитывается балл
                                 </div>
                                 <div className="text-slate-700 dark:text-slate-300">
-                                    Используется <strong>Нижняя граница интервала Уилсона (95% надежность)</strong> с затуханием давности игр (период полураспада 60 дней):
-                                </div>
-                                <div className="mt-2 text-center py-2 px-3 bg-white dark:bg-slate-900 rounded-xl font-mono text-[11px] font-bold text-primary-700 dark:text-primary-300">
-                                    Score = WilsonLowerBound(Wins_weighted, Matches_weighted)
+                                    Используется <strong>Нижняя граница интервала Уилсона (95% надежность)</strong> с затуханием давности игр (период полураспада 180 дней).
                                 </div>
                             </div>
 
@@ -1672,7 +1669,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 </p>
 
                                 <div className="space-y-1.5 pt-1">
-                                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 rounded-xl text-[11px]">
+                                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-xl text-[11px]">
                                         <div>
                                             <span className="font-semibold text-slate-800 dark:text-slate-200">2 победы / 10 матчей</span>
                                             <span className="text-[10px] text-slate-400 ml-1">(20% винрейт)</span>
@@ -1682,7 +1679,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-2 bg-emerald-50/80 dark:bg-emerald-950/40 rounded-xl text-[11px]">
+                                    <div className="flex items-center justify-between p-2 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/50 rounded-xl text-[11px]">
                                         <div>
                                             <span className="font-semibold text-emerald-900 dark:text-emerald-300">39 побед / 95 матчей</span>
                                             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">(41% винрейт)</span>
@@ -1692,7 +1689,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-2 bg-primary-50/80 dark:bg-primary-950/40 rounded-xl text-[11px]">
+                                    <div className="flex items-center justify-between p-2 bg-primary-50/80 dark:bg-primary-950/40 border border-primary-200/70 dark:border-primary-800/50 rounded-xl text-[11px]">
                                         <div>
                                             <span className="font-semibold text-primary-900 dark:text-primary-300">3 победы / 4 матча</span>
                                             <span className="text-[10px] text-primary-600 dark:text-primary-400 ml-1">(75% винрейт)</span>
@@ -1714,7 +1711,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     Временное затухание и активность
                                 </div>
                                 <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400 pl-0.5">
-                                    <li>Каждый матч имеет вес W = 2^(-дни / 60). Вес матча снижается в 2 раза каждые 60 дней.</li>
+                                    <li>Каждый матч имеет вес W = 2^(-дни / 180). Вес матча снижается в 2 раза каждые 180 дней (6 месяцев).</li>
                                     <li>Неактивные игроки, не посещавшие игры более 60 дней, уходят в конец списка.</li>
                                 </ul>
                             </div>
