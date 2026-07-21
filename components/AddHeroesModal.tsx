@@ -264,8 +264,17 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
                                         placeholder="Поиск героя..."
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm outline-none focus:border-primary-500 transition-colors"
+                                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm outline-none focus:border-primary-500 transition-colors"
                                     />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 active:text-slate-600 dark:active:text-slate-200 transition-colors"
+                                            aria-label="Очистить поиск"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="flex gap-2">
                                     <button 
