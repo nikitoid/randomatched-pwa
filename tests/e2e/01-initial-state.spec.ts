@@ -20,7 +20,7 @@ test.describe('Начальное состояние приложения', () =
     test('должны отображаться основные элементы управления', async ({ app }) => {
         await expect(app.sourceSelector).toBeVisible();
         await expect(app.generateButton).toBeVisible();
-        await expect(app.generateButton).toContainText('ГЕНЕРИРОВАТЬ');
+        await expect(app.generateButton).toContainText('СГЕНЕРИРОВАТЬ');
     });
 
     test('должна отображаться навигация', async ({ app }) => {

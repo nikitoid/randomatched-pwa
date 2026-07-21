@@ -37,7 +37,7 @@ export class RandoMatchedApp {
     get sourceSelectorText() {
         return this.sourceSelector.locator('h2');
     }
-    get generateButton() { return this.page.getByRole('button', { name: 'ГЕНЕРИРОВАТЬ' }); }
+    get generateButton() { return this.page.getByRole('button', { name: 'СГЕНЕРИРОВАТЬ' }); }
     get resetButton() { return this.page.getByTestId('reset-session-button'); }
 
     // --- Локаторы статистики ---

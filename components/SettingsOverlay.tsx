@@ -339,7 +339,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
                                                     {/* Кнопка действия */}
                                                     <div className="w-full bg-primary-500 text-white rounded-xl py-1 text-[9px] font-bold shadow-md shadow-primary-500/10 flex items-center justify-center gap-1 cursor-default pointer-events-none select-none">
-                                                        <span>Генерировать</span>
+                                                        <span>Сгенерировать</span>
                                                     </div>
                                                 </div>
                                             </div>

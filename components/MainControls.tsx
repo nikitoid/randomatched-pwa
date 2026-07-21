@@ -22,16 +22,22 @@ export const MainControls: React.FC<MainControlsProps> = ({
                 <button
                     onClick={handleGenerate}
                     disabled={isAnimating || !hasLists}
-                    className={`w-full relative group overflow-hidden rounded-3xl p-1 shadow-xl shadow-primary-600/30 dark:shadow-primary-500/20 transition-all duration-150 active:scale-[0.97] focus:outline-none focus:ring-4 focus:ring-primary-500/30
+                    className={`w-full relative group overflow-hidden rounded-3xl py-6 flex flex-col items-center justify-center 
+                    bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 
+                    shadow-[0_0_30px_rgb(var(--primary-500)/0.45)] dark:shadow-[0_0_35px_rgb(var(--primary-500)/0.55)] 
+                    hover:shadow-[0_0_40px_rgb(var(--primary-500)/0.65)] 
+                    transition-all duration-300 active:scale-[0.97] focus:outline-none focus:ring-4 focus:ring-primary-500/30
                     ${isAnimating || !hasLists ? 'opacity-70 cursor-not-allowed' : ''}
                 `}
                 >
-                    <div className={`absolute inset-0 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 transition-all duration-300 ${isAnimating ? 'opacity-80' : ''}`} />
-                    <div className="relative bg-primary-600/10 backdrop-blur-[1px] rounded-2xl py-6 flex flex-col items-center justify-center border border-white/20 shadow-inner">
-                        {isAnimating ? <Dice5 size={48} className="text-white/90 animate-spin mb-2" /> : <Shuffle size={48} className="text-white mb-2 drop-shadow-md group-active:scale-110 transition-transform duration-150" />}
-                        <span className="font-heading text-2xl font-bold text-white tracking-wider drop-shadow-sm">{isAnimating ? 'ГЕНЕРАЦИЯ...' : 'ГЕНЕРИРОВАТЬ'}</span>
-                        <span className="text-primary-100 text-xs font-medium tracking-wide mt-1">Случайные команды 2x2</span>
-                    </div>
+                    {/* Эллиптические неоновые блики сверху и снизу (центр под текстом остается сочным и контрастным) */}
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.22)_0%,transparent_60%)] pointer-events-none" />
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,rgb(var(--primary-400)/0.25)_0%,transparent_65%)] pointer-events-none" />
+                    <div className={`absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-200 pointer-events-none ${isAnimating ? 'opacity-80' : ''}`} />
+
+                    {isAnimating ? <Dice5 size={48} className="relative z-10 text-white/90 animate-spin mb-2" /> : <Shuffle size={48} className="relative z-10 text-white mb-2 drop-shadow-md group-active:scale-110 transition-transform duration-150" />}
+                    <span className="relative z-10 font-heading text-2xl font-bold text-white tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)]">{isAnimating ? 'ГЕНЕРАЦИЯ...' : 'СГЕНЕРИРОВАТЬ'}</span>
+                    <span className="relative z-10 text-primary-100 text-xs font-medium tracking-wide mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.2)]">Случайные команды 2x2</span>
                 </button>
             </div>
 

@@ -160,7 +160,7 @@ export async function waitForAppReady(page: any) {
     // Вместо жесткого ожидания в 2 секунды, ждем пока исчезнет лоадер (если он есть) 
     // или пока кнопка генерации не станет кликабельной.
     // Это делает тесты быстрее на мощных машинах и надежнее на слабых.
-    await page.waitForSelector('button:has-text("ГЕНЕРИРОВАТЬ"):not([disabled])', {
+    await page.waitForSelector('button:has-text("СГЕНЕРИРОВАТЬ"):not([disabled])', {
         state: 'visible',
         timeout: 15000
     });
