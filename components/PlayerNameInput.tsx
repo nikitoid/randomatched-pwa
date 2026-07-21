@@ -75,8 +75,8 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                         <Users size={20} />
                     </div>
                     <div>
-                        <span className="block text-sm font-bold text-slate-900 dark:text-white leading-tight">Имена игроков</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{filledNamesCount > 0 ? `Заполнено: ${filledNamesCount}` : 'Не заполнены'}</span>
+                        <span className="block font-heading text-sm font-bold text-slate-900 dark:text-white leading-tight">Имена игроков</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{filledNamesCount > 0 ? `Заполнено: ${filledNamesCount}` : 'Не заполнены'}</span>
                     </div>
                 </div>
                 <div className={`text-slate-300 transition-transform duration-300 ${isNamesOpen ? 'rotate-180' : ''}`}>
@@ -89,7 +89,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
 
                     {savedTeams.length > 0 && (
                         <div className="mb-4">
-                            <div className="flex items-center gap-2 mb-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            <div className="flex items-center gap-2 mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
                                 <Clock size={12} /> <span>История команд</span>
                             </div>
                             <div

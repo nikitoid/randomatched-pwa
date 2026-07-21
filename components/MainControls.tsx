@@ -22,15 +22,15 @@ export const MainControls: React.FC<MainControlsProps> = ({
                 <button
                     onClick={handleGenerate}
                     disabled={isAnimating || !hasLists}
-                    className={`w-full relative group overflow-hidden rounded-3xl p-1 transition-all duration-150 active:scale-[0.97] focus:outline-none focus:ring-4 focus:ring-primary-500/20
+                    className={`w-full relative group overflow-hidden rounded-3xl p-1 shadow-xl shadow-primary-600/30 dark:shadow-primary-500/20 transition-all duration-150 active:scale-[0.97] focus:outline-none focus:ring-4 focus:ring-primary-500/30
                     ${isAnimating || !hasLists ? 'opacity-70 cursor-not-allowed' : ''}
                 `}
                 >
                     <div className={`absolute inset-0 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 transition-all duration-300 ${isAnimating ? 'opacity-80' : ''}`} />
-                    <div className="relative bg-primary-600/10 backdrop-blur-[1px] rounded-2xl py-6 flex flex-col items-center justify-center border border-white/10 shadow-lg">
+                    <div className="relative bg-primary-600/10 backdrop-blur-[1px] rounded-2xl py-6 flex flex-col items-center justify-center border border-white/20 shadow-inner">
                         {isAnimating ? <Dice5 size={48} className="text-white/90 animate-spin mb-2" /> : <Shuffle size={48} className="text-white mb-2 drop-shadow-md group-active:scale-110 transition-transform duration-150" />}
-                        <span className="text-2xl font-black text-white tracking-wide drop-shadow-sm">{isAnimating ? 'ГЕНЕРАЦИЯ...' : 'ГЕНЕРИРОВАТЬ'}</span>
-                        <span className="text-primary-100 text-xs font-semibold tracking-wide mt-1">Случайные команды 2x2</span>
+                        <span className="font-heading text-2xl font-bold text-white tracking-wider drop-shadow-sm">{isAnimating ? 'ГЕНЕРАЦИЯ...' : 'ГЕНЕРИРОВАТЬ'}</span>
+                        <span className="text-primary-100 text-xs font-medium tracking-wide mt-1">Случайные команды 2x2</span>
                     </div>
                 </button>
             </div>

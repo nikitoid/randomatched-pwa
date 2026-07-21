@@ -50,7 +50,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                 transition: isListSelectorOpen ? 'z-index 0s' : 'z-index 0s linear 0.3s'
             }}
         >
-            <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 block pl-1">
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 block pl-1">
                 Источник героев
             </label>
             <div className="relative touch-manipulation">
@@ -72,7 +72,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                     <div className="flex-1 min-w-0">
                         {lists.length > 0 ? (
                             <>
-                                <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate pr-4 leading-tight">
+                                <h2 className="font-heading text-lg font-bold text-slate-900 dark:text-slate-100 truncate pr-4 leading-tight">
                                     {isGroupMode
                                         ? (selectedGroupCount > 0 ? `Группа (${selectedGroupCount})` : 'Пустая группа')
                                         : (activeList?.name || 'Выберите список')

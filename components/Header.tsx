@@ -20,14 +20,14 @@ export const Header: React.FC<HeaderProps> = ({
     return (
         <header className="px-5 pt-safe-area-top pt-5 mt-1 pb-2 flex justify-between items-center z-10 touch-manipulation">
             <div className="flex items-center gap-3">
-                <div className="bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/25 active:scale-95 transition-transform duration-150">
+                <div className="bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/30 active:scale-95 transition-transform duration-150">
                     <Dice5 className="text-white w-6 h-6" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
+                    <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
                         Random<span className="text-primary-600 dark:text-primary-400">atched</span>
                     </h1>
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-0.5">GENERATOR</p>
+                    <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-widest uppercase mt-1">GENERATOR</p>
                 </div>
             </div>
             <div className="flex items-center gap-2">
