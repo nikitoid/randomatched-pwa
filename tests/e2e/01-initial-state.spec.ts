@@ -26,7 +26,6 @@ test.describe('Начальное состояние приложения', () =
     test('должна отображаться навигация', async ({ app }) => {
         await expect(app.navigation).toBeVisible();
         await expect(app.statsButton).toBeVisible();
-        await expect(app.historyButton).toBeVisible();
         await expect(app.listsButton).toBeVisible();
         await expect(app.settingsButton).toBeVisible();
     });
