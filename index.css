@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 /* Smooth scrolling and disable standard scrollbars for PWA feel */
+html, body {
+  height: 100%;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
@@ -101,12 +108,18 @@ body {
 }
 
 /* Modern safe area spacing */
-.safe-area-top {
+.safe-area-top,
+.pt-safe-area-top {
   padding-top: env(safe-area-inset-top);
 }
 
-.safe-area-bottom {
+.safe-area-bottom,
+.pb-safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.top-safe-area-top {
+  top: env(safe-area-inset-top);
 }
 
 /* Default Variables (Indigo) - fallback */
