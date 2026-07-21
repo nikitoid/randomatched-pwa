@@ -18,7 +18,6 @@ test.describe('История матчей', () => {
 
     test('статистика должна быть доступна через навигацию в истории', async ({ page }) => {
         await app.statsButton.click();
-        await page.waitForTimeout(1000);
 
         // Проверяем, что открылась панель статистики
         const statsPanel = page.locator('text=Статистика').or(
@@ -31,7 +30,6 @@ test.describe('История матчей', () => {
     test('должна сохраняться история в localStorage', async ({ page }) => {
         // Генерируем команду
         await app.clickGenerate();
-        await page.waitForTimeout(2000);
 
         // Проверяем, что история начала формироваться
         const history = await app.getLocalStorageItem('randomatched_match_history_v1');

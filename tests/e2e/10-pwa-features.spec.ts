@@ -48,7 +48,6 @@ test.describe('PWA функции', () => {
     test('должна сохраняться история матчей в localStorage', async ({ page }) => {
         // Генерируем команду
         await app.clickGenerate();
-        await page.waitForTimeout(2000);
 
         // Проверяем наличие истории
         const history = await app.getLocalStorageItem('matchHistory');

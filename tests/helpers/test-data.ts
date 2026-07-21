@@ -84,6 +84,27 @@ export const TEST_LIST_SECONDARY: HeroList = createTestList(
 export async function injectTestData(page: any, lists: HeroList[] = [TEST_LIST_PRIMARY], appVersion: string = APP_VERSION) {
     // Используем addInitScript на контексте браузера - это выполняется ДО загрузки любой страницы
     await page.context().addInitScript(([listsData, version]: [HeroList[], string]) => {
+        // Отключаем CSS-анимации и переходы для мгновенного выполнения E2E тестов
+        const disableAnimations = () => {
+            if (!document.head) return;
+            const style = document.createElement('style');
+            style.setAttribute('type', 'text/css');
+            style.innerHTML = `
+                *, *::before, *::after {
+                    animation-duration: 0s !important;
+                    animation-delay: 0s !important;
+                    transition-duration: 0s !important;
+                    transition-delay: 0s !important;
+                }
+            `;
+            document.head.appendChild(style);
+        };
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', disableAnimations);
+        } else {
+            disableAnimations();
+        }
+
         // ПРАВИЛЬНЫЕ КЛЮЧИ localStorage (из хуков приложения)
         // Сохраняем списки героев
         localStorage.setItem('randomatched_lists_v1', JSON.stringify(listsData));

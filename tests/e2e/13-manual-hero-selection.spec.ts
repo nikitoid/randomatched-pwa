@@ -13,13 +13,11 @@ test.describe('Ручной выбор героя', () => {
 
         // Генерируем команды
         await app.clickGenerate();
-        await page.waitForTimeout(2000);
 
         // Открываем героев (новые кнопки появляются только после раскрытия)
         const revealBtn = page.getByTestId('center-action-button');
         await expect(revealBtn).toBeVisible();
         await revealBtn.click();
-        await page.waitForTimeout(500);
     });
 
     test('должна быть доступна кнопка ручного выбора', async ({ page }) => {
@@ -87,7 +85,6 @@ test.describe('Ручной выбор героя', () => {
         await expect(searchInput).not.toBeVisible();
 
         // Проверяем, что на карточке отображается выбранный герой
-        await page.waitForTimeout(500);
         const heroNameOnCard = page.locator('h2', { hasText: heroName! });
         await expect(heroNameOnCard).toBeVisible();
     });

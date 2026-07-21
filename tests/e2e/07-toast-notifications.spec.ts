@@ -11,15 +11,12 @@ test.describe('Уведомления (Toasts)', () => {
     test('должно появляться уведомление при сбросе сессии', async ({ page, app }) => {
         // Генерируем команды
         await app.clickGenerate();
-        await page.waitForTimeout(2000);
 
         // Закрываем оверлей результатов
         await app.closeResultOverlay();
-        await page.waitForTimeout(500);
 
         // Нажимаем сброс
         await app.resetButton.click();
-        await page.waitForTimeout(500);
 
         // Подтверждаем сброс в модальном окне
         const confirmButton = page.getByTestId('confirm-reset-button');
@@ -33,15 +30,12 @@ test.describe('Уведомления (Toasts)', () => {
     test('уведомление должно содержать текст о сбросе сессии', async ({ page, app }) => {
         // Генерируем команды
         await app.clickGenerate();
-        await page.waitForTimeout(2000);
 
         // Закрываем оверлей результатов
         await app.closeResultOverlay();
-        await page.waitForTimeout(500);
 
         // Нажимаем сброс
         await app.resetButton.click();
-        await page.waitForTimeout(500);
 
         // Подтверждаем сброс в модальном окне
         const confirmButton = page.getByTestId('confirm-reset-button');

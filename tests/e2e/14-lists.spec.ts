@@ -14,7 +14,6 @@ test.describe('Раздел «Списки героев»', () => {
 
     test('должно открываться окно списков', async ({ page }) => {
         await app.openLists();
-        await page.waitForTimeout(500);
 
         // Проверяем, что оверлей списков открылся
         const listsTitle = page.locator('h2:has-text("Списки героев")');
@@ -24,11 +23,9 @@ test.describe('Раздел «Списки героев»', () => {
     test('должна закрываться панель списков', async ({ page }) => {
         // Открываем списки
         await app.openLists();
-        await page.waitForTimeout(500);
 
         // Закрываем списки
         await app.closeLists();
-        await page.waitForTimeout(500);
 
         // Проверяем, что оверлей скрылся
         const listsTitle = page.locator('h2:has-text("Списки героев")');

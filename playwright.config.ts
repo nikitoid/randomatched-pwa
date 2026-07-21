@@ -26,7 +26,7 @@ export default defineConfig({
     // Общие настройки для всех проектов
     use: {
         // Базовый URL приложения
-        baseURL: 'http://127.0.0.1:5173',
+        baseURL: 'http://127.0.0.1:5177',
 
         // Скриншоты только при падении тестов
         screenshot: 'only-on-failure',
@@ -43,17 +43,18 @@ export default defineConfig({
 
     // Проекты для различных браузеров и устройств
     projects: [
-        {
-            name: 'chrome-desktop',
-            use: {
-                ...devices['Desktop Chrome'],
-                viewport: { width: 1920, height: 1080 },
-            },
-        },
+        // Временно отключено по запросу пользователя
+        // {
+        //     name: 'chrome-desktop',
+        //     use: {
+        //         ...devices['Desktop Chrome'],
+        //         viewport: { width: 1920, height: 1080 },
+        //     },
+        // },
         {
             name: 'chrome-mobile',
             use: {
-                ...devices['Pixel 5'],
+                ...devices['Pixel 7'],
                 // Дополнительные настройки для мобильного Chrome
                 hasTouch: true,
                 isMobile: true,
@@ -62,7 +63,7 @@ export default defineConfig({
         {
             name: 'safari-mobile',
             use: {
-                ...devices['iPhone 13 Pro'],
+                ...devices['iPhone 14 Pro'],
                 // Дополнительные настройки для мобильного Safari
                 hasTouch: true,
                 isMobile: true,
@@ -72,8 +73,8 @@ export default defineConfig({
 
     // Запуск dev-сервера перед тестами
     webServer: {
-        command: 'npm run dev -- --host 127.0.0.1 --port 5173 --strictPort',
-        url: 'http://127.0.0.1:5173',
+        command: 'npm run dev -- --host 127.0.0.1 --port 5177 --strictPort',
+        url: 'http://127.0.0.1:5177',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
     },

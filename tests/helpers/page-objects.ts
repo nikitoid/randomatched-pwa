@@ -119,11 +119,8 @@ export class RandoMatchedApp {
 
     async closeResultOverlay() {
         const overlay = this.page.getByTestId('result-overlay');
-        // Ждем появления (учитывая анимацию 400мс в приложении)
+        // Ждем появления
         await overlay.waitFor({ state: 'visible', timeout: 10000 });
-        
-        // Даем анимации завершиться
-        await this.page.waitForTimeout(500);
 
         const closeBtn = this.page.getByTestId('close-result-overlay');
         if (await closeBtn.isVisible()) {

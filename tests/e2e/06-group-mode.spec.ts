@@ -22,17 +22,14 @@ test.describe('Групповой режим', () => {
     test('должна быть возможность генерации с группой списков', async ({ page }) => {
         // Открываем селектор списков
         await app.sourceSelector.click();
-        await page.waitForTimeout(500);
 
         // Ищем переключатель группового режима
         const groupModeButton = page.locator('button:has-text("Группа")').first();
         await expect(groupModeButton).toBeVisible({ timeout: 5000 });
         await groupModeButton.click();
-        await page.waitForTimeout(500);
 
         // Закрываем селектор
         await app.sourceSelector.click();
-        await page.waitForTimeout(500);
 
         // Проверяем, что кнопка генерации доступна
         await expect(app.generateButton).toBeEnabled();

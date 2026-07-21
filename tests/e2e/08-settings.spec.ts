@@ -14,7 +14,6 @@ test.describe('Настройки приложения', () => {
 
     test('должно открываться окно настроек', async ({ page }) => {
         await app.openSettings();
-        await page.waitForTimeout(500);
 
         // Проверяем, что панель настроек открылась
         const settingsPanel = page.locator('text=Настройки').or(
@@ -31,14 +30,12 @@ test.describe('Настройки приложения', () => {
 
         // Переключаем тему через кнопку в хедере (она всегда видна)
         await app.toggleTheme();
-        await page.waitForTimeout(500);
 
         isDark = await app.isDarkTheme();
         expect(isDark).toBe(false);
 
         // Возвращаем обратно темную тему
         await app.toggleTheme();
-        await page.waitForTimeout(500);
 
         isDark = await app.isDarkTheme();
         expect(isDark).toBe(true);
@@ -56,11 +53,9 @@ test.describe('Настройки приложения', () => {
     test('должна закрываться панель настроек', async ({ page }) => {
         // Открываем настройки
         await app.openSettings();
-        await page.waitForTimeout(500);
 
         // Закрываем настройки
         await app.closeSettings();
-        await page.waitForTimeout(500);
 
         // Проверяем, что панель настроек скрылась
         const settingsPanel = page.locator('h2:has-text("Настройки")');

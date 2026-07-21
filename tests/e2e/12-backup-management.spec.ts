@@ -27,12 +27,7 @@ test.describe('Управление облачными бэкапами', () => 
     const openBackupMenu = async (page: any) => {
         const statsTitle = page.locator('h2:has-text("Статистика")');
         await expect(statsTitle).toBeVisible();
-        await page.waitForTimeout(1000);
-        await statsTitle.click({ force: true });
-        await page.waitForTimeout(200);
-        await statsTitle.click({ force: true });
-        await page.waitForTimeout(200);
-        await statsTitle.click({ force: true });
+        await statsTitle.click({ clickCount: 3 });
         const backupMenuTitle = page.locator('h3:has-text("Резервное копирование")');
         await expect(backupMenuTitle).toBeVisible({ timeout: 10000 });
     };
