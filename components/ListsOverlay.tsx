@@ -5,7 +5,7 @@ import {
     Wifi, WifiOff, Loader2, Files, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, 
     BarChart3, Dice5, Check, GripVertical, MoreVertical, FileJson, FileText, 
     ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, 
-    SquareStack, Info
+    SquareStack, Info, SlidersHorizontal
 } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, Hero, MatchRecord } from '../types';
@@ -725,35 +725,40 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-opacity duration-200 ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}>
                 <div className="px-4 py-3 pt-safe-area-top touch-manipulation">
                     {editingListId ? (
-                        <div className="flex items-center justify-between gap-2 min-h-[44px]">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <button 
-                                    onClick={handleCancelEditor} 
-                                    aria-label="Назад"
-                                    className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all shrink-0"
-                                > 
-                                    <ChevronLeft size={24} /> 
-                                </button>
-                                <div className="min-w-0">
-                                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
-                                        {lists.find(l => l.id === editingListId)?.name}
-                                    </h2>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-slate-400 font-medium">Героев: {getCleanHeroes(editorHeroes).length}</span>
-                                        {updatedListIds?.has(editingListId) && (
-                                            <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">
-                                                Обновлен
-                                            </span>
-                                        )}
+                        <>
+                            <div className="flex items-center justify-between gap-2 min-h-[44px]">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <button 
+                                        onClick={handleCancelEditor} 
+                                        aria-label="Назад"
+                                        className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all shrink-0"
+                                    > 
+                                        <ChevronLeft size={24} /> 
+                                    </button>
+                                    <div className="flex-1 min-w-0 pr-1">
+                                        <h2 
+                                            className="font-heading text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate"
+                                            title={lists.find(l => l.id === editingListId)?.name}
+                                        >
+                                            {lists.find(l => l.id === editingListId)?.name}
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Героев: {getCleanHeroes(editorHeroes).length}</span>
+                                            {updatedListIds?.has(editingListId) && (
+                                                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">
+                                                    Обновлен
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 shrink-0">
                                     <button 
+                                        ref={sortButtonRef}
                                         onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); triggerHaptic(10); }} 
                                         className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
+                                        aria-label="Сортировка списка"
                                     > 
                                         {heroSortType === 'name' ? (
                                             heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />
@@ -761,17 +766,41 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                             <ArrowLeftRight size={18} className="rotate-90" />
                                         )} 
                                     </button>
+                                    <button 
+                                        onClick={handleToggleEditorMenu} 
+                                        className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
+                                        aria-label="Дополнительные функции списка"
+                                        title="Опции списка"
+                                    >
+                                        <SlidersHorizontal size={18} />
+                                    </button>
                                     {!isReadOnly ? (
-                                        <button onClick={handleSaveEditor} className="h-11 min-h-[44px] px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform"> <Save size={16} /> <span>Сохранить</span> </button>
+                                        <button 
+                                            onClick={handleSaveEditor} 
+                                            className="h-11 min-h-[44px] w-11 sm:w-auto sm:px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/25 active:scale-95 transition-transform"
+                                            aria-label="Сохранить изменения"
+                                            title="Сохранить изменения"
+                                        > 
+                                            <Save size={18} /> 
+                                            <span className="hidden sm:inline">Сохранить</span> 
+                                        </button>
                                     ) : (
                                         !isPermanentlyReadOnly && (
-                                            <button onClick={() => { setIsEditMode(true); triggerHaptic(10); }} className="h-11 min-h-[44px] px-4 flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-transform"> <Edit2 size={16} /> <span>Редактировать</span> </button>
+                                            <button 
+                                                onClick={() => { setIsEditMode(true); triggerHaptic(10); }} 
+                                                className="h-11 min-h-[44px] w-11 sm:w-auto sm:px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-primary-50 dark:bg-primary-900/30 border border-primary-200/60 dark:border-primary-800/60 text-primary-600 dark:text-primary-300 font-bold text-xs active:scale-95 transition-transform"
+                                                aria-label="Редактировать список"
+                                                title="Редактировать список"
+                                            > 
+                                                <Edit2 size={18} /> 
+                                                <span className="hidden sm:inline">Редактировать</span> 
+                                            </button>
                                         )
                                     )}
                                 </div>
                             </div>
                             <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
-                        </div>
+                        </>
                     ) : (
                         <div className="relative flex items-center justify-center w-full min-h-[44px]">
                             <button 
@@ -942,20 +971,23 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             {isEditorMenuOpen && editorMenuRect && createPortal(
                 <>
                     <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsEditorMenuOpen(false)} /> 
-                    <div className="fixed z-[61] w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-menu-in origin-top-right" style={{ top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right, }}> 
-                        <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileJson size={16} /> Экспорт в файл </button> 
+                    <div 
+                        className="fixed z-[61] w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/80 overflow-hidden animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200" 
+                        style={{ top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right }}
+                    > 
+                        <button onClick={() => handleEditorMenuAction(() => setIsStatsModalOpen(true))} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <BarChart3 size={16} className="text-violet-500" /> <span>Баланс героев</span> </button>
+                        <div className="h-px bg-slate-100 dark:bg-slate-700/80 mx-2" />
+                        <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileJson size={16} /> <span>Экспорт в файл</span> </button> 
                         {!isReadOnly && !currentList?.isTemporary && (
-                            <> 
-                                <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Upload size={16} /> Импорт из файла </button> 
-                            </>
+                            <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Upload size={16} /> <span>Импорт из файла</span> </button> 
                         )} 
-                        <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" /> 
-                        <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Copy size={16} /> Экспорт (Текст) </button> 
+                        <div className="h-px bg-slate-100 dark:bg-slate-700/80 mx-2" /> 
+                        <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Copy size={16} /> <span>Экспорт (Текст)</span> </button> 
                         {!isReadOnly && !currentList?.isTemporary && (
                             <> 
-                                <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileText size={16} /> Импорт (Текст) </button> 
-                                <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" /> 
-                                <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium"> <ArrowLeftRight size={16} /> Импорт рангов </button> 
+                                <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileText size={16} /> <span>Импорт (Текст)</span> </button> 
+                                <div className="h-px bg-slate-100 dark:bg-slate-700/80 mx-2" /> 
+                                <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium"> <ArrowLeftRight size={16} /> <span>Импорт рангов</span> </button> 
                             </>
                         )} 
                     </div> 
