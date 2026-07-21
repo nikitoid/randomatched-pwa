@@ -38,8 +38,6 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
   const handleUpdateApp = useCallback(() => {
     try {
       window.scrollTo(0, 0);
-      if (document.body) document.body.scrollTop = 0;
-      if (document.documentElement) document.documentElement.scrollTop = 0;
     } catch (e) {
       console.error("Scroll reset error", e);
     }
@@ -54,8 +52,8 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
 
     setTimeout(() => {
       window.scrollTo(0, 0);
-      window.location.replace(window.location.origin);
-    }, 200);
+      window.location.href = window.location.origin + '/?updated=' + Date.now();
+    }, 150);
   }, [updateServiceWorker, registration]);
 
   const handleOpenUpdateBanner = useCallback(() => {
