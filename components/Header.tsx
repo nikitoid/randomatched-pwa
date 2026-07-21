@@ -18,10 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
     toggleTheme,
 }) => {
     return (
-        <header 
-            className="px-5 pt-5 mt-1 pb-2 flex justify-between items-center z-10 touch-manipulation"
-            style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top))' }}
-        >
+        <header className="px-5 pt-5 mt-1 pb-2 flex justify-between items-center z-10 touch-manipulation">
             <div className="flex items-center gap-3">
                 <div className="bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/30 active:scale-95 transition-transform duration-150">
                     <Dice5 className="text-white w-6 h-6" />
