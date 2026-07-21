@@ -24,7 +24,8 @@ export class RandoMatchedApp {
 
     // Кнопки навигации
     get statsButton() { return this.page.getByRole('button', { name: 'Статистика' }); }
-    get historyButton() { return this.page.getByRole('button', { name: 'История' }); }
+    get openSessionButton() { return this.page.getByRole('button', { name: 'Открыть сессию' }).or(this.page.getByTestId('open-session-button')); }
+    get historyButton() { return this.openSessionButton; }
     get listsButton() { return this.page.getByRole('button', { name: 'Списки' }); }
     get settingsButton() { return this.page.getByRole('button', { name: 'Настройки' }); }
 

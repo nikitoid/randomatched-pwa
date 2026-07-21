@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dice5, Shuffle, RotateCcw } from 'lucide-react';
+import { Dice5, Shuffle, Eye, Trash2 } from 'lucide-react';
 
 interface MainControlsProps {
     handleGenerate: () => void;
@@ -7,6 +7,8 @@ interface MainControlsProps {
     hasLists: boolean;
     canReset: boolean;
     handleResetSessionClick: () => void;
+    hasResult: boolean;
+    handleOpenSession: () => void;
 }
 
 export const MainControls: React.FC<MainControlsProps> = ({
@@ -15,6 +17,8 @@ export const MainControls: React.FC<MainControlsProps> = ({
     hasLists,
     canReset,
     handleResetSessionClick,
+    hasResult,
+    handleOpenSession,
 }) => {
     return (
         <>
@@ -41,14 +45,24 @@ export const MainControls: React.FC<MainControlsProps> = ({
                 </button>
             </div>
 
-            <div className="h-10 mt-5 flex items-center justify-center relative z-0 touch-manipulation">
+            <div className="mt-5 flex items-center justify-center gap-2.5 flex-wrap relative z-0 touch-manipulation min-h-[44px]">
+                {hasResult && (
+                    <button 
+                        data-testid="open-session-button"
+                        onClick={handleOpenSession} 
+                        className="flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-full bg-primary-50 dark:bg-primary-950/40 text-primary-600 dark:text-primary-400 text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-primary-100 dark:active:bg-primary-900/50 transition-all duration-150"
+                    >
+                        <Eye size={14} /> Открыть сессию
+                    </button>
+                )}
+
                 {canReset && (
                     <button 
                         data-testid="reset-session-button"
                         onClick={handleResetSessionClick} 
                         className="flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-red-100 dark:active:bg-red-900/40 transition-all duration-150"
                     >
-                        <RotateCcw size={14} /> Сбросить сессию
+                        <Trash2 size={14} /> Сбросить сессию
                     </button>
                 )}
             </div>

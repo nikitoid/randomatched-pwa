@@ -359,15 +359,15 @@ const App: React.FC = () => {
                         hasLists={lists.length > 0}
                         canReset={canReset}
                         handleResetSessionClick={handleResetSessionClick}
+                        hasResult={hasResult}
+                        handleOpenSession={() => { triggerHaptic(10); handleShowLastResult(); }}
                     />
                 </main>
 
                 <AppNavigation
                     onOpenStats={() => { setIsHistoryStatsOpen(true); triggerHaptic(10); }}
-                    onOpenHistory={handleShowLastResult}
                     onOpenLists={() => { setIsListsOpen(true); triggerHaptic(10); }}
                     onOpenSettings={() => { setIsSettingsOpen(true); triggerHaptic(10); }}
-                    hasResult={hasResult}
                 />
 
                 <ResultOverlay
