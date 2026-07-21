@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye, HelpCircle, Crown, Flame } from 'lucide-react';
-import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBackup } from '../types';
+import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBackup, Season, ToastType } from '../types';
 import { PlayerDetails } from './PlayerDetails';
 import { HeroDetails } from './HeroDetails';
 import { CloudBackupManager } from './CloudBackupManager';
@@ -16,6 +16,7 @@ import { StatsPlayersTab } from './stats/StatsPlayersTab';
 import { StatsHeroesTab } from './stats/StatsHeroesTab';
 import { StatsMatchesTab } from './stats/StatsMatchesTab';
 import { StatsDateFilter } from './stats/StatsDateFilter';
+import { SeasonsManagerModal } from './stats/SeasonsManagerModal';
 
 interface StatsModalProps {
     isOpen: boolean;
@@ -37,9 +38,19 @@ interface StatsModalProps {
     onPermanentDeleteMatch: (id: string) => void;
     onClearTrash: () => void;
 
-    onImportData: (data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => boolean;
+    onImportData: (data: { history: MatchRecord[], deletedHistory: MatchRecord[], seasons?: Season[] }) => boolean;
     checkConnectivity?: () => Promise<boolean>;
+    addToast?: (message: string, type: ToastType, duration?: number) => void;
+
+    // Seasons management
+    seasons?: Season[];
+    latestSeasonId?: string | null;
+    onAddSeason?: (name: string, startDate: string, endDate?: string) => Season | null;
+    onUpdateSeason?: (id: string, updatedData: Partial<Omit<Season, 'id'>>) => void;
+    onDeleteSeason?: (id: string) => void;
+
     // Облачный бэкап
+
     cloudBackups: Array<{ id: string; createdAt: number; matchCount: number }>;
     isCreatingBackup: boolean;
     isLoadingBackups: boolean;
@@ -73,6 +84,15 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     onImportData,
     checkConnectivity,
+    addToast,
+
+    // Seasons management
+    seasons = [],
+    latestSeasonId = null,
+    onAddSeason,
+    onUpdateSeason,
+    onDeleteSeason,
+
     // Облачный бэкап
     cloudBackups = [],
     isCreatingBackup = false,
@@ -88,6 +108,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     // Backup Menu State
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
     const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
+    const [isSeasonsManagerOpen, setIsSeasonsManagerOpen] = useState(false);
     const [showEfficiencyInfo, setShowEfficiencyInfo] = useState(false);
     const [showEfficiencyBreakdown, setShowEfficiencyBreakdown] = useState(false);
     const [activeNominationModal, setActiveNominationModal] = useState<'mvp' | 'underdog' | 'streak' | 'seriesKills' | 'totalKills' | null>(null);
@@ -137,13 +158,16 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
 
     const {
+        selectedSeasonId, handleSelectSeason,
         filterStartDate, setFilterStartDate,
         filterEndDate, setFilterEndDate,
         isDateFilterOpen, setIsDateFilterOpen,
         todayStr, yesterdayStr, lastEveningDateStr,
-        handlePresetToday, handlePresetYesterday, handlePresetLastEvening, handleResetDateFilter, formatPeriodLabel,
+        handlePresetToday, handlePresetYesterday, handlePresetLastEvening, handleResetDateFilter,
+        isDefaultFilterState, formatPeriodLabel,
         filteredHistory
-    } = useMatchFilters(history, triggerHaptic);
+    } = useMatchFilters(history, triggerHaptic, seasons, isOpen, addToast);
+
 
     useBackHandler(isDataMenuOpen, () => {
         setIsDataMenuOpen(false);
@@ -196,7 +220,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const handleExport = () => {
         const data = {
             history,
-            deletedHistory
+            deletedHistory,
+            seasons
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -977,6 +1002,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         setFilterEndDate={setFilterEndDate}
                         formatPeriodLabel={formatPeriodLabel}
                         handleResetDateFilter={handleResetDateFilter}
+                        isDefaultFilterState={isDefaultFilterState}
                         handlePresetToday={handlePresetToday}
                         handlePresetYesterday={handlePresetYesterday}
                         handlePresetLastEvening={handlePresetLastEvening}
@@ -985,6 +1011,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         lastEveningDateStr={lastEveningDateStr}
                         historyLength={history.length}
                         triggerHaptic={triggerHaptic}
+                        seasons={seasons}
+                        selectedSeasonId={selectedSeasonId}
+                        onSelectSeason={handleSelectSeason}
+                        onOpenSeasonsManager={() => setIsSeasonsManagerOpen(true)}
                     />
 
                     {/* Matches Tab Action Bar - Sticky under tabs */}
@@ -2034,6 +2064,17 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 </div>,
                 document.body
             )}
+
+            <SeasonsManagerModal
+                isOpen={isSeasonsManagerOpen}
+                onClose={() => setIsSeasonsManagerOpen(false)}
+                seasons={seasons}
+                latestSeasonId={latestSeasonId}
+                onAddSeason={(name, start, end) => onAddSeason ? onAddSeason(name, start, end) : null}
+                onUpdateSeason={(id, patch) => onUpdateSeason && onUpdateSeason(id, patch)}
+                onDeleteSeason={(id) => onDeleteSeason && onDeleteSeason(id)}
+                triggerHaptic={triggerHaptic}
+            />
 
             {matchFormOverlay}
         </>

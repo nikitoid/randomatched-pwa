@@ -1,6 +1,6 @@
 import React from 'react';
-import { Calendar, ChevronDown, ChevronUp } from 'lucide-react';
-import { MatchRecord } from '../../types';
+import { Calendar, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { Season } from '../../types';
 
 interface StatsDateFilterProps {
     filterStartDate: string;
@@ -16,9 +16,16 @@ interface StatsDateFilterProps {
     handlePresetYesterday: () => void;
     handlePresetLastEvening: () => void;
     handleResetDateFilter: () => void;
+    isDefaultFilterState?: boolean;
     formatPeriodLabel: () => string;
     historyLength: number;
     triggerHaptic: (pattern?: number | number[]) => void;
+
+    // Seasons props
+    seasons?: Season[];
+    selectedSeasonId?: string;
+    onSelectSeason?: (seasonId: string) => void;
+    onOpenSeasonsManager?: () => void;
 }
 
 export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
@@ -35,37 +42,47 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
     handlePresetYesterday,
     handlePresetLastEvening,
     handleResetDateFilter,
+    isDefaultFilterState = true,
     formatPeriodLabel,
     historyLength,
-    triggerHaptic
+    triggerHaptic,
+
+    seasons = [],
+    selectedSeasonId = 'all',
+    onSelectSeason,
+    onOpenSeasonsManager
 }) => {
+    const isFiltered = !isDefaultFilterState;
+
     return (
-        <div className="border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900">
+        <div className="border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900 select-none">
             <button
                 onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
-                className="w-full px-4 py-2 flex items-center justify-between text-xs font-bold text-slate-500 active:bg-slate-50 dark:active:bg-slate-800/30 transition-colors transform-gpu will-change-transform"
+                className="w-full px-4 py-3 min-h-[48px] flex items-center justify-between text-xs font-bold text-slate-500 active:bg-slate-100 dark:active:bg-slate-800/40 transition-colors transform-gpu"
             >
-                <div className="flex items-center gap-2">
-                    <Calendar size={14} className={filterStartDate || filterEndDate ? 'text-primary-500' : 'text-slate-400'} />
-                    <span>Период: </span>
-                    <span className={filterStartDate || filterEndDate ? 'text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-300'}>
+                <div className="flex items-center gap-2 min-w-0 pr-2">
+                    <Calendar size={16} className={isFiltered ? 'text-primary-500 shrink-0' : 'text-slate-400 shrink-0'} />
+                    <span className="shrink-0">Период: </span>
+                    <span className={`truncate ${isFiltered ? 'text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-300 font-bold'}`}>
                         {formatPeriodLabel()}
                     </span>
                 </div>
-                <div className="flex items-center gap-2">
-                    {(filterStartDate || filterEndDate) && (
+                <div className="flex items-center gap-2 shrink-0">
+                    {!isDefaultFilterState && (
                         <span
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleResetDateFilter();
                             }}
                             data-testid="reset-date-filter-btn"
-                            className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-500 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                            className="px-2.5 py-1 min-h-[32px] rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center cursor-pointer"
                         >
                             Сбросить
                         </span>
                     )}
-                    {isDateFilterOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    <div className="p-1 text-slate-400">
+                        {isDateFilterOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </div>
                 </div>
             </button>
 
@@ -78,43 +95,99 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                 }}
             >
                 <div className="overflow-hidden">
-                    <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800/60 space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">С даты</label>
-                                <input
-                                    type="date"
-                                    value={filterStartDate}
-                                    onChange={(e) => { setFilterStartDate(e.target.value); triggerHaptic(5); }}
-                                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
-                                />
+                    <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800/60 space-y-3.5">
+                        
+                        {/* Seasons Selection Pill Bar */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Сезоны</span>
+                                {onOpenSeasonsManager && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { triggerHaptic(10); onOpenSeasonsManager(); }}
+                                        className="min-h-[36px] px-3 py-1.5 rounded-xl border border-primary-500/30 bg-primary-500/10 hover:bg-primary-500/20 text-primary-600 dark:text-primary-400 font-extrabold text-[11px] flex items-center gap-1.5 active:scale-95 transition-all"
+                                    >
+                                        <Settings size={13} />
+                                        <span>Настройка сезонов</span>
+                                    </button>
+                                )}
                             </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">По дату</label>
-                                <input
-                                    type="date"
-                                    value={filterEndDate}
-                                    onChange={(e) => { setFilterEndDate(e.target.value); triggerHaptic(5); }}
-                                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
-                                />
+
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => onSelectSeason && onSelectSeason('all')}
+                                    className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${
+                                        selectedSeasonId === 'all'
+                                            ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
+                                            : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 border border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300'
+                                    }`}
+                                >
+                                    Все время
+                                </button>
+
+                                {seasons.map(season => (
+                                    <button
+                                        key={season.id}
+                                        type="button"
+                                        data-testid={`season-chip-${season.id}`}
+                                        data-season-name={season.name}
+                                        onClick={() => onSelectSeason && onSelectSeason(season.id)}
+                                        className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${
+                                            selectedSeasonId === season.id
+                                                ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
+                                                : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700 border border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300'
+                                        }`}
+                                    >
+                                        {season.name}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
+                        {/* Manual Date Filter Fields */}
+                        <div className="pt-1 space-y-1.5">
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                Произвольные даты
+                            </div>
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">С даты</label>
+                                    <input
+                                        type="date"
+                                        value={filterStartDate}
+                                        onChange={(e) => { setFilterStartDate(e.target.value); triggerHaptic(5); }}
+                                        className="w-full min-h-[44px] px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase">По дату</label>
+                                    <input
+                                        type="date"
+                                        value={filterEndDate}
+                                        onChange={(e) => { setFilterEndDate(e.target.value); triggerHaptic(5); }}
+                                        className="w-full min-h-[44px] px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Presets */}
                         <div className="flex flex-wrap gap-2 pt-1">
                             <button
                                 onClick={handlePresetToday}
-                                className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === todayStr && filterEndDate === todayStr
-                                    ? 'bg-primary-500 text-white'
-                                    : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${filterStartDate === todayStr && filterEndDate === todayStr
+                                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
+                                    : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300'
                                     }`}
                             >
                                 Сегодня
                             </button>
                             <button
                                 onClick={handlePresetYesterday}
-                                className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === yesterdayStr && filterEndDate === yesterdayStr
-                                    ? 'bg-primary-500 text-white'
-                                    : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${filterStartDate === yesterdayStr && filterEndDate === yesterdayStr
+                                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
+                                    : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300'
                                     }`}
                             >
                                 Вчера
@@ -122,9 +195,9 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                             {historyLength > 0 && (
                                 <button
                                     onClick={handlePresetLastEvening}
-                                    className={`px-2.5 py-1.5 text-[11px] font-bold rounded-lg transition-colors ${filterStartDate === lastEveningDateStr && filterEndDate === lastEveningDateStr
-                                        ? 'bg-primary-500 text-white'
-                                        : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-100 dark:border-slate-700/50 text-slate-600 dark:text-slate-350'
+                                    className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${filterStartDate === lastEveningDateStr && filterEndDate === lastEveningDateStr
+                                        ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
+                                        : 'bg-white dark:bg-slate-800 active:bg-slate-100 dark:active:bg-slate-700/80 border border-slate-200 dark:border-slate-700/50 text-slate-700 dark:text-slate-300'
                                         }`}
                                 >
                                     Посл. игровой вечер

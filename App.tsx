@@ -9,6 +9,7 @@ import { useAppStats } from './hooks/useAppStats';
 import { useGroupSelection } from './hooks/useGroupSelection';
 import { useHistoryInput } from './hooks/useHistoryInput';
 import { useTeamGeneration } from './hooks/useTeamGeneration';
+import { useSeasons } from './hooks/useSeasons';
 import { ResultOverlay } from './components/ResultOverlay';
 import { SettingsOverlay } from './components/SettingsOverlay';
 import { ListsOverlay } from './components/ListsOverlay';
@@ -65,6 +66,18 @@ const App: React.FC = () => {
         cloudBackups, isCreatingBackup, isLoadingBackups, isRestoringBackup,
         deleteCloudBackup, getCloudBackupDetails
     } = useMatchHistory(addToast);
+
+    const {
+        seasons, latestSeason, addSeason, updateSeason, deleteSeason, syncSeasons, importSeasons
+    } = useSeasons(addToast);
+
+    const handleImportDataCombined = (data: any) => {
+        const success = importData(data);
+        if (success && Array.isArray(data.seasons)) {
+            importSeasons(data.seasons);
+        }
+        return success;
+    };
 
     // UI State
     const [selectedListId, setSelectedListId] = useState<string>(() => {
@@ -452,10 +465,21 @@ const App: React.FC = () => {
                     onAddMatch={addManualMatch}
                     onRenamePlayer={renamePlayer}
                     onRenameHero={renameHero}
-                    onSync={syncHistory}
+                    onSync={async (options) => {
+                        const historySuccess = await syncHistory(options);
+                        await syncSeasons(options);
+                        return historySuccess;
+                    }}
                     isSyncing={isSyncingHistory}
                     isOnline={isOnline}
                     isDebugMode={isDebugMode}
+                    addToast={addToast}
+
+                    seasons={seasons}
+                    latestSeasonId={latestSeason?.id}
+                    onAddSeason={addSeason}
+                    onUpdateSeason={updateSeason}
+                    onDeleteSeason={deleteSeason}
 
                     lists={lists}
                     triggerHaptic={triggerHaptic}
@@ -464,7 +488,7 @@ const App: React.FC = () => {
                     onPermanentDeleteMatch={permanentDeleteMatch}
                     onClearTrash={clearTrash}
 
-                    onImportData={importData}
+                    onImportData={handleImportDataCombined}
                     checkConnectivity={checkConnectivity}
                     // Облачный бэкап
                     cloudBackups={cloudBackups}
@@ -473,7 +497,14 @@ const App: React.FC = () => {
                     isRestoringBackup={isRestoringBackup}
                     onCreateCloudBackup={createCloudBackup}
                     onListCloudBackups={listCloudBackups}
-                    onRestoreFromCloudBackup={restoreFromCloudBackup}
+                    onRestoreFromCloudBackup={async (id) => {
+                        const backup = await getCloudBackupDetails(id);
+                        const res = await restoreFromCloudBackup(id);
+                        if (res && backup && Array.isArray(backup.seasons)) {
+                            importSeasons(backup.seasons);
+                        }
+                        return res;
+                    }}
                     onDeleteCloudBackup={deleteCloudBackup}
                     onGetCloudBackupDetails={getCloudBackupDetails}
                 />

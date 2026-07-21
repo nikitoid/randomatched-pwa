@@ -101,10 +101,20 @@ export interface HeroStat {
   avgKills?: number;
 }
 
+export interface Season {
+  id: string;
+  name: string;
+  startDate: string; // YYYY-MM-DD
+  endDate?: string;  // YYYY-MM-DD
+  lastUpdated?: number;
+}
+
 export interface CloudBackup {
   id: string;
   createdAt: number;
   matchCount: number;
   history: MatchRecord[];
   deletedHistory: MatchRecord[];
+  seasons?: Season[];
 }
+
