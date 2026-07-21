@@ -36,9 +36,27 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
   }, [needRefresh]);
 
   const handleUpdateApp = useCallback(() => {
-    updateServiceWorker(true);
+    try {
+      window.scrollTo(0, 0);
+      if (document.body) document.body.scrollTop = 0;
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+    } catch (e) {
+      console.error("Scroll reset error", e);
+    }
+    
     setShowUpdateBanner(false);
-  }, [updateServiceWorker]);
+
+    if (registration && registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+
+    updateServiceWorker(true);
+
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      window.location.replace(window.location.origin);
+    }, 200);
+  }, [updateServiceWorker, registration]);
 
   const handleOpenUpdateBanner = useCallback(() => {
       if (needRefresh) {

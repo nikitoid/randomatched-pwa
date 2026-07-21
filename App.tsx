@@ -203,9 +203,13 @@ const App: React.FC = () => {
         }
     }, [selectedListId]);
 
-    // Показ чейнджлога при первом входе после обновления
+    // Показ чейнджлога при первом входе после обновления и сброс возможного сдвига скролла PWA
     useEffect(() => {
         if (isLoaded) {
+            window.scrollTo(0, 0);
+            if (document.body) document.body.scrollTop = 0;
+            if (document.documentElement) document.documentElement.scrollTop = 0;
+
             const lastSeenVersion = localStorage.getItem('randomatched_last_seen_version');
             if (!lastSeenVersion) {
                 localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
