@@ -53,11 +53,11 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
             <label className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3 block pl-1">
                 Источник героев
             </label>
-            <div className="relative">
+            <div className="relative touch-manipulation">
                 <button
                     onClick={() => setIsListSelectorOpen(!isListSelectorOpen)}
                     disabled={lists.length === 0}
-                    className={`w-full relative bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-800 flex items-center p-5 gap-4 text-left transition-all duration-300
+                    className={`w-full relative bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-800 flex items-center p-4 min-h-[72px] gap-4 text-left transition-all duration-300
                     ${isListSelectorOpen ? 'rounded-t-3xl rounded-b-none border-b-transparent' : 'rounded-3xl active:scale-[0.99]'}`}
                 >
                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-colors
@@ -72,14 +72,14 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                     <div className="flex-1 min-w-0">
                         {lists.length > 0 ? (
                             <>
-                                <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate pr-4">
+                                <h2 className="font-bold text-lg text-slate-800 dark:text-slate-100 truncate pr-4 leading-tight">
                                     {isGroupMode
                                         ? (selectedGroupCount > 0 ? `Группа (${selectedGroupCount})` : 'Пустая группа')
                                         : (activeList?.name || 'Выберите список')
                                     }
                                     {!isGroupMode && activeList?.isTemporary && <span className="text-sm font-normal text-slate-500 ml-2">(врем.)</span>}
                                 </h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                                     {isGroupMode
                                         ? `${groupTotalHeroes} Героев доступно`
                                         : (activeList ? `Героев: ${activeList.heroes.length}` : 'Список пуст')
@@ -103,13 +103,13 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                             <div className="flex-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
                                 <button
                                     onClick={() => setIsGroupMode(false)}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${!isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 active:text-slate-700'}`}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-lg text-sm font-bold transition-all active:scale-95 ${!isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 active:text-slate-700'}`}
                                 >
                                     <Layers size={16} /> Один
                                 </button>
                                 <button
                                     onClick={() => setIsGroupMode(true)}
-                                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold transition-all ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400 active:text-slate-700'}`}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-lg text-sm font-bold transition-all active:scale-95 ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400 active:text-slate-700'}`}
                                 >
                                     <SquareStack size={16} /> Группа
                                 </button>
@@ -117,7 +117,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                             <button
                                 onClick={() => { setIsGroupStatsOpen(true); setIsListSelectorOpen(false); }}
                                 disabled={isGroupMode ? groupTotalHeroes === 0 : !activeList || activeList.heroes.length === 0}
-                                className={`w-10 h-10 my-auto rounded-xl flex items-center justify-center transition-colors border active:scale-95 ${isGroupMode
+                                className={`w-11 h-11 min-h-[44px] min-w-[44px] my-auto rounded-xl flex items-center justify-center transition-all border active:scale-95 ${isGroupMode
                                     ? 'bg-primary-50 text-primary-600 border-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800 disabled:opacity-50'
                                     : 'bg-slate-50 text-slate-600 border-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 disabled:opacity-50'
                                     }`}
@@ -127,7 +127,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                         </div>
                     </div>
 
-                    <div className="overflow-y-auto no-scrollbar py-2 flex-1">
+                    <div className="overflow-y-auto overscroll-contain no-scrollbar py-2 flex-1">
                         {/* Render lists based on mode */}
                         {!isGroupMode ? (
                             // SINGLE MODE
@@ -157,7 +157,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                     <button
                                         key={list.id}
                                         onClick={() => handleSelectList(list.id)}
-                                        className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-slate-50 dark:bg-slate-800/50' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
+                                        className={`w-full px-5 py-3 min-h-[48px] flex items-center gap-3 transition-colors active:scale-[0.99] touch-manipulation ${isSelected ? 'bg-slate-50 dark:bg-slate-800/50' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
                                     >
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
                                             <Icon size={18} />
@@ -209,7 +209,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                         <button
                                             key={list.id}
                                             onClick={() => handleToggleGroupItem(list.id)}
-                                            className={`w-full px-5 py-3 flex items-center gap-3 transition-colors ${isSelected ? 'bg-primary-50 dark:bg-primary-900/10' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
+                                            className={`w-full px-5 py-3 min-h-[48px] flex items-center gap-3 transition-colors active:scale-[0.99] touch-manipulation ${isSelected ? 'bg-primary-50 dark:bg-primary-900/10' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
                                         >
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-primary-500 text-white' : `${iconBg} ${iconColor}`}`}>
                                                 {isSelected ? <Check size={18} /> : <Icon size={18} />}
@@ -246,7 +246,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                     setIsListSelectorOpen(false);
                                     onOpenAddHeroes();
                                 }}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-bold bg-primary-600 active:bg-primary-700 text-white shadow-lg shadow-primary-600/10 active:scale-[0.98] transition-all"
+                                className="w-full flex items-center justify-center gap-2 py-3 px-4 min-h-[44px] rounded-2xl text-xs font-bold bg-primary-600 active:bg-primary-700 text-white shadow-lg shadow-primary-600/10 active:scale-[0.98] transition-all touch-manipulation"
                             >
                                 <Plus size={14} />
                                 <span>Докинуть героев точечно</span>

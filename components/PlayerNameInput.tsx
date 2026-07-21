@@ -68,15 +68,15 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
         <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-50' : 'z-20'}`}>
             <button
                 onClick={() => setIsNamesOpen(!isNamesOpen)}
-                className={`w-full p-4 flex items-center justify-between text-left bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-all duration-300 ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm'}`}
+                className={`w-full p-4 min-h-[64px] flex items-center justify-between text-left bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-all duration-300 touch-manipulation ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm active:scale-[0.99]'}`}
             >
                 <div className="flex items-center gap-3">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${filledNamesCount > 0 ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                         <Users size={20} />
                     </div>
                     <div>
-                        <span className="block text-sm font-bold text-slate-900 dark:text-white">Имена игроков</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500">{filledNamesCount > 0 ? `Заполнено: ${filledNamesCount}` : 'Не заполнены'}</span>
+                        <span className="block text-sm font-bold text-slate-900 dark:text-white leading-tight">Имена игроков</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{filledNamesCount > 0 ? `Заполнено: ${filledNamesCount}` : 'Не заполнены'}</span>
                     </div>
                 </div>
                 <div className={`text-slate-300 transition-transform duration-300 ${isNamesOpen ? 'rotate-180' : ''}`}>
@@ -103,7 +103,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                         historyScrollRef.current.scrollLeft += e.deltaY;
                                     }
                                 }}
-                                className={`flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1 touch-pan-x ${isHistoryDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                                className={`flex gap-2 overflow-x-auto overscroll-contain no-scrollbar pb-2 px-1 touch-pan-x ${isHistoryDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
                             >
                                 {savedTeams.map((team, idx) => {
                                     const filled = team.filter(n => n.trim());
@@ -117,7 +117,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                                     if (isHistoryDragScroll || isConfirmingDelete) return;
                                                     handleSelectSavedTeam(team);
                                                 }}
-                                                className={`pl-3 pr-8 py-2 rounded-xl text-xs font-medium transition-colors border select-none
+                                                className={`pl-3 pr-8 py-2 min-h-[38px] rounded-xl text-xs font-medium transition-all border select-none active:scale-95 touch-manipulation
                                                     ${isConfirmingDelete
                                                         ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border-red-200 dark:border-red-900/50'
                                                         : 'bg-slate-100 dark:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-600 dark:text-slate-300 border-transparent active:border-primary-500'
@@ -129,14 +129,15 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                             </button>
                                             <button
                                                 onClick={(e) => handleDeleteHistoryItem(e, idx)}
-                                                className={`absolute right-1 p-1.5 rounded-lg transition-colors
+                                                className={`absolute right-1 w-8 h-8 flex items-center justify-center rounded-lg transition-colors touch-manipulation
                                                     ${isConfirmingDelete
                                                         ? 'text-red-600 active:bg-red-100 dark:text-red-400'
-                                                        : 'text-slate-400 active:text-red-500 active:bg-slate-200'
+                                                        : 'text-slate-400 active:text-red-500 active:bg-slate-200 dark:active:bg-slate-700'
                                                     }
                                                 `}
+                                                aria-label="Удалить команду из истории"
                                             >
-                                                {isConfirmingDelete ? <Trash2 size={12} /> : <X size={12} />}
+                                                {isConfirmingDelete ? <Trash2 size={13} /> : <X size={13} />}
                                             </button>
                                         </div>
                                     );
@@ -155,14 +156,14 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                     onFocus={() => setFocusedIndex(index)}
                                     onBlur={() => setFocusedIndex(null)}
                                     placeholder={`Игрок ${index + 1}`}
-                                    className="w-full pl-9 pr-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500 outline-none transition-all focus:bg-white dark:focus:bg-slate-900 select-text"
+                                    className="w-full pl-9 pr-4 py-3 min-h-[44px] bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-primary-500 outline-none transition-all focus:bg-white dark:focus:bg-slate-900 select-text touch-manipulation"
                                 />
                                 <div className="absolute left-3 top-1/2 -translate-x-0 -translate-y-1/2 text-slate-400 pointer-events-none">
                                     <User size={14} />
                                 </div>
                                 {focusedIndex === index && activeSuggestions.length > 0 && (
                                     <div className="suggestions-dropdown absolute top-[100%] left-0 right-0 mt-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                        <div className="p-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                                        <div className="p-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto overscroll-contain">
                                             {activeSuggestions.map((name) => (
                                                 <button
                                                     key={name}
@@ -172,7 +173,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                                         handleNameChange(index, name);
                                                         setFocusedIndex(null);
                                                     }}
-                                                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 active:bg-primary-50 active:text-primary-600 dark:active:bg-primary-950/30 dark:active:text-primary-400 rounded-xl transition-colors flex items-center gap-2"
+                                                    className="w-full text-left px-3 py-2.5 min-h-[40px] text-xs font-bold text-slate-700 dark:text-slate-200 active:bg-primary-50 active:text-primary-600 dark:active:bg-primary-950/40 dark:active:text-primary-400 rounded-xl transition-all active:scale-[0.98] touch-manipulation flex items-center gap-2"
                                                 >
                                                     <User size={12} className="text-slate-400" />
                                                     <span>{name}</span>

@@ -156,7 +156,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 setActiveTab(id);
                 triggerHaptic(10);
             }}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap select-none border ${activeTab === id
+            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full text-sm font-bold transition-all active:scale-95 whitespace-nowrap select-none border touch-manipulation ${activeTab === id
                 ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-md'
                 : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800'
                 } ${isDragScroll ? 'pointer-events-none' : ''}`}
@@ -222,12 +222,12 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300">
                 <div className="px-4 py-3 pt-safe-area-top">
-                    <div className="relative flex items-center justify-center w-full min-h-[44px]">
+                    <div className="relative flex items-center justify-center w-full min-h-[44px] touch-manipulation">
                         <button
                             onClick={onClose}
                             aria-label="Закрыть"
                             data-testid="settings-close-btn"
-                            className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                            className="absolute left-0 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all"
                         >
                             <ChevronLeft size={24} />
                         </button>
@@ -236,7 +236,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 </div>
 
                 <div className="px-4 pb-3">
-                    <div ref={tabsContainerRef} onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} className={`flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}>
+                    <div ref={tabsContainerRef} onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} className={`flex items-center gap-2 overflow-x-auto overscroll-contain no-scrollbar pb-1 touch-manipulation ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}>
                         {renderTabButton('appearance', 'Внешний вид', <Palette size={16} />)}
                         {renderTabButton('app_settings', 'Приложение', <SmartphoneNfc size={16} />)}
                         {renderTabButton('info', 'Инфо', <Info size={16} />)}
@@ -246,16 +246,16 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             </div>
 
             <div className="flex-1 relative overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-                <div className="absolute inset-0 overflow-y-auto no-scrollbar">
+                <div className="absolute inset-0 overflow-y-auto overscroll-contain no-scrollbar">
                     <div className="pb-safe-area-bottom">
                         {activeTab === 'appearance' && (
                             <div className="flex flex-col items-center justify-start min-h-full px-4 py-3 sm:p-6 text-center animate-in fade-in slide-in-from-bottom-2">
                                 <div className="w-full max-w-sm">
                                     {/* Переключатель подвкладок */}
-                                    <div className="flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-2xl mb-4 border border-slate-200/20 dark:border-slate-800/50">
+                                    <div className="flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-2xl mb-4 border border-slate-200/20 dark:border-slate-800/50 touch-manipulation">
                                         <button
                                             onClick={() => { setAppearanceSubTab('colors'); triggerHaptic(10); }}
-                                            className={`flex-1 py-1.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ease-in-out border ${
+                                            className={`flex-1 py-2.5 px-3 min-h-[44px] text-xs sm:text-sm font-bold rounded-xl transition-all duration-150 ease-in-out active:scale-95 border ${
                                                 appearanceSubTab === 'colors'
                                                     ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/50'
                                                     : 'bg-transparent text-slate-500 border-transparent active:text-slate-800 dark:text-slate-400 dark:active:text-slate-200'
@@ -265,7 +265,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                         </button>
                                         <button
                                             onClick={() => { setAppearanceSubTab('effects'); triggerHaptic(10); }}
-                                            className={`flex-1 py-1.5 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ease-in-out border ${
+                                            className={`flex-1 py-2.5 px-3 min-h-[44px] text-xs sm:text-sm font-bold rounded-xl transition-all duration-150 ease-in-out active:scale-95 border ${
                                                 appearanceSubTab === 'effects'
                                                     ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/50'
                                                     : 'bg-transparent text-slate-500 border-transparent active:text-slate-800 dark:text-slate-400 dark:active:text-slate-200'

@@ -18,29 +18,29 @@ export const MainControls: React.FC<MainControlsProps> = ({
 }) => {
     return (
         <>
-            <div className="w-full relative z-0 rounded-3xl">
+            <div className="w-full relative z-0 rounded-3xl touch-manipulation">
                 <button
                     onClick={handleGenerate}
                     disabled={isAnimating || !hasLists}
-                    className={`w-full relative group overflow-hidden rounded-3xl p-1 transition-all duration-200 active:scale-[0.98]
+                    className={`w-full relative group overflow-hidden rounded-3xl p-1 transition-all duration-150 active:scale-[0.97] focus:outline-none focus:ring-4 focus:ring-primary-500/20
                     ${isAnimating || !hasLists ? 'opacity-70 cursor-not-allowed' : ''}
                 `}
                 >
                     <div className={`absolute inset-0 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 transition-all duration-300 ${isAnimating ? 'opacity-80' : ''}`} />
-                    <div className="relative bg-primary-600/10 backdrop-blur-[1px] rounded-2xl py-6 flex flex-col items-center justify-center border border-white/10">
-                        {isAnimating ? <Dice5 size={48} className="text-white/90 animate-spin mb-2" /> : <Shuffle size={48} className="text-white mb-2 drop-shadow-md" />}
+                    <div className="relative bg-primary-600/10 backdrop-blur-[1px] rounded-2xl py-6 flex flex-col items-center justify-center border border-white/10 shadow-lg">
+                        {isAnimating ? <Dice5 size={48} className="text-white/90 animate-spin mb-2" /> : <Shuffle size={48} className="text-white mb-2 drop-shadow-md group-active:scale-110 transition-transform duration-150" />}
                         <span className="text-2xl font-black text-white tracking-wide drop-shadow-sm">{isAnimating ? 'ГЕНЕРАЦИЯ...' : 'ГЕНЕРИРОВАТЬ'}</span>
-                        <span className="text-primary-200 text-sm font-medium mt-1">Случайные команды 2x2</span>
+                        <span className="text-primary-100 text-xs font-semibold tracking-wide mt-1">Случайные команды 2x2</span>
                     </div>
                 </button>
             </div>
 
-            <div className="h-8 mt-6 flex items-center justify-center relative z-0">
+            <div className="h-10 mt-5 flex items-center justify-center relative z-0 touch-manipulation">
                 {canReset && (
                     <button 
                         data-testid="reset-session-button"
                         onClick={handleResetSessionClick} 
-                        className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 dark:bg-red-900/10 text-red-500 dark:text-red-400 text-xs font-bold uppercase tracking-wider active:bg-red-100 dark:active:bg-red-900/20 transition-colors"
+                        className="flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-red-100 dark:active:bg-red-900/40 transition-all duration-150"
                     >
                         <RotateCcw size={14} /> Сбросить сессию
                     </button>

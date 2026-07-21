@@ -909,7 +909,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     className={`bg-slate-50 dark:bg-slate-950 bg-grid-pattern w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 sticky top-0">
+                    <div className="p-4 pt-safe-area-top border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl z-10 sticky top-0 touch-manipulation">
                         <h2
                             className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 select-none active:scale-95 transition-transform"
                             data-testid="stats-title"
@@ -917,11 +917,11 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         >
                             <Trophy size={20} className="text-yellow-500" /> Статистика
                         </h2>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => syncWithAnimation()}
                                 disabled={!isOnline || visualSyncState !== 'idle' || isDebugMode}
-                                className={`p-2 rounded-full transition-all duration-300 ${(!isOnline || isDebugMode) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
+                                className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-150 active:scale-95 ${(!isOnline || isDebugMode) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
                                     visualSyncState === 'success' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' :
                                         'text-slate-500 active:bg-slate-100 dark:text-slate-400 dark:active:bg-slate-800'}`}
                                 aria-label={isDebugMode ? "Синхронизация отключена в режиме разработчика" : "Синхронизация"}
@@ -938,14 +938,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 onClick={onClose}
                                 data-testid="stats-close-btn"
                                 aria-label="Закрыть"
-                                className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all"
                             >
                                 <X size={20} />
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex border-b border-slate-100 dark:border-slate-800 shrink-0 overflow-x-auto no-scrollbar bg-white dark:bg-slate-900">
+                    <div className="flex border-b border-slate-100 dark:border-slate-800 shrink-0 overflow-x-auto overscroll-contain no-scrollbar bg-white dark:bg-slate-900 touch-manipulation">
                         {['overview', 'players', 'heroes', 'matches'].map(tab => (
                             <button
                                 key={tab}
@@ -957,7 +957,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     setSelectedHero(null);
                                     triggerHaptic(10);
                                 }}
-                                className={`flex-1 min-w-[80px] py-2 text-sm font-bold border-b-2 transition-colors capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 active:bg-slate-50 dark:active:bg-slate-800/50'}`}
+                                className={`flex-1 min-w-[84px] min-h-[44px] py-2.5 text-sm font-bold border-b-2 transition-all active:scale-95 capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 active:bg-slate-50 dark:active:bg-slate-800/50'}`}
                             >
                                 {tab === 'overview' ? 'Обзор' : tab === 'players' ? 'Игроки' : tab === 'heroes' ? 'Герои' : 'Матчи'}
                             </button>

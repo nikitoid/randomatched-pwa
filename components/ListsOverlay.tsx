@@ -723,22 +723,37 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
 
             <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-opacity duration-200 ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}>
-                <div className="px-4 py-3 pt-safe-area-top">
+                <div className="px-4 py-3 pt-safe-area-top touch-manipulation">
                     {editingListId ? (
-                        <div className="flex flex-col w-full pb-1">
-                            <div className="flex items-center justify-between min-h-[44px]">
-                                <button onClick={handleCancelEditor} className="p-2 -ml-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800 text-slate-900 dark:text-white"> <ChevronLeft size={24} /> </button>
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white truncate flex-1 text-center px-4"> {currentList?.name} {isPermanentlyReadOnly && <span className="ml-2 text-xs font-normal opacity-60">(Только чтение)</span>} </h2>
-                                {!currentList?.isTemporary ? (<button onClick={handleToggleEditorMenu} className={`p-2 -mr-2 rounded-full transition-colors ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : 'active:bg-slate-100 dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}> <MoreVertical size={24} /> </button>) : (<div className="w-10" />)}
+                        <div className="flex items-center justify-between gap-2 min-h-[44px]">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <button 
+                                    onClick={handleCancelEditor} 
+                                    aria-label="Назад"
+                                    className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all shrink-0"
+                                > 
+                                    <ChevronLeft size={24} /> 
+                                </button>
+                                <div className="min-w-0">
+                                    <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate">
+                                        {lists.find(l => l.id === editingListId)?.name}
+                                    </h2>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-slate-400 font-medium">Героев: {getCleanHeroes(editorHeroes).length}</span>
+                                        {updatedListIds?.has(editingListId) && (
+                                            <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">
+                                                Обновлен
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex items-center justify-between mt-1">
-                                <button onClick={() => { if (!isReadOnly) { setEditorIsGroupable(!editorIsGroupable); triggerHaptic(10); } }} disabled={isReadOnly} className={`mr-2 flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] sm:text-xs font-bold transition-all border ${editorIsGroupable ? 'bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700'} ${isReadOnly ? 'opacity-70' : ''}`}> <SquareStack size={14} className="shrink-0" /> <span className="truncate">{editorIsGroupable ? 'В группе' : 'Не в группе'}</span> <div className={`w-2 h-2 rounded-full ml-auto shrink-0 ${editorIsGroupable ? 'bg-primary-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`} /> </button>
-                                <div className="flex gap-2 shrink-0">
-                                    <button onClick={() => { setIsStatsModalOpen(true); triggerHaptic(10); }} className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform"> <BarChart3 size={18} /> </button>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-1.5">
                                     <button 
-                                        ref={sortButtonRef}
                                         onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); triggerHaptic(10); }} 
-                                        className={`w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
+                                        className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
                                     > 
                                         {heroSortType === 'name' ? (
                                             heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />
@@ -747,10 +762,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                         )} 
                                     </button>
                                     {!isReadOnly ? (
-                                        <button onClick={handleSaveEditor} className="h-8 sm:h-9 px-3 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform"> <Save size={16} /> <span>Сохранить</span> </button>
+                                        <button onClick={handleSaveEditor} className="h-11 min-h-[44px] px-4 flex items-center justify-center gap-2 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/20 active:scale-95 transition-transform"> <Save size={16} /> <span>Сохранить</span> </button>
                                     ) : (
                                         !isPermanentlyReadOnly && (
-                                            <button onClick={() => { setIsEditMode(true); triggerHaptic(10); }} className="h-8 sm:h-9 px-3 sm:px-4 flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-transform"> <Edit2 size={16} /> <span>Редактировать</span> </button>
+                                            <button onClick={() => { setIsEditMode(true); triggerHaptic(10); }} className="h-11 min-h-[44px] px-4 flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-transform"> <Edit2 size={16} /> <span>Редактировать</span> </button>
                                         )
                                     )}
                                 </div>
@@ -763,7 +778,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                 onClick={onClose} 
                                 aria-label="Закрыть списки"
                                 data-testid="lists-close-btn"
-                                className="absolute left-0 p-2 -ml-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
+                                className="absolute left-0 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all"
                             > 
                                 <ChevronLeft size={24} /> 
                             </button>

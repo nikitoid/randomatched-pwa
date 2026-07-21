@@ -6,12 +6,32 @@
 body {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
   background-color: rgb(248 250 252);
   transition: background-color 300ms, background-image 300ms;
 }
 
 .dark body {
   background-color: rgb(2 6 23);
+}
+
+/* Mobile Touch & PWA Utilities */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.active-press {
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.active-press:active {
+  transform: scale(0.96);
+}
+
+.overscroll-contain {
+  overscroll-behavior: contain;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
