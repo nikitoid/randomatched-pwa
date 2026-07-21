@@ -5,15 +5,22 @@ import { waitForAppReady } from '../helpers/test-data';
 const MOCK_HISTORY = [
     {
         id: 'match-1',
-        timestamp: Date.now() - 10000,
+        timestamp: Date.now() - 15000,
         team1: [{ name: 'Алекс', heroName: 'Герой S+', kills: 5 }, { name: 'Борис', heroName: 'Герой S-', kills: 1 }],
         team2: [{ name: 'Виктор', heroName: 'Герой A+', kills: 0 }, { name: 'Григорий', heroName: 'Герой A-', kills: 0 }],
         winner: 'team1'
     },
     {
         id: 'match-2',
-        timestamp: Date.now() - 5000,
+        timestamp: Date.now() - 10000,
         team1: [{ name: 'Алекс', heroName: 'Герой S+', kills: 3 }, { name: 'Борис', heroName: 'Герой S-', kills: 1 }],
+        team2: [{ name: 'Виктор', heroName: 'Герой A+', kills: 0 }, { name: 'Григорий', heroName: 'Герой A-', kills: 0 }],
+        winner: 'team1'
+    },
+    {
+        id: 'match-3',
+        timestamp: Date.now() - 5000,
+        team1: [{ name: 'Алекс', heroName: 'Герой S+', kills: 4 }, { name: 'Борис', heroName: 'Герой S-', kills: 1 }],
         team2: [{ name: 'Виктор', heroName: 'Герой A+', kills: 0 }, { name: 'Григорий', heroName: 'Герой A-', kills: 0 }],
         winner: 'team1'
     }
