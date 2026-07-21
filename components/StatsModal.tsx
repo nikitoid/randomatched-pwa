@@ -1256,7 +1256,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
                     <div
                         ref={contentContainerRef}
-                        className={`overflow-y-auto flex-1 no-scrollbar touch-pan-y ${activeTab === 'matches' || activeTab === 'heroes' || activeTab === 'players' || selectedPlayer || selectedHero ? 'p-0' : 'p-4'}`}
+                        className="overflow-y-auto flex-1 no-scrollbar touch-pan-y p-0"
                     >
                         {activeTab === 'overview' && (
                             <StatsOverviewTab
