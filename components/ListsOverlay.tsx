@@ -723,7 +723,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
 
             <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-opacity duration-200 ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}>
-                <div className="px-4 py-3 pt-safe-area-top touch-manipulation">
+                <div 
+                    className="px-4 py-3 touch-manipulation"
+                    style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
+                >
                     {editingListId ? (
                         <>
                             <div className="flex items-center justify-between gap-2 min-h-[44px]">

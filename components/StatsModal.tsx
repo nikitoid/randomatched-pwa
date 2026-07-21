@@ -909,7 +909,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     className={`bg-slate-50 dark:bg-slate-950 bg-grid-pattern w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
                     onClick={e => e.stopPropagation()}
                 >
-                    <div className="p-4 pt-safe-area-top border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl z-10 sticky top-0 touch-manipulation">
+                    <div 
+                        className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl z-10 sticky top-0 touch-manipulation"
+                        style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
+                    >
                         <h2
                             className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 select-none active:scale-95 transition-transform"
                             data-testid="stats-title"

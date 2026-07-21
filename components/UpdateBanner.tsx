@@ -15,7 +15,10 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({
     if (!isVisible) return null;
 
     return (
-        <div className="fixed top-0 left-0 w-full pt-safe-area-top z-[70] p-4 animate-in slide-in-from-top duration-500">
+        <div 
+            className="fixed top-0 left-0 w-full z-[70] p-4 animate-in slide-in-from-top duration-500"
+            style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
+        >
             <div className="max-w-md mx-auto bg-primary-600 rounded-2xl shadow-xl shadow-primary-600/30 p-4 flex items-center gap-4 text-white">
                 <div className="bg-white/20 p-2 rounded-full shrink-0"><Download size={20} /></div>
                 <div className="flex-1 min-w-0">

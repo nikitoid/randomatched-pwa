@@ -221,7 +221,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     return (
         <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
             <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300">
-                <div className="px-4 py-3 pt-safe-area-top">
+                <div 
+                    className="px-4 py-3"
+                    style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
+                >
                     <div className="relative flex items-center justify-center w-full min-h-[44px] touch-manipulation">
                         <button
                             onClick={onClose}

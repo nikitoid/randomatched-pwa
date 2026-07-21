@@ -108,18 +108,12 @@ body {
 }
 
 /* Modern safe area spacing */
-.safe-area-top,
-.pt-safe-area-top {
+.safe-area-top {
   padding-top: env(safe-area-inset-top);
 }
 
-.safe-area-bottom,
-.pb-safe-area-bottom {
+.safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
-}
-
-.top-safe-area-top {
-  top: env(safe-area-inset-top);
 }
 
 /* Default Variables (Indigo) - fallback */
