@@ -171,9 +171,18 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Поиск по дате..."
-                            className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors"
+                            className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors"
                         />
                         <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        {search && (
+                            <button
+                                onClick={() => setSearch('')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 active:text-slate-600 dark:active:text-slate-200 transition-colors"
+                                aria-label="Очистить поиск"
+                            >
+                                <X size={18} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
