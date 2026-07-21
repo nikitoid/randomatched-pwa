@@ -64,22 +64,26 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
             .slice(0, 5)
         : [];
 
+    const filledNames = playerNames.map(n => n.trim()).filter(Boolean);
+    const hasFilledNames = filledNames.length > 0;
+    const filledNamesText = hasFilledNames ? filledNames.join(', ') : 'Не заполнены';
+
     return (
         <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-50' : 'z-20'}`}>
             <button
                 onClick={() => setIsNamesOpen(!isNamesOpen)}
                 className={`w-full p-4 min-h-[64px] flex items-center justify-between text-left bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-all duration-300 touch-manipulation ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm active:scale-[0.99]'}`}
             >
-                <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${filledNamesCount > 0 ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                    <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${hasFilledNames ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                         <Users size={20} />
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                         <span className="block font-heading text-sm font-bold text-slate-900 dark:text-white leading-tight">Имена игроков</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{filledNamesCount > 0 ? `Заполнено: ${filledNamesCount}` : 'Не заполнены'}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate block">{filledNamesText}</span>
                     </div>
                 </div>
-                <div className={`text-slate-300 transition-transform duration-300 ${isNamesOpen ? 'rotate-180' : ''}`}>
+                <div className={`shrink-0 text-slate-300 transition-transform duration-300 ${isNamesOpen ? 'rotate-180' : ''}`}>
                     <ChevronDown size={20} />
                 </div>
             </button>
