@@ -888,7 +888,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 isOpen={showInfo}
                 onClose={() => setShowInfo(false)}
                 title={getModeTitle()}
-                subtitle={getModeDescription()}
+                subtitle="Режим генерации героев"
                 icon={<Info size={20} className="text-primary-600 dark:text-primary-400" />}
                 maxWidth="sm"
                 variant="auto"
@@ -898,14 +898,20 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     <button onClick={() => setShowInfo(false)} className="w-full py-3 font-bold text-white bg-primary-600 rounded-xl">Понятно</button>
                 )}
             >
-                <div className="pt-1 text-left w-full">
-                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                        <History size={12} className={prioritizeUnplayed ? "text-primary-500" : "text-slate-400"} />
-                        Приоритет истории: {prioritizeUnplayed ? "Включен" : "Выключен"}
-                    </h4>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
-                        {getPrioritizeUnplayedDescription()}
+                <div className="space-y-4 text-left w-full">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {getModeDescription()}
                     </p>
+
+                    <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                            <History size={12} className={prioritizeUnplayed ? "text-primary-500" : "text-slate-400"} />
+                            Приоритет истории: {prioritizeUnplayed ? "Включен" : "Выключен"}
+                        </h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            {getPrioritizeUnplayedDescription()}
+                        </p>
+                    </div>
                 </div>
             </BaseModal>
 

@@ -22,10 +22,10 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
         <button
             onClick={onResetAndSync}
             disabled={!isOnline}
-            className={`w-full px-4 py-3.5 font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2 min-h-[48px] shadow-lg shadow-red-500/20
+            className={`w-full px-4 py-3.5 font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2 min-h-[48px] shadow-sm
                 ${!isOnline
                     ? 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed shadow-none'
-                    : 'bg-red-500 hover:bg-red-600 active:bg-red-700 text-white active:scale-95'
+                    : 'bg-[#e5484d] hover:bg-[#d93d42] active:bg-[#c63439] text-white active:scale-95'
                 }
             `}
         >
@@ -42,7 +42,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
             description="Текущее распределение команд, имена игроков и временные списки будут удалены."
             confirmText="Сбросить"
             cancelText="Отмена"
-            confirmVariant="danger"
+            confirmVariant="danger-subtle"
             icon={<RotateCcw size={24} />}
             extraAction={extraSyncAction}
             modalId="reset-confirm-modal"

@@ -10,7 +10,7 @@ export interface ConfirmModalProps {
   description?: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
-  confirmVariant?: 'danger' | 'warning' | 'primary';
+  confirmVariant?: 'danger' | 'danger-subtle' | 'warning' | 'primary';
   icon?: React.ReactNode;
   extraAction?: React.ReactNode;
   modalId?: string;
@@ -40,7 +40,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const getIconContainerStyle = () => {
     switch (confirmVariant) {
       case 'danger':
-        return 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400';
+      case 'danger-subtle':
+        return 'bg-red-100/80 dark:bg-[#e5484d]/20 text-[#e5484d] dark:text-[#ff6b6b]';
       case 'primary':
         return 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400';
       case 'warning':
@@ -52,6 +53,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const getDefaultIcon = () => {
     switch (confirmVariant) {
       case 'danger':
+      case 'danger-subtle':
         return <AlertCircle size={24} />;
       case 'primary':
         return <Info size={24} />;
@@ -64,7 +66,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const getConfirmButtonStyle = () => {
     switch (confirmVariant) {
       case 'danger':
-        return 'bg-red-600 hover:bg-red-700 active:bg-red-800 text-white shadow-lg shadow-red-500/20';
+        return 'bg-[#e5484d] hover:bg-[#d93d42] active:bg-[#c63439] text-white shadow-sm';
+      case 'danger-subtle':
+        return 'bg-red-50 hover:bg-red-100 active:bg-red-200 text-[#e5484d] dark:bg-[#e5484d]/15 dark:hover:bg-[#e5484d]/25 dark:active:bg-[#e5484d]/35 dark:text-[#ff6b6b] border border-red-200/60 dark:border-[#e5484d]/30';
       case 'primary':
         return 'bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-lg shadow-primary-500/20';
       case 'warning':
