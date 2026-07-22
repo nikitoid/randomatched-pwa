@@ -56,37 +56,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
     const isInvalidDateRange = Boolean(filterStartDate && filterEndDate && filterEndDate < filterStartDate);
 
     return (
-        <div className="border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900 select-none">
-            <button
-                onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
-                className="w-full px-4 py-3 min-h-[48px] flex items-center justify-between text-xs font-bold text-slate-500 active:bg-slate-100 dark:active:bg-slate-800/40 transition-colors transform-gpu"
-            >
-                <div className="flex items-center gap-2 min-w-0 pr-2">
-                    <Calendar size={16} className={isInvalidDateRange ? 'text-rose-500 shrink-0' : isFiltered ? 'text-primary-500 shrink-0' : 'text-slate-400 shrink-0'} />
-                    <span className="shrink-0">Период: </span>
-                    <span className={`truncate ${isInvalidDateRange ? 'text-rose-600 dark:text-rose-400 font-extrabold' : isFiltered ? 'text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-300 font-bold'}`}>
-                        {formatPeriodLabel()}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                    {!isDefaultFilterState && (
-                        <span
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleResetDateFilter();
-                            }}
-                            data-testid="reset-date-filter-btn"
-                            className="px-2.5 py-1 min-h-[32px] rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 active:bg-slate-200 dark:active:bg-slate-700 transition-colors flex items-center justify-center cursor-pointer"
-                        >
-                            Сбросить
-                        </span>
-                    )}
-                    <div className="p-1 text-slate-400">
-                        {isDateFilterOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    </div>
-                </div>
-            </button>
-
+        <div className="shrink-0 bg-white dark:bg-slate-900 select-none">
             <div
                 className="grid transition-all duration-300 ease-in-out transform-gpu will-change-[grid-template-rows]"
                 style={{
@@ -96,7 +66,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                 }}
             >
                 <div className="overflow-hidden">
-                    <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800/60 space-y-3.5">
+                    <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800/60 space-y-3.5">
                         
                         {/* Seasons Selection Pill Bar */}
                         <div className="space-y-2">

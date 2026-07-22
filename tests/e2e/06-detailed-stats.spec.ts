@@ -61,21 +61,28 @@ test.describe('Детальная статистика', () => {
         await expect(app.statsModal).toBeHidden();
     });
 
-    test('на вкладке "Игроки" должна быть кнопка справки и открываться модалка алгоритма эффективности', async ({ app }) => {
+    test('на вкладке "Игроки" из модального окна расшифровки можно открыть подробную справку об алгоритме эффективности', async ({ app }) => {
         await app.statsButton.click();
         await expect(app.statsModal).toBeVisible();
 
         // Переходим на вкладку "Игроки"
         await app.page.locator('button:has-text("Игроки")').click();
 
-        // Кнопка справки должна быть видна
-        const infoBtn = app.page.locator('[data-testid="stats-efficiency-info-btn"]');
+        // Кликаем по кнопке "Расшифровка расчёта" над списком игроков
+        await app.page.locator('button:has-text("Расшифровка расчёта")').click();
+
+        // Модалка расшифровки должна быть видна
+        const breakdownModal = app.page.locator('[data-testid="stats-efficiency-breakdown-modal"]');
+        await expect(breakdownModal).toBeVisible();
+
+        // Находим кнопку "Подробнее"
+        const infoBtn = breakdownModal.locator('[data-testid="stats-efficiency-info-btn"]');
         await expect(infoBtn).toBeVisible();
 
-        // Кликаем по кнопке справки
+        // Кликаем по кнопке "Подробнее"
         await infoBtn.click();
 
-        // Модалка должна открыться
+        // Модалка алгоритма должна открыться
         const modal = app.page.locator('[data-testid="stats-efficiency-modal"]');
         await expect(modal).toBeVisible();
         await expect(modal.locator('text=Алгоритм эффективности')).toBeVisible();
@@ -84,11 +91,6 @@ test.describe('Детальная статистика', () => {
         // Закрываем модалку по кнопке "Понятно"
         await modal.locator('button:has-text("Понятно")').click();
         await expect(modal).toBeHidden();
-
-        // Сменяем сортировку на "По винрейту" - кнопка справки должна скрыться
-        await app.page.locator('button[aria-label="Сортировка"]').click();
-        await app.page.locator('button:has-text("По винрейту")').click();
-        await expect(infoBtn).toBeHidden();
     });
 
     test('на вкладке "Игроки" должен отображаться бейдж "Ебака парень" для топ-киллера', async ({ app }) => {

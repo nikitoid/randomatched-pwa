@@ -315,6 +315,46 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [matchSearch, setMatchSearch] = useState('');
     const [visibleMatchesCount, setVisibleMatchesCount] = useState(15);
 
+    // Collapsible Search State
+    const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    const currentSearchState = useMemo(() => {
+        if (activeTab === 'players') {
+            return {
+                value: playerSearch,
+                onChange: setPlayerSearch,
+                placeholder: 'Поиск игрока...'
+            };
+        } else if (activeTab === 'heroes') {
+            return {
+                value: heroSearch,
+                onChange: setHeroSearch,
+                placeholder: 'Поиск героя...'
+            };
+        } else if (activeTab === 'matches') {
+            return {
+                value: matchSearch,
+                onChange: setMatchSearch,
+                placeholder: 'Поиск матча (игрок, герой, дата)'
+            };
+        }
+        return null;
+    }, [activeTab, playerSearch, heroSearch, matchSearch]);
+
+    useEffect(() => {
+        setIsSearchExpanded(false);
+        setPlayerSearch('');
+        setHeroSearch('');
+        setMatchSearch('');
+    }, [activeTab]);
+
+    useEffect(() => {
+        if (isSearchExpanded && searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+    }, [isSearchExpanded]);
+
 
     // Overview Card State
     const [activeOverviewCard, setActiveOverviewCard] = useState(0); // 0 = Streak, 1 = Underdog
@@ -993,6 +1033,307 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     </div>
 
 
+                    {/* Unified Stats Control Toolbar */}
+                    <div className="flex items-center justify-between gap-1.5 px-3 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
+                        {isSearchExpanded && currentSearchState ? (
+                            /* Full-width Search Input Mode */
+                            <div className="flex-1 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="relative flex-1 min-w-0">
+                                    <input
+                                        ref={searchInputRef}
+                                        type="text"
+                                        value={currentSearchState.value}
+                                        onChange={(e) => currentSearchState.onChange(e.target.value)}
+                                        placeholder={currentSearchState.placeholder}
+                                        className="w-full pl-8 pr-8 py-1.5 h-9 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
+                                    />
+                                    <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    {currentSearchState.value && (
+                                        <button
+                                            onClick={() => { currentSearchState.onChange(''); triggerHaptic(10); searchInputRef.current?.focus(); }}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200 p-1"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={() => { setIsSearchExpanded(false); triggerHaptic(10); }}
+                                    className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 active:scale-95 transition-all"
+                                >
+                                    Готово
+                                </button>
+                            </div>
+                        ) : (
+                            /* Compact Mode: Flex-1 Date Pill + Collapsed Search + Right Actions */
+                            <>
+                                {/* Period / Season Filter Pill Button */}
+                                <button
+                                    onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
+                                    className={`h-9 px-2.5 text-xs font-bold rounded-xl flex items-center justify-between gap-1 flex-1 min-w-0 transition-all active:scale-95 border ${
+                                        filterStartDate && filterEndDate && filterEndDate < filterStartDate
+                                            ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-900/30 dark:border-rose-800 dark:text-rose-400'
+                                            : !isDefaultFilterState
+                                                ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400 font-extrabold'
+                                                : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                        <Calendar size={14} className={filterStartDate && filterEndDate && filterEndDate < filterStartDate ? 'text-rose-500 shrink-0' : !isDefaultFilterState ? 'text-primary-500 shrink-0' : 'text-slate-400 shrink-0'} />
+                                        <span className="hidden sm:inline shrink-0 text-slate-400 font-normal">Период: </span>
+                                        <span className="truncate text-left">{formatPeriodLabel()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 ml-1.5 shrink-0">
+                                        {!isDefaultFilterState && (
+                                            <span
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleResetDateFilter();
+                                                    triggerHaptic(10);
+                                                }}
+                                                data-testid="reset-date-filter-btn"
+                                                className="w-6 h-6 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex items-center justify-center active:scale-90"
+                                                title="Сбросить фильтр дат"
+                                                aria-label="Сбросить фильтр дат"
+                                            >
+                                                <X size={13} strokeWidth={2.5} />
+                                            </span>
+                                        )}
+                                        <div className="p-0.5 text-slate-400">
+                                            {isDateFilterOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <div className={`flex items-center gap-1.5 justify-end ${currentSearchState?.value ? 'flex-1 min-w-0' : 'shrink-0'}`}>
+                                    {/* Search Toggle / Active Chip */}
+                                    {currentSearchState && (
+                                        !currentSearchState.value ? (
+                                            <button
+                                                onClick={() => { setIsSearchExpanded(true); triggerHaptic(10); }}
+                                                className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 active:scale-95 transition-all shrink-0"
+                                                aria-label="Поиск"
+                                            >
+                                                <Search size={16} />
+                                            </button>
+                                        ) : (
+                                            <div className="flex items-center gap-1 h-9 px-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800/60 rounded-xl text-xs font-bold text-primary-600 dark:text-primary-400 flex-1 min-w-0">
+                                                <button
+                                                    onClick={() => { setIsSearchExpanded(true); triggerHaptic(10); }}
+                                                    className="flex items-center gap-1.5 min-w-0 flex-1 text-left truncate"
+                                                    aria-label="Редактировать поиск"
+                                                >
+                                                    <Search size={13} className="shrink-0 text-primary-500" />
+                                                    <span className="truncate flex-1">{currentSearchState.value}</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => { currentSearchState.onChange(''); triggerHaptic(10); }}
+                                                    className="w-6 h-6 rounded-md hover:bg-primary-200/60 dark:hover:bg-primary-800/60 text-primary-500 flex items-center justify-center shrink-0 active:scale-90 transition-all"
+                                                    aria-label="Очистить поиск"
+                                                >
+                                                    <X size={13} strokeWidth={2.5} />
+                                                </button>
+                                            </div>
+                                        )
+                                    )}
+
+                                    {/* Tab Specific Action Buttons */}
+                                    {activeTab === 'matches' && (
+                                        <>
+                                            {editMode && deletedHistory.length > 0 && (
+                                                <button
+                                                    onClick={() => { setShowTrashOnly(!showTrashOnly); triggerHaptic(10); }}
+                                                    className={`w-9 h-9 rounded-xl border transition-colors flex items-center justify-center relative ${showTrashOnly ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-900/50' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
+                                                    aria-label={showTrashOnly ? 'Все матчи' : `Корзина (${deletedHistory.length})`}
+                                                >
+                                                    <Trash2 size={16} />
+                                                    {!showTrashOnly && (
+                                                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white">
+                                                            {deletedHistory.length}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            )}
+                                            {editMode && (
+                                                <button
+                                                    onClick={openAddMatch}
+                                                    className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 active:scale-95 transition-transform"
+                                                    aria-label="Добавить матч"
+                                                >
+                                                    <Plus size={16} />
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => { setEditMode(!editMode); setShowTrashOnly(false); triggerHaptic(10); }}
+                                                className={`w-9 h-9 rounded-xl border transition-colors flex items-center justify-center ${editMode ? 'bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
+                                                aria-label={editMode ? 'Готово' : 'Редактировать'}
+                                            >
+                                                {editMode ? <Check size={16} /> : <Edit2 size={16} />}
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {activeTab === 'heroes' && !selectedHero && (
+                                        <div className="relative shrink-0">
+                                            <button
+                                                ref={(el) => {
+                                                    if (el && isSortMenuOpen && !dropdownPosition) {
+                                                        const rect = el.getBoundingClientRect();
+                                                        setDropdownPosition({
+                                                            top: rect.bottom + 8,
+                                                            left: rect.right - 192,
+                                                            width: 192
+                                                        });
+                                                    }
+                                                }}
+                                                onClick={(e) => {
+                                                    if (!isSortMenuOpen) {
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setDropdownPosition({
+                                                            top: rect.bottom + 8,
+                                                            left: rect.right - 192,
+                                                            width: 192
+                                                        });
+                                                    }
+                                                    setIsSortMenuOpen(!isSortMenuOpen);
+                                                    triggerHaptic(10);
+                                                }}
+                                                className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${isSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                                                aria-label="Сортировка"
+                                            >
+                                                {heroSort === 'winrate' && <TrendingUp size={16} />}
+                                                {heroSort === 'matches' && <BarChart3 size={16} />}
+                                                {heroSort === 'az' && <ArrowDownAZ size={16} />}
+                                                {heroSort === 'za' && <ArrowUpAZ size={16} />}
+                                                {heroSort === 'pop' && <BarChart3 size={16} />}
+                                            </button>
+
+                                            {/* Sort Dropdown Portal */}
+                                            {isSortMenuOpen && dropdownPosition && createPortal(
+                                                <>
+                                                    <div className="fixed inset-0 z-[9990]" onClick={() => setIsSortMenuOpen(false)}></div>
+                                                    <div
+                                                        className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
+                                                        style={{
+                                                            top: dropdownPosition.top,
+                                                            left: dropdownPosition.left,
+                                                            width: dropdownPosition.width
+                                                        }}
+                                                    >
+                                                        <button onClick={() => { setHeroSort('winrate'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
+                                                            {heroSort === 'winrate' && <Check size={14} />}
+                                                        </button>
+                                                        <button onClick={() => { setHeroSort('matches'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
+                                                            {heroSort === 'matches' && <Check size={14} />}
+                                                        </button>
+                                                        <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
+                                                        <button onClick={() => { setHeroSort('az'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
+                                                            {heroSort === 'az' && <Check size={14} />}
+                                                        </button>
+                                                        <button onClick={() => { setHeroSort('za'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
+                                                            {heroSort === 'za' && <Check size={14} />}
+                                                        </button>
+                                                    </div>
+                                                </>,
+                                                document.body
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {activeTab === 'players' && !selectedPlayer && (
+                                        <div className="relative shrink-0">
+                                            <button
+                                                ref={(el) => {
+                                                    if (el && isPlayerSortMenuOpen && !playerDropdownPosition) {
+                                                        const rect = el.getBoundingClientRect();
+                                                        setPlayerDropdownPosition({
+                                                            top: rect.bottom + 8,
+                                                            left: rect.right - 192,
+                                                            width: 192
+                                                        });
+                                                    }
+                                                }}
+                                                onClick={(e) => {
+                                                    if (!isPlayerSortMenuOpen) {
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setPlayerDropdownPosition({
+                                                            top: rect.bottom + 8,
+                                                            left: rect.right - 192,
+                                                            width: 192
+                                                        });
+                                                    }
+                                                    setIsPlayerSortMenuOpen(!isPlayerSortMenuOpen);
+                                                    triggerHaptic(10);
+                                                }}
+                                                className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${isPlayerSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                                                aria-label="Сортировка"
+                                            >
+                                                {playerSort === 'efficiency' && <TrendingUp size={16} />}
+                                                {playerSort === 'winrate' && <TrendingUp size={16} />}
+                                                {playerSort === 'matches' && <BarChart3 size={16} />}
+                                                {playerSort === 'kills' && <Skull size={16} />}
+                                                {playerSort === 'killPercent' && <Percent size={16} />}
+                                                {playerSort === 'az' && <ArrowDownAZ size={16} />}
+                                                {playerSort === 'za' && <ArrowUpAZ size={16} />}
+                                            </button>
+
+                                            {/* Player Sort Dropdown Portal */}
+                                            {isPlayerSortMenuOpen && playerDropdownPosition && createPortal(
+                                                <>
+                                                    <div className="fixed inset-0 z-[9990]" onClick={() => setIsPlayerSortMenuOpen(false)}></div>
+                                                    <div
+                                                        className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
+                                                        style={{
+                                                            top: playerDropdownPosition.top,
+                                                            left: playerDropdownPosition.left,
+                                                            width: playerDropdownPosition.width
+                                                        }}
+                                                    >
+                                                        <button onClick={() => { setPlayerSort('efficiency'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'efficiency' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><TrendingUp size={14} /> По эффективности</span>
+                                                            {playerSort === 'efficiency' && <Check size={14} />}
+                                                        </button>
+                                                        <button onClick={() => { setPlayerSort('winrate'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
+                                                            {playerSort === 'winrate' && <Check size={14} />}
+                                                        </button>
+                                                        <button onClick={() => { setPlayerSort('matches'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
+                                                            {playerSort === 'matches' && <Check size={14} />}
+                                                        </button>
+                                                        <button onClick={() => { setPlayerSort('kills'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'kills' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><Skull size={14} /> По убийствам</span>
+                                                            {playerSort === 'kills' && <Check size={14} />}
+                                                        </button>
+                                                        <button onClick={() => { setPlayerSort('killPercent'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'killPercent' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><Percent size={14} /> По % убийств</span>
+                                                            {playerSort === 'killPercent' && <Check size={14} />}
+                                                        </button>
+                                                        <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
+                                                        <button onClick={() => { setPlayerSort('az'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
+                                                            {playerSort === 'az' && <Check size={14} />}
+                                                        </button>
+                                                        <button onClick={() => { setPlayerSort('za'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                            <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
+                                                            {playerSort === 'za' && <Check size={14} />}
+                                                        </button>
+                                                    </div>
+                                                </>,
+                                                document.body
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Date Filter Collapsible Panel */}
                     <StatsDateFilter
                         isDateFilterOpen={isDateFilterOpen}
                         setIsDateFilterOpen={setIsDateFilterOpen}
@@ -1016,276 +1357,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         onSelectSeason={handleSelectSeason}
                         onOpenSeasonsManager={() => setIsSeasonsManagerOpen(true)}
                     />
-
-                    {/* Matches Tab Action Bar - Sticky under tabs */}
-                    {activeTab === 'matches' && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-2 duration-300">
-                            {/* Поле поиска матчей */}
-                            <div className="relative flex-1">
-                                <input
-                                    type="text"
-                                    value={matchSearch}
-                                    onChange={(e) => setMatchSearch(e.target.value)}
-                                    placeholder="Поиск матча (игрок, герой, дата)"
-                                    className="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
-                                />
-                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                {matchSearch && (
-                                    <button onClick={() => { setMatchSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200">
-                                        <X size={12} />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Кнопки действий */}
-                            <div className="flex items-center gap-1.5 shrink-0">
-                                {editMode && deletedHistory.length > 0 && (
-                                    <button
-                                        onClick={() => { setShowTrashOnly(!showTrashOnly); triggerHaptic(10); }}
-                                        className={`p-1.5 rounded-xl border transition-colors flex items-center justify-center relative ${showTrashOnly ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-900/50' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
-                                        aria-label={showTrashOnly ? 'Все матчи' : `Корзина (${deletedHistory.length})`}
-                                    >
-                                        <Trash2 size={16} />
-                                        {!showTrashOnly && (
-                                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white">
-                                                {deletedHistory.length}
-                                            </span>
-                                        )}
-                                    </button>
-                                )}
-                                {!editMode && (
-                                    <button
-                                        onClick={openAddMatch}
-                                        className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 active:scale-95 transition-transform"
-                                        aria-label="Добавить матч"
-                                    >
-                                        <Plus size={16} />
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => { setEditMode(!editMode); setShowTrashOnly(false); triggerHaptic(10); }}
-                                    className={`p-1.5 rounded-xl border transition-colors flex items-center justify-center ${editMode ? 'bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
-                                    aria-label={editMode ? 'Готово' : 'Редактировать'}
-                                >
-                                    {editMode ? <Check size={16} /> : <Edit2 size={16} />}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Heroes Tab Action Bar - Sticky under tabs */}
-                    {activeTab === 'heroes' && !selectedHero && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-2 duration-300">
-                            {/* Поле поиска героев */}
-                            <div className="relative flex-1">
-                                <input
-                                    type="text"
-                                    value={heroSearch}
-                                    onChange={(e) => setHeroSearch(e.target.value)}
-                                    placeholder="Поиск героя..."
-                                    className="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
-                                />
-                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                {heroSearch && (
-                                    <button onClick={() => { setHeroSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200">
-                                        <X size={12} />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Кнопка сортировки */}
-                            <div className="relative shrink-0">
-                                <button
-                                    ref={(el) => {
-                                        if (el && isSortMenuOpen && !dropdownPosition) {
-                                            const rect = el.getBoundingClientRect();
-                                            setDropdownPosition({
-                                                top: rect.bottom + 8,
-                                                left: rect.right - 192,
-                                                width: 192
-                                            });
-                                        }
-                                    }}
-                                    onClick={(e) => {
-                                        if (!isSortMenuOpen) {
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            setDropdownPosition({
-                                                top: rect.bottom + 8,
-                                                left: rect.right - 192,
-                                                width: 192
-                                            });
-                                        }
-                                        setIsSortMenuOpen(!isSortMenuOpen);
-                                        triggerHaptic(10);
-                                    }}
-                                    className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-colors ${isSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                                    aria-label="Сортировка"
-                                >
-                                    {heroSort === 'winrate' && <TrendingUp size={16} />}
-                                    {heroSort === 'matches' && <BarChart3 size={16} />}
-                                    {heroSort === 'az' && <ArrowDownAZ size={16} />}
-                                    {heroSort === 'za' && <ArrowUpAZ size={16} />}
-                                    {heroSort === 'pop' && <BarChart3 size={16} />}
-                                </button>
-
-                                {/* Sort Dropdown Portal */}
-                                {isSortMenuOpen && dropdownPosition && createPortal(
-                                    <>
-                                        <div className="fixed inset-0 z-[9990]" onClick={() => setIsSortMenuOpen(false)}></div>
-                                        <div
-                                            className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
-                                            style={{
-                                                top: dropdownPosition.top,
-                                                left: dropdownPosition.left,
-                                                width: dropdownPosition.width
-                                            }}
-                                        >
-                                            <button onClick={() => { setHeroSort('winrate'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
-                                                {heroSort === 'winrate' && <Check size={14} />}
-                                            </button>
-                                            <button onClick={() => { setHeroSort('matches'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
-                                                {heroSort === 'matches' && <Check size={14} />}
-                                            </button>
-                                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
-                                            <button onClick={() => { setHeroSort('az'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
-                                                {heroSort === 'az' && <Check size={14} />}
-                                            </button>
-                                            <button onClick={() => { setHeroSort('za'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
-                                                {heroSort === 'za' && <Check size={14} />}
-                                            </button>
-                                        </div>
-                                    </>,
-                                    document.body
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Players Tab Action Bar - Sticky under tabs */}
-                    {activeTab === 'players' && !selectedPlayer && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-2 duration-300">
-                            {/* Поле поиска игроков */}
-                            <div className="relative flex-1">
-                                <input
-                                    type="text"
-                                    value={playerSearch}
-                                    onChange={(e) => setPlayerSearch(e.target.value)}
-                                    placeholder="Поиск игрока..."
-                                    className="w-full pl-8 pr-8 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
-                                />
-                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                {playerSearch && (
-                                    <button onClick={() => { setPlayerSearch(''); triggerHaptic(10); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200">
-                                        <X size={12} />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Кнопка справки об алгоритме эффективности (только при сортировке по эффективности) */}
-                            {playerSort === 'efficiency' && (
-                                <button
-                                    data-testid="stats-efficiency-info-btn"
-                                    onClick={() => {
-                                        setShowEfficiencyInfo(true);
-                                        triggerHaptic(10);
-                                    }}
-                                    className="w-8 h-8 flex items-center justify-center rounded-xl border bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 active:bg-primary-50 active:border-primary-200 active:text-primary-600 dark:active:bg-primary-900/30 dark:active:border-primary-800 dark:active:text-primary-400 transition-colors shrink-0 animate-in fade-in zoom-in-95 duration-150"
-                                    title="Информация об алгоритме эффективности"
-                                    aria-label="Информация об алгоритме эффективности"
-                                >
-                                    <HelpCircle size={16} />
-                                </button>
-                            )}
-
-                            {/* Кнопка сортировки */}
-                            <div className="relative shrink-0">
-                                <button
-                                    ref={(el) => {
-                                        if (el && isPlayerSortMenuOpen && !playerDropdownPosition) {
-                                            const rect = el.getBoundingClientRect();
-                                            setPlayerDropdownPosition({
-                                                top: rect.bottom + 8,
-                                                left: rect.right - 192,
-                                                width: 192
-                                            });
-                                        }
-                                    }}
-                                    onClick={(e) => {
-                                        if (!isPlayerSortMenuOpen) {
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            setPlayerDropdownPosition({
-                                                top: rect.bottom + 8,
-                                                left: rect.right - 192,
-                                                width: 192
-                                            });
-                                        }
-                                        setIsPlayerSortMenuOpen(!isPlayerSortMenuOpen);
-                                        triggerHaptic(10);
-                                    }}
-                                    className={`w-8 h-8 flex items-center justify-center rounded-xl border transition-colors ${isPlayerSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                                    aria-label="Сортировка"
-                                >
-                                    {playerSort === 'efficiency' && <TrendingUp size={16} />}
-                                    {playerSort === 'winrate' && <TrendingUp size={16} />}
-                                    {playerSort === 'matches' && <BarChart3 size={16} />}
-                                    {playerSort === 'kills' && <Skull size={16} />}
-                                    {playerSort === 'killPercent' && <Percent size={16} />}
-                                    {playerSort === 'az' && <ArrowDownAZ size={16} />}
-                                    {playerSort === 'za' && <ArrowUpAZ size={16} />}
-                                </button>
-
-                                {/* Player Sort Dropdown Portal */}
-                                {isPlayerSortMenuOpen && playerDropdownPosition && createPortal(
-                                    <>
-                                        <div className="fixed inset-0 z-[9990]" onClick={() => setIsPlayerSortMenuOpen(false)}></div>
-                                        <div
-                                            className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
-                                            style={{
-                                                top: playerDropdownPosition.top,
-                                                left: playerDropdownPosition.left,
-                                                width: playerDropdownPosition.width
-                                            }}
-                                        >
-                                            <button onClick={() => { setPlayerSort('efficiency'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'efficiency' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По эффективности</span>
-                                                {playerSort === 'efficiency' && <Check size={14} />}
-                                            </button>
-                                            <button onClick={() => { setPlayerSort('winrate'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
-                                                {playerSort === 'winrate' && <Check size={14} />}
-                                            </button>
-                                            <button onClick={() => { setPlayerSort('matches'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
-                                                {playerSort === 'matches' && <Check size={14} />}
-                                            </button>
-                                            <button onClick={() => { setPlayerSort('kills'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'kills' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><Skull size={14} /> По убийствам</span>
-                                                {playerSort === 'kills' && <Check size={14} />}
-                                            </button>
-                                            <button onClick={() => { setPlayerSort('killPercent'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'killPercent' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><Percent size={14} /> По % убийств</span>
-                                                {playerSort === 'killPercent' && <Check size={14} />}
-                                            </button>
-                                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
-                                            <button onClick={() => { setPlayerSort('az'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
-                                                {playerSort === 'az' && <Check size={14} />}
-                                            </button>
-                                            <button onClick={() => { setPlayerSort('za'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
-                                                {playerSort === 'za' && <Check size={14} />}
-                                            </button>
-                                        </div>
-                                    </>,
-                                    document.body
-                                )}
-                            </div>
-                        </div>
-                    )}
 
                     <div
                         ref={contentContainerRef}
@@ -1802,9 +1873,23 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 no-scrollbar">
                             {/* Simple Algorithm Explanation */}
                             <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/80 rounded-2xl text-xs text-slate-600 dark:text-slate-300 space-y-2 shadow-sm dark:shadow-slate-950/40 shadow-slate-200/50">
-                                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-primary-500"></span>
-                                    Алгоритм Уилсона
+                                <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-primary-500"></span>
+                                        <span>Алгоритм Уилсона</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        data-testid="stats-efficiency-info-btn"
+                                        onClick={() => {
+                                            setShowEfficiencyInfo(true);
+                                            triggerHaptic(10);
+                                        }}
+                                        className="px-2.5 py-1 text-[11px] font-extrabold rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/20 active:scale-95 transition-all flex items-center gap-1 shrink-0"
+                                    >
+                                        <HelpCircle size={12} />
+                                        <span>Подробнее</span>
+                                    </button>
                                 </div>
                                 <p className="leading-relaxed">
                                     Рейтинг рассчитывается по математическому <strong>алгоритму Уилсона</strong> с учётом процента побед, количества игр и их свежести.
