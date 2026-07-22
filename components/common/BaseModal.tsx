@@ -179,7 +179,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     };
   }, [isRendered, isInputFocused]);
 
-  // Сброс возможного паразитного скролла страницы и отслеживание фокуса инпутов
+  // Сброс возможного паразитного скролла страницы и прокрутка сфокусированного инпута к верхнему краю
   useEffect(() => {
     if (!isRendered) return;
 
@@ -190,9 +190,17 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         if (window.scrollY !== 0) {
           window.scrollTo(0, 0);
         }
-        setTimeout(() => {
-          target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }, 100);
+
+        const scrollToTop = () => {
+          try {
+            target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+          } catch {
+            target.scrollIntoView(true);
+          }
+        };
+
+        setTimeout(scrollToTop, 50);
+        setTimeout(scrollToTop, 250);
       }
     };
 
