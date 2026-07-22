@@ -334,7 +334,7 @@ test.describe('Управление сезонами и статистика', (
         await expect(page.getByTestId('seasons-manager-modal').getByText('Сезон под удаление')).toBeVisible();
     });
 
-    test('кликая по крестику шапки во время создания сезона закрывается только форма, сохраняя окно сезонов и статистику', async ({ app, page }) => {
+    test('отмена формы во время создания сезона закрывает только форму, сохраняя окно сезонов и статистику', async ({ app, page }) => {
         await page.goto('/');
         await waitForAppReady(page);
 
@@ -350,8 +350,11 @@ test.describe('Управление сезонами и статистика', (
         await page.click('button:has-text("Создать новый сезон")');
         await expect(page.locator('h3:has-text("Новый сезон")')).toBeVisible();
 
-        // Кликаем по кнопке-крестику в шапке окна формы
-        await page.getByTestId('close-season-form-btn').click();
+        // Кнопка-крестик в шапке окна формы отсутствует в модалке-шторке
+        await expect(page.getByTestId('close-season-form-btn')).toBeHidden();
+
+        // Нажимаем "Отмена" в форме
+        await page.getByTestId('cancel-season-form-btn').click();
 
         // Проверяем: форма создания закрылась
         await expect(page.getByTestId('season-name-input')).toBeHidden();
@@ -361,7 +364,7 @@ test.describe('Управление сезонами и статистика', (
         await expect(app.statsModal).toBeVisible();
     });
 
-    test('кликая по крестику шапки во время редактирования сезона закрывается только форма редактирования', async ({ app, page }) => {
+    test('отмена формы во время редактирования сезона закрывает только форму редактирования', async ({ app, page }) => {
         await page.context().addInitScript(() => {
             const season = [{ id: 's1', name: 'Зимний Сезон', startDate: '2026-12-01' }];
             localStorage.setItem('randomatched_seasons_v1', JSON.stringify(season));
@@ -378,8 +381,11 @@ test.describe('Управление сезонами и статистика', (
         await page.click('button[title="Редактировать сезон"]');
         await expect(page.locator('h3:has-text("Редактирование сезона")')).toBeVisible();
 
-        // Кликаем по крестику в шапке формы
-        await page.getByTestId('close-season-form-btn').click();
+        // Кнопка-крестик в шапке окна формы отсутствует в модалке-шторке
+        await expect(page.getByTestId('close-season-form-btn')).toBeHidden();
+
+        // Нажимаем "Отмена" в форме
+        await page.getByTestId('cancel-season-form-btn').click();
 
         // Проверяем: форма редактирования закрылась, открыт список сезонов с элементом "Зимний Сезон"
         await expect(page.getByTestId('season-name-input')).toBeHidden();
