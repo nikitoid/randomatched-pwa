@@ -152,17 +152,26 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   if (!isRendered) return null;
 
+  const isBottomSheetScreen = variant === 'bottom-sheet' || (variant === 'auto' && (typeof window !== 'undefined' ? window.innerWidth < 640 : true));
+
   const getMaxWidthClass = () => {
+    let widthClass = 'max-w-md';
     switch (maxWidth) {
-      case 'xs': return 'max-w-xs';
-      case 'sm': return 'max-w-sm';
-      case 'md': return 'max-w-md';
-      case 'lg': return 'max-w-lg';
-      case 'xl': return 'max-w-xl';
-      case '2xl': return 'max-w-2xl';
-      case 'full': return 'max-w-full';
-      default: return 'max-w-md';
+      case 'xs': widthClass = 'max-w-xs'; break;
+      case 'sm': widthClass = 'max-w-sm'; break;
+      case 'md': widthClass = 'max-w-md'; break;
+      case 'lg': widthClass = 'max-w-lg'; break;
+      case 'xl': widthClass = 'max-w-xl'; break;
+      case '2xl': widthClass = 'max-w-2xl'; break;
+      case 'full': widthClass = 'max-w-full'; break;
+      default: widthClass = 'max-w-md'; break;
     }
+
+    if (isBottomSheetScreen) {
+      return `max-w-full sm:${widthClass}`;
+    }
+
+    return widthClass;
   };
 
   const getContainerLayoutClass = () => {
@@ -178,8 +187,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         return 'items-end sm:items-center justify-center p-0 sm:p-4 sm:p-6';
     }
   };
-
-  const isBottomSheetScreen = variant === 'bottom-sheet' || (variant === 'auto' && (typeof window !== 'undefined' ? window.innerWidth < 640 : true));
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget && closeOnBackdropClick) {

@@ -115,48 +115,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [showEfficiencyBreakdown, setShowEfficiencyBreakdown] = useState(false);
     const [activeNominationModal, setActiveNominationModal] = useState<'mvp' | 'underdog' | 'streak' | 'seriesKills' | 'totalKills' | null>(null);
     const [selectedWeightedPlayer, setSelectedWeightedPlayer] = useState<{ player: PlayerStat; focusType: 'wins' | 'matches' } | null>(null);
-    const [isClosingSheet, setIsClosingSheet] = useState(false);
-
-    // Swipe down gesture state for weighted player bottomsheet
-    const [sheetDragY, setSheetDragY] = useState(0);
-    const [isDraggingSheet, setIsDraggingSheet] = useState(false);
-    const sheetTouchStartYRef = useRef<number | null>(null);
-
-    const closeWeightedSheet = () => {
-        if (isClosingSheet) return;
-        setIsClosingSheet(true);
-        triggerHaptic(10);
-        setTimeout(() => {
-            setSelectedWeightedPlayer(null);
-            setIsClosingSheet(false);
-            setSheetDragY(0);
-            setIsDraggingSheet(false);
-        }, 220);
-    };
-
-    const handleSheetTouchStart = (e: React.TouchEvent) => {
-        sheetTouchStartYRef.current = e.touches[0].clientY;
-        setIsDraggingSheet(true);
-    };
-
-    const handleSheetTouchMove = (e: React.TouchEvent) => {
-        if (sheetTouchStartYRef.current === null) return;
-        const currentY = e.touches[0].clientY;
-        const deltaY = currentY - sheetTouchStartYRef.current;
-        if (deltaY > 0) {
-            setSheetDragY(deltaY);
-        }
-    };
-
-    const handleSheetTouchEnd = () => {
-        if (sheetDragY > 70) {
-            closeWeightedSheet();
-        } else {
-            setSheetDragY(0);
-            setIsDraggingSheet(false);
-        }
-        sheetTouchStartYRef.current = null;
-    };
 
 
     const {
@@ -376,7 +334,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
     // Match Form State
     const [matchForm, setMatchForm] = useState<MatchFormState | null>(null);
-    const [matchFormClosing, setMatchFormClosing] = useState(false);
 
     // Autocomplete State
 
@@ -388,7 +345,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         if (!isOpen) {
             setEditMode(false);
             setMatchForm(null);
-            setMatchFormClosing(false);
             setDeleteConfirmId(null);
             setSelectedPlayer(null);
             setSelectedHero(null);
@@ -894,7 +850,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         <MatchEditorForm
             matchForm={matchForm}
             setMatchForm={setMatchForm}
-            matchFormClosing={matchFormClosing}
             closeMatchForm={closeMatchForm}
             allHeroesList={allHeroesList}
             uniquePlayerNames={uniquePlayerNames}

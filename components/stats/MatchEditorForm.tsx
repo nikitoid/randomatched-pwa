@@ -19,7 +19,6 @@ export interface MatchFormState {
 interface MatchEditorFormProps {
     matchForm: MatchFormState;
     setMatchForm: (form: MatchFormState | null) => void;
-    matchFormClosing?: boolean;
     closeMatchForm: () => void;
     allHeroesList: Hero[];
     uniquePlayerNames: string[];
