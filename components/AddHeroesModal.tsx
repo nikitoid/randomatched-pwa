@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, ChevronLeft, Search, Check, Database, Filter, Cloud } from 'lucide-react';
+import { ChevronLeft, Search, Check } from 'lucide-react';
 import { HeroList, Hero } from '../types';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useNavigation } from '../context/NavigationContext';
+import { BaseModal } from './common/BaseModal';
 
 interface AddHeroesModalProps {
     isOpen: boolean;
@@ -32,11 +33,6 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
         close('add-heroes-modal-step2');
     };
 
-    useBackHandler(isOpen, () => {
-        if (triggerHaptic) triggerHaptic(10);
-        onClose();
-    }, { id: 'add-heroes-modal-step1', priority: 20 });
-
     useBackHandler(isOpen && step === 'select-heroes', () => {
         if (triggerHaptic) triggerHaptic(10);
         setStep('select-list');
@@ -44,7 +40,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
         setSearchQuery('');
     }, { id: 'add-heroes-modal-step2', priority: 30 });
 
-    // Сбрасываем состояние после анимации закрытия
+    // Сбрасываем состояние после закрытия
     useEffect(() => {
         if (!isOpen) {
             const timer = setTimeout(() => {
@@ -107,27 +103,21 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
         });
     };
 
-    const handleSelectAll = () => {
+    const handleSelectAllInList = () => {
         if (!selectedList) return;
         if (triggerHaptic) triggerHaptic(10);
-        const allIds = filteredHeroes.map(h => h.id);
         setSelectedHeroesByList(prev => {
             const next = { ...prev };
             const currentSet = new Set(next[selectedList.id] || []);
-            allIds.forEach(id => currentSet.add(id));
-            next[selectedList.id] = currentSet;
-            return next;
-        });
-    };
+            const allFilteredIds = filteredHeroes.map(h => h.id);
+            const isAllSelected = allFilteredIds.every(id => currentSet.has(id));
 
-    const handleDeselectAll = () => {
-        if (!selectedList) return;
-        if (triggerHaptic) triggerHaptic(10);
-        const allIds = filteredHeroes.map(h => h.id);
-        setSelectedHeroesByList(prev => {
-            const next = { ...prev };
-            const currentSet = new Set(next[selectedList.id] || []);
-            allIds.forEach(id => currentSet.delete(id));
+            if (isAllSelected) {
+                allFilteredIds.forEach(id => currentSet.delete(id));
+            } else {
+                allFilteredIds.forEach(id => currentSet.add(id));
+            }
+
             if (currentSet.size === 0) {
                 delete next[selectedList.id];
             } else {
@@ -137,236 +127,166 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
         });
     };
 
-    const handleConfirm = () => {
+    const handleConfirmAdd = () => {
         if (totalSelectedCount === 0) return;
-        if (triggerHaptic) triggerHaptic(20);
-        
+        if (triggerHaptic) triggerHaptic(10);
+
         const heroesToAdd: Hero[] = [];
-        lists.forEach(list => {
-            const selectedIds = selectedHeroesByList[list.id];
-            if (selectedIds && selectedIds.size > 0) {
-                list.heroes.forEach(hero => {
-                    if (selectedIds.has(hero.id)) {
-                        if (!heroesToAdd.some(h => h.id === hero.id)) {
-                            heroesToAdd.push(hero);
-                        }
+        Object.entries(selectedHeroesByList).forEach(([listId, heroIdSet]) => {
+            const sourceList = lists.find(l => l.id === listId);
+            if (sourceList) {
+                sourceList.heroes.forEach(h => {
+                    if (heroIdSet.has(h.id)) {
+                        heroesToAdd.push(h);
                     }
                 });
             }
         });
 
         onAddHeroes(heroesToAdd);
-        handleClose();
+        onClose();
     };
 
-    const handleClose = () => {
-        close('add-heroes-modal-step1');
-    };
+    const modalTitle = (
+        <div className="flex items-center gap-2">
+            {step === 'select-heroes' && (
+                <button
+                    onClick={handleBack}
+                    className="p-2 -ml-2 rounded-full text-slate-500 hover:text-slate-900 dark:hover:text-white active:bg-slate-100 dark:active:bg-slate-800 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    aria-label="Назад к спискам"
+                >
+                    <ChevronLeft size={20} />
+                </button>
+            )}
+            <span>{step === 'select-list' ? 'Докинуть героев' : 'Выбрать героев'}</span>
+        </div>
+    );
 
+    const modalFooter = totalSelectedCount > 0 ? (
+        <button
+            onClick={handleConfirmAdd}
+            className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-bold text-sm sm:text-base rounded-2xl active:scale-[0.98] transition-all shadow-lg shadow-primary-500/20 flex items-center justify-center gap-2 min-h-[48px]"
+        >
+            <Check size={18} />
+            <span>Добавить выбранных ({totalSelectedCount})</span>
+        </button>
+    ) : undefined;
 
-    if (!isOpen) return null;
+    const searchSubHeader = step === 'select-heroes' ? (
+        <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input
+                    type="text"
+                    placeholder="Поиск героев..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-2xl outline-none focus:ring-2 focus:ring-primary-500 transition-all text-slate-900 dark:text-white text-sm min-h-[44px]"
+                />
+            </div>
+            <button
+                onClick={handleSelectAllInList}
+                className="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition-all min-h-[44px]"
+            >
+                Все
+            </button>
+        </div>
+    ) : undefined;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-all duration-300">
-            <div className="bg-white dark:bg-slate-900 bg-grid-pattern w-full max-w-md rounded-3xl shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[80vh] overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-2">
-                        {step === 'select-heroes' && (
-                            <button 
-                                onClick={handleBack}
-                                className="p-1.5 -ml-1 rounded-full text-slate-500 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
-                            >
-                                <ChevronLeft size={20} />
-                            </button>
-                        )}
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                            {step === 'select-list' ? 'Докинуть героев' : 'Выбрать героев'}
-                        </h3>
-                    </div>
-                    <button 
-                        onClick={handleClose}
-                        className="p-1.5 rounded-full text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
+        <BaseModal
+            isOpen={isOpen}
+            onClose={onClose}
+            title={modalTitle}
+            maxWidth="md"
+            variant="auto"
+            modalId="add-heroes-modal-step1"
+            priority={20}
+            subHeader={searchSubHeader}
+            footer={modalFooter}
+        >
+            {step === 'select-list' ? (
+                <div className="flex flex-col gap-3">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 leading-relaxed">
+                        Выберите список, из которого вы хотите точечно добавить героев к текущему выбору.
+                    </p>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 no-scrollbar">
-                    {step === 'select-list' ? (
-                        <div className="flex flex-col gap-3">
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                                Выберите список, из которого вы хотите точечно добавить героев к текущему выбору.
-                            </p>
-                            {availableLists.length > 0 ? (
-                                availableLists.map(list => {
-                                    let Icon = Database;
-                                    let iconColor = 'text-slate-400';
-                                    let iconBg = 'bg-slate-50 dark:bg-slate-800';
-
-                                    if (list.isTemporary) {
-                                        Icon = Filter;
-                                        iconColor = 'text-primary-500';
-                                        iconBg = 'bg-primary-50 dark:bg-primary-900/20';
-                                    } else if (list.isCloud) {
-                                        Icon = Cloud;
-                                        iconColor = 'text-sky-500';
-                                        iconBg = 'bg-sky-50 dark:bg-sky-900/20';
-                                    }
-
-                                    const selectedCount = selectedHeroesByList[list.id]?.size || 0;
-                                    const hasSelected = selectedCount > 0;
-
-                                    return (
-                                        <button
-                                            key={list.id}
-                                            onClick={() => handleSelectList(list)}
-                                            className={`w-full p-4 flex items-center gap-4 rounded-2xl border active:scale-[0.99] transition-all text-left ${
-                                                hasSelected
-                                                    ? 'border-primary-200 dark:border-primary-900/50 bg-primary-50/10 dark:bg-primary-950/5 shadow-sm'
-                                                    : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50'
-                                            }`}
-                                        >
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
-                                                <Icon size={18} />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200 truncate">
-                                                    {list.name}
-                                                </h4>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400">
-                                                    Героев: {list.heroes.length}
-                                                </span>
-                                            </div>
-                                            {hasSelected && (
-                                                <div className="flex items-center justify-center h-6 min-w-6 px-1.5 rounded-full bg-primary-500 text-white text-[11px] font-extrabold shrink-0 shadow-sm shadow-primary-500/20">
-                                                    +{selectedCount}
-                                                </div>
-                                            )}
-                                        </button>
-                                    );
-                                })
-                            ) : (
-                                <div className="text-center py-8 text-slate-400 dark:text-slate-500">
-                                    Нет доступных других списков с героями.
-                                </div>
-                            )}
+                    {availableLists.length === 0 ? (
+                        <div className="text-center py-8 text-slate-400">
+                            <p className="text-sm">Нет других доступных списков с героями</p>
                         </div>
                     ) : (
-                        <div className="flex flex-col h-full gap-4">
-                            {/* Search and Action buttons */}
-                            <div className="flex flex-col gap-3 sticky top-0 bg-white dark:bg-slate-900 pb-2 z-10">
-                                <div className="relative">
-                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input
-                                        type="text"
-                                        placeholder="Поиск героя..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm outline-none focus:border-primary-500 transition-colors"
-                                    />
-                                    {searchQuery && (
-                                        <button
-                                            onClick={() => setSearchQuery('')}
-                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 active:text-slate-600 dark:active:text-slate-200 transition-colors"
-                                            aria-label="Очистить поиск"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={handleSelectAll}
-                                        className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
-                                    >
-                                        Выбрать всех
-                                    </button>
-                                    <button 
-                                        onClick={handleDeselectAll}
-                                        className="flex-1 py-1.5 px-3 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:bg-slate-200 dark:active:bg-slate-700 transition-colors"
-                                    >
-                                        Снять все
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Heroes List */}
-                            <div className="grid grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto no-scrollbar">
-                                {filteredHeroes.length > 0 ? (
-                                    filteredHeroes.map(hero => {
-                                        const isSelected = selectedList ? (selectedHeroesByList[selectedList.id]?.has(hero.id) || false) : false;
-                                        return (
-                                            <button
-                                                key={hero.id}
-                                                onClick={() => handleToggleHero(hero.id)}
-                                                className={`p-3 rounded-xl border flex items-center justify-between text-left transition-all active:scale-[0.98] ${
-                                                    isSelected 
-                                                        ? 'bg-primary-50 border-primary-200 dark:bg-primary-950/20 dark:border-primary-800/50 text-slate-800 dark:text-slate-200' 
-                                                        : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                                                }`}
-                                            >
-                                                <div className="flex flex-col min-w-0 mr-2">
-                                                    <span className="text-sm font-bold truncate">{hero.name}</span>
-                                                    {hero.rank && (
-                                                        <span className="text-[10px] text-slate-400 font-medium">Ранг: {hero.rank}</span>
-                                                    )}
-                                                </div>
-                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center border shrink-0 transition-all ${
-                                                    isSelected 
-                                                        ? 'bg-primary-500 border-primary-500 text-white' 
-                                                        : 'border-slate-300 dark:border-slate-700 bg-transparent'
-                                                }`}>
-                                                    {isSelected && <Check size={12} strokeWidth={3} />}
-                                                </div>
-                                            </button>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="col-span-2 text-center py-6 text-slate-400 dark:text-slate-500">
-                                        Герои не найдены.
+                        availableLists.map(list => {
+                            const selectedCount = selectedHeroesByList[list.id]?.size || 0;
+                            return (
+                                <button
+                                    key={list.id}
+                                    onClick={() => handleSelectList(list)}
+                                    className={`
+                                        w-full p-4 rounded-2xl border transition-all text-left flex items-center justify-between min-h-[56px]
+                                        ${selectedCount > 0
+                                            ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-950/20'
+                                            : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30'}
+                                    `}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-200/60 dark:bg-slate-700/60 flex items-center justify-center text-slate-700 dark:text-slate-200 font-bold shrink-0">
+                                            {list.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">
+                                                {list.name}
+                                            </h4>
+                                            <p className="text-xs text-slate-400 font-medium">
+                                                Всего героев: {list.heroes.length}
+                                            </p>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
-                        </div>
+                                    {selectedCount > 0 && (
+                                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-primary-500 text-white shadow-sm">
+                                            Выбрано: {selectedCount}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })
                     )}
                 </div>
-
-                {/* Footer */}
-                {step === 'select-list' && totalSelectedCount > 0 && (
-                    <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex gap-3">
-                        <button 
-                            onClick={handleConfirm}
-                            className="flex-1 py-3 font-bold text-sm text-white rounded-xl shadow-lg active:scale-95 transition-all bg-primary-600 active:bg-primary-700 shadow-primary-600/20"
-                        >
-                            Добавить ({totalSelectedCount})
-                        </button>
-                    </div>
-                )}
-                
-                {step === 'select-heroes' && (
-                    <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex gap-3">
-                        <button 
-                            onClick={handleBack}
-                            className="flex-1 py-3 font-bold text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl active:scale-95 transition-transform"
-                        >
-                            Назад
-                        </button>
-                        <button 
-                            onClick={handleConfirm}
-                            disabled={totalSelectedCount === 0}
-                            className={`flex-1 py-3 font-bold text-sm text-white rounded-xl shadow-lg active:scale-95 transition-all ${
-                                totalSelectedCount === 0 
-                                    ? 'bg-slate-300 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none' 
-                                    : 'bg-primary-600 active:bg-primary-700 shadow-primary-600/20'
-                            }`}
-                        >
-                            Добавить ({totalSelectedCount})
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
+            ) : (
+                <div className="space-y-1.5 pb-2">
+                    {filteredHeroes.length === 0 ? (
+                        <div className="text-center py-8 text-slate-400 text-sm">
+                            Герои не найдены
+                        </div>
+                    ) : (
+                        filteredHeroes.map(hero => {
+                            const isSelected = selectedHeroesByList[selectedList?.id || '']?.has(hero.id);
+                            return (
+                                <button
+                                    key={hero.id}
+                                    onClick={() => handleToggleHero(hero.id)}
+                                    className={`
+                                        w-full p-3 rounded-2xl transition-all text-left flex items-center justify-between min-h-[48px]
+                                        ${isSelected
+                                            ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-900 dark:text-primary-100 font-bold'
+                                            : 'hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'}
+                                    `}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${isSelected ? 'bg-primary-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                                            {hero.name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span className="text-sm">{hero.name}</span>
+                                    </div>
+                                    <div className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${isSelected ? 'bg-primary-500 border-primary-500 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
+                                        {isSelected && <Check size={14} strokeWidth={3} />}
+                                    </div>
+                                </button>
+                            );
+                        })
+                    )}
+                </div>
+            )}
+        </BaseModal>
     );
 };

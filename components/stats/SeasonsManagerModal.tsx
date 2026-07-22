@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Plus, Calendar, Edit2, Trash2, Check, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, Edit2, Trash2, Check, AlertCircle } from 'lucide-react';
 import { Season } from '../../types';
 import { useBackHandler } from '../../hooks/useBackHandler';
+import { BaseModal } from '../common/BaseModal';
+import { ConfirmModal } from '../common/ConfirmModal';
 
 interface SeasonsManagerModalProps {
     isOpen: boolean;
@@ -44,16 +45,9 @@ export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
         setEditingSeasonId(null);
     };
 
-    useBackHandler(isOpen && !deletingSeasonId && !isAdding && !editingSeasonId, () => {
-        onClose();
-    }, { id: 'seasons-manager-modal', priority: 60 });
-
-    useBackHandler(isOpen && (isAdding || !!editingSeasonId || !!deletingSeasonId), () => {
+    useBackHandler(isOpen && (isAdding || !!editingSeasonId), () => {
         resetForm();
-        setDeletingSeasonId(null);
     }, { id: 'seasons-manager-form', priority: 65 });
-
-    if (!isOpen) return null;
 
     const handleOpenAddForm = () => {
         triggerHaptic(10);
@@ -121,236 +115,200 @@ export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
         return `${d}.${m}.${y}`;
     };
 
-    // Sort seasons descending by startDate (latest seasons first)
+    // Sort seasons descending by startDate
     const sortedSeasonsDescending = [...seasons].sort((a, b) => b.startDate.localeCompare(a.startDate));
 
-    return createPortal(
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col max-h-[85vh]">
-                
-                {/* Modal Header */}
-                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-800/30">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-2 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400">
-                            <Calendar size={20} />
-                        </div>
-                        <div>
-                            <h3 className="text-base font-extrabold text-slate-900 dark:text-white leading-tight">
-                                Управление сезонами
-                            </h3>
-                            <p className="text-xs text-slate-500 font-medium">
-                                Разделение статистики по временным периодам
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => { triggerHaptic(10); resetForm(); onClose(); }}
-                        data-testid="close-seasons-manager-btn"
-                        className="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
+    const seasonToDeleteObj = seasons.find(s => s.id === deletingSeasonId);
 
-                {/* Body Container */}
-                <div className="p-6 overflow-y-auto flex-1 space-y-4">
+    const headerButton = (!isAdding && !editingSeasonId) ? (
+        <button
+            type="button"
+            onClick={handleOpenAddForm}
+            className="flex items-center gap-1.5 px-3 py-2 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-primary-500/20 active:scale-95 min-h-[40px]"
+        >
+            <Plus size={16} />
+            <span>Новый</span>
+        </button>
+    ) : undefined;
 
-                    {/* Form for Add / Edit */}
-                    {(isAdding || editingSeasonId) ? (
-                        <form onSubmit={handleSave} className="space-y-4 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold uppercase text-primary-600 dark:text-primary-400">
-                                    {isAdding ? 'Новый сезон' : 'Редактирование сезона'}
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={resetForm}
-                                    className="text-xs font-medium text-slate-400 hover:text-slate-600"
-                                >
-                                    Отмена
-                                </button>
+    return (
+        <>
+            <BaseModal
+                isOpen={isOpen}
+                onClose={onClose}
+                title="Управление сезонами"
+                subtitle="Создавайте и редактируйте сезоны"
+                icon={<Calendar size={20} className="text-primary-600 dark:text-primary-400" />}
+                maxWidth="md"
+                variant="auto"
+                modalId="seasons-manager-modal"
+                priority={60}
+                headerActions={headerButton}
+            >
+                {/* Active Edit/Add Form */}
+                {(isAdding || editingSeasonId) ? (
+                    <form onSubmit={handleSave} className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                                {isAdding ? 'Добавление нового сезона' : 'Редактирование сезона'}
+                            </h4>
+                            <button
+                                type="button"
+                                onClick={resetForm}
+                                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                                Отмена
+                            </button>
+                        </div>
+
+                        {formError && (
+                            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+                                <AlertCircle size={16} className="shrink-0" />
+                                <span>{formError}</span>
                             </div>
+                        )}
 
-                            {formError && (
-                                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150">
-                                    <AlertCircle size={16} className="shrink-0" />
-                                    <span>{formError}</span>
-                                </div>
-                            )}
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                Название сезона
+                            </label>
+                            <input
+                                type="text"
+                                value={nameInput}
+                                onChange={e => setNameInput(e.target.value)}
+                                placeholder="Например: Сезон 3"
+                                className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[44px]"
+                                required
+                            />
+                        </div>
 
-                            <div className="space-y-1">
-                                <label className="text-[11px] font-bold text-slate-500 uppercase">Название сезона</label>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Дата начала
+                                </label>
                                 <input
-                                    type="text"
+                                    type="date"
+                                    value={startDateInput}
+                                    onChange={e => setStartDateInput(e.target.value)}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[44px]"
                                     required
-                                    data-testid="season-name-input"
-                                    value={nameInput}
-                                    onChange={(e) => { setNameInput(e.target.value); setFormError(null); }}
-                                    placeholder="Например: Сезон 1 (Лето 2026)"
-                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
                                 />
                             </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1 min-w-0">
-                                    <label className="text-[11px] font-bold text-slate-500 uppercase block truncate whitespace-nowrap" title="Дата начала">
-                                        Дата начала
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        data-testid="season-start-date-input"
-                                        value={startDateInput}
-                                        onChange={(e) => { setStartDateInput(e.target.value); setFormError(null); }}
-                                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
-                                    />
-                                </div>
-                                <div className="space-y-1 min-w-0">
-                                    <label className="text-[11px] font-bold text-slate-500 uppercase block truncate whitespace-nowrap" title="Дата окончания (опционально)">
-                                        Дата окончания <span className="text-[9px] font-normal text-slate-400 dark:text-slate-500 lowercase">(опц.)</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        data-testid="season-end-date-input"
-                                        value={endDateInput}
-                                        onChange={(e) => { setEndDateInput(e.target.value); setFormError(null); }}
-                                        placeholder="Не обязательно"
-                                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="pt-2 flex justify-end gap-2">
-                                <button
-                                    type="button"
-                                    onClick={resetForm}
-                                    className="px-4 py-2 text-xs font-bold rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                                >
-                                    Отмена
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 text-xs font-bold rounded-xl bg-primary-500 text-white hover:bg-primary-600 active:scale-95 transition-all flex items-center gap-1.5"
-                                >
-                                    <Check size={14} />
-                                    <span>Сохранить</span>
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <>
-                            <button
-                                onClick={handleOpenAddForm}
-                                className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-primary-500/40 dark:border-primary-500/30 bg-primary-500/5 hover:bg-primary-500/10 text-primary-600 dark:text-primary-400 font-extrabold text-xs flex items-center justify-center gap-2 active:scale-98 transition-all"
-                            >
-                                <Plus size={16} />
-                                <span>Создать новый сезон</span>
-                            </button>
-
-                            {/* Seasons List */}
-                            <div className="space-y-2.5">
-                                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
-                                    Список сезонов ({seasons.length})
-                                </div>
-
-                                {seasons.length === 0 ? (
-                                    <div className="p-6 text-center rounded-2xl bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 text-slate-400 space-y-1">
-                                        <p className="text-xs font-semibold">Сезоны не созданы</p>
-                                        <p className="text-[11px] text-slate-400">
-                                            По умолчанию отображается общая статистика за всё время.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    sortedSeasonsDescending.map((season) => {
-                                        const isLatest = season.id === latestSeasonId;
-                                        return (
-                                            <div
-                                                key={season.id}
-                                                className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                                    isLatest
-                                                        ? 'bg-primary-500/5 dark:bg-primary-500/10 border-primary-500/30'
-                                                        : 'bg-white dark:bg-slate-800/40 border-slate-100 dark:border-slate-800'
-                                                }`}
-                                            >
-                                                <div className="space-y-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
-                                                            {season.name}
-                                                        </span>
-                                                        {isLatest && (
-                                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-primary-500 text-white shrink-0">
-                                                                Текущий
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
-                                                        <Calendar size={12} className="text-slate-400" />
-                                                        <span>
-                                                            {formatDateStr(season.startDate)} — {formatDateStr(season.endDate)}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-1 shrink-0">
-                                                    <button
-                                                        onClick={() => handleOpenEditForm(season)}
-                                                        className="p-2 rounded-xl text-slate-400 hover:text-primary-500 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
-                                                        title="Редактировать сезон"
-                                                    >
-                                                        <Edit2 size={14} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => { triggerHaptic(15); setDeletingSeasonId(season.id); }}
-                                                        className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                                                        title="Удалить сезон"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                {/* Delete Confirmation Sub-modal */}
-                {deletingSeasonId && (
-                    <div className="absolute inset-0 z-30 bg-slate-900/60 backdrop-blur-sm p-6 flex items-center justify-center animate-in fade-in duration-200">
-                        <div className="bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
-                            <div className="w-12 h-12 bg-rose-100 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-full flex items-center justify-center mb-4">
-                                <Trash2 size={24} />
-                            </div>
-                            <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                                Удалить этот сезон?
-                            </h4>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6">
-                                Матчи в истории не удалятся, будет удален только временной период сезона.
-                            </p>
-                            <div className="grid grid-cols-2 gap-3 w-full">
-                                <button
-                                    type="button"
-                                    onClick={() => { triggerHaptic(10); setDeletingSeasonId(null); }}
-                                    className="py-3.5 px-4 font-bold text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-2xl active:scale-95 transition-all flex items-center justify-center"
-                                >
-                                    Отмена
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleDeleteConfirm}
-                                    data-testid="confirm-delete-season-btn"
-                                    className="py-3.5 px-4 font-bold text-sm text-white bg-rose-500 hover:bg-rose-600 rounded-2xl shadow-lg shadow-rose-500/30 active:scale-95 transition-all flex items-center justify-center"
-                                >
-                                    Удалить
-                                </button>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                    Дата окончания
+                                </label>
+                                <input
+                                    type="date"
+                                    value={endDateInput}
+                                    onChange={e => setEndDateInput(e.target.value)}
+                                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[44px]"
+                                />
                             </div>
                         </div>
-                    </div>
-                )}
-            </div>
-        </div>,
-        document.body
+
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button
+                                type="button"
+                                onClick={resetForm}
+                                className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl active:scale-95 transition-all min-h-[44px]"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold rounded-xl shadow-md shadow-primary-500/20 active:scale-95 transition-all flex items-center gap-1.5 min-h-[44px]"
+                            >
+                                <Check size={16} />
+                                <span>Сохранить</span>
+                            </button>
+                        </div>
+                    </form>
+                ) : null}
+
+                {/* List of Seasons */}
+                <div className="space-y-2">
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2">
+                        Все сезоны ({seasons.length})
+                    </h4>
+                    {sortedSeasonsDescending.length === 0 ? (
+                        <div className="text-center py-8 text-slate-400 text-sm">
+                            Сезоны ещё не созданы
+                        </div>
+                    ) : (
+                        sortedSeasonsDescending.map(season => {
+                            const isLatest = season.id === latestSeasonId;
+                            const isEditing = season.id === editingSeasonId;
+
+                            return (
+                                <div
+                                    key={season.id}
+                                    className={`
+                                        p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 min-h-[56px]
+                                        ${isEditing
+                                            ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-950/20'
+                                            : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}
+                                    `}
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-slate-900 dark:text-white text-sm truncate">
+                                                {season.name}
+                                            </span>
+                                            {isLatest && (
+                                                <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-md shrink-0">
+                                                    Активный
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-slate-400 mt-0.5">
+                                            {formatDateStr(season.startDate)} — {formatDateStr(season.endDate)}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenEditForm(season)}
+                                            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+                                            title="Редактировать"
+                                        >
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeletingSeasonId(season.id)}
+                                            className="p-2 rounded-xl text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+                                            title="Удалить"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </BaseModal>
+
+            {/* Confirm Delete Season Dialog */}
+            <ConfirmModal
+                isOpen={!!deletingSeasonId}
+                onCancel={() => setDeletingSeasonId(null)}
+                onConfirm={handleDeleteConfirm}
+                title="Удалить сезон?"
+                description={
+                    <span>
+                        Вы действительно хотите удалить сезон <strong>«{seasonToDeleteObj?.name}»</strong>? Статистика матчей останется в системе.
+                    </span>
+                }
+                confirmText="Удалить"
+                cancelText="Отмена"
+                confirmVariant="danger"
+                priority={70}
+                modalId="delete-season-confirm"
+            />
+        </>
     );
 };

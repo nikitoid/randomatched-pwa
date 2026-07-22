@@ -17,6 +17,8 @@ import { StatsHeroesTab } from './stats/StatsHeroesTab';
 import { StatsMatchesTab } from './stats/StatsMatchesTab';
 import { StatsDateFilter } from './stats/StatsDateFilter';
 import { SeasonsManagerModal } from './stats/SeasonsManagerModal';
+import { BaseModal } from './common/BaseModal';
+import { ConfirmModal } from './common/ConfirmModal';
 
 interface StatsModalProps {
     isOpen: boolean;
@@ -169,25 +171,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     } = useMatchFilters(history, triggerHaptic, seasons, isOpen, addToast);
 
 
-    useBackHandler(isDataMenuOpen, () => {
-        setIsDataMenuOpen(false);
-    }, { id: 'stats-data-menu', priority: 30 });
 
-    useBackHandler(showEfficiencyInfo, () => {
-        setShowEfficiencyInfo(false);
-    }, { id: 'stats-efficiency-info', priority: 40 });
-
-    useBackHandler(showEfficiencyBreakdown, () => {
-        setShowEfficiencyBreakdown(false);
-    }, { id: 'stats-efficiency-breakdown', priority: 45 });
-
-    useBackHandler(!!activeNominationModal, () => {
-        setActiveNominationModal(null);
-    }, { id: 'stats-nomination-modal', priority: 50 });
-
-    useBackHandler(!!selectedWeightedPlayer && !isClosingSheet, () => {
-        closeWeightedSheet();
-    }, { id: 'stats-weighted-player-breakdown', priority: 55 });
 
     const titleClickCount = useRef(0);
     const titleClickTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -1440,294 +1424,246 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     </div>
 
                     {/* Delete Confirmation Modal */}
-                    <div
-                        className={`fixed inset-0 z-[80] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${deleteConfirmId ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${deleteConfirmId ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-                            <div className="flex flex-col items-center text-center mb-6">
-                                <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mb-4"><Trash2 size={24} /></div>
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                                    {deleteConfirmAction === 'clear-trash' ? 'Очистить корзину?' :
-                                        deleteConfirmAction === 'permanent' ? 'Удалить навсегда?' : 'Удалить матч?'}
-                                </h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
-                                    {deleteConfirmAction === 'move-to-trash' ? 'Матч будет перемещен в корзину.' : 'Это действие нельзя отменить.'}
-                                </p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => setDeleteConfirmId(null)} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
-                                <button onClick={confirmDeleteMatch} className="py-3 font-bold text-white bg-red-500 rounded-xl">
-                                    {deleteConfirmAction === 'move-to-trash' ? 'В корзину' : 'Удалить'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <ConfirmModal
+                        isOpen={!!deleteConfirmId}
+                        onCancel={() => setDeleteConfirmId(null)}
+                        onConfirm={confirmDeleteMatch}
+                        title={
+                            deleteConfirmAction === 'clear-trash' ? 'Очистить корзину?' :
+                                deleteConfirmAction === 'permanent' ? 'Удалить навсегда?' : 'Удалить матч?'
+                        }
+                        description={
+                            deleteConfirmAction === 'move-to-trash' ? 'Матч будет перемещен в корзину.' : 'Это действие нельзя отменить.'
+                        }
+                        confirmText={deleteConfirmAction === 'move-to-trash' ? 'В корзину' : 'Удалить'}
+                        cancelText="Отмена"
+                        confirmVariant="danger"
+                        icon={<Trash2 size={24} />}
+                        priority={80}
+                        modalId="stats-delete-confirm-modal"
+                    />
 
                 </div>
             </div>
 
             {/* Efficiency Info Overlay */}
-            {showEfficiencyInfo && createPortal(
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-                    onClick={() => setShowEfficiencyInfo(false)}
-                >
-                    <div
-                        className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[85dvh] flex flex-col p-6 text-slate-700 dark:text-slate-300"
-                        onClick={e => e.stopPropagation()}
+            <BaseModal
+                isOpen={showEfficiencyInfo}
+                onClose={() => setShowEfficiencyInfo(false)}
+                title="Топ эффективности"
+                icon={<TrendingUp size={20} className="text-primary-500" />}
+                maxWidth="md"
+                variant="auto"
+                modalId="stats-efficiency-info-modal"
+                priority={80}
+                footer={(close) => (
+                    <button
+                        onClick={() => { close(); triggerHaptic(10); }}
+                        className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-bold text-sm rounded-2xl transition-all shadow-lg shadow-primary-500/20 active:scale-95 min-h-[48px]"
                     >
-                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <TrendingUp size={20} className="text-primary-500" /> Топ эффективности
-                            </h3>
-                            <button
-                                onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
-                                className="p-1 rounded-full active:bg-slate-100 dark:active:bg-slate-800 text-slate-500 active:text-slate-900 dark:active:text-white transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="space-y-4 text-sm overflow-y-auto pr-1">
-                            <p>
-                                Рейтинг «Топ эффективности» рассчитывается по <strong>методу Уилсона (Wilson Score Interval)</strong> с экспоненциальным затуханием по времени.
-                            </p>
-                            <p>
-                                Алгоритм рассчитывает нижнюю границу доверительного интервала Бернулли с 95% надежностью. Он учитывает <strong>винрейт</strong>, <strong>объем матчей</strong> и их <strong>давность</strong>.
-                            </p>
-                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl font-medium">
-                                <span className="text-xs text-slate-400 dark:text-slate-500 block mb-1">Математический принцип:</span>
-                                Малая выборка опускает рейтинг вниз из-за высокой неопределенности, а большая выборка с хорошим качеством позволяет раскрыть реальную силу игрока.
-                            </div>
-                            <p>
-                                🌟 <strong>Что это дает на практике?</strong>
-                            </p>
-                            <ul className="list-disc list-inside space-y-1.5 pl-2 text-slate-600 dark:text-slate-400">
-                                <li><strong>Активные игроки с дистанцией</strong> занимают честные высокие места.</li>
-                                <li><strong>Редкие гости</strong> с малым числом матчей не взлетают искусственно в ТОП.</li>
-                                <li><strong>Неактивные игроки</strong> (&gt;60 дней) уходят в конец списка.</li>
-                            </ul>
-                        </div>
-                        <button
-                            onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
-                            className="mt-6 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/10 active:scale-98"
-                        >
-                            Понятно
-                        </button>
+                        Понятно
+                    </button>
+                )}
+            >
+                <div className="space-y-4 text-sm text-slate-700 dark:text-slate-300">
+                    <p>
+                        Рейтинг «Топ эффективности» рассчитывается по <strong>методу Уилсона (Wilson Score Interval)</strong> с экспоненциальным затуханием по времени.
+                    </p>
+                    <p>
+                        Алгоритм рассчитывает нижнюю границу доверительного интервала Бернулли с 95% надежностью. Он учитывает <strong>винрейт</strong>, <strong>объем матчей</strong> и их <strong>давность</strong>.
+                    </p>
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl font-medium">
+                        <span className="text-xs text-slate-400 dark:text-slate-500 block mb-1">Математический принцип:</span>
+                        Малая выборка опускает рейтинг вниз из-за высокой неопределенности, а большая выборка с хорошим качеством позволяет раскрыть реальную силу игрока.
                     </div>
-                </div>,
-                document.body
-            )}
+                    <p>
+                        🌟 <strong>Что это дает на практике?</strong>
+                    </p>
+                    <ul className="list-disc list-inside space-y-1.5 pl-2 text-slate-600 dark:text-slate-400">
+                        <li><strong>Активные игроки с дистанцией</strong> занимают честные высокие места.</li>
+                        <li><strong>Редкие гости</strong> с малым числом матчей не взлетают искусственно в ТОП.</li>
+                        <li><strong>Неактивные игроки</strong> (&gt;60 дней) уходят в конец списка.</li>
+                    </ul>
+                </div>
+            </BaseModal>
 
             {/* Nomination Modal Overlay */}
-            {activeNominationModal && createPortal(
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-                    onClick={() => setActiveNominationModal(null)}
-                >
-                    <div
-                        className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200 max-h-[85dvh] flex flex-col p-6 text-slate-700 dark:text-slate-300"
-                        onClick={e => e.stopPropagation()}
+            <BaseModal
+                isOpen={!!activeNominationModal}
+                onClose={() => setActiveNominationModal(null)}
+                title={
+                    activeNominationModal === 'mvp' ? 'Самый ценный игрок (MVP)' :
+                    activeNominationModal === 'underdog' ? 'Андердог (Underdog)' :
+                    activeNominationModal === 'streak' ? 'В огне (Серия побед)' :
+                    activeNominationModal === 'seriesKills' ? 'Рекорд за встречу' :
+                    'Король убийств'
+                }
+                icon={
+                    activeNominationModal === 'mvp' ? <Star size={20} fill="currentColor" className="text-yellow-500" /> :
+                    activeNominationModal === 'underdog' ? <Skull size={20} className="text-red-500" /> :
+                    activeNominationModal === 'streak' ? <Flame size={20} className="text-orange-500" /> :
+                    activeNominationModal === 'seriesKills' ? <Swords size={20} className="text-rose-500" /> :
+                    <Crown size={20} className="text-yellow-600 dark:text-yellow-500" />
+                }
+                maxWidth="md"
+                variant="auto"
+                modalId="nomination-modal"
+                priority={80}
+                footer={(close) => (
+                    <button
+                        onClick={() => { close(); triggerHaptic(10); }}
+                        className={`w-full py-3.5 text-white font-bold text-sm sm:text-base rounded-2xl transition-all shadow-lg active:scale-95 min-h-[48px] ${
+                            activeNominationModal === 'mvp' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20' :
+                            activeNominationModal === 'underdog' ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20' :
+                            activeNominationModal === 'streak' ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20' :
+                            activeNominationModal === 'seriesKills' ? 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20' :
+                            'bg-red-500 hover:bg-red-600 shadow-red-500/20'
+                        }`}
                     >
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                {activeNominationModal === 'mvp' && (
-                                    <>
-                                        <Star size={20} fill="currentColor" className="text-yellow-500" />
-                                        <span>Самый ценный игрок (MVP)</span>
-                                    </>
-                                )}
-                                {activeNominationModal === 'underdog' && (
-                                    <>
-                                        <Skull size={20} className="text-red-500" />
-                                        <span>Андердог (Underdog)</span>
-                                    </>
-                                )}
-                                {activeNominationModal === 'streak' && (
-                                    <>
-                                        <Flame size={20} className="text-orange-500 animate-pulse" />
-                                        <span>В огне (Серия побед)</span>
-                                    </>
-                                )}
-                                {activeNominationModal === 'seriesKills' && (
-                                    <>
-                                        <Swords size={20} className="text-rose-500" />
-                                        <span>Рекорд за встречу</span>
-                                    </>
-                                )}
-                                {activeNominationModal === 'totalKills' && (
-                                    <>
-                                        <Crown size={20} className="text-yellow-600 dark:text-yellow-500" />
-                                        <span>Король убийств</span>
-                                    </>
-                                )}
-                            </h3>
-                            <button
-                                onClick={() => { setActiveNominationModal(null); triggerHaptic(10); }}
-                                className="p-1 rounded-full active:bg-slate-100 dark:active:bg-slate-800 text-slate-500 active:text-slate-900 dark:active:text-white transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
+                        Понятно
+                    </button>
+                )}
+            >
+                <div className="space-y-4 text-sm">
+                    <p className="text-slate-650 dark:text-slate-400 leading-relaxed">
+                        {activeNominationModal === 'mvp' &&
+                            'MVP — это наиболее эффективный игрок, определяемый на основе метода Уилсона (Wilson Score Interval). Данный метод рассчитывает нижнюю границу рейтинга с 95% надежностью, учитывая винрейт, количество матчей и затухание по времени.'
+                        }
+                        {activeNominationModal === 'underdog' &&
+                            'Underdog — номинация для игрока, который переживает полосу неудач или имеет наименьшую эффективность. В первую очередь номинируется игрок с наибольшей активной серией поражений (от 3-х матчей). Если таких серий нет, номинируется игрок с худшим винрейтом (требуется минимум 3 матча).'
+                        }
+                        {activeNominationModal === 'streak' &&
+                            'В огне — это игрок с лучшей активной серией побед на данный момент (требуется минимум 3 победы подряд). При равенстве серий приоритет отдается тому, кто сыграл свой победный матч позже остальных.'
+                        }
+                        {activeNominationModal === 'seriesKills' &&
+                            'Рекорд за встречу — это наибольшее количество убийств, совершенное игроком за одну игровую сессию. Сессией считается череда матчей с интервалом между ними не более 6 часов.'
+                        }
+                        {activeNominationModal === 'totalKills' &&
+                            'Король убийств — это игрок, совершивший наибольшее суммарное количество убийств за все матчи в выбранном периоде времени.'
+                        }
+                    </p>
 
-                        {/* Content */}
-                        <div className="space-y-4 text-sm overflow-y-auto pr-1 flex-1 no-scrollbar">
-                            <p className="text-slate-650 dark:text-slate-400">
-                                {activeNominationModal === 'mvp' &&
-                                    'MVP — это наиболее эффективный игрок, определяемый на основе метода Уилсона (Wilson Score Interval). Данный метод рассчитывает нижнюю границу рейтинга с 95% надежностью, учитывая винрейт, количество матчей и затухание по времени.'
-                                }
-                                {activeNominationModal === 'underdog' &&
-                                    'Underdog — номинация для игрока, который переживает полосу неудач или имеет наименьшую эффективность. В первую очередь номинируется игрок с наибольшей активной серией поражений (от 3-х матчей). Если таких серий нет, номинируется игрок с худшим винрейтом (требуется минимум 3 матча).'
-                                }
-                                {activeNominationModal === 'streak' &&
-                                    'В огне — это игрок с лучшей активной серией побед на данный момент (требуется минимум 3 победы подряд). При равенстве серий приоритет отдается тому, кто сыграл свой победный матч позже остальных.'
-                                }
-                                {activeNominationModal === 'seriesKills' &&
-                                    'Рекорд за встречу — это наибольшее количество убийств, совершенное игроком за одну игровую сессию. Сессией считается череда матчей с интервалом между ними не более 6 часов.'
-                                }
-                                {activeNominationModal === 'totalKills' &&
-                                    'Король убийств — это игрок, совершивший наибольшее суммарное количество убийств за все матчи в выбранном периоде времени.'
-                                }
-                            </p>
+                    {/* Список кандидатов */}
+                    <div className="space-y-2.5">
+                        <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                            {activeNominationModal === 'underdog' ? 'Очередь кандидатов (Underdog внизу)' : 'Претенденты на номинацию'}
+                        </h4>
 
-                            {/* Список кандидатов */}
-                            <div className="space-y-2.5">
-                                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                    {activeNominationModal === 'underdog' ? 'Очередь кандидатов (Underdog внизу)' : 'Претенденты на номинацию'}
-                                </h4>
-
-                                {activeNominationModal === 'mvp' && (
-                                    <div className="space-y-2">
-                                        {mvpCandidates.map((player, idx) => {
-                                            const isHighlighted = mvp?.name === player.name;
-                                            return (
-                                                <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-yellow-500/10 border-yellow-500/30 dark:border-yellow-500/20 text-yellow-950 dark:text-yellow-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-yellow-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
-                                                        <span className="truncate">{player.name}</span>
-                                                    </div>
-                                                    <div className="text-xs">
-                                                        <span>{Math.round((player.wins / player.matches) * 100)}% </span>
-                                                        <span className="text-[10px] opacity-60">({player.wins}/{player.matches} игр)</span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                        {mvpCandidates.length === 0 && (
-                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих игроков</div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeNominationModal === 'underdog' && (
-                                    <div className="space-y-2">
-                                        {(() => {
-                                            const reversedList = [...underdogCandidates].reverse();
-                                            return reversedList.map((player, idx) => {
-                                                const originalIndex = underdogCandidates.findIndex(p => p.name === player.name);
-                                                const place = originalIndex !== -1 ? originalIndex + 1 : underdogCandidates.length - idx;
-                                                const isHighlighted = underdog?.name === player.name;
-                                                const loseStreak = streakStats[player.name]?.loseStreak || 0;
-                                                const subText = loseStreak >= 3
-                                                    ? `${loseStreak} поражений подряд`
-                                                    : `${Math.round((player.wins / player.matches) * 100)}% винрейт (${player.wins}/${player.matches} игр)`;
-
-                                                return (
-                                                    <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-red-500/10 border-red-500/30 dark:border-red-500/20 text-red-955 dark:text-red-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
-                                                        <div className="flex items-center gap-2.5">
-                                                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{place}</span>
-                                                            <span className="truncate">{player.name}</span>
-                                                        </div>
-                                                        <span className="text-xs opacity-80">{subText}</span>
-                                                    </div>
-                                                );
-                                            });
-                                        })()}
-                                        {underdogCandidates.length === 0 && (
-                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих игроков</div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeNominationModal === 'streak' && (
-                                    <div className="space-y-2">
-                                        {streakCandidates.map((player, idx) => {
-                                            const isHighlighted = bestStreakPlayer?.name === player.name;
-                                            return (
-                                                <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-orange-500/10 border-orange-500/30 dark:border-orange-500/20 text-orange-950 dark:text-orange-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-orange-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
-                                                        <span className="truncate">{player.name}</span>
-                                                    </div>
-                                                    <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">{player.streak} побед подряд</span>
-                                                </div>
-                                            );
-                                        })}
-                                        {streakCandidates.length === 0 && (
-                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет игроков с активной серией побед &gt;= 3</div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeNominationModal === 'seriesKills' && (
-                                    <div className="space-y-2">
-                                        {seriesKillsCandidates.map((player, idx) => {
-                                            const isHighlighted = topKillsSeriesPlayer?.name === player.name;
-                                            return (
-                                                <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-rose-500/10 border-rose-500/30 dark:border-rose-500/20 text-rose-955 dark:text-rose-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
-                                                        <span className="truncate">{player.name}</span>
-                                                    </div>
-                                                    <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">{player.record} 💀 за серию</span>
-                                                </div>
-                                            );
-                                        })}
-                                        {seriesKillsCandidates.length === 0 && (
-                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих данных</div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeNominationModal === 'totalKills' && (
-                                    <div className="space-y-2">
-                                        {totalKillsCandidates.map((player, idx) => {
-                                            const isHighlighted = topTotalKillers[0]?.name === player.name;
-                                            return (
-                                                <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-red-500/10 border-red-500/30 dark:border-red-500/20 text-red-955 dark:text-red-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
-                                                    <div className="flex items-center gap-2.5">
-                                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
-                                                        <span className="truncate">{player.name}</span>
-                                                    </div>
-                                                    <span className="text-xs font-semibold text-red-600 dark:text-red-400">Всего: {player.total} 💀</span>
-                                                </div>
-                                            );
-                                        })}
-                                        {totalKillsCandidates.length === 0 && (
-                                            <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих данных</div>
-                                        )}
-                                    </div>
+                        {activeNominationModal === 'mvp' && (
+                            <div className="space-y-2">
+                                {mvpCandidates.map((player, idx) => {
+                                    const isHighlighted = mvp?.name === player.name;
+                                    return (
+                                        <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-yellow-500/10 border-yellow-500/30 dark:border-yellow-500/20 text-yellow-950 dark:text-yellow-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-yellow-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
+                                                <span className="truncate">{player.name}</span>
+                                            </div>
+                                            <div className="text-xs">
+                                                <span>{Math.round((player.wins / player.matches) * 100)}% </span>
+                                                <span className="text-[10px] opacity-60">({player.wins}/{player.matches} игр)</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {mvpCandidates.length === 0 && (
+                                    <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих игроков</div>
                                 )}
                             </div>
-                        </div>
+                        )}
 
-                        {/* Footer */}
-                        <button
-                            onClick={() => { setActiveNominationModal(null); triggerHaptic(10); }}
-                            className={`mt-6 w-full py-3 text-white font-bold rounded-2xl transition shadow-lg active:scale-98 ${activeNominationModal === 'mvp' ? 'bg-yellow-500 active:bg-yellow-600 shadow-yellow-500/10' :
-                                activeNominationModal === 'underdog' ? 'bg-red-500 active:bg-red-600 shadow-red-500/10' :
-                                    activeNominationModal === 'streak' ? 'bg-orange-500 active:bg-orange-600 shadow-orange-500/10' :
-                                        activeNominationModal === 'seriesKills' ? 'bg-rose-500 active:bg-rose-600 shadow-rose-500/10' :
-                                            'bg-red-500 active:bg-red-600 shadow-red-500/10'
-                                }`}
-                        >
-                            Понятно
-                        </button>
+                        {activeNominationModal === 'underdog' && (
+                            <div className="space-y-2">
+                                {(() => {
+                                    const reversedList = [...underdogCandidates].reverse();
+                                    return reversedList.map((player, idx) => {
+                                        const originalIndex = underdogCandidates.findIndex(p => p.name === player.name);
+                                        const place = originalIndex !== -1 ? originalIndex + 1 : underdogCandidates.length - idx;
+                                        const isHighlighted = underdog?.name === player.name;
+                                        const loseStreak = streakStats[player.name]?.loseStreak || 0;
+                                        const subText = loseStreak >= 3
+                                            ? `${loseStreak} поражений подряд`
+                                            : `${Math.round((player.wins / player.matches) * 100)}% винрейт (${player.wins}/${player.matches} игр)`;
+
+                                        return (
+                                            <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-red-500/10 border-red-500/30 dark:border-red-500/20 text-red-955 dark:text-red-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{place}</span>
+                                                    <span className="truncate">{player.name}</span>
+                                                </div>
+                                                <span className="text-xs opacity-80">{subText}</span>
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                                {underdogCandidates.length === 0 && (
+                                    <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих игроков</div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeNominationModal === 'streak' && (
+                            <div className="space-y-2">
+                                {streakCandidates.map((player, idx) => {
+                                    const isHighlighted = bestStreakPlayer?.name === player.name;
+                                    return (
+                                        <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-orange-500/10 border-orange-500/30 dark:border-orange-500/20 text-orange-950 dark:text-orange-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-orange-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
+                                                <span className="truncate">{player.name}</span>
+                                            </div>
+                                            <span className="text-xs font-semibold text-orange-600 dark:text-orange-400">{player.streak} побед подряд</span>
+                                        </div>
+                                    );
+                                })}
+                                {streakCandidates.length === 0 && (
+                                    <div className="text-xs text-slate-400 italic text-center py-2">Нет игроков с активной серией побед &gt;= 3</div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeNominationModal === 'seriesKills' && (
+                            <div className="space-y-2">
+                                {seriesKillsCandidates.map((player, idx) => {
+                                    const isHighlighted = topKillsSeriesPlayer?.name === player.name;
+                                    return (
+                                        <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-rose-500/10 border-rose-500/30 dark:border-rose-500/20 text-rose-955 dark:text-rose-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-rose-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
+                                                <span className="truncate">{player.name}</span>
+                                            </div>
+                                            <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">{player.record} 💀 за серию</span>
+                                        </div>
+                                    );
+                                })}
+                                {seriesKillsCandidates.length === 0 && (
+                                    <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих данных</div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeNominationModal === 'totalKills' && (
+                            <div className="space-y-2">
+                                {totalKillsCandidates.map((player, idx) => {
+                                    const isHighlighted = topTotalKillers[0]?.name === player.name;
+                                    return (
+                                        <div key={player.name} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${isHighlighted ? 'bg-red-500/10 border-red-500/30 dark:border-red-500/20 text-red-955 dark:text-red-300 font-bold' : 'border-slate-100 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-800/30 text-slate-700 dark:text-slate-350'}`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isHighlighted ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{idx + 1}</span>
+                                                <span className="truncate">{player.name}</span>
+                                            </div>
+                                            <span className="text-xs font-semibold text-red-600 dark:text-red-400">Всего: {player.total} 💀</span>
+                                        </div>
+                                    );
+                                })}
+                                {totalKillsCandidates.length === 0 && (
+                                    <div className="text-xs text-slate-400 italic text-center py-2">Нет подходящих данных</div>
+                                )}
+                            </div>
+                        )}
                     </div>
-                </div>,
-                document.body
-            )}
+                </div>
+            </BaseModal>
 
             {/* Efficiency Info Modal */}
             {showEfficiencyInfo && createPortal(
@@ -1842,313 +1778,238 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             )}
 
             {/* Efficiency Breakdown Modal */}
-            {showEfficiencyBreakdown && createPortal(
-                <div data-testid="stats-efficiency-breakdown-modal" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
-                        {/* Header */}
-                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-2xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center">
-                                    <TrendingUp size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight">
-                                        Расшифровка эффективности
-                                    </h3>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500">
-                                        Подробный расчёт рейтинга игроков
-                                    </p>
-                                </div>
+            <BaseModal
+                isOpen={showEfficiencyBreakdown}
+                onClose={() => setShowEfficiencyBreakdown(false)}
+                title="Расшифровка эффективности"
+                subtitle="Подробный расчёт рейтинга игроков"
+                icon={<TrendingUp size={20} className="text-primary-500" />}
+                maxWidth="md"
+                variant="auto"
+                modalId="stats-efficiency-breakdown-modal"
+                priority={80}
+                footer={(close) => (
+                    <button
+                        onClick={() => { close(); triggerHaptic(10); }}
+                        className="w-full py-3.5 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-bold text-sm rounded-2xl transition-all shadow-lg shadow-primary-500/20 active:scale-95 min-h-[48px]"
+                    >
+                        Понятно
+                    </button>
+                )}
+            >
+                <div className="space-y-3">
+                    {/* Simple Algorithm Explanation */}
+                    <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/80 rounded-2xl text-xs text-slate-600 dark:text-slate-300 space-y-2 shadow-sm dark:shadow-slate-950/40 shadow-slate-200/50">
+                        <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-primary-500"></span>
+                                <span>Алгоритм Уилсона</span>
                             </div>
                             <button
-                                onClick={() => { setShowEfficiencyBreakdown(false); triggerHaptic(10); }}
-                                className="p-1.5 rounded-full text-slate-400 active:text-slate-700 dark:active:text-white active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
-                                aria-label="Закрыть"
+                                type="button"
+                                data-testid="stats-efficiency-info-btn"
+                                onClick={() => {
+                                    setShowEfficiencyInfo(true);
+                                    triggerHaptic(10);
+                                }}
+                                className="px-2.5 py-1 text-[11px] font-extrabold rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/20 active:scale-95 transition-all flex items-center gap-1 shrink-0"
                             >
-                                <X size={18} />
+                                <HelpCircle size={12} />
+                                <span>Подробнее</span>
                             </button>
                         </div>
+                        <p className="leading-relaxed">
+                            Рейтинг рассчитывается по математическому <strong>алгоритму Уилсона</strong> с учётом процента побед, количества игр и их свежести.
+                        </p>
+                        <div className="pt-1.5 border-t border-slate-200/40 dark:border-slate-700/40">
+                            <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">🌟 Плюсы алгоритма:</span>
+                            <ul className="list-disc list-inside space-y-1 text-slate-500 dark:text-slate-400 pl-0.5">
+                                <li><strong>Объективность:</strong> не даёт игрокам с 2–3 случайными победами взлетать на верхние места без дистанции.</li>
+                                <li><strong>Справедливость:</strong> поощряет постоянных участников с хорошим стабильным процентом побед.</li>
+                                <li><strong>Учёт времени:</strong> свежие матчи влияют на рейтинг сильнее старых.</li>
+                            </ul>
+                        </div>
+                    </div>
 
-                        {/* Player list breakdown & explanation */}
-                        <div className="space-y-2.5 overflow-y-auto pr-1 flex-1 no-scrollbar">
-                            {/* Simple Algorithm Explanation */}
-                            <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/80 rounded-2xl text-xs text-slate-600 dark:text-slate-300 space-y-2 shadow-sm dark:shadow-slate-950/40 shadow-slate-200/50">
-                                <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-primary-500"></span>
-                                        <span>Алгоритм Уилсона</span>
+                    {sortedPlayers.map((player, idx) => {
+                        const rawWinrate = player.matches > 0 ? Math.round((player.wins / player.matches) * 100) : 0;
+                        const effScore = Math.round(player.score * 100);
+                        const wWins = player.weightedWins ?? player.wins;
+                        const wMatches = player.weightedMatches ?? player.matches;
+
+                        return (
+                            <div key={player.name} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 space-y-2.5 transition-all shadow-md dark:shadow-slate-950/50 shadow-slate-200/60 ring-1 ring-black/5 dark:ring-white/5">
+                                {/* Player Header */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-xs font-bold text-slate-400 shrink-0">#{idx + 1}</span>
+                                        <span className="font-bold text-sm text-slate-900 dark:text-white truncate">{player.name}</span>
+                                        {player.isInactive && (
+                                            <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded-md shrink-0">
+                                                Неактивен
+                                            </span>
+                                        )}
                                     </div>
+                                    <div className="text-right shrink-0">
+                                        <span className="text-sm font-black text-primary-600 dark:text-primary-400">{effScore}%</span>
+                                        <span className="text-[10px] text-slate-400 block leading-none">Рейтинг</span>
+                                    </div>
+                                </div>
+
+                                {/* Math breakdown row */}
+                                <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
+                                    <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl flex flex-col items-center justify-center text-center border border-transparent min-h-[50px]">
+                                        <div className="text-[10px] text-slate-400 font-medium leading-tight">
+                                            Процент побед
+                                        </div>
+                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">
+                                            {rawWinrate}% <span className="text-[9px] font-normal opacity-70">({player.wins}/{player.matches})</span>
+                                        </div>
+                                    </div>
+
                                     <button
                                         type="button"
-                                        data-testid="stats-efficiency-info-btn"
                                         onClick={() => {
-                                            setShowEfficiencyInfo(true);
+                                            setSelectedWeightedPlayer({ player, focusType: 'wins' });
                                             triggerHaptic(10);
                                         }}
-                                        className="px-2.5 py-1 text-[11px] font-extrabold rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/20 active:scale-95 transition-all flex items-center gap-1 shrink-0"
+                                        className="relative bg-emerald-50/80 active:bg-emerald-100 dark:bg-emerald-950/30 dark:active:bg-emerald-900/40 border border-emerald-200/50 dark:border-emerald-800/40 p-1.5 rounded-xl cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group min-h-[50px]"
                                     >
-                                        <HelpCircle size={12} />
-                                        <span>Подробнее</span>
+                                        <HelpCircle size={10} className="absolute top-1 right-1 text-emerald-600/70 dark:text-emerald-400/70 group-active:scale-110 shrink-0 pointer-events-none" />
+                                        <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium leading-tight px-1">
+                                            Взвеш. победы
+                                        </div>
+                                        <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                            {wWins}
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedWeightedPlayer({ player, focusType: 'matches' });
+                                            triggerHaptic(10);
+                                        }}
+                                        className="relative bg-slate-50 active:bg-slate-100 dark:bg-slate-900/70 dark:active:bg-slate-800 border border-slate-200/50 dark:border-slate-800/40 p-1.5 rounded-xl cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group min-h-[50px]"
+                                    >
+                                        <HelpCircle size={10} className="absolute top-1 right-1 text-slate-400/70 dark:text-slate-400/60 group-active:scale-110 shrink-0 pointer-events-none" />
+                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight px-1">
+                                            Взвеш. матчи
+                                        </div>
+                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">
+                                            {wMatches}
+                                        </div>
                                     </button>
                                 </div>
-                                <p className="leading-relaxed">
-                                    Рейтинг рассчитывается по математическому <strong>алгоритму Уилсона</strong> с учётом процента побед, количества игр и их свежести.
-                                </p>
-                                <div className="pt-1.5 border-t border-slate-200/40 dark:border-slate-700/40">
-                                    <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">🌟 Плюсы алгоритма:</span>
-                                    <ul className="list-disc list-inside space-y-1 text-slate-500 dark:text-slate-400 pl-0.5">
-                                        <li><strong>Объективность:</strong> не даёт игрокам с 2–3 случайными победами взлетать на верхние места без дистанции.</li>
-                                        <li><strong>Справедливость:</strong> поощряет постоянных участников с хорошим стабильным процентом побед.</li>
-                                        <li><strong>Учёт времени:</strong> свежие матчи влияют на рейтинг сильнее старых.</li>
-                                    </ul>
+
+                                {/* Applied formula text */}
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center bg-slate-50/80 dark:bg-slate-900/50 p-1.5 rounded-xl">
+                                    Итоговый балл: {(player.score * 100).toFixed(1)}% ({wWins} побед / {wMatches} игр)
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </BaseModal>
+
+            {/* Weighted Player Details Modal Sheet */}
+            <BaseModal
+                isOpen={!!selectedWeightedPlayer}
+                onClose={() => setSelectedWeightedPlayer(null)}
+                title={selectedWeightedPlayer?.player.name}
+                subtitle="Подробный расчёт статистики эффективности"
+                icon={<TrendingUp size={20} className="text-emerald-500" />}
+                maxWidth="lg"
+                variant="auto"
+                modalId="weighted-player-modal"
+                priority={90}
+            >
+                {selectedWeightedPlayer && (() => {
+                    const breakdown = getPlayerWeightedBreakdown(selectedWeightedPlayer.player.name, filteredHistory);
+                    const rawWinrate = breakdown.totalMatches > 0 ? Math.round((breakdown.totalWins / breakdown.totalMatches) * 100) : 0;
+                    const effScore = Math.round(selectedWeightedPlayer.player.score * 100);
+
+                    return (
+                        <div className="space-y-4">
+                            {/* KPI Summary Cards */}
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <div className={`p-3 rounded-2xl border transition-colors ${selectedWeightedPlayer.focusType === 'matches' ? 'bg-primary-50/80 dark:bg-primary-950/40 border-primary-300 dark:border-primary-700' : 'bg-slate-50 dark:bg-slate-800/80 border-slate-100 dark:border-slate-700/50'}`}>
+                                    <div className="text-[10px] text-slate-400 dark:text-slate-400 font-medium">Матчи (Факт ➔ Взвешенные)</div>
+                                    <div className="text-base font-black text-slate-900 dark:text-white flex items-baseline gap-1 mt-0.5">
+                                        <span>{breakdown.totalMatches} игр</span>
+                                        <span className="text-xs font-normal text-slate-400">➔</span>
+                                        <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{breakdown.totalWeightedMatches}</span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 mt-1">
+                                        Ср. вес игры: <span className="font-semibold text-slate-700 dark:text-slate-300">{breakdown.totalMatches > 0 ? Math.round((breakdown.totalWeightedMatches / breakdown.totalMatches) * 100) : 0}%</span>
+                                    </div>
+                                </div>
+
+                                <div className={`p-3 rounded-2xl border transition-colors ${selectedWeightedPlayer.focusType === 'wins' ? 'bg-emerald-100/70 dark:bg-emerald-900/40 border-emerald-400 dark:border-emerald-600' : 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/30'}`}>
+                                    <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">Победы (Факт ➔ Взвешенные)</div>
+                                    <div className="text-base font-black text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1 mt-0.5">
+                                        <span>{breakdown.totalWins} побед</span>
+                                        <span className="text-xs font-normal opacity-60">➔</span>
+                                        <span className="text-sm font-bold">{breakdown.totalWeightedWins}</span>
+                                    </div>
+                                    <div className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-1">
+                                        Винрейт: <span className="font-semibold">{rawWinrate}%</span> (Рейтинг: <span className="font-bold">{effScore}%</span>)
+                                    </div>
                                 </div>
                             </div>
 
-                            {sortedPlayers.map((player, idx) => {
-                                const rawWinrate = player.matches > 0 ? Math.round((player.wins / player.matches) * 100) : 0;
-                                const effScore = Math.round(player.score * 100);
-                                const wWins = player.weightedWins ?? player.wins;
-                                const wMatches = player.weightedMatches ?? player.matches;
+                            {/* Period breakdown */}
+                            <div className="space-y-2">
+                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 px-0.5">
+                                    <BarChart3 size={14} className="text-primary-500" />
+                                    <span>Разбивка сыгранных матчей по периодам</span>
+                                </div>
 
-                                return (
-                                    <div key={player.name} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 space-y-2.5 transition-all shadow-md dark:shadow-slate-950/50 shadow-slate-200/60 ring-1 ring-black/5 dark:ring-white/5">
-                                        {/* Player Header */}
-                                        <div className="flex items-center justify-between">
+                                <div className="space-y-1.5">
+                                    {breakdown.periods.map(period => (
+                                        <div
+                                            key={period.key}
+                                            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/40 flex items-center justify-between text-xs"
+                                        >
                                             <div className="flex items-center gap-2 min-w-0">
-                                                <span className="text-xs font-bold text-slate-400 shrink-0">#{idx + 1}</span>
-                                                <span className="font-bold text-sm text-slate-900 dark:text-white truncate">{player.name}</span>
-                                                {player.isInactive && (
-                                                    <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-400 rounded-md shrink-0">
-                                                        Неактивен
-                                                    </span>
-                                                )}
+                                                <span className="text-base leading-none">{period.icon}</span>
+                                                <div className="min-w-0">
+                                                    <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                                                        {period.label}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400">
+                                                        Вес игры: <span className="font-medium text-slate-600 dark:text-slate-300">{period.weightRange}</span>
+                                                    </div>
+                                                </div>
                                             </div>
+
                                             <div className="text-right shrink-0">
-                                                <span className="text-sm font-black text-primary-600 dark:text-primary-400">{effScore}%</span>
-                                                <span className="text-[10px] text-slate-400 block leading-none">Рейтинг</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Math breakdown row */}
-                                        <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
-                                            <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl flex flex-col items-center justify-center text-center border border-transparent min-h-[50px]">
-                                                <div className="text-[10px] text-slate-400 font-medium leading-tight">
-                                                    Процент побед
+                                                <div className="font-bold text-slate-900 dark:text-white">
+                                                    {period.wins} из {period.matches} побед
                                                 </div>
-                                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">
-                                                    {rawWinrate}% <span className="text-[9px] font-normal opacity-70">({player.wins}/{player.matches})</span>
+                                                <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                                    + {period.weightedWins} побед / + {period.weightedMatches} игр
                                                 </div>
                                             </div>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedWeightedPlayer({ player, focusType: 'wins' });
-                                                    triggerHaptic(10);
-                                                }}
-                                                className="relative bg-emerald-50/80 active:bg-emerald-100 dark:bg-emerald-950/30 dark:active:bg-emerald-900/40 border border-emerald-200/50 dark:border-emerald-800/40 p-1.5 rounded-xl cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group min-h-[50px]"
-                                            >
-                                                <HelpCircle size={10} className="absolute top-1 right-1 text-emerald-600/70 dark:text-emerald-400/70 group-active:scale-110 shrink-0 pointer-events-none" />
-                                                <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium leading-tight px-1">
-                                                    Взвеш. победы
-                                                </div>
-                                                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                                                    {wWins}
-                                                </div>
-                                            </button>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedWeightedPlayer({ player, focusType: 'matches' });
-                                                    triggerHaptic(10);
-                                                }}
-                                                className="relative bg-slate-50 active:bg-slate-100 dark:bg-slate-900/70 dark:active:bg-slate-800 border border-slate-200/50 dark:border-slate-800/40 p-1.5 rounded-xl cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group min-h-[50px]"
-                                            >
-                                                <HelpCircle size={10} className="absolute top-1 right-1 text-slate-400/70 dark:text-slate-400/60 group-active:scale-110 shrink-0 pointer-events-none" />
-                                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight px-1">
-                                                    Взвеш. матчи
-                                                </div>
-                                                <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">
-                                                    {wMatches}
-                                                </div>
-                                            </button>
                                         </div>
-
-                                        {/* Applied formula text */}
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center bg-slate-50/80 dark:bg-slate-900/50 p-1.5 rounded-xl">
-                                            Итоговый балл: {(player.score * 100).toFixed(1)}% ({wWins} побед / {wMatches} игр)
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Footer button */}
-                        <button
-                            onClick={() => { setShowEfficiencyBreakdown(false); triggerHaptic(10); }}
-                            className="mt-4 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/20 active:scale-98 text-sm shrink-0"
-                        >
-                            Понятно
-                        </button>
-                    </div>
-                </div>,
-                document.body
-            )}
-
-            {/* Weighted Player Breakdown Bottomsheet */}
-            {selectedWeightedPlayer && createPortal(
-                <div
-                    className={`fixed inset-0 z-[10000] flex items-end justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 fill-mode-forwards ${isClosingSheet ? 'animate-out fade-out duration-200' : 'animate-in fade-in duration-300'}`}
-                    onClick={closeWeightedSheet}
-                >
-                    <div
-                        className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border-t sm:border border-slate-200 dark:border-slate-800 max-h-[85vh] flex flex-col p-5 pb-6 text-slate-700 dark:text-slate-300 fill-mode-forwards ${
-                            isDraggingSheet ? '' : 'transition-transform duration-200 ease-out'
-                        } ${
-                            isClosingSheet ? 'animate-out slide-out-to-bottom duration-200 ease-in' : 'animate-in slide-in-from-bottom duration-300 ease-out'
-                        }`}
-                        style={{ transform: sheetDragY > 0 ? `translateY(${sheetDragY}px)` : undefined }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        {/* Drag Handle & Header (Swipe down zone) */}
-                        <div
-                            className="w-full cursor-grab active:cursor-grabbing shrink-0 select-none touch-none"
-                            onTouchStart={handleSheetTouchStart}
-                            onTouchMove={handleSheetTouchMove}
-                            onTouchEnd={handleSheetTouchEnd}
-                        >
-                            {/* Drag Handle Bar */}
-                            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-3 shrink-0" />
-
-                            {/* Header */}
-                            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-                                <div className="flex items-center gap-2.5 min-w-0">
-                                    <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                                        <TrendingUp size={20} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight truncate flex items-center gap-1.5">
-                                            <span>{selectedWeightedPlayer.player.name}</span>
-                                            {selectedWeightedPlayer.player.isInactive && (
-                                                <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-md font-normal shrink-0">
-                                                    Неактивен
-                                                </span>
-                                            )}
-                                        </h3>
-                                        <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                                            Свайпните вниз для закрытия
-                                        </p>
-                                    </div>
+                                    ))}
                                 </div>
-                                <button
-                                    onClick={closeWeightedSheet}
-                                    className="p-1.5 rounded-full text-slate-400 active:text-slate-700 dark:active:text-white active:bg-slate-100 dark:active:bg-slate-800 transition-colors shrink-0 ml-2"
-                                    aria-label="Закрыть"
-                                >
-                                    <X size={18} />
-                                </button>
+                            </div>
+
+                            {/* Explanatory note */}
+                            <div className="p-3 bg-primary-50/70 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800/30 rounded-2xl text-xs text-slate-700 dark:text-slate-300 space-y-1">
+                                <div className="font-bold flex items-center gap-1 text-primary-700 dark:text-primary-300">
+                                    <HelpCircle size={13} />
+                                    <span>Как это работает?</span>
+                                </div>
+                                <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
+                                    Чем свежее матч, тем больше баллов он даёт (от <strong>1.0</strong> за новые игры до <strong>0.5</strong> за игры 6-месячной давности). <strong>Взвешенные победы</strong> — это реальная суммарная ценность побед с учётом их даты.
+                                </p>
                             </div>
                         </div>
-
-                        {/* Content */}
-                        {(() => {
-                            const breakdown = getPlayerWeightedBreakdown(selectedWeightedPlayer.player.name, filteredHistory);
-                            const rawWinrate = breakdown.totalMatches > 0 ? Math.round((breakdown.totalWins / breakdown.totalMatches) * 100) : 0;
-                            const effScore = Math.round(selectedWeightedPlayer.player.score * 100);
-
-                            return (
-                                <div className="space-y-3.5 overflow-y-auto pr-1 flex-1 no-scrollbar">
-                                    {/* KPI Summary Cards */}
-                                    <div className="grid grid-cols-2 gap-2.5">
-                                        <div className={`p-3 rounded-2xl border transition-colors ${selectedWeightedPlayer.focusType === 'matches' ? 'bg-primary-50/80 dark:bg-primary-950/40 border-primary-300 dark:border-primary-700' : 'bg-slate-50 dark:bg-slate-800/80 border-slate-100 dark:border-slate-700/50'}`}>
-                                            <div className="text-[10px] text-slate-400 dark:text-slate-400 font-medium">Матчи (Факт ➔ Взвешенные)</div>
-                                            <div className="text-base font-black text-slate-900 dark:text-white flex items-baseline gap-1 mt-0.5">
-                                                <span>{breakdown.totalMatches} игр</span>
-                                                <span className="text-xs font-normal text-slate-400">➔</span>
-                                                <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{breakdown.totalWeightedMatches}</span>
-                                            </div>
-                                            <div className="text-[10px] text-slate-400 mt-1">
-                                                Ср. вес игры: <span className="font-semibold text-slate-700 dark:text-slate-300">{breakdown.totalMatches > 0 ? Math.round((breakdown.totalWeightedMatches / breakdown.totalMatches) * 100) : 0}%</span>
-                                            </div>
-                                        </div>
-
-                                        <div className={`p-3 rounded-2xl border transition-colors ${selectedWeightedPlayer.focusType === 'wins' ? 'bg-emerald-100/70 dark:bg-emerald-900/40 border-emerald-400 dark:border-emerald-600' : 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/30'}`}>
-                                            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">Победы (Факт ➔ Взвешенные)</div>
-                                            <div className="text-base font-black text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1 mt-0.5">
-                                                <span>{breakdown.totalWins} побед</span>
-                                                <span className="text-xs font-normal opacity-60">➔</span>
-                                                <span className="text-sm font-bold">{breakdown.totalWeightedWins}</span>
-                                            </div>
-                                            <div className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-1">
-                                                Винрейт: <span className="font-semibold">{rawWinrate}%</span> (Рейтинг: <span className="font-bold">{effScore}%</span>)
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Period breakdown */}
-                                    <div className="space-y-2">
-                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 px-0.5">
-                                            <BarChart3 size={14} className="text-primary-500" />
-                                            <span>Разбивка сыгранных матчей по периодам</span>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            {breakdown.periods.map(period => (
-                                                <div
-                                                    key={period.key}
-                                                    className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/40 flex items-center justify-between text-xs"
-                                                >
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                        <span className="text-base leading-none">{period.icon}</span>
-                                                        <div className="min-w-0">
-                                                            <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">
-                                                                {period.label}
-                                                            </div>
-                                                            <div className="text-[10px] text-slate-400">
-                                                                Вес игры: <span className="font-medium text-slate-600 dark:text-slate-300">{period.weightRange}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="text-right shrink-0">
-                                                        <div className="font-bold text-slate-900 dark:text-white">
-                                                            {period.wins} из {period.matches} побед
-                                                        </div>
-                                                        <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                                                            + {period.weightedWins} побед / + {period.weightedMatches} игр
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Explanatory note */}
-                                    <div className="p-3 bg-primary-50/70 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800/30 rounded-2xl text-xs text-slate-700 dark:text-slate-300 space-y-1">
-                                        <div className="font-bold flex items-center gap-1 text-primary-700 dark:text-primary-300">
-                                            <HelpCircle size={13} />
-                                            <span>Как это работает?</span>
-                                        </div>
-                                        <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
-                                            Чем свежее матч, тем больше баллов он даёт (от <strong>1.0</strong> за новые игры до <strong>0.5</strong> за игры 6-месячной давности). <strong>Взвешенные победы</strong> — это реальная суммарная ценность побед с учётом их даты.
-                                        </p>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        {/* Footer button */}
-                        <button
-                            onClick={closeWeightedSheet}
-                            className="mt-4 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/20 active:scale-98 text-sm shrink-0"
-                        >
-                            Понятно
-                        </button>
-                    </div>
-                </div>,
-                document.body
-            )}
+                    );
+                })()}
+            </BaseModal>
 
             <SeasonsManagerModal
                 isOpen={isSeasonsManagerOpen}

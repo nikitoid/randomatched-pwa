@@ -12,6 +12,7 @@ interface NavigationContextType {
     register: (id: string, onBack: () => void, priority?: number, isBlocking?: boolean) => void;
     unregister: (id: string) => void;
     close: (id: string) => void;
+    getStackIndex: (id: string) => number;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
@@ -25,6 +26,11 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const pendingBackStepsRef = useRef<number>(0);
     const pendingBackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    const getStackIndex = useCallback((id: string): number => {
+        const index = stackRef.current.findIndex(item => item.id === id);
+        return index !== -1 ? index : 0;
+    }, []);
 
     // Sync ref with state
     useEffect(() => {
@@ -128,9 +134,10 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                         itemsToClose[i].onBack();
                     }
                 } else {
-                    // В случае рассинхронизации закрываем все модали
-                    for (let i = currentStack.length - 1; i >= 0; i--) {
-                        currentStack[i].onBack();
+                    // В случае несовпадения закрываем только самую верхнюю модаль в стеке
+                    if (currentStack.length > 0) {
+                        const topItem = currentStack[currentStack.length - 1];
+                        topItem.onBack();
                     }
                 }
             } else if (state.type === 'root') {
@@ -175,7 +182,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     }, [addToast]);
 
     return (
-        <NavigationContext.Provider value={{ register, unregister, close }}>
+        <NavigationContext.Provider value={{ register, unregister, close, getStackIndex }}>
             {children}
         </NavigationContext.Provider>
     );

@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { X, Search, Cloud, RefreshCw, Trash2, Eye, Calendar, Loader2, AlertCircle } from 'lucide-react';
-import { CloudBackup, MatchRecord } from '../types';
+import { CloudBackup } from '../types';
 import { BackupViewer } from './BackupViewer';
-import { useBackHandler } from '../hooks/useBackHandler';
+import { BaseModal } from './common/BaseModal';
+import { ConfirmModal } from './common/ConfirmModal';
 
 interface CloudBackupManagerProps {
     isOpen: boolean;
@@ -57,31 +57,6 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
         });
     }, [backups, search]);
 
-    useBackHandler(isOpen, () => {
-        // Priority 1: Restore Confirmation
-        if (restoreConfirmId) {
-            setRestoreConfirmId(null);
-            return;
-        }
-
-        // Priority 2: Delete Confirmation
-        if (deleteConfirmId) {
-            setDeleteConfirmId(null);
-            return;
-        }
-
-        // Priority 3: Viewing Backup
-        if (viewingBackup) {
-            setViewingBackup(null);
-            return;
-        }
-
-        // Priority 4: Close Manager
-        onClose();
-    }, { id: 'cloud-backup-manager', priority: 40 });
-
-    if (!isOpen) return null;
-
     const handleCreate = async () => {
         triggerHaptic(10);
         await onCreateBackup();
@@ -115,249 +90,248 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
             if (success) {
                 setRestoreConfirmId(null);
                 setRestoreConfirmInput('');
-                onClose(); // Close manager after successful restore? Or stay open? Usually better to close or show success.
-                // Original behavior closed the menu.
+                onClose();
             }
         }
     };
 
-    return createPortal(
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
-            <div className="bg-white dark:bg-slate-900 bg-grid-pattern w-full max-w-2xl h-[85vh] rounded-3xl shadow-2xl flex flex-col border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+    const headerButton = (
+        <button
+            onClick={handleCreate}
+            disabled={isCreatingBackup || !isOnline}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all active:scale-95 min-h-[44px] ${
+                isCreatingBackup || !isOnline
+                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
+                    : 'bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-primary-500/20'
+            }`}
+        >
+            {isCreatingBackup ? (
+                <Loader2 size={16} className="animate-spin" />
+            ) : (
+                <Cloud size={16} />
+            )}
+            <span>Создать бэкап</span>
+        </button>
+    );
 
-                {/* Header */}
-                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-t-3xl z-10">
-                    <div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <Cloud className="text-primary-500" size={24} />
-                            Облачные бэкапы
-                        </h3>
-                        <p className="text-xs text-slate-500 mt-1">
-                            {backups.length} {backups.length === 1 ? 'бэкап' : 'бэкапов'} доступно
-                        </p>
-                    </div>
-                    <button onClick={onClose} className="p-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
-                        <X size={24} className="text-slate-500" />
-                    </button>
-                </div>
-
-                {/* Actions & Search */}
-                <div className="p-5 pb-2 space-y-4 shrink-0">
-                    <button
-                        onClick={handleCreate}
-                        disabled={!isOnline || isCreatingBackup}
-                        className={`w-full flex items-center justify-center gap-3 p-4 rounded-2xl font-bold transition-all ${isOnline && !isCreatingBackup
-                            ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/20 active:scale-95'
-                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                            }`}
-                        data-testid="backup-manager-create-btn"
-                    >
-                        {isCreatingBackup ? (
-                            <>
-                                <Loader2 size={20} className="animate-spin" />
-                                <span>Создание бэкапа...</span>
-                            </>
-                        ) : (
-                            <>
-                                <RefreshCw size={20} />
-                                <span>Создать новый бэкап</span>
-                            </>
-                        )}
-                    </button>
-
+    return (
+        <>
+            <BaseModal
+                isOpen={isOpen && !viewingBackup}
+                onClose={onClose}
+                title="Облачные бэкапы"
+                subtitle={`${backups.length} ${backups.length === 1 ? 'бэкап' : 'бэкапов'} доступно`}
+                icon={<Cloud size={24} className="text-primary-500" />}
+                maxWidth="2xl"
+                variant="auto"
+                modalId="cloud-backup-manager"
+                priority={50}
+                headerActions={headerButton}
+            >
+                <div className="space-y-4">
+                    {/* Search bar */}
                     <div className="relative">
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Поиск по дате..."
-                            className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors"
+                            placeholder="Поиск по дате или количеству..."
+                            className="w-full pl-10 pr-10 py-3 bg-slate-100 dark:bg-slate-800/80 rounded-2xl text-sm border border-slate-200/80 dark:border-slate-700/80 outline-none focus:ring-2 focus:ring-primary-500 transition-all text-slate-900 dark:text-white placeholder:text-slate-400 min-h-[48px]"
                         />
-                        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         {search && (
                             <button
                                 onClick={() => setSearch('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg text-slate-400 active:text-slate-600 dark:active:text-slate-200 transition-colors"
-                                aria-label="Очистить поиск"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                             >
-                                <X size={18} />
+                                <X size={16} />
                             </button>
                         )}
                     </div>
-                </div>
 
-                {/* List */}
-                <div className="flex-1 overflow-y-auto p-5 pt-2 space-y-3 custom-scrollbar">
-                    {isLoadingBackups && backups.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-40 text-slate-400 gap-3">
-                            <Loader2 size={32} className="animate-spin text-primary-500" />
-                            <span>Загрузка списка...</span>
-                        </div>
-                    ) : !isOnline ? (
-                        <div className="flex flex-col items-center justify-center h-40 text-slate-400 gap-3">
-                            <Cloud size={48} className="text-slate-300 dark:text-slate-700" />
-                            <span>Нет подключения к интернету</span>
-                        </div>
-                    ) : filteredBackups.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-40 text-slate-400 gap-3" data-testid="backup-list-empty">
-                            <Cloud size={48} className="text-slate-300 dark:text-slate-700" />
-                            <span>Бэкапов не найдено</span>
-                        </div>
-                    ) : (
-                        filteredBackups.map(backup => {
-                            const date = new Date(backup.createdAt);
-                            const dateStr = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                            const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-
-                            return (
-                                <div key={backup.id} className="bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl p-4 transition-all flex flex-col sm:flex-row gap-4 items-start sm:items-center" data-testid="backup-item">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Calendar size={14} className="text-primary-500" />
-                                            <span className="font-bold text-slate-900 dark:text-white">{dateStr}</span>
-                                            <span className="text-slate-400">|</span>
-                                            <span className="text-slate-600 dark:text-slate-300">{timeStr}</span>
+                    {/* Backups List */}
+                    <div className="space-y-2.5 pb-2">
+                        {isLoadingBackups ? (
+                            <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">
+                                <Loader2 size={32} className="animate-spin text-primary-500" />
+                                <p className="text-sm font-medium">Загрузка бэкапов...</p>
+                            </div>
+                        ) : filteredBackups.length === 0 ? (
+                            <div className="text-center py-12 text-slate-400 space-y-2">
+                                <Cloud size={40} className="mx-auto text-slate-300 dark:text-slate-700" />
+                                <p className="text-sm font-medium">Бэкапы не найдены</p>
+                            </div>
+                        ) : (
+                            filteredBackups.map(b => (
+                                <div
+                                    key={b.id}
+                                    className="p-4 bg-slate-50/60 dark:bg-slate-800/40 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-between gap-3 min-h-[64px]"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+                                            <Calendar size={16} className="text-slate-400 shrink-0" />
+                                            <span>{new Date(b.createdAt).toLocaleString('ru-RU')}</span>
                                         </div>
-                                        <div className="text-xs text-slate-500">
-                                            {backup.matchCount} {backup.matchCount === 1 ? 'матч' : backup.matchCount < 5 ? 'матча' : 'матчей'}
+                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                            Матчей: <strong className="text-slate-700 dark:text-slate-200">{b.matchCount}</strong>
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2 w-full sm:w-auto">
+                                    <div className="flex items-center gap-1.5 shrink-0">
                                         <button
-                                            onClick={() => handleView(backup.id)}
-                                            disabled={isLoadingDetailsId === backup.id || isRestoringBackup}
-                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 active:bg-white dark:active:bg-slate-700 active:text-primary-600 dark:active:text-primary-400 rounded-xl transition-colors disabled:opacity-50"
-                                            aria-label="Просмотреть"
+                                            onClick={() => handleView(b.id)}
+                                            disabled={isLoadingDetailsId === b.id}
+                                            className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                            title="Просмотр"
                                         >
-                                            {isLoadingDetailsId === backup.id ? <Loader2 size={18} className="animate-spin" /> : <Eye size={18} />}
-                                            <span className="hidden sm:inline text-xs font-bold">Просмотр</span>
+                                            {isLoadingDetailsId === b.id ? (
+                                                <Loader2 size={16} className="animate-spin" />
+                                            ) : (
+                                                <Eye size={16} />
+                                            )}
                                         </button>
 
                                         <button
-                                            onClick={() => {
-                                                triggerHaptic(10);
-                                                setRestoreConfirmId(backup.id);
-                                                setRestoreConfirmInput('');
-                                            }}
-                                            disabled={isRestoringBackup}
-                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-primary-600 bg-primary-50 dark:bg-primary-900/20 active:bg-primary-100 dark:active:bg-primary-900/40 rounded-xl transition-colors disabled:opacity-50 font-bold text-xs"
-                                            data-testid="backup-manager-restore-btn"
-                                            aria-label="Восстановить"
+                                            onClick={() => setRestoreConfirmId(b.id)}
+                                            disabled={isRestoringBackup || !isOnline}
+                                            className="px-3 py-2.5 rounded-xl bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/40 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 font-bold text-xs transition-all min-h-[44px] flex items-center gap-1.5"
                                         >
-                                            <RefreshCw size={18} />
-                                            <span className="hidden sm:inline">Восстановить</span>
+                                            <RefreshCw size={14} />
+                                            <span>Восстановить</span>
                                         </button>
 
                                         <button
-                                            onClick={() => {
-                                                triggerHaptic(10);
-                                                setDeleteConfirmId(backup.id);
-                                                setDeleteBackupInput('');
-                                            }}
-                                            disabled={isRestoringBackup}
-                                            className="flex-1 sm:flex-none p-2.5 flex items-center justify-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/10 active:bg-red-100 dark:active:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50"
-                                            aria-label="Удалить"
+                                            onClick={() => setDeleteConfirmId(b.id)}
+                                            disabled={isDeletingId === b.id || !isOnline}
+                                            className="p-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                            title="Удалить"
                                         >
-                                            <Trash2 size={18} />
-                                            <span className="hidden sm:inline text-xs font-bold">Удалить</span>
+                                            {isDeletingId === b.id ? (
+                                                <Loader2 size={16} className="animate-spin" />
+                                            ) : (
+                                                <Trash2 size={16} />
+                                            )}
                                         </button>
                                     </div>
                                 </div>
-                            );
-                        })
-                    )}
+                            ))
+                        )}
+                    </div>
                 </div>
-            </div>
+            </BaseModal>
 
-            {/* Backup Viewer Modal */}
+            {/* Viewer Component */}
             {viewingBackup && (
                 <BackupViewer
-                    isOpen={!!viewingBackup}
                     backup={viewingBackup}
+                    isOpen={!!viewingBackup}
                     onClose={() => setViewingBackup(null)}
                 />
             )}
 
-            {/* Restore Confirmation Modal */}
-            {restoreConfirmId && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2.5 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                                <AlertCircle className="text-red-500" size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Подтверждение</h3>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                            <span className="text-red-500 font-bold">Внимание!</span> Восстановление перезапишет текущую историю матчей.
-                            Действие необратимо.
-                        </p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                            Введите <span className="font-mono font-bold text-slate-900 dark:text-white">ВОССТАНОВИТЬ</span>:
-                        </p>
-                        <input
-                            type="text"
-                            value={restoreConfirmInput}
-                            onChange={e => setRestoreConfirmInput(e.target.value)}
-                            placeholder="ВОССТАНОВИТЬ"
-                            className="w-full p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-mono border border-slate-200 dark:border-slate-700 focus:border-primary-500 outline-none mb-4"
-                            data-testid="restore-confirm-input"
-                        />
-                        <div className="flex gap-3">
-                            <button onClick={() => setRestoreConfirmId(null)} className="flex-1 py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm" data-testid="restore-cancel-btn">Отмена</button>
-                            <button
-                                onClick={handleRestore}
-                                disabled={restoreConfirmInput !== 'ВОССТАНОВИТЬ' || isRestoringBackup}
-                                className={`flex-1 py-3 font-bold rounded-xl text-sm transition-colors ${restoreConfirmInput === 'ВОССТАНОВИТЬ' && !isRestoringBackup ? 'bg-red-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
-                                    }`}
-                                data-testid="restore-confirm-btn"
-                            >
-                                {isRestoringBackup ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Восстановить'}
-                            </button>
-                        </div>
+            {/* Confirm Restore Dialog */}
+            <BaseModal
+                isOpen={!!restoreConfirmId}
+                onClose={() => {
+                    setRestoreConfirmId(null);
+                    setRestoreConfirmInput('');
+                }}
+                title="Восстановить бэкап?"
+                subtitle="Текущая статистика будет перезаписана"
+                icon={<RefreshCw size={24} className="text-primary-500" />}
+                maxWidth="xs"
+                variant="center"
+                isAlert={true}
+                priority={80}
+                modalId="restore-backup-confirm"
+            >
+                <div className="space-y-4">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Введите <strong className="text-slate-900 dark:text-white uppercase">ВОССТАНОВИТЬ</strong> для подтверждения:
+                    </p>
+                    <input
+                        type="text"
+                        value={restoreConfirmInput}
+                        onChange={(e) => setRestoreConfirmInput(e.target.value)}
+                        placeholder="ВОССТАНОВИТЬ"
+                        className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 font-bold min-h-[44px]"
+                    />
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <button
+                            onClick={() => {
+                                setRestoreConfirmId(null);
+                                setRestoreConfirmInput('');
+                            }}
+                            className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs min-h-[44px]"
+                        >
+                            Отмена
+                        </button>
+                        <button
+                            onClick={handleRestore}
+                            disabled={restoreConfirmInput !== 'ВОССТАНОВИТЬ'}
+                            className={`py-3 px-4 rounded-xl font-bold text-xs text-white transition-all min-h-[44px] ${
+                                restoreConfirmInput === 'ВОССТАНОВИТЬ'
+                                    ? 'bg-primary-500 hover:bg-primary-600 active:scale-95 shadow-md shadow-primary-500/20'
+                                    : 'bg-slate-300 dark:bg-slate-700 cursor-not-allowed opacity-60'
+                            }`}
+                        >
+                            Восстановить
+                        </button>
                     </div>
                 </div>
-            )}
+            </BaseModal>
 
-            {/* Delete Confirmation Modal */}
-            {deleteConfirmId && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2.5 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                                <Trash2 className="text-red-500" size={24} />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Удаление бэкапа</h3>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                            Это действие <span className="text-red-500 font-bold">нельзя отменить</span>.
-                        </p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
-                            Введите <span className="font-mono font-bold text-slate-900 dark:text-white">УДАЛИТЬ</span>:
-                        </p>
-                        <input
-                            type="text"
-                            value={deleteBackupInput}
-                            onChange={e => setDeleteBackupInput(e.target.value)}
-                            placeholder="УДАЛИТЬ"
-                            className="w-full p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-mono border border-slate-200 dark:border-slate-700 focus:border-red-500 outline-none mb-4"
-                        />
-                        <div className="flex gap-3">
-                            <button onClick={() => setDeleteConfirmId(null)} disabled={!!isDeletingId} className="flex-1 py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm">Отмена</button>
-                            <button
-                                onClick={handleDelete}
-                                disabled={deleteBackupInput !== 'УДАЛИТЬ' || !!isDeletingId}
-                                className={`flex-1 py-3 font-bold rounded-xl text-sm transition-colors ${deleteBackupInput === 'УДАЛИТЬ' && !isDeletingId ? 'bg-red-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
-                                    }`}
-                            >
-                                {isDeletingId ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Удалить'}
-                            </button>
-                        </div>
+            {/* Confirm Delete Dialog */}
+            <BaseModal
+                isOpen={!!deleteConfirmId}
+                onClose={() => {
+                    setDeleteConfirmId(null);
+                    setDeleteBackupInput('');
+                }}
+                title="Удалить бэкап?"
+                subtitle="Действие нельзя будет отменить"
+                icon={<Trash2 size={24} className="text-red-500" />}
+                maxWidth="xs"
+                variant="center"
+                isAlert={true}
+                priority={80}
+                modalId="delete-backup-confirm"
+            >
+                <div className="space-y-4">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Введите <strong className="text-slate-900 dark:text-white uppercase">УДАЛИТЬ</strong> для подтверждения:
+                    </p>
+                    <input
+                        type="text"
+                        value={deleteBackupInput}
+                        onChange={(e) => setDeleteBackupInput(e.target.value)}
+                        placeholder="УДАЛИТЬ"
+                        className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-red-500 font-bold min-h-[44px]"
+                    />
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <button
+                            onClick={() => {
+                                setDeleteConfirmId(null);
+                                setDeleteBackupInput('');
+                            }}
+                            className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs min-h-[44px]"
+                        >
+                            Отмена
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            disabled={deleteBackupInput !== 'УДАЛИТЬ'}
+                            className={`py-3 px-4 rounded-xl font-bold text-xs text-white transition-all min-h-[44px] ${
+                                deleteBackupInput === 'УДАЛИТЬ'
+                                    ? 'bg-red-600 hover:bg-red-700 active:scale-95 shadow-md shadow-red-500/20'
+                                    : 'bg-slate-300 dark:bg-slate-700 cursor-not-allowed opacity-60'
+                            }`}
+                        >
+                            Удалить
+                        </button>
                     </div>
                 </div>
-            )}
-        </div>,
-        document.body
+            </BaseModal>
+        </>
     );
 };
