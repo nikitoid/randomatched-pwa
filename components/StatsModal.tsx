@@ -489,11 +489,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     };
 
     const closeMatchForm = () => {
-        setMatchFormClosing(true);
-        setTimeout(() => {
-            setMatchForm(null);
-            setMatchFormClosing(false);
-        }, 200); // 200ms matches animate-out duration
+        setMatchForm(null);
     };
 
 
@@ -951,7 +947,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
             <div
                 data-testid="stats-modal"
-                className={`fixed inset-0 z-[60] flex items-center justify-center bg-slate-50 dark:bg-slate-950 transition-all duration-300 ${isOpen && !matchForm ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`fixed inset-0 z-[60] flex items-center justify-center bg-slate-50 dark:bg-slate-950 transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                 onClick={onClose}
             >
                 <div

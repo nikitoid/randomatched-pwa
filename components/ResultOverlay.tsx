@@ -4,6 +4,8 @@ import { AssignedPlayer, GenerationMode, Hero, MatchRecord } from '../types';
 import { HeroSelectionModal } from './HeroSelectionModal';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { getHeroHistoryWeights, getHeroWeight } from '../utils/generator';
+import { BaseModal } from './common/BaseModal';
+import { ConfirmModal } from './common/ConfirmModal';
 
 interface ResultOverlayProps {
     isOpen: boolean;
@@ -139,10 +141,6 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     useBackHandler(isOpen, () => {
-        if (isWeightsModalOpen) { setIsWeightsModalOpen(false); return; }
-        if (isHeroSelectionOpen) { setIsHeroSelectionOpen(false); return; }
-        if (confirmModal) { setConfirmModal(null); return; }
-        if (showInfo) { setShowInfo(false); return; }
         if (isRerollConfirm) { setIsRerollConfirm(false); return; }
         if (isModeSelectorOpen) { setIsModeSelectorOpen(false); return; }
 
@@ -769,159 +767,161 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 </div>
             </div>
 
-            {/* Confirmation Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${showModal ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-                <div className={`bg-white dark:bg-slate-900 w-full ${activeModal?.type === 'winner' ? 'max-w-md' : 'max-w-xs'} rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showModal ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-                    <div className="flex flex-col items-center text-center">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{getModalTitle()}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{getModalDescription()}</p>
-                    </div>
-
-                    {activeModal?.type === 'winner' ? (
-                        <div className="flex flex-col gap-4 w-full">
-                            {canRecordStats && (
-                                <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">
-                                    <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 text-left flex items-center gap-1.5">
-                                        <span>💀</span> Количество убийств
-                                    </h4>
-                                    {assignments.filter(p => {
-                                        const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
-                                        const idx = positionToIndex[p.position];
-                                        return playerNames[idx]?.trim() !== '';
-                                    }).map(player => {
-                                        const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
-                                        const idx = positionToIndex[player.position];
-                                        const playerName = playerNames[idx]?.trim() || `Игрок ${player.playerNumber}`;
-                                        return (
-                                            <div key={player.playerNumber} className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800/55 last:border-0">
-                                                <div className="flex flex-col text-left">
-                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
-                                                        {playerName}
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                                        {player.hero?.name || 'Без героя'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <button
-                                                        onClick={() => {
-                                                            setPlayerKills(prev => ({
-                                                                ...prev,
-                                                                [player.playerNumber]: Math.max(0, (prev[player.playerNumber] || 0) - 1)
-                                                            }));
-                                                        }}
-                                                        className="w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black flex items-center justify-center active:scale-90 transition-transform text-xs"
-                                                    >
-                                                        -
-                                                    </button>
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        value={playerKills[player.playerNumber] ?? 0}
-                                                        onChange={(e) => {
-                                                            const val = parseInt(e.target.value, 10);
-                                                            setPlayerKills(prev => ({
-                                                                ...prev,
-                                                                [player.playerNumber]: isNaN(val) ? 0 : Math.max(0, val)
-                                                            }));
-                                                        }}
-                                                        className="w-10 py-0.5 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                                                    />
-                                                    <button
-                                                        onClick={() => {
-                                                            setPlayerKills(prev => ({
-                                                                ...prev,
-                                                                [player.playerNumber]: (prev[player.playerNumber] || 0) + 1
-                                                            }));
-                                                        }}
-                                                        className="w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black flex items-center justify-center active:scale-90 transition-transform text-xs"
-                                                    >
-                                                        +
-                                                    </button>
-                                                </div>
+            {/* Confirmation / Winner Record Modal */}
+            {activeModal?.type === 'winner' ? (
+                <BaseModal
+                    isOpen={showModal}
+                    onClose={() => setConfirmModal(null)}
+                    title={getModalTitle()}
+                    subtitle={getModalDescription()}
+                    maxWidth="md"
+                    variant="auto"
+                    modalId="winner-record-modal"
+                    priority={40}
+                >
+                    <div className="flex flex-col gap-4 w-full">
+                        {canRecordStats && (
+                            <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 text-left flex items-center gap-1.5">
+                                    <span>💀</span> Количество убийств
+                                </h4>
+                                {assignments.filter(p => {
+                                    const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+                                    const idx = positionToIndex[p.position];
+                                    return playerNames[idx]?.trim() !== '';
+                                }).map(player => {
+                                    const positionToIndex = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+                                    const idx = positionToIndex[player.position];
+                                    const playerName = playerNames[idx]?.trim() || `Игрок ${player.playerNumber}`;
+                                    return (
+                                        <div key={player.playerNumber} className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800/55 last:border-0">
+                                            <div className="flex flex-col text-left">
+                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
+                                                    {playerName}
+                                                </span>
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                    {player.hero?.name || 'Без героя'}
+                                                </span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => {
+                                                        setPlayerKills(prev => ({
+                                                            ...prev,
+                                                            [player.playerNumber]: Math.max(0, (prev[player.playerNumber] || 0) - 1)
+                                                        }));
+                                                    }}
+                                                    className="w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black flex items-center justify-center active:scale-90 transition-transform text-xs"
+                                                >
+                                                    -
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={playerKills[player.playerNumber] ?? 0}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value, 10);
+                                                        setPlayerKills(prev => ({
+                                                            ...prev,
+                                                            [player.playerNumber]: isNaN(val) ? 0 : Math.max(0, val)
+                                                        }));
+                                                    }}
+                                                    className="w-10 py-0.5 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                                />
+                                                <button
+                                                    onClick={() => {
+                                                        setPlayerKills(prev => ({
+                                                            ...prev,
+                                                            [player.playerNumber]: (prev[player.playerNumber] || 0) + 1
+                                                        }));
+                                                    }}
+                                                    className="w-7 h-7 rounded-lg bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black flex items-center justify-center active:scale-90 transition-transform text-xs"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        <div className="flex flex-col gap-2 w-full">
+                            {canRecordStats && (
+                                <>
+                                    <button data-testid="record-team1-win-btn" onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--secondary-500)/0.25)]">
+                                        <Trophy size={16} /> <span>{getTeamNames('Odd')}</span>
+                                    </button>
+                                    <button data-testid="record-team2-win-btn" onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--primary-500)/0.25)]">
+                                        <Trophy size={16} /> <span>{getTeamNames('Even')}</span>
+                                    </button>
+                                    <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />
+                                </>
                             )}
 
-                            <div className="flex flex-col gap-2 w-full">
-                                {canRecordStats && (
-                                    <>
-                                        <button data-testid="record-team1-win-btn" onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--secondary-500)/0.25)]">
-                                            <Trophy size={16} /> <span>{getTeamNames('Odd')}</span>
-                                        </button>
-                                        <button data-testid="record-team2-win-btn" onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--primary-500)/0.25)]">
-                                            <Trophy size={16} /> <span>{getTeamNames('Even')}</span>
-                                        </button>
-                                        <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />
-                                    </>
-                                )}
-
-                                <button onClick={handleSkipRecord} className="py-3 font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl active:scale-95 transition-transform text-sm">
-                                    Сбросить без записи
-                                </button>
-                                <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-400 dark:text-slate-500 bg-transparent rounded-xl active:scale-95 transition-transform text-sm">
-                                    Отмена
-                                </button>
-                            </div>
+                            <button onClick={handleSkipRecord} className="py-3 font-bold text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl active:scale-95 transition-transform text-sm">
+                                Сбросить без записи
+                            </button>
+                            <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-400 dark:text-slate-500 bg-transparent rounded-xl active:scale-95 transition-transform text-sm">
+                                Отмена
+                            </button>
                         </div>
-                    ) : (
-                        <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setConfirmModal(null)} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Нет</button>
-                            <button onClick={handleConfirmAction} className="py-3 font-bold text-white bg-red-500 rounded-xl">Да</button>
-                        </div>
-                    )}
-                </div>
-            </div>
+                    </div>
+                </BaseModal>
+            ) : (
+                <ConfirmModal
+                    isOpen={showModal}
+                    onCancel={() => setConfirmModal(null)}
+                    onConfirm={handleConfirmAction}
+                    title={getModalTitle()}
+                    description={getModalDescription()}
+                    confirmText="Да"
+                    cancelText="Нет"
+                    confirmVariant="danger"
+                    modalId="result-confirm-modal"
+                    priority={40}
+                />
+            )}
 
             {/* INFO Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${showInfo ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${showInfo ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-                    <div className="flex flex-col items-center text-center mb-4">
-                        <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full flex items-center justify-center mb-4"><Info size={24} /></div>
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{getModeTitle()}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{getModeDescription()}</p>
-
-                        <div className="mt-4 pt-3 border-t border-slate-100 dark:bg-slate-800/10 dark:border-slate-800 text-left w-full">
-                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                                <History size={12} className={prioritizeUnplayed ? "text-primary-500" : "text-slate-400"} />
-                                Приоритет истории: {prioritizeUnplayed ? "Включен" : "Выключен"}
-                            </h4>
-                            <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
-                                {getPrioritizeUnplayedDescription()}
-                            </p>
-                        </div>
-                    </div>
+            <BaseModal
+                isOpen={showInfo}
+                onClose={() => setShowInfo(false)}
+                title={getModeTitle()}
+                subtitle={getModeDescription()}
+                icon={<Info size={20} className="text-primary-600 dark:text-primary-400" />}
+                maxWidth="sm"
+                variant="auto"
+                modalId="algorithm-info-modal"
+                priority={40}
+                footer={() => (
                     <button onClick={() => setShowInfo(false)} className="w-full py-3 font-bold text-white bg-primary-600 rounded-xl">Понятно</button>
+                )}
+            >
+                <div className="pt-1 text-left w-full">
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+                        <History size={12} className={prioritizeUnplayed ? "text-primary-500" : "text-slate-400"} />
+                        Приоритет истории: {prioritizeUnplayed ? "Включен" : "Выключен"}
+                    </h4>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                        {getPrioritizeUnplayedDescription()}
+                    </p>
                 </div>
-            </div>
+            </BaseModal>
 
             {/* Weights Table Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isWeightsModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col max-h-[85vh] ${isWeightsModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}>
-
-                    {/* Header */}
-                    <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-                        <div>
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <Terminal size={18} className="text-primary-500" />
-                                <span>Таблица весов героев</span>
-                            </h3>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                                Всего героев: {availableHeroes.length}
-                            </p>
-                        </div>
-                        <button
-                            onClick={() => { setIsWeightsModalOpen(false); setWeightsSearchTerm(''); }}
-                            className="p-2 rounded-xl text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
-                        >
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    {/* Search Bar */}
-                    <div className="my-4 relative">
+            <BaseModal
+                isOpen={isWeightsModalOpen}
+                onClose={() => { setIsWeightsModalOpen(false); setWeightsSearchTerm(''); }}
+                title="Таблица весов героев"
+                subtitle={`Всего героев: ${availableHeroes.length}`}
+                icon={<Terminal size={20} className="text-primary-500" />}
+                maxWidth="lg"
+                variant="auto"
+                modalId="generation-weights-modal"
+                priority={40}
+                subHeader={
+                    <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
                         <input
                             type="text"
@@ -939,67 +939,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             </button>
                         )}
                     </div>
-
-                    {/* Table Content */}
-                    <div className="flex-1 overflow-y-auto pr-1 -mr-1 scrollbar-thin">
-                        <table className="w-full text-left text-sm border-collapse">
-                            <thead>
-                                <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                    <th className="py-2.5 px-2">Герой</th>
-                                    <th className="py-2.5 px-2 text-center">Ранг</th>
-                                    <th className="py-2.5 px-2 text-right">Вес (W)</th>
-                                    <th className="py-2.5 px-2 text-right">Сила (P)</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-                                {filteredHeroes.length > 0 ? (
-                                    filteredHeroes.map(({ hero, weight, power }) => {
-                                        const isSelected = assignments.some(a => a.hero?.id === hero.id);
-                                        return (
-                                            <tr
-                                                key={hero.id}
-                                                className={`transition-colors ${isSelected
-                                                    ? 'bg-primary-50/50 dark:bg-primary-950/20 font-medium'
-                                                    : ''
-                                                    }`}
-                                            >
-                                                <td className="py-2.5 px-2 flex items-center gap-2">
-                                                    <span className={`truncate text-slate-800 dark:text-slate-200 ${isSelected ? 'text-primary-600 dark:text-primary-400 font-bold' : ''}`}>
-                                                        {hero.name}
-                                                    </span>
-                                                    {isSelected && (
-                                                        <span className="px-1 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-[9px] text-primary-600 dark:text-primary-400 font-black uppercase tracking-wider">
-                                                            В игре
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="py-2.5 px-2 text-center">
-                                                    <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-400">
-                                                        {hero.rank || '—'}
-                                                    </span>
-                                                </td>
-                                                <td className="py-2.5 px-2 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
-                                                    {weight.toFixed(2)}
-                                                </td>
-                                                <td className="py-2.5 px-2 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
-                                                    {power}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                ) : (
-                                    <tr>
-                                        <td colSpan={4} className="py-8 text-center text-slate-400 dark:text-slate-500 text-sm">
-                                            Герои не найдены
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+                }
+                footer={() => (
+                    <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 w-full">
                         <div>
                             <span>Сортировка по весу (убывание)</span>
                         </div>
@@ -1010,8 +952,65 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             Закрыть
                         </button>
                     </div>
+                )}
+            >
+                <div className="flex-1 overflow-y-auto scrollbar-thin">
+                    <table className="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr className="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                <th className="py-2.5 px-2">Герой</th>
+                                <th className="py-2.5 px-2 text-center">Ранг</th>
+                                <th className="py-2.5 px-2 text-right">Вес (W)</th>
+                                <th className="py-2.5 px-2 text-right">Сила (P)</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                            {filteredHeroes.length > 0 ? (
+                                filteredHeroes.map(({ hero, weight, power }) => {
+                                    const isSelected = assignments.some(a => a.hero?.id === hero.id);
+                                    return (
+                                        <tr
+                                            key={hero.id}
+                                            className={`transition-colors ${isSelected
+                                                ? 'bg-primary-50/50 dark:bg-primary-950/20 font-medium'
+                                                : ''
+                                                }`}
+                                        >
+                                            <td className="py-2.5 px-2 flex items-center gap-2">
+                                                <span className={`truncate text-slate-800 dark:text-slate-200 ${isSelected ? 'text-primary-600 dark:text-primary-400 font-bold' : ''}`}>
+                                                    {hero.name}
+                                                </span>
+                                                {isSelected && (
+                                                    <span className="px-1 py-0.5 rounded bg-primary-100 dark:bg-primary-900/40 text-[9px] text-primary-600 dark:text-primary-400 font-black uppercase tracking-wider">
+                                                        В игре
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="py-2.5 px-2 text-center">
+                                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                                    {hero.rank || '—'}
+                                                </span>
+                                            </td>
+                                            <td className="py-2.5 px-2 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
+                                                {weight.toFixed(2)}
+                                            </td>
+                                            <td className="py-2.5 px-2 text-right font-mono text-xs text-slate-500 dark:text-slate-400">
+                                                {power}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan={4} className="py-8 text-center text-slate-400 dark:text-slate-500 text-sm">
+                                        Герои не найдены
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+            </BaseModal>
 
             <HeroSelectionModal
                 isOpen={isHeroSelectionOpen}

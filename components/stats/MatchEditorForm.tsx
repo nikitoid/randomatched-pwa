@@ -1,7 +1,8 @@
 import React, { useState, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, User, Shield, Swords } from 'lucide-react';
+import { User, Shield, Swords } from 'lucide-react';
 import { MatchPlayer, MatchRecord, Hero } from '../../types';
+import { BaseModal } from '../common/BaseModal';
 
 export interface MatchFormState {
     id?: string;
@@ -18,7 +19,7 @@ export interface MatchFormState {
 interface MatchEditorFormProps {
     matchForm: MatchFormState;
     setMatchForm: (form: MatchFormState | null) => void;
-    matchFormClosing: boolean;
+    matchFormClosing?: boolean;
     closeMatchForm: () => void;
     allHeroesList: Hero[];
     uniquePlayerNames: string[];
@@ -30,7 +31,6 @@ interface MatchEditorFormProps {
 export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
     matchForm,
     setMatchForm,
-    matchFormClosing,
     closeMatchForm,
     allHeroesList,
     uniquePlayerNames,
@@ -244,7 +244,7 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                         value={value}
                         onChange={(e) => {
                             const val = e.target.value;
-                            if (val === '' || /^\\d+$/.test(val)) {
+                            if (val === '' || /^\d+$/.test(val)) {
                                 setMatchForm({
                                     ...matchForm,
                                     [valKey]: val
@@ -296,19 +296,39 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
     };
 
     return (
-        <div className={`fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm ${matchFormClosing ? 'animate-out fade-out duration-200' : 'animate-in fade-in duration-200'} fill-mode-forwards`}>
-            <div className={`bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl flex flex-col max-h-[90dvh] border border-slate-100 dark:border-slate-800 overflow-hidden ${matchFormClosing ? 'animate-out zoom-out-95 duration-200' : 'animate-in zoom-in-95 duration-200'} fill-mode-forwards`}>
-                <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900 z-10">
-                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        {matchForm.id ? 'Редактировать' : 'Новый матч'}
-                    </h2>
-                    <button onClick={closeMatchForm} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        <X size={20} />
-                    </button>
-                </div>
-
-                <div className="p-5 overflow-y-auto custom-scrollbar">
-                    <div className="flex gap-4 mb-6">
+        <>
+            <BaseModal
+                isOpen={!!matchForm}
+                onClose={closeMatchForm}
+                title={matchForm.id ? 'Редактировать матч' : 'Новый матч'}
+                subtitle="Заполните параметры и участников матча"
+                icon={<Swords size={20} className="text-primary-600 dark:text-primary-400" />}
+                maxWidth="md"
+                variant="auto"
+                modalId="match-editor-modal"
+                priority={50}
+                closeButtonTestId="close-match-editor-btn"
+                footer={(close) => (
+                    <div className="flex gap-3 w-full">
+                        <button
+                            type="button"
+                            onClick={close}
+                            className="flex-1 py-3.5 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm active:scale-95 transition-transform"
+                        >
+                            Отмена
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleMatchSubmit}
+                            className="flex-1 py-3.5 font-bold text-white bg-primary-600 rounded-xl shadow-lg shadow-primary-600/20 text-sm active:scale-95 transition-transform"
+                        >
+                            Сохранить
+                        </button>
+                    </div>
+                )}
+            >
+                <div className="space-y-4">
+                    <div className="flex gap-4 mb-2">
                         <div className="flex-1">
                             <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Дата</label>
                             <input type="date" required value={matchForm.date} onChange={e => setMatchForm({ ...matchForm, date: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500 text-slate-900 dark:text-white dark:[color-scheme:dark]" />
@@ -323,6 +343,7 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                         <div className="flex items-center justify-between mb-2 px-1">
                             <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Команда 1</h3>
                             <button
+                                type="button"
                                 onClick={() => setMatchForm({ ...matchForm, winner: 'team1' })}
                                 className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team1' ? 'bg-secondary-100 text-secondary-700 border-secondary-200 dark:bg-secondary-900/30 dark:text-secondary-400 dark:border-secondary-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
                             >
@@ -355,6 +376,7 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                         <div className="flex items-center justify-between mb-2 px-1">
                             <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Команда 2</h3>
                             <button
+                                type="button"
                                 onClick={() => setMatchForm({ ...matchForm, winner: 'team2' })}
                                 className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team2' ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
                             >
@@ -377,13 +399,8 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                         </div>
                     </div>
                 </div>
-
-                <div className="p-5 border-t border-slate-100 dark:border-slate-800 flex gap-3 bg-white dark:bg-slate-900 z-10 mt-auto">
-                    <button onClick={closeMatchForm} className="flex-1 py-3.5 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm">Отмена</button>
-                    <button onClick={handleMatchSubmit} className="flex-1 py-3.5 font-bold text-white bg-primary-600 rounded-xl shadow-lg shadow-primary-600/20 text-sm active:scale-95 transition-transform">Сохранить</button>
-                </div>
-            </div>
+            </BaseModal>
             {renderAutocompletePortal()}
-        </div>
+        </>
     );
 };

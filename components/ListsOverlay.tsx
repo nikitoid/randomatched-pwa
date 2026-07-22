@@ -14,6 +14,8 @@ import { RankSelect } from './RankSelect';
 import { ListItem } from './ListItem';
 import { CustomScrollbar } from './CustomScrollbar';
 import { HeroEditorRow, HeroViewRow } from './HeroEditorRow';
+import { BaseModal } from './common/BaseModal';
+import { ConfirmModal } from './common/ConfirmModal';
 
 interface ListsOverlayProps {
     isOpen: boolean;
@@ -172,30 +174,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     useBackHandler(isOpen && !!editingListId && isEditMode, () => {
         handleCancelEditor();
     }, { id: 'list-editing', priority: 28 });
-
-    useBackHandler(isStatsModalOpen, () => {
-        setIsStatsModalOpen(false);
-    }, { id: 'list-hero-stats-modal', priority: 30 });
-
-    useBackHandler(isNameModalOpen, () => {
-        setNameModalOpen(false);
-    }, { id: 'list-name-modal', priority: 30 });
-
-    useBackHandler(!!listToDelete, () => {
-        setListToDelete(null);
-    }, { id: 'list-delete-modal', priority: 30 });
-
-    useBackHandler(isDiscardModalOpen, () => {
-        setDiscardModalOpen(false);
-    }, { id: 'list-discard-modal', priority: 30 });
-
-    useBackHandler(importMode !== 'none', () => {
-        if (importMode === 'rank_import_confirm') {
-            setImportMode('rank_import');
-        } else {
-            setImportMode('none');
-        }
-    }, { id: 'list-import-modal', priority: 30 });
 
     useBackHandler(!!contextMenuTargetId, () => {
         handleCloseMenu();
@@ -1032,79 +1010,114 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             )}
 
             {/* Name Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isNameModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}> 
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isNameModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}> 
-                    <form onSubmit={handleNameSubmit}> 
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{nameModalMode === 'create' ? 'Новый список' : 'Переименовать'}</h3> 
-                        <input autoFocus={isNameModalOpen} type="text" value={nameInputValue} onChange={(e) => setNameInputValue(e.target.value)} className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl mb-4 outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white select-text" placeholder="Название..." /> 
-                        {nameModalMode === 'create' && (
-                            <div className="mb-6"> 
-                                <div className="flex items-center gap-2 mb-2"> 
-                                    <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800"></div> 
-                                    <span className="text-[10px] uppercase text-slate-400 font-bold">Или</span> 
-                                    <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800"></div> 
-                                </div> 
-                                <button type="button" onClick={triggerCreateListFileUpload} className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold border border-slate-200 dark:border-slate-700 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"> <Upload size={16} /> Загрузить из файла </button> 
-                                <input type="file" ref={createListFileInputRef} className="hidden" accept=".json" onChange={handleNewListImport} /> 
-                            </div>
-                        )} 
-                        <div className="grid grid-cols-2 gap-3 mt-4"> 
-                            <button type="button" onClick={handleCancelModal} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
-                            <button type="submit" disabled={!nameInputValue.trim()} className="py-3 font-bold text-white bg-primary-600 rounded-xl" data-testid="name-submit-btn">ОК</button> 
-                        </div> 
-                    </form> 
-                </div> 
-            </div>
+            <BaseModal
+                isOpen={isNameModalOpen}
+                onClose={handleCancelModal}
+                title={nameModalMode === 'create' ? 'Новый список' : 'Переименовать'}
+                maxWidth="xs"
+                variant="auto"
+                modalId="list-name-modal"
+                priority={40}
+            >
+                <form onSubmit={handleNameSubmit} className="space-y-4"> 
+                    <input autoFocus={isNameModalOpen} type="text" value={nameInputValue} onChange={(e) => setNameInputValue(e.target.value)} className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white select-text" placeholder="Название..." /> 
+                    {nameModalMode === 'create' && (
+                        <div className="mb-4"> 
+                            <div className="flex items-center gap-2 mb-2"> 
+                                <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800"></div> 
+                                <span className="text-[10px] uppercase text-slate-400 font-bold">Или</span> 
+                                <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800"></div> 
+                            </div> 
+                            <button type="button" onClick={triggerCreateListFileUpload} className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold border border-slate-200 dark:border-slate-700 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"> <Upload size={16} /> Загрузить из файла </button> 
+                            <input type="file" ref={createListFileInputRef} className="hidden" accept=".json" onChange={handleNewListImport} /> 
+                        </div>
+                    )} 
+                    <div className="grid grid-cols-2 gap-3 pt-2"> 
+                        <button type="button" onClick={handleCancelModal} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
+                        <button type="submit" disabled={!nameInputValue.trim()} className="py-3 font-bold text-white bg-primary-600 rounded-xl" data-testid="name-submit-btn">ОК</button> 
+                    </div> 
+                </form> 
+            </BaseModal>
 
             {/* Delete Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${listToDelete ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}> 
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${listToDelete ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}> 
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Удалить?</h3> 
-                    <p className="text-sm text-slate-500 mb-6">{isDeleteCloud ? 'Удалить из облака?' : 'Это действие необратимо.'}</p> 
-                    <div className="grid grid-cols-2 gap-3"> 
-                        <button onClick={handleCancelModal} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
-                        <button onClick={confirmDelete} className="py-3 font-bold text-white bg-red-500 rounded-xl">Удалить</button> 
-                    </div> 
-                </div> 
-            </div>
+            <ConfirmModal
+                isOpen={!!listToDelete}
+                onCancel={handleCancelModal}
+                onConfirm={confirmDelete}
+                title="Удалить?"
+                description={isDeleteCloud ? 'Удалить из облака?' : 'Это действие необратимо.'}
+                confirmText="Удалить"
+                cancelText="Отмена"
+                confirmVariant="danger"
+                modalId="delete-list-confirm-modal"
+                priority={45}
+            />
 
             {/* Text Export Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${importMode === 'text_export' ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setImportMode('none')}> 
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${importMode === 'text_export' ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={e => e.stopPropagation()}> 
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Экспорт текста</h3> 
-                    <p className="text-xs text-slate-500 mb-4">Формат: Имя|Ранг (одна строка - один герой)</p> 
-                    <textarea value={importTextValue} readOnly className="w-full h-64 p-4 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-mono border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 select-text mb-4" /> 
-                    <div className="flex gap-3"> 
+            <BaseModal
+                isOpen={importMode === 'text_export'}
+                onClose={() => setImportMode('none')}
+                title="Экспорт текста"
+                subtitle="Формат: Имя|Ранг (одна строка - один герой)"
+                maxWidth="md"
+                variant="auto"
+                modalId="list-export-modal"
+                priority={40}
+                footer={() => (
+                    <div className="flex gap-3 w-full"> 
                         <button onClick={handleCopyText} className="flex-1 py-3 font-bold text-white bg-primary-600 rounded-xl">Копировать</button> 
                         <button onClick={() => setImportMode('none')} className="px-6 py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Закрыть</button> 
                     </div> 
-                </div> 
-            </div>
+                )}
+            >
+                <textarea value={importTextValue} readOnly className="w-full h-64 p-4 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-mono border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 select-text" /> 
+            </BaseModal>
 
             {/* Text Import Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${importMode === 'text_import' ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setImportMode('none')}> 
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${importMode === 'text_import' ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={e => e.stopPropagation()}> 
-                    <div className="flex items-center gap-3 mb-2 text-orange-500"> 
-                        <AlertCircle size={24} /> 
-                        <h3 className="text-lg font-bold">Внимание!</h3> 
-                    </div> 
-                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4"> Текущий список героев будет <strong>полностью заменен</strong> данными из текстового поля. </p> 
-                    <textarea value={importTextValue} onChange={(e) => setImportTextValue(e.target.value)} placeholder="Вставьте список героев (Имя|Ранг)" className="w-full h-48 p-4 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-mono border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 select-text mb-6" /> 
-                    <div className="grid grid-cols-2 gap-3"> 
+            <BaseModal
+                isOpen={importMode === 'text_import'}
+                onClose={() => setImportMode('none')}
+                title="Внимание!"
+                subtitle="Текущий список героев будет полностью заменен данными из текстового поля."
+                icon={<AlertCircle size={20} className="text-orange-500" />}
+                maxWidth="md"
+                variant="auto"
+                modalId="list-import-modal"
+                priority={40}
+                footer={() => (
+                    <div className="grid grid-cols-2 gap-3 w-full"> 
                         <button onClick={() => setImportMode('none')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
                         <button onClick={confirmTextImport} className="py-3 font-bold text-white bg-orange-500 rounded-xl">Заменить</button> 
                     </div> 
-                </div> 
-            </div>
+                )}
+            >
+                <textarea value={importTextValue} onChange={(e) => setImportTextValue(e.target.value)} placeholder="Вставьте список героев (Имя|Ранг)" className="w-full h-48 p-4 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-mono border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 select-text" /> 
+            </BaseModal>
 
             {/* Rank Import Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${importMode === 'rank_import' ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setImportMode('none')}>
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${importMode === 'rank_import' ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={e => e.stopPropagation()}>
-                    <div className="flex items-center gap-3 mb-4 text-violet-600 dark:text-violet-400">
-                        <ArrowLeftRight size={24} />
-                        <h3 className="text-lg font-bold">Импорт рангов</h3>
+            <BaseModal
+                isOpen={importMode === 'rank_import'}
+                onClose={() => setImportMode('none')}
+                title="Импорт рангов"
+                icon={<ArrowLeftRight size={20} className="text-violet-600 dark:text-violet-400" />}
+                maxWidth="sm"
+                variant="auto"
+                modalId="rank-import-modal"
+                priority={40}
+                footer={() => (
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                        <button onClick={() => setImportMode('none')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
+                        <button
+                            onClick={confirmRankImport}
+                            disabled={rankSourceType === 'list' && !rankSourceListId}
+                            className="py-3 font-bold text-white bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
+                        >
+                            Импорт
+                        </button>
                     </div>
-
+                )}
+            >
+                <div>
                     <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-6">
                         <button
                             onClick={() => setRankSourceType('list')}
@@ -1206,106 +1219,89 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                             )}
                         </>
                     )}
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => setImportMode('none')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
-                        <button
-                            onClick={confirmRankImport}
-                            disabled={rankSourceType === 'list' && !rankSourceListId}
-                            className="py-3 font-bold text-white bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
-                        >
-                            Импорт
-                        </button>
-                    </div>
                 </div>
-            </div>
+            </BaseModal>
 
             {/* Rank Import Confirm Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${importMode === 'rank_import_confirm' ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setImportMode('rank_import')}>
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${importMode === 'rank_import_confirm' ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={e => e.stopPropagation()}>
-                    <div className="flex flex-col items-center text-center mb-6">
-                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-full flex items-center justify-center mb-4"> <AlertTriangle size={24} /> </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Неполные данные</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                            Статистика доступна не для всех героев. Будут изменены ранги только у <strong>{getStatsEligibleHelpers().eligibleCount}</strong> из <strong>{getStatsEligibleHelpers().total}</strong> героев.
-                            <br /><span className="text-xs mt-2 block opacity-70">Остальные герои останутся без изменений.</span>
-                        </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button onClick={() => setImportMode('rank_import')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Назад</button>
-                        <button onClick={confirmRankImport} className="py-3 font-bold text-white bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20">Продолжить</button>
-                    </div>
-                </div>
-            </div>
+            <ConfirmModal
+                isOpen={importMode === 'rank_import_confirm'}
+                onCancel={() => setImportMode('rank_import')}
+                onConfirm={confirmRankImport}
+                title="Неполные данные"
+                description={`Статистика доступна не для всех героев. Будут изменены ранги только у ${getStatsEligibleHelpers().eligibleCount} из ${getStatsEligibleHelpers().total} героев.`}
+                confirmText="Продолжить"
+                cancelText="Назад"
+                confirmVariant="warning"
+                modalId="rank-import-confirm-modal"
+                priority={45}
+            />
 
             {/* File Import Confirm Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${importMode === 'file_import_confirm' ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setImportMode('none')}> 
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${importMode === 'file_import_confirm' ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}> 
-                    <div className="flex flex-col items-center text-center mb-6"> 
-                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-full flex items-center justify-center mb-4"> <AlertTriangle size={24} /> </div> 
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Заменить список?</h3> 
-                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed"> Текущие герои ({editorHeroes.length - (editorHeroes.some(h => !h.name) ? 1 : 0)}) будут заменены данными из файла ({pendingFileHeroes?.length}). </p> 
-                    </div> 
-                    <div className="grid grid-cols-2 gap-3"> 
-                        <button onClick={() => { setImportMode('none'); setPendingFileHeroes(null); }} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
-                        <button onClick={confirmFileImport} className="py-3 font-bold text-white bg-orange-500 rounded-xl shadow-lg shadow-orange-500/20">Заменить</button> 
-                    </div> 
-                </div> 
-            </div>
+            <ConfirmModal
+                isOpen={importMode === 'file_import_confirm'}
+                onCancel={() => { setImportMode('none'); setPendingFileHeroes(null); }}
+                onConfirm={confirmFileImport}
+                title="Заменить список?"
+                description={`Текущие герои (${editorHeroes.length - (editorHeroes.some(h => !h.name) ? 1 : 0)}) будут заменены данными из файла (${pendingFileHeroes?.length}).`}
+                confirmText="Заменить"
+                cancelText="Отмена"
+                confirmVariant="warning"
+                modalId="file-import-confirm-modal"
+                priority={45}
+            />
 
             {/* Hero Stats Modal (Balance) */}
-            <div className={`fixed inset-0 z-[70] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isStatsModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`} onClick={() => setIsStatsModalOpen(false)}> 
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 max-h-[90dvh] flex flex-col ${isStatsModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`} onClick={(e) => e.stopPropagation()}> 
-                    <div className="flex items-center justify-between mb-4"> 
-                        <div className="flex items-center gap-3"> 
-                            <div className="w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center text-violet-600 dark:text-violet-400"> <BarChart3 size={20} /> </div> 
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Баланс героев</h3> 
-                        </div> 
-                        <button onClick={() => setIsStatsModalOpen(false)} className="p-2 -mr-2 text-slate-400 active:text-slate-900 rounded-full"> <X size={20} /> </button> 
-                    </div> 
-                    <div className="overflow-y-auto no-scrollbar flex-1 -mr-2 pr-2"> 
-                        {(() => { 
-                            const { counts, max, total } = getStats(); 
-                            return (
-                                <> 
-                                    <div className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-4 text-center"> Всего героев: <span className="text-slate-900 dark:text-white font-bold">{total}</span> </div> 
-                                    {RANKS.map((rank, idx) => { 
-                                        const count = counts[rank] || 0; 
-                                        const percent = max > 0 ? (count / max) * 100 : 0; 
-                                        const colorClass = getRankBarColor(rank); 
-                                        return (
-                                            <div key={rank} className="mb-3 last:mb-0"> 
-                                                <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1"> 
-                                                    <span>{rank}</span> 
-                                                    <span>{count}</span> 
-                                                </div> 
-                                                <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"> 
-                                                    <div className={`h-full rounded-full transition-all duration-1000 ease-out ${colorClass} ${percent === 0 ? 'opacity-0' : 'opacity-100'}`} style={{ width: isStatsModalOpen ? `${percent}%` : '0%', transitionDelay: `${idx * 50}ms` }} /> 
-                                                </div> 
-                                            </div>
-                                        ); 
-                                    })} 
-                                </>
-                            ); 
-                        })()} 
-                    </div> 
+            <BaseModal
+                isOpen={isStatsModalOpen}
+                onClose={() => setIsStatsModalOpen(false)}
+                title="Баланс героев"
+                icon={<BarChart3 size={20} className="text-violet-600 dark:text-violet-400" />}
+                maxWidth="sm"
+                variant="auto"
+                modalId="list-stats-modal"
+                priority={40}
+            >
+                <div className="overflow-y-auto no-scrollbar flex-1"> 
+                    {(() => { 
+                        const { counts, max, total } = getStats(); 
+                        return (
+                            <> 
+                                <div className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-4 text-center"> Всего героев: <span className="text-slate-900 dark:text-white font-bold">{total}</span> </div> 
+                                {RANKS.map((rank, idx) => { 
+                                    const count = counts[rank] || 0; 
+                                    const percent = max > 0 ? (count / max) * 100 : 0; 
+                                    const colorClass = getRankBarColor(rank); 
+                                    return (
+                                        <div key={rank} className="mb-3 last:mb-0"> 
+                                            <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1"> 
+                                                <span>{rank}</span> 
+                                                <span>{count}</span> 
+                                            </div> 
+                                            <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"> 
+                                                <div className={`h-full rounded-full transition-all duration-1000 ease-out ${colorClass} ${percent === 0 ? 'opacity-0' : 'opacity-100'}`} style={{ width: isStatsModalOpen ? `${percent}%` : '0%', transitionDelay: `${idx * 50}ms` }} /> 
+                                            </div> 
+                                        </div>
+                                    ); 
+                                })} 
+                            </>
+                        ); 
+                    })()} 
                 </div> 
-            </div>
+            </BaseModal>
 
             {/* Discard Modal */}
-            <div className={`fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm transition-all duration-300 ${isDiscardModalOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}> 
-                <div className={`bg-white dark:bg-slate-900 w-full max-w-xs rounded-3xl p-6 shadow-2xl transition-all duration-300 border border-slate-100 dark:border-slate-800 ring-1 ring-slate-900/5 dark:ring-white/10 ${isDiscardModalOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}> 
-                    <div className="flex flex-col items-center text-center mb-6"> 
-                        <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-full flex items-center justify-center mb-4"><AlertTriangle size={24} /></div> 
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Несохраненные изменения</h3> 
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Вы уверены, что хотите выйти? Изменения будут потеряны.</p> 
-                    </div> 
-                    <div className="grid grid-cols-2 gap-3"> 
-                        <button onClick={handleDiscardCancel} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
-                        <button onClick={handleDiscardConfirm} className="py-3 font-bold text-white bg-orange-500 rounded-xl">Выйти</button> 
-                    </div> 
-                </div> 
-            </div>
+            <ConfirmModal
+                isOpen={isDiscardModalOpen}
+                onCancel={handleDiscardCancel}
+                onConfirm={handleDiscardConfirm}
+                title="Несохраненные изменения"
+                description="Вы уверены, что хотите выйти? Изменения будут потеряны."
+                confirmText="Выйти"
+                cancelText="Отмена"
+                confirmVariant="warning"
+                modalId="discard-list-confirm-modal"
+                priority={45}
+            />
         </div>
     );
 };
