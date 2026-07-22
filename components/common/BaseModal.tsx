@@ -109,17 +109,24 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     }
   }, [isOpen]);
 
-  // Фиксация первоначальной высоты вьюпорта и состояния фокуса на инпутах
-  const initialWindowHeightRef = useRef<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
-  const [isInputFocused, setIsInputFocused] = useState(false);
+  // Ссылка на скроллируемый контейнер контента
+  const localContentRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!initialWindowHeightRef.current || window.innerHeight > initialWindowHeightRef.current) {
-        initialWindowHeightRef.current = window.innerHeight;
+  const setMergedContentRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      localContentRef.current = node;
+      if (typeof contentRef === 'function') {
+        contentRef(node);
+      } else if (contentRef && 'current' in contentRef) {
+        (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
       }
-    }
-  }, [isRendered]);
+    },
+    [contentRef]
+  );
+
+  // Фиксация максимальной высоты вьюпорта без клавиатуры и состояния фокуса на инпутах
+  const maxSeenHeightRef = useRef<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   // Отслеживание физических размеров вьюпорта (для защиты от перекрытия виртуальной клавиатурой)
   const [viewportStyle, setViewportStyle] = useState<{ height?: number; top?: number; maxModalHeight?: number; isKeyboardOpen?: boolean }>({});
@@ -132,21 +139,24 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         const height = window.visualViewport.height;
         const top = window.visualViewport.offsetTop;
 
+        // Фиксируем физическую высоту окна без клавиатуры
+        if (window.innerHeight > maxSeenHeightRef.current) {
+          maxSeenHeightRef.current = window.innerHeight;
+        }
+
         const activeEl = typeof document !== 'undefined' ? document.activeElement : null;
         const isFocusedOnInput = !!(
           activeEl &&
           (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || (activeEl as HTMLElement).isContentEditable)
         );
 
-        // Клавиатура считается открытой, если сфокусирован инпут ИЛИ если текущая высота вьюпорта
-        // ощутимо меньше первоначальной высоты экрана без клавиатуры
-        const isKeyboardOpen =
-          isInputFocused ||
-          isFocusedOnInput ||
-          (initialWindowHeightRef.current > 0 && height < initialWindowHeightRef.current - 100);
+        // Клавиатура считается открытой ТОЛЬКО при реальном уменьшении высоты вьюпорта
+        // от нормального размера экрана и при активном фокусе на инпуте
+        const isHeightShrunk = maxSeenHeightRef.current > 0 && height < maxSeenHeightRef.current - 120;
+        const isKeyboardOpen = isHeightShrunk && (isInputFocused || isFocusedOnInput);
 
         // Если клавиатура открыта — отдаем все 100% доступной высоты над клавиатурой,
-        // чтобы модалка-шторка занимала всю доступную верхнюю часть экрана и не оставляла пустой зазор.
+        // а при закрытии — возвращаем стандартные 85vh
         const maxModalHeight = isKeyboardOpen
           ? height
           : Math.min(window.innerHeight * 0.85, height - 16);
@@ -179,7 +189,24 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     };
   }, [isRendered, isInputFocused]);
 
-  // Сброс возможного паразитного скролла страницы и прокрутка сфокусированного инпута к верхнему краю
+  // Плавная прокрутка сфокусированного инпута к самому верху контейнера модалки
+  const scrollToInputTop = useCallback((inputEl: HTMLElement) => {
+    const container = localContentRef.current;
+    if (!container || !inputEl) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const inputRect = inputEl.getBoundingClientRect();
+
+    const currentScroll = container.scrollTop;
+    const targetScrollTop = currentScroll + (inputRect.top - containerRect.top) - 12;
+
+    container.scrollTo({
+      top: Math.max(0, targetScrollTop),
+      behavior: 'smooth',
+    });
+  }, []);
+
+  // Сброс возможного паразитного скролла страницы и выравнивание инпута
   useEffect(() => {
     if (!isRendered) return;
 
@@ -191,16 +218,10 @@ export const BaseModal: React.FC<BaseModalProps> = ({
           window.scrollTo(0, 0);
         }
 
-        const scrollToTop = () => {
-          try {
-            target.scrollIntoView({ block: 'start', behavior: 'smooth' });
-          } catch {
-            target.scrollIntoView(true);
-          }
-        };
-
-        setTimeout(scrollToTop, 50);
-        setTimeout(scrollToTop, 250);
+        const runScroll = () => scrollToInputTop(target);
+        setTimeout(runScroll, 50);
+        setTimeout(runScroll, 200);
+        setTimeout(runScroll, 400);
       }
     };
 
@@ -218,7 +239,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       document.removeEventListener('focusin', handleFocusIn);
       document.removeEventListener('focusout', handleFocusOut);
     };
-  }, [isRendered]);
+  }, [isRendered, scrollToInputTop]);
 
   // Расчет слоев z-index на основе позиции в стеке
   const stackIndex = isRendered ? getStackIndex(resolvedId) : 0;
@@ -441,7 +462,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         )}
 
         {/* Scrollable Content Body with min-h-0 flex-1 */}
-        <div ref={contentRef} className={`flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar ${contentClassName}`}>
+        <div ref={setMergedContentRef} className={`flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar ${contentClassName}`}>
           {children}
         </div>
 
