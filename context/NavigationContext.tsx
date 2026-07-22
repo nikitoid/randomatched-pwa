@@ -28,6 +28,13 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const pendingBackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isProcessingPopStateRef = useRef<boolean>(false);
 
+    // Unique session ID for each application load instance to isolate window.history across app updates
+    const sessionIdRef = useRef<string>('');
+    if (!sessionIdRef.current) {
+        sessionIdRef.current = 'sess_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    }
+    const currentSessionId = sessionIdRef.current;
+
     const getStackIndex = useCallback((id: string): number => {
         const index = stackRef.current.findIndex(item => item.id === id);
         return index !== -1 ? index : 0;
@@ -40,17 +47,17 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     // Initialize history state on mount
     useEffect(() => {
-        // Заменяем текущее состояние на exit-guard (самый первый элемент в истории)
-        window.history.replaceState({ type: 'exit-guard' }, '');
+        // Заменяем текущее состояние на exit-guard (самый первый элемент в истории текущей сессии)
+        window.history.replaceState({ type: 'exit-guard', sessionId: currentSessionId }, '');
         // Добавляем root состояние, которое представляет главный экран
-        window.history.pushState({ type: 'root' }, '');
+        window.history.pushState({ type: 'root', sessionId: currentSessionId }, '');
 
         return () => {
             if (pendingBackTimeoutRef.current) {
                 clearTimeout(pendingBackTimeoutRef.current);
             }
         };
-    }, []);
+    }, [currentSessionId]);
 
     const register = useCallback((id: string, onBack: () => void, priority = 10, isBlocking = false) => {
         const alreadyExists = stackRef.current.some(item => item.id === id);
@@ -65,9 +72,9 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     clearTimeout(pendingBackTimeoutRef.current);
                     pendingBackTimeoutRef.current = null;
                 }
-                window.history.replaceState({ type: 'modal', id }, '');
+                window.history.replaceState({ type: 'modal', id, sessionId: currentSessionId }, '');
             } else {
-                window.history.pushState({ type: 'modal', id }, '');
+                window.history.pushState({ type: 'modal', id, sessionId: currentSessionId }, '');
             }
         }
 
@@ -78,7 +85,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         // Синхронно обновляем реф, чтобы popstate обработчик сразу видел актуальный стек
         stackRef.current = newStack;
         setStack(newStack);
-    }, []);
+    }, [currentSessionId]);
 
     const unregister = useCallback((id: string) => {
         const exists = stackRef.current.some(item => item.id === id);
@@ -120,7 +127,12 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     useEffect(() => {
         const handlePopState = (event: PopStateEvent) => {
             const state = event.state;
-            if (!state) return;
+            
+            // Защита от возврата в прошлые сессии (до обновления PWA)
+            if (!state || !state.type || state.sessionId !== currentSessionId) {
+                window.history.forward();
+                return;
+            }
 
             isProcessingPopStateRef.current = true;
             const currentStack = stackRef.current;
@@ -187,7 +199,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             window.removeEventListener('popstate', handlePopState);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [addToast]);
+    }, [addToast, currentSessionId]);
 
     return (
         <NavigationContext.Provider value={{ register, unregister, close, getStackIndex }}>

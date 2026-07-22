@@ -1,5 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState } from 'react';
 import { User, Shield, Swords } from 'lucide-react';
 import { MatchPlayer, MatchRecord, Hero } from '../../types';
 import { BaseModal } from '../common/BaseModal';
@@ -37,27 +36,66 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
     onUpdateMatch,
     triggerHaptic
 }) => {
-    const [suggestions, setSuggestions] = useState<{ field: string, list: string[] } | null>(null);
-    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-    const [dropdownPosition, setDropdownPosition] = useState<{ top: number, left: number, width: number } | null>(null);
+    const [focusedField, setFocusedField] = useState<keyof MatchFormState | null>(null);
 
-    useLayoutEffect(() => {
-        if (suggestions && anchorEl) {
-            const rect = anchorEl.getBoundingClientRect();
-            setDropdownPosition({
-                top: rect.bottom + window.scrollY,
-                left: rect.left + window.scrollX,
-                width: rect.width
-            });
-        } else {
-            setDropdownPosition(null);
+    const getSuggestionsForField = (field: keyof MatchFormState): string[] => {
+        const isHeroField = field.endsWith('h');
+        const rawValue = matchForm[field] as string || '';
+        const currentValue = rawValue.trim().toLowerCase();
+
+        // Показываем подсказки только при вводе от 2х символов
+        if (currentValue.length < 2) {
+            return [];
         }
-    }, [suggestions, anchorEl]);
+
+        if (isHeroField) {
+            const heroFields: (keyof MatchFormState)[] = ['t1p1h', 't1p2h', 't2p1h', 't2p2h'];
+            const selectedHeroes = heroFields
+                .filter(f => f !== field)
+                .map(f => (matchForm[f] as string || '').trim().toLowerCase())
+                .filter(Boolean);
+
+            return allHeroesList
+                .filter(h => {
+                    const nameLower = h.name.trim().toLowerCase();
+                    const matchesQuery = nameLower.includes(currentValue);
+                    const isAlreadySelected = selectedHeroes.includes(nameLower);
+                    return matchesQuery && !isAlreadySelected;
+                })
+                .map(h => h.name)
+                .slice(0, 5);
+        } else {
+            const playerFields: (keyof MatchFormState)[] = ['t1p1', 't1p2', 't2p1', 't2p2'];
+            const selectedPlayers = playerFields
+                .filter(f => f !== field)
+                .map(f => (matchForm[f] as string || '').trim().toLowerCase())
+                .filter(Boolean);
+
+            return uniquePlayerNames
+                .filter(name => {
+                    const nameLower = name.trim().toLowerCase();
+                    const matchesQuery = nameLower.includes(currentValue);
+                    const isAlreadySelected = selectedPlayers.includes(nameLower);
+                    return matchesQuery && !isAlreadySelected;
+                })
+                .slice(0, 5);
+        }
+    };
+
+    const applySuggestion = (field: keyof MatchFormState, val: string) => {
+        setMatchForm({
+            ...matchForm,
+            [field]: val,
+            errors: { ...matchForm.errors, [field]: false }
+        });
+        setFocusedField(null);
+        triggerHaptic(10);
+    };
 
     const validateHero = (name: string) => {
         if (!name.trim()) return true;
         return allHeroesList.some(h => h.name.toLowerCase() === name.trim().toLowerCase());
-    }
+    };
 
     const handleMatchSubmit = () => {
         const errors: { [key: string]: boolean } = {};
@@ -136,56 +174,12 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
         closeMatchForm();
     };
 
-    const handleAutocomplete = (field: string, value: string, target: HTMLElement) => {
-        setMatchForm({
-            ...matchForm,
-            [field]: value,
-            errors: { ...matchForm.errors, [field]: false }
-        });
-
-        setAnchorEl(target);
-
-        if (value.length < 1) {
-            setSuggestions(null);
-            return;
-        }
-
-        const isHeroField = field.endsWith('h');
-        let matches: string[] = [];
-
-        if (isHeroField) {
-            matches = allHeroesList
-                .filter(h => h.name.toLowerCase().includes(value.toLowerCase()))
-                .map(h => h.name)
-                .slice(0, 5);
-        } else {
-            matches = uniquePlayerNames
-                .filter(name => name.toLowerCase().includes(value.toLowerCase()))
-                .slice(0, 5);
-        }
-
-        if (matches.length > 0) {
-            setSuggestions({ field, list: matches });
-        } else {
-            setSuggestions(null);
-        }
-    };
-
-    const applySuggestion = (val: string) => {
-        if (suggestions) {
-            setMatchForm({
-                ...matchForm,
-                [suggestions.field]: val,
-                errors: { ...matchForm.errors, [suggestions.field]: false }
-            });
-            setSuggestions(null);
-            setAnchorEl(null);
-        }
-    };
-
-    const renderInput = (label: string, valKey: keyof typeof matchForm, icon?: React.ReactNode, placeholder: string = "") => {
+    const renderInput = (label: string, valKey: keyof MatchFormState, icon?: React.ReactNode, placeholder: string = "") => {
         const value = matchForm[valKey] as string;
         const isError = matchForm.errors && matchForm.errors[valKey];
+        const isFocused = focusedField === valKey;
+        const isHeroField = valKey.endsWith('h');
+        const activeSuggestions = isFocused ? getSuggestionsForField(valKey) : [];
 
         return (
             <div className="flex-1 relative group">
@@ -194,20 +188,50 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                     <input
                         type="text"
                         value={value}
-                        onFocus={(e) => setAnchorEl(e.target)}
-                        onBlur={() => {
-                            setTimeout(() => {
-                                setSuggestions(null);
-                                setAnchorEl(null);
-                            }, 150);
+                        onFocus={() => setFocusedField(valKey)}
+                        onBlur={() => setFocusedField(null)}
+                        onChange={(e) => {
+                            setMatchForm({
+                                ...matchForm,
+                                [valKey]: e.target.value,
+                                errors: { ...matchForm.errors, [valKey]: false }
+                            });
                         }}
-                        onChange={(e) => handleAutocomplete(valKey, e.target.value, e.target)}
                         placeholder={placeholder}
                         className={`w-full pl-8 pr-2 py-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm border focus:bg-white dark:focus:bg-slate-900 outline-none transition-all ${isError ? 'border-red-500 focus:border-red-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-500'}`}
                     />
                     <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${isError ? 'text-red-500' : 'text-slate-400'}`}>
                         {icon}
                     </div>
+
+                    {isFocused && activeSuggestions.length > 0 && (
+                        <div className={`suggestions-dropdown absolute top-[100%] mt-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${
+                            isHeroField
+                                ? 'right-0 min-w-[180px] sm:min-w-[220px] max-w-[calc(100vw-48px)]'
+                                : 'left-0 min-w-[180px] sm:min-w-[220px] max-w-[calc(100vw-48px)]'
+                        }`}>
+                            <div className="p-1 flex flex-col gap-0.5 max-h-44 overflow-y-auto overscroll-contain no-scrollbar">
+                                {activeSuggestions.map((item) => (
+                                    <button
+                                        key={item}
+                                        type="button"
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            applySuggestion(valKey, item);
+                                        }}
+                                        className="w-full text-left px-2.5 py-2 min-h-[36px] text-xs font-bold text-slate-700 dark:text-slate-200 active:bg-primary-50 active:text-primary-600 dark:active:bg-primary-950/50 dark:active:text-primary-400 rounded-lg transition-all flex items-center gap-2 touch-manipulation select-none"
+                                    >
+                                        {isHeroField ? (
+                                            <Shield size={12} className="text-primary-500 shrink-0" />
+                                        ) : (
+                                            <User size={12} className="text-slate-400 shrink-0" />
+                                        )}
+                                        <span className="truncate">{item}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -265,141 +289,109 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
         );
     };
 
-    const renderAutocompletePortal = () => {
-        if (!suggestions || !dropdownPosition) return null;
-
-        return createPortal(
-            <div
-                className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-[100] overflow-hidden mt-1 animate-in fade-in zoom-in-95 duration-100"
-                style={{
-                    top: dropdownPosition.top,
-                    left: dropdownPosition.left,
-                    width: dropdownPosition.width,
-                    maxHeight: '200px',
-                    overflowY: 'auto'
-                }}
-            >
-                {suggestions.list.map(item => (
-                    <button
-                        key={item}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => applySuggestion(item)}
-                        className="w-full text-left px-3 py-2.5 text-sm active:bg-slate-50 dark:active:bg-slate-700 transition-colors truncate border-b border-slate-50 dark:border-slate-700 last:border-0"
-                    >
-                        {item}
-                    </button>
-                ))}
-            </div>,
-            document.body
-        );
-    };
-
     return (
-        <>
-            <BaseModal
-                isOpen={!!matchForm}
-                onClose={closeMatchForm}
-                title={matchForm.id ? 'Редактировать матч' : 'Новый матч'}
-                subtitle="Заполните параметры и участников матча"
-                icon={<Swords size={20} className="text-primary-600 dark:text-primary-400" />}
-                maxWidth="md"
-                variant="auto"
-                modalId="match-editor-modal"
-                priority={50}
-                closeButtonTestId="close-match-editor-btn"
-                footer={(close) => (
-                    <div className="flex gap-3 w-full">
-                        <button
-                            type="button"
-                            onClick={close}
-                            className="flex-1 py-3.5 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm active:scale-95 transition-transform"
-                        >
-                            Отмена
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleMatchSubmit}
-                            className="flex-1 py-3.5 font-bold text-white bg-primary-600 rounded-xl shadow-lg shadow-primary-600/20 text-sm active:scale-95 transition-transform"
-                        >
-                            Сохранить
-                        </button>
+        <BaseModal
+            isOpen={!!matchForm}
+            onClose={closeMatchForm}
+            title={matchForm.id ? 'Редактировать матч' : 'Новый матч'}
+            subtitle="Заполните параметры и участников матча"
+            icon={<Swords size={20} className="text-primary-600 dark:text-primary-400" />}
+            maxWidth="md"
+            variant="auto"
+            modalId="match-editor-modal"
+            priority={50}
+            closeButtonTestId="close-match-editor-btn"
+            footer={(close) => (
+                <div className="flex gap-3 w-full">
+                    <button
+                        type="button"
+                        onClick={close}
+                        className="flex-1 py-3.5 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm active:scale-95 transition-transform"
+                    >
+                        Отмена
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleMatchSubmit}
+                        className="flex-1 py-3.5 font-bold text-white bg-primary-600 rounded-xl shadow-lg shadow-primary-600/20 text-sm active:scale-95 transition-transform"
+                    >
+                        Сохранить
+                    </button>
+                </div>
+            )}
+        >
+            <div className="space-y-4">
+                <div className="flex gap-4 mb-2">
+                    <div className="flex-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Дата</label>
+                        <input type="date" required value={matchForm.date} onChange={e => setMatchForm({ ...matchForm, date: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500 text-slate-900 dark:text-white dark:[color-scheme:dark]" />
                     </div>
-                )}
-            >
-                <div className="space-y-4">
-                    <div className="flex gap-4 mb-2">
-                        <div className="flex-1">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Дата</label>
-                            <input type="date" required value={matchForm.date} onChange={e => setMatchForm({ ...matchForm, date: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500 text-slate-900 dark:text-white dark:[color-scheme:dark]" />
-                        </div>
-                        <div className="w-1/3">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Время</label>
-                            <input type="time" required value={matchForm.time} onChange={e => setMatchForm({ ...matchForm, time: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500 text-slate-900 dark:text-white dark:[color-scheme:dark]" />
-                        </div>
+                    <div className="w-1/3">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-1 mb-1 block">Время</label>
+                        <input type="time" required value={matchForm.time} onChange={e => setMatchForm({ ...matchForm, time: e.target.value })} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-primary-500 text-slate-900 dark:text-white dark:[color-scheme:dark]" />
                     </div>
+                </div>
 
-                    <div className="mb-2">
-                        <div className="flex items-center justify-between mb-2 px-1">
-                            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Команда 1</h3>
-                            <button
-                                type="button"
-                                onClick={() => setMatchForm({ ...matchForm, winner: 'team1' })}
-                                className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team1' ? 'bg-secondary-100 text-secondary-700 border-secondary-200 dark:bg-secondary-900/30 dark:text-secondary-400 dark:border-secondary-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
-                            >
-                                {matchForm.winner === 'team1' ? 'Победитель' : 'Выбрать победителем'}
-                            </button>
-                        </div>
-                        <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team1' ? 'border-secondary-500/50 bg-secondary-50/50 dark:bg-secondary-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
-                            <div className="space-y-3">
-                                <div className="flex gap-2 items-end">
-                                    {renderInput("", "t1p1", <User size={14} />, "Игрок 1")}
-                                    {renderInput("", "t1p1h", <Shield size={14} />, "Герой")}
-                                    {renderKillsInput("t1p1k")}
-                                </div>
-                                <div className="flex gap-2 items-end">
-                                    {renderInput("", "t1p2", <User size={14} />, "Игрок 2")}
-                                    {renderInput("", "t1p2h", <Shield size={14} />, "Герой")}
-                                    {renderKillsInput("t1p2k")}
-                                </div>
+                <div className="mb-2">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Команда 1</h3>
+                        <button
+                            type="button"
+                            onClick={() => setMatchForm({ ...matchForm, winner: 'team1' })}
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team1' ? 'bg-secondary-100 text-secondary-700 border-secondary-200 dark:bg-secondary-900/30 dark:text-secondary-400 dark:border-secondary-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
+                        >
+                            {matchForm.winner === 'team1' ? 'Победитель' : 'Выбрать победителем'}
+                        </button>
+                    </div>
+                    <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team1' ? 'border-secondary-500/50 bg-secondary-50/50 dark:bg-secondary-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
+                        <div className="space-y-3">
+                            <div className="flex gap-2 items-end">
+                                {renderInput("", "t1p1", <User size={14} />, "Игрок 1")}
+                                {renderInput("", "t1p1h", <Shield size={14} />, "Герой")}
+                                {renderKillsInput("t1p1k")}
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="flex justify-center my-1 relative z-10 pointer-events-none">
-                        <div className="bg-white dark:bg-slate-900 p-1.5 rounded-full border border-slate-100 dark:border-slate-800 shadow-sm text-slate-300">
-                            <Swords size={16} />
-                        </div>
-                    </div>
-
-                    <div className="mt-2">
-                        <div className="flex items-center justify-between mb-2 px-1">
-                            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Команда 2</h3>
-                            <button
-                                type="button"
-                                onClick={() => setMatchForm({ ...matchForm, winner: 'team2' })}
-                                className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team2' ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
-                            >
-                                {matchForm.winner === 'team2' ? 'Победитель' : 'Выбрать победителем'}
-                            </button>
-                        </div>
-                        <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team2' ? 'border-primary-500/50 bg-primary-50/50 dark:bg-primary-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
-                            <div className="space-y-3">
-                                <div className="flex gap-2 items-end">
-                                    {renderInput("", "t2p1", <User size={14} />, "Игрок 3")}
-                                    {renderInput("", "t2p1h", <Shield size={14} />, "Герой")}
-                                    {renderKillsInput("t2p1k")}
-                                </div>
-                                <div className="flex gap-2 items-end">
-                                    {renderInput("", "t2p2", <User size={14} />, "Игрок 4")}
-                                    {renderInput("", "t2p2h", <Shield size={14} />, "Герой")}
-                                    {renderKillsInput("t2p2k")}
-                                </div>
+                            <div className="flex gap-2 items-end">
+                                {renderInput("", "t1p2", <User size={14} />, "Игрок 2")}
+                                {renderInput("", "t1p2h", <Shield size={14} />, "Герой")}
+                                {renderKillsInput("t1p2k")}
                             </div>
                         </div>
                     </div>
                 </div>
-            </BaseModal>
-            {renderAutocompletePortal()}
-        </>
+
+                <div className="flex justify-center my-1 relative z-10 pointer-events-none">
+                    <div className="bg-white dark:bg-slate-900 p-1.5 rounded-full border border-slate-100 dark:border-slate-800 shadow-sm text-slate-300">
+                        <Swords size={16} />
+                    </div>
+                </div>
+
+                <div className="mt-2">
+                    <div className="flex items-center justify-between mb-2 px-1">
+                        <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Команда 2</h3>
+                        <button
+                            type="button"
+                            onClick={() => setMatchForm({ ...matchForm, winner: 'team2' })}
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold border transition-colors ${matchForm.winner === 'team2' ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-800' : 'bg-slate-100 text-slate-400 border-transparent dark:bg-slate-800'}`}
+                        >
+                            {matchForm.winner === 'team2' ? 'Победитель' : 'Выбрать победителем'}
+                        </button>
+                    </div>
+                    <div className={`p-3 rounded-2xl border-2 transition-colors ${matchForm.winner === 'team2' ? 'border-primary-500/50 bg-primary-50/50 dark:bg-primary-900/10' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}`}>
+                        <div className="space-y-3">
+                            <div className="flex gap-2 items-end">
+                                {renderInput("", "t2p1", <User size={14} />, "Игрок 3")}
+                                {renderInput("", "t2p1h", <Shield size={14} />, "Герой")}
+                                {renderKillsInput("t2p1k")}
+                            </div>
+                            <div className="flex gap-2 items-end">
+                                {renderInput("", "t2p2", <User size={14} />, "Игрок 4")}
+                                {renderInput("", "t2p2h", <Shield size={14} />, "Герой")}
+                                {renderKillsInput("t2p2k")}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </BaseModal>
     );
 };

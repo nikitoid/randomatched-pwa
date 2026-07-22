@@ -35,6 +35,29 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     }
   }, [needRefresh]);
 
+  // Check if app was just updated
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasUpdatedParam = urlParams.has('updated');
+    const justUpdated = sessionStorage.getItem('randomatched_just_updated');
+
+    if (hasUpdatedParam || justUpdated) {
+      addToast('Приложение успешно обновлено до последней версии!', 'success');
+      try {
+        sessionStorage.removeItem('randomatched_just_updated');
+      } catch (e) {
+        console.error("Failed to remove update marker", e);
+      }
+      if (hasUpdatedParam) {
+        urlParams.delete('updated');
+        const newSearch = urlParams.toString();
+        const newUrl = window.location.pathname + (newSearch ? '?' + newSearch : '') + window.location.hash;
+        window.history.replaceState(window.history.state, '', newUrl);
+      }
+    }
+  }, [addToast]);
+
   const handleUpdateApp = useCallback(() => {
     try {
       window.scrollTo(0, 0);
@@ -44,6 +67,12 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     
     setShowUpdateBanner(false);
 
+    try {
+      sessionStorage.setItem('randomatched_just_updated', 'true');
+    } catch (e) {
+      console.error("Failed to set update marker", e);
+    }
+
     if (registration && registration.waiting) {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
@@ -52,7 +81,8 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
 
     setTimeout(() => {
       window.scrollTo(0, 0);
-      window.location.href = window.location.origin + '/?updated=' + Date.now();
+      const updateUrl = window.location.origin + window.location.pathname + '?updated=' + Date.now();
+      window.location.replace(updateUrl);
     }, 150);
   }, [updateServiceWorker, registration]);
 
