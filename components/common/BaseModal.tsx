@@ -124,12 +124,14 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     [contentRef]
   );
 
+  const dialogCardRef = useRef<HTMLDivElement | null>(null);
+
   // Фиксация максимальной высоты вьюпорта без клавиатуры и состояния фокуса на инпутах
   const maxSeenHeightRef = useRef<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
   const [isInputFocused, setIsInputFocused] = useState(false);
 
   // Отслеживание физических размеров вьюпорта (для защиты от перекрытия виртуальной клавиатурой)
-  const [viewportStyle, setViewportStyle] = useState<{ height?: number; top?: number; maxModalHeight?: number; isKeyboardOpen?: boolean }>({});
+  const [viewportStyle, setViewportStyle] = useState<{ height?: number; top?: number; maxModalHeight?: number; isKeyboardOpen?: boolean; isFullHeightNeeded?: boolean }>({});
 
   useEffect(() => {
     if (!isRendered || typeof window === 'undefined') return;
@@ -155,8 +157,14 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         const isHeightShrunk = maxSeenHeightRef.current > 0 && height < maxSeenHeightRef.current - 120;
         const isKeyboardOpen = isHeightShrunk && (isInputFocused || isFocusedOnInput);
 
-        // Если клавиатура открыта — отдаем все 100% доступной высоты над клавиатурой,
-        // а при закрытии — возвращаем стандартные 85vh
+        // Измеряем естественную высоту карточки модалки
+        const cardScrollHeight = dialogCardRef.current ? dialogCardRef.current.scrollHeight : 0;
+
+        // Растягивание на 100% высоты над клавиатурой необходимо ТОЛЬКО если
+        // естественная высота контента модалки больше доступного пространства над клавиатурой.
+        // Маленькие модалки (переименование, алерты) остаются компактными прямо над клавиатурой.
+        const isFullHeightNeeded = isKeyboardOpen && cardScrollHeight > height - 16;
+
         const maxModalHeight = isKeyboardOpen
           ? height
           : Math.min(window.innerHeight * 0.85, height - 16);
@@ -166,6 +174,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
           top,
           maxModalHeight: Math.max(200, maxModalHeight),
           isKeyboardOpen,
+          isFullHeightNeeded,
         });
       }
     };
@@ -378,9 +387,10 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       data-testid={resolvedId}
     >
       <div
+        ref={dialogCardRef}
         className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
           isBottomSheetScreen
-            ? viewportStyle.isKeyboardOpen
+            ? viewportStyle.isFullHeightNeeded
               ? 'rounded-t-2xl sm:rounded-3xl h-full'
               : 'rounded-t-3xl sm:rounded-3xl max-h-[85vh] sm:max-h-[85vh]'
             : 'rounded-3xl max-h-[85vh]'
@@ -388,7 +398,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         style={{
           zIndex: modalZIndex,
           ...(viewportStyle.maxModalHeight ? { maxHeight: `${viewportStyle.maxModalHeight}px` } : {}),
-          ...(viewportStyle.isKeyboardOpen && viewportStyle.maxModalHeight ? { height: `${viewportStyle.maxModalHeight}px` } : {}),
+          ...(viewportStyle.isFullHeightNeeded && viewportStyle.maxModalHeight ? { height: `${viewportStyle.maxModalHeight}px` } : {}),
           ...getCardTransformStyle(),
         }}
       >
