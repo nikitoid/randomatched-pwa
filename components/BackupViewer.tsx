@@ -83,6 +83,7 @@ export const BackupViewer: React.FC<BackupViewerProps> = ({ backup, onClose, isO
             priority={70}
             subHeader={searchSubHeader}
             contentRef={contentContainerRef}
+            closeButtonTestId="backup-viewer-close-btn"
         >
             <div className="space-y-3 pb-2">
                 {matchesToShow.length === 0 ? (

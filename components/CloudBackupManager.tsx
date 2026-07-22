@@ -98,6 +98,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
     const headerButton = (
         <button
             onClick={handleCreate}
+            data-testid="backup-manager-create-btn"
             disabled={isCreatingBackup || !isOnline}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all active:scale-95 min-h-[44px] ${
                 isCreatingBackup || !isOnline
@@ -152,21 +153,23 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                     {/* Backups List */}
                     <div className="space-y-2.5 pb-2">
                         {isLoadingBackups ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">
+                            <div data-testid="backup-loading" className="flex flex-col items-center justify-center py-12 text-slate-400 gap-3">
                                 <Loader2 size={32} className="animate-spin text-primary-500" />
                                 <p className="text-sm font-medium">Загрузка бэкапов...</p>
                             </div>
                         ) : filteredBackups.length === 0 ? (
-                            <div className="text-center py-12 text-slate-400 space-y-2">
+                            <div data-testid="backup-list-empty" className="text-center py-12 text-slate-400 space-y-2">
                                 <Cloud size={40} className="mx-auto text-slate-300 dark:text-slate-700" />
                                 <p className="text-sm font-medium">Бэкапы не найдены</p>
                             </div>
                         ) : (
-                            filteredBackups.map(b => (
-                                <div
-                                    key={b.id}
-                                    className="p-4 bg-slate-50/60 dark:bg-slate-800/40 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-between gap-3 min-h-[64px]"
-                                >
+                            <div data-testid="backup-list" className="space-y-2.5">
+                                {filteredBackups.map(b => (
+                                    <div
+                                        key={b.id}
+                                        data-testid="backup-item"
+                                        className="p-4 bg-slate-50/60 dark:bg-slate-800/40 rounded-2xl border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-between gap-3 min-h-[64px]"
+                                    >
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
                                             <Calendar size={16} className="text-slate-400 shrink-0" />
@@ -183,6 +186,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                                             disabled={isLoadingDetailsId === b.id}
                                             className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                                             title="Просмотр"
+                                            aria-label="Просмотреть"
                                         >
                                             {isLoadingDetailsId === b.id ? (
                                                 <Loader2 size={16} className="animate-spin" />
@@ -193,6 +197,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
 
                                         <button
                                             onClick={() => setRestoreConfirmId(b.id)}
+                                            data-testid="backup-manager-restore-btn"
                                             disabled={isRestoringBackup || !isOnline}
                                             className="px-3 py-2.5 rounded-xl bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/40 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 font-bold text-xs transition-all min-h-[44px] flex items-center gap-1.5"
                                         >
@@ -205,6 +210,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                                             disabled={isDeletingId === b.id || !isOnline}
                                             className="p-2.5 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
                                             title="Удалить"
+                                            aria-label="Удалить"
                                         >
                                             {isDeletingId === b.id ? (
                                                 <Loader2 size={16} className="animate-spin" />
@@ -214,7 +220,8 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                                         </button>
                                     </div>
                                 </div>
-                            ))
+                            ))}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -253,6 +260,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                         type="text"
                         value={restoreConfirmInput}
                         onChange={(e) => setRestoreConfirmInput(e.target.value)}
+                        data-testid="restore-confirm-input"
                         placeholder="ВОССТАНОВИТЬ"
                         className="w-full px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 font-bold min-h-[44px]"
                     />
@@ -262,12 +270,14 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                                 setRestoreConfirmId(null);
                                 setRestoreConfirmInput('');
                             }}
+                            data-testid="restore-cancel-btn"
                             className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs min-h-[44px]"
                         >
                             Отмена
                         </button>
                         <button
                             onClick={handleRestore}
+                            data-testid="restore-confirm-btn"
                             disabled={restoreConfirmInput !== 'ВОССТАНОВИТЬ'}
                             className={`py-3 px-4 rounded-xl font-bold text-xs text-white transition-all min-h-[44px] ${
                                 restoreConfirmInput === 'ВОССТАНОВИТЬ'
@@ -288,7 +298,7 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                     setDeleteConfirmId(null);
                     setDeleteBackupInput('');
                 }}
-                title="Удалить бэкап?"
+                title="Удаление бэкапа"
                 subtitle="Действие нельзя будет отменить"
                 icon={<Trash2 size={24} className="text-red-500" />}
                 maxWidth="xs"

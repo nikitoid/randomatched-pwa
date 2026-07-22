@@ -69,7 +69,7 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
             footer={modalFooter}
             className="data-testid-hero-selection"
         >
-            <div data-testid="hero-selection-modal" className="space-y-1.5 pb-2">
+            <div className="space-y-1.5 pb-2">
                 {filteredHeroes.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-2 opacity-60">
                         <Search size={44} strokeWidth={1.5} />
@@ -83,6 +83,7 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
                         return (
                             <button
                                 key={hero.id}
+                                data-testid="hero-select-button"
                                 onClick={() => !isUsed && !isCurrent && onSelect(hero)}
                                 disabled={isUsed || isCurrent}
                                 className={`

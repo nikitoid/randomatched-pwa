@@ -26,6 +26,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const pendingBackStepsRef = useRef<number>(0);
     const pendingBackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isProcessingPopStateRef = useRef<boolean>(false);
 
     const getStackIndex = useCallback((id: string): number => {
         const index = stackRef.current.findIndex(item => item.id === id);
@@ -82,7 +83,7 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const unregister = useCallback((id: string) => {
         const exists = stackRef.current.some(item => item.id === id);
         
-        if (exists) {
+        if (exists && !isProcessingPopStateRef.current) {
             // Если модаль закрывается программно (через UI-кнопки), а не через системный "Назад",
             // то мы должны убрать ее запись из истории браузера (сделать переход назад)
             if (window.history.state?.id === id || pendingBackStepsRef.current > 0) {
@@ -121,42 +122,49 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             const state = event.state;
             if (!state) return;
 
+            isProcessingPopStateRef.current = true;
             const currentStack = stackRef.current;
 
-            if (state.type === 'modal') {
-                const targetId = state.id;
-                const targetIndex = currentStack.findIndex(item => item.id === targetId);
+            try {
+                if (state.type === 'modal') {
+                    const targetId = state.id;
+                    const targetIndex = currentStack.findIndex(item => item.id === targetId);
 
-                if (targetIndex !== -1) {
-                    // Закрываем все модали, которые находятся "выше" целевой модали в стеке
-                    const itemsToClose = currentStack.slice(targetIndex + 1);
-                    for (let i = itemsToClose.length - 1; i >= 0; i--) {
-                        itemsToClose[i].onBack();
+                    if (targetIndex !== -1) {
+                        // Закрываем все модали, которые находятся "выше" целевой модали в стеке
+                        const itemsToClose = currentStack.slice(targetIndex + 1);
+                        for (let i = itemsToClose.length - 1; i >= 0; i--) {
+                            itemsToClose[i].onBack();
+                        }
+                    } else {
+                        // В случае несовпадения закрываем только самую верхнюю модаль в стеке
+                        if (currentStack.length > 0) {
+                            const topItem = currentStack[currentStack.length - 1];
+                            topItem.onBack();
+                        }
                     }
-                } else {
-                    // В случае несовпадения закрываем только самую верхнюю модаль в стеке
-                    if (currentStack.length > 0) {
-                        const topItem = currentStack[currentStack.length - 1];
-                        topItem.onBack();
+                } else if (state.type === 'root') {
+                    // Пользователь вернулся на главный экран. Закрываем все открытые модали
+                    for (let i = currentStack.length - 1; i >= 0; i--) {
+                        currentStack[i].onBack();
+                    }
+                } else if (state.type === 'exit-guard') {
+                    // Пользователь нажал "Назад" на главном экране.
+                    const now = Date.now();
+                    if (now - lastBackPressTime.current < 3000) {
+                        // Повторное нажатие в течение 3 секунд - позволяем выйти из приложения
+                        window.history.go(-1);
+                    } else {
+                        lastBackPressTime.current = now;
+                        addToast('Нажмите еще раз, чтобы выйти', 'info');
+                        // Возвращаем пользователя обратно на состояние 'root'
+                        window.history.forward();
                     }
                 }
-            } else if (state.type === 'root') {
-                // Пользователь вернулся на главный экран. Закрываем все открытые модали
-                for (let i = currentStack.length - 1; i >= 0; i--) {
-                    currentStack[i].onBack();
-                }
-            } else if (state.type === 'exit-guard') {
-                // Пользователь нажал "Назад" на главном экране.
-                const now = Date.now();
-                if (now - lastBackPressTime.current < 3000) {
-                    // Повторное нажатие в течение 3 секунд - позволяем выйти из приложения
-                    window.history.go(-1);
-                } else {
-                    lastBackPressTime.current = now;
-                    addToast('Нажмите еще раз, чтобы выйти', 'info');
-                    // Возвращаем пользователя обратно на состояние 'root'
-                    window.history.forward();
-                }
+            } finally {
+                setTimeout(() => {
+                    isProcessingPopStateRef.current = false;
+                }, 0);
             }
         };
 

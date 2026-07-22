@@ -30,6 +30,7 @@ export interface BaseModalProps {
   footer?: React.ReactNode | ((close: () => void) => React.ReactNode);
   headerActions?: React.ReactNode;
   subHeader?: React.ReactNode;
+  closeButtonTestId?: string;
   className?: string;
   contentClassName?: string;
   contentRef?: React.Ref<HTMLDivElement>;
@@ -53,6 +54,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   footer,
   headerActions,
   subHeader,
+  closeButtonTestId,
   className = '',
   contentClassName = '',
   contentRef,
@@ -109,7 +111,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   // Расчет слоев z-index на основе позиции в стеке
   const stackIndex = isRendered ? getStackIndex(resolvedId) : 0;
-  const { backdropZIndex, modalZIndex } = getModalZIndex(stackIndex, isAlert);
+  const { backdropZIndex, modalZIndex } = getModalZIndex(stackIndex, isAlert, priority);
 
   // Обработчики тач-свайпа
   const handleTouchStart = (e: React.TouchEvent | React.PointerEvent) => {
@@ -225,18 +227,19 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 flex bg-slate-950/60 backdrop-blur-md transition-opacity duration-300 ${getContainerLayoutClass()} ${getBackdropOpacity()}`}
+      className={`fixed inset-0 flex bg-slate-950/60 backdrop-blur-md transition-opacity duration-300 ${getContainerLayoutClass()} ${getBackdropOpacity()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
       style={{ zIndex: backdropZIndex }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
+      data-testid={resolvedId}
     >
       <div
         className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
           isBottomSheetScreen
             ? 'rounded-t-3xl sm:rounded-3xl max-h-[85vh] sm:max-h-[85vh]'
             : 'rounded-3xl max-h-[85vh]'
-        } ${className}`}
+        } ${className} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
         style={{
           zIndex: modalZIndex,
           ...getCardTransformStyle(),
@@ -293,6 +296,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
               {showCloseButton && (
                 <button
                   onClick={handleRequestClose}
+                  data-testid={closeButtonTestId}
                   className="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white active:bg-slate-200 dark:active:bg-slate-700 active:scale-95 transition-all flex items-center justify-center"
                   aria-label="Закрыть"
                 >

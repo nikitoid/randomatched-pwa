@@ -16,9 +16,9 @@ export const Z_INDEX_BASE = {
  * @param depthIndex - Глубина окна в стеке активных элементов (начиная с 0)
  * @param isAlert - Является ли окно приоритетным алертом/подтверждением
  */
-export function getModalZIndex(depthIndex = 0, isAlert = false) {
+export function getModalZIndex(depthIndex = 0, isAlert = false, priority = 10) {
   const base = isAlert ? Z_INDEX_BASE.ALERT : Z_INDEX_BASE.MODAL;
-  const backdropZIndex = base + depthIndex * 10;
+  const backdropZIndex = base + priority + depthIndex * 2;
   const modalZIndex = backdropZIndex + 1;
 
   return {

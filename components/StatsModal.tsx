@@ -1450,11 +1450,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             <BaseModal
                 isOpen={showEfficiencyInfo}
                 onClose={() => setShowEfficiencyInfo(false)}
-                title="Топ эффективности"
+                title="Алгоритм эффективности"
+                subtitle="Ранжирование игроков в статистике"
                 icon={<TrendingUp size={20} className="text-primary-500" />}
                 maxWidth="md"
                 variant="auto"
-                modalId="stats-efficiency-info-modal"
+                modalId="stats-efficiency-modal"
                 priority={80}
                 footer={(close) => (
                     <button
@@ -1465,25 +1466,75 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     </button>
                 )}
             >
-                <div className="space-y-4 text-sm text-slate-700 dark:text-slate-300">
-                    <p>
-                        Рейтинг «Топ эффективности» рассчитывается по <strong>методу Уилсона (Wilson Score Interval)</strong> с экспоненциальным затуханием по времени.
-                    </p>
-                    <p>
-                        Алгоритм рассчитывает нижнюю границу доверительного интервала Бернулли с 95% надежностью. Он учитывает <strong>винрейт</strong>, <strong>объем матчей</strong> и их <strong>давность</strong>.
-                    </p>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl font-medium">
-                        <span className="text-xs text-slate-400 dark:text-slate-500 block mb-1">Математический принцип:</span>
-                        Малая выборка опускает рейтинг вниз из-за высокой неопределенности, а большая выборка с хорошим качеством позволяет раскрыть реальную силу игрока.
+                <div className="space-y-3.5 text-xs text-slate-600 dark:text-slate-300">
+                    {/* Формула */}
+                    <div className="p-3.5 bg-primary-50/80 dark:bg-primary-950/50 rounded-2xl border border-primary-100 dark:border-primary-900/30">
+                        <div className="font-bold text-primary-900 dark:text-primary-300 mb-1.5 flex items-center gap-1.5 text-xs sm:text-sm">
+                            <span className="w-2 h-2 rounded-full bg-primary-500"></span>
+                            <span>Как рассчитывается балл</span>
+                        </div>
+                        <div className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                            Используется <strong>Нижняя граница интервала Уилсона (95% надежность)</strong> с затуханием давности игр (период полураспада 180 дней).
+                        </div>
                     </div>
-                    <p>
-                        🌟 <strong>Что это дает на практике?</strong>
-                    </p>
-                    <ul className="list-disc list-inside space-y-1.5 pl-2 text-slate-600 dark:text-slate-400">
-                        <li><strong>Активные игроки с дистанцией</strong> занимают честные высокие места.</li>
-                        <li><strong>Редкие гости</strong> с малым числом матчей не взлетают искусственно в ТОП.</li>
-                        <li><strong>Неактивные игроки</strong> (&gt;60 дней) уходят в конец списка.</li>
-                    </ul>
+
+                    {/* Сравнение и примеры корректности */}
+                    <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl space-y-2 border border-slate-100 dark:border-slate-800">
+                        <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs sm:text-sm">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Почему этот расчёт справедлив?</span>
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Алгоритм вычисляет надежную нижнюю границу рейтинга и объективно ранжирует игроков:
+                        </p>
+
+                        <div className="space-y-1.5 pt-1">
+                            <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-xl text-[11px]">
+                                <div>
+                                    <span className="font-semibold text-slate-800 dark:text-slate-200">2 победы / 10 матчей</span>
+                                    <span className="text-[10px] text-slate-400 ml-1">(20% винрейт)</span>
+                                </div>
+                                <div className="font-mono font-bold text-slate-500">
+                                    Нижняя граница: <span className="text-red-500">~6.0%</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-2 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/50 rounded-xl text-[11px]">
+                                <div>
+                                    <span className="font-semibold text-emerald-900 dark:text-emerald-300">39 побед / 95 матчей</span>
+                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">(41% винрейт)</span>
+                                </div>
+                                <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                                    Нижняя граница: <span className="text-emerald-900 dark:text-emerald-200">~31.6%</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between p-2 bg-primary-50/80 dark:bg-primary-950/40 border border-primary-200/70 dark:border-primary-800/50 rounded-xl text-[11px]">
+                                <div>
+                                    <span className="font-semibold text-primary-900 dark:text-primary-300">3 победы / 4 матча</span>
+                                    <span className="text-[10px] text-primary-600 dark:text-primary-400 ml-1">(75% винрейт)</span>
+                                </div>
+                                <div className="font-mono font-bold text-primary-700 dark:text-primary-400">
+                                    Нижняя граница: <span className="text-primary-900 dark:text-primary-200">~30.1%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1">
+                            * Игрок с 39/95 по праву стоит выше игрока с 2/10 и выше 3/4 на малой дистанции.
+                        </p>
+                    </div>
+
+                    {/* Правила активности */}
+                    <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5 text-xs sm:text-sm">
+                            <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <span>Временное затухание и активность</span>
+                        </div>
+                        <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400 pl-0.5 leading-relaxed">
+                            <li>Каждый матч имеет вес W = 2^(-дни / 180). Вес матча снижается в 2 раза каждые 180 дней (6 месяцев).</li>
+                            <li>Неактивные игроки, не посещавшие игры более 60 дней, уходят в конец списка.</li>
+                        </ul>
+                    </div>
                 </div>
             </BaseModal>
 
@@ -1664,118 +1715,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     </div>
                 </div>
             </BaseModal>
-
-            {/* Efficiency Info Modal */}
-            {showEfficiencyInfo && createPortal(
-                <div data-testid="stats-efficiency-modal" className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col animate-in zoom-in-95 duration-200">
-                        {/* Header */}
-                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-2xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center">
-                                    <TrendingUp size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900 dark:text-white text-base leading-tight">
-                                        Алгоритм эффективности
-                                    </h3>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500">
-                                        Ранжирование игроков в статистике
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
-                                className="p-1.5 rounded-full text-slate-400 active:text-slate-700 dark:active:text-white active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
-                                aria-label="Закрыть"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        {/* Content */}
-                        <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300 overflow-y-auto pr-1 flex-1 leading-relaxed no-scrollbar">
-                            {/* Формула */}
-                            <div className="p-3 bg-primary-50/80 dark:bg-primary-950/50 rounded-2xl">
-                                <div className="font-bold text-primary-900 dark:text-primary-300 mb-1.5 flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-primary-500"></span>
-                                    Как рассчитывается балл
-                                </div>
-                                <div className="text-slate-700 dark:text-slate-300">
-                                    Используется <strong>Нижняя граница интервала Уилсона (95% надежность)</strong> с затуханием давности игр (период полураспада 180 дней).
-                                </div>
-                            </div>
-
-                            {/* Сравнение и примеры корректности */}
-                            <div className="p-3 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl space-y-2">
-                                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                    Почему этот расчёт справедлив?
-                                </div>
-                                <p className="text-slate-600 dark:text-slate-400">
-                                    Алгоритм вычисляет надежную нижнюю границу рейтинга и объективно ранжирует игроков:
-                                </p>
-
-                                <div className="space-y-1.5 pt-1">
-                                    <div className="flex items-center justify-between p-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/60 rounded-xl text-[11px]">
-                                        <div>
-                                            <span className="font-semibold text-slate-800 dark:text-slate-200">2 победы / 10 матчей</span>
-                                            <span className="text-[10px] text-slate-400 ml-1">(20% винрейт)</span>
-                                        </div>
-                                        <div className="font-mono font-bold text-slate-500">
-                                            Нижняя граница: <span className="text-red-500">~6.0%</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-2 bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/70 dark:border-emerald-800/50 rounded-xl text-[11px]">
-                                        <div>
-                                            <span className="font-semibold text-emerald-900 dark:text-emerald-300">39 побед / 95 матчей</span>
-                                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">(41% винрейт)</span>
-                                        </div>
-                                        <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                                            Нижняя граница: <span className="text-emerald-900 dark:text-emerald-200">~31.6%</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between p-2 bg-primary-50/80 dark:bg-primary-950/40 border border-primary-200/70 dark:border-primary-800/50 rounded-xl text-[11px]">
-                                        <div>
-                                            <span className="font-semibold text-primary-900 dark:text-primary-300">3 победы / 4 матча</span>
-                                            <span className="text-[10px] text-primary-600 dark:text-primary-400 ml-1">(75% винрейт)</span>
-                                        </div>
-                                        <div className="font-mono font-bold text-primary-700 dark:text-primary-400">
-                                            Нижняя граница: <span className="text-primary-900 dark:text-primary-200">~30.1%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1">
-                                    * Игрок с 39/95 по праву стоит выше игрока с 2/10 и выше 3/4 на малой дистанции.
-                                </p>
-                            </div>
-
-                            {/* Правила активности */}
-                            <div className="p-3 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl">
-                                <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                                    Временное затухание и активность
-                                </div>
-                                <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400 pl-0.5">
-                                    <li>Каждый матч имеет вес W = 2^(-дни / 180). Вес матча снижается в 2 раза каждые 180 дней (6 месяцев).</li>
-                                    <li>Неактивные игроки, не посещавшие игры более 60 дней, уходят в конец списка.</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <button
-                            onClick={() => { setShowEfficiencyInfo(false); triggerHaptic(10); }}
-                            className="mt-4 w-full py-3 bg-primary-500 active:bg-primary-600 text-white font-bold rounded-2xl transition shadow-lg shadow-primary-500/20 active:scale-98 text-sm shrink-0"
-                        >
-                            Понятно
-                        </button>
-                    </div>
-                </div>,
-                document.body
-            )}
 
             {/* Efficiency Breakdown Modal */}
             <BaseModal

@@ -47,7 +47,7 @@ test.describe('Ручной выбор героя', () => {
         await expect(modal.getByPlaceholder('Поиск героя...')).toBeVisible();
 
         // Ожидаем, что список героев отрендерился
-        const heroButtons = modal.locator('button[class*="flex items-center"]');
+        const heroButtons = modal.getByTestId('hero-select-button');
         await expect(heroButtons).toHaveCount(12);
     });
 
@@ -63,7 +63,7 @@ test.describe('Ручной выбор героя', () => {
         const searchInput = modal.getByPlaceholder('Поиск героя...');
 
         // Находим первого свободного героя (не занятого и не текущего)
-        const allHeroButtons = modal.locator('button[class*="flex items-center"]');
+        const allHeroButtons = modal.getByTestId('hero-select-button');
         const availableHeroBtn = allHeroButtons.filter({
             hasNotText: /ЗАНЯТ|ТЕКУЩИЙ/
         }).first();

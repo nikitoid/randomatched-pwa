@@ -16,6 +16,8 @@ export interface ConfirmModalProps {
   modalId?: string;
   priority?: number;
   testId?: string;
+  confirmTestId?: string;
+  cancelTestId?: string;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -32,6 +34,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   modalId,
   priority = 30,
   testId,
+  confirmTestId,
+  cancelTestId,
 }) => {
   const getIconContainerStyle = () => {
     switch (confirmVariant) {
@@ -80,7 +84,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       isAlert={true}
       showCloseButton={false}
     >
-      <div className="flex flex-col items-center text-center p-1" data-testid={testId}>
+      <div className="flex flex-col items-center text-center p-1">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 shrink-0 ${getIconContainerStyle()}`}>
           {icon || getDefaultIcon()}
         </div>
@@ -99,12 +103,14 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <div className="grid grid-cols-2 gap-3 w-full">
             <button
               onClick={onCancel}
+              data-testid={cancelTestId || 'confirm-modal-cancel-btn'}
               className="py-3.5 px-4 font-bold text-sm text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-2xl active:scale-95 transition-all min-h-[48px]"
             >
               {cancelText}
             </button>
             <button
               onClick={onConfirm}
+              data-testid={confirmTestId || testId}
               className={`py-3.5 px-4 font-bold text-sm rounded-2xl active:scale-95 transition-all min-h-[48px] ${getConfirmButtonStyle()}`}
             >
               {confirmText}

@@ -237,4 +237,154 @@ test.describe('Управление сезонами и статистика', (
         // Проверяем выведение текста ошибки
         await expect(page.locator('text=Дата окончания не может быть раньше даты начала')).toBeVisible();
     });
+
+    test('модалка создания сезона открывается с необходимыми полями и при отмене сохраняет окно управления сезонами', async ({ app, page }) => {
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        await page.click('text=Период: Все время');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        // Модалка управления сезонами открыта
+        await expect(page.locator('h3:has-text("Управление сезонами")')).toBeVisible();
+
+        // Кликаем по кнопке создания нового сезона
+        await page.click('button:has-text("Создать новый сезон")');
+
+        // Проверяем поля формы создания
+        await expect(page.locator('h3:has-text("Новый сезон")')).toBeVisible();
+        await expect(page.getByTestId('season-name-input')).toBeVisible();
+        await expect(page.getByTestId('season-start-date-input')).toBeVisible();
+        await expect(page.getByTestId('season-end-date-input')).toBeVisible();
+        await expect(page.locator('button[type="submit"]:has-text("Сохранить")')).toBeVisible();
+        await expect(page.getByTestId('cancel-season-form-btn')).toBeVisible();
+
+        // Отменяем создание по кнопке Отмена
+        await page.getByTestId('cancel-season-form-btn').click();
+
+        // Форма закрылась, а окно "Управление сезонами" остаётся открытым
+        await expect(page.getByTestId('season-name-input')).toBeHidden();
+        await expect(page.locator('h3:has-text("Управление сезонами")')).toBeVisible();
+        await expect(app.statsModal).toBeVisible();
+    });
+
+    test('модалка редактирования сезона открывается с заполненными полями и при отмене возвращает к списку сезонов', async ({ app, page }) => {
+        await page.context().addInitScript(() => {
+            const season = [{ id: 's1', name: 'Осенний Сезон', startDate: '2026-09-01', endDate: '2026-11-30' }];
+            localStorage.setItem('randomatched_seasons_v1', JSON.stringify(season));
+        });
+
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await page.click('text=Период: Осенний Сезон');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        // Кликаем по редактированию
+        await page.click('button[title="Редактировать сезон"]');
+
+        // Проверяем корректность заполнения полей
+        await expect(page.locator('h3:has-text("Редактирование сезона")')).toBeVisible();
+        await expect(page.getByTestId('season-name-input')).toHaveValue('Осенний Сезон');
+        await expect(page.getByTestId('season-start-date-input')).toHaveValue('2026-09-01');
+        await expect(page.getByTestId('season-end-date-input')).toHaveValue('2026-11-30');
+
+        // Нажимаем Отмена
+        await page.getByTestId('cancel-season-form-btn').click();
+
+        // Закрылась форма редактирования, окно управления сезонами всё ещё открыто с элементом списка
+        await expect(page.getByTestId('season-name-input')).toBeHidden();
+        await expect(page.locator('h3:has-text("Управление сезонами")')).toBeVisible();
+        await expect(page.getByTestId('seasons-manager-modal').getByText('Осенний Сезон')).toBeVisible();
+    });
+
+    test('диалог подтверждения удаления отображает заголовок и описание, а при отмене оставляет окно сезонов открытым', async ({ app, page }) => {
+        await page.context().addInitScript(() => {
+            const season = [{ id: 's1', name: 'Сезон под удаление', startDate: '2026-01-01' }];
+            localStorage.setItem('randomatched_seasons_v1', JSON.stringify(season));
+        });
+
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await page.click('text=Период: Сезон под удаление');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        // Кликаем по кнопке удаления сезона
+        await page.click('button[title="Удалить сезон"]');
+
+        // Проверяем поля модалки подтверждения по scoped-локатору
+        const confirmModal = page.getByTestId('delete-season-confirm');
+        await expect(confirmModal).toBeVisible();
+        await expect(confirmModal.locator('h3:has-text("Удалить сезон?")')).toBeVisible();
+        await expect(confirmModal.locator('text=Вы действительно хотите удалить сезон')).toBeVisible();
+        await expect(confirmModal.locator('text=Сезон под удаление')).toBeVisible();
+
+        // Отменяем удаление по кнопке "Отмена"
+        await page.getByTestId('confirm-modal-cancel-btn').click();
+
+        // Диалог удаления закрылся, но модалка сезонов осталась открытой и сезон не удален
+        await expect(confirmModal).toBeHidden();
+        await expect(page.locator('h3:has-text("Управление сезонами")')).toBeVisible();
+        await expect(page.getByTestId('seasons-manager-modal').getByText('Сезон под удаление')).toBeVisible();
+    });
+
+    test('кликая по крестику шапки во время создания сезона закрывается только форма, сохраняя окно сезонов и статистику', async ({ app, page }) => {
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        await page.click('text=Период: Все время');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        await expect(page.locator('h3:has-text("Управление сезонами")')).toBeVisible();
+
+        // Открываем форму создания нового сезона
+        await page.click('button:has-text("Создать новый сезон")');
+        await expect(page.locator('h3:has-text("Новый сезон")')).toBeVisible();
+
+        // Кликаем по кнопке-крестику в шапке окна формы
+        await page.getByTestId('close-season-form-btn').click();
+
+        // Проверяем: форма создания закрылась
+        await expect(page.getByTestId('season-name-input')).toBeHidden();
+
+        // НО окно "Управление сезонами" И окно "Статистика" остаются открытыми
+        await expect(page.locator('h3:has-text("Управление сезонами")')).toBeVisible();
+        await expect(app.statsModal).toBeVisible();
+    });
+
+    test('кликая по крестику шапки во время редактирования сезона закрывается только форма редактирования', async ({ app, page }) => {
+        await page.context().addInitScript(() => {
+            const season = [{ id: 's1', name: 'Зимний Сезон', startDate: '2026-12-01' }];
+            localStorage.setItem('randomatched_seasons_v1', JSON.stringify(season));
+        });
+
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await page.click('text=Период: Зимний Сезон');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        // Открываем редактирование
+        await page.click('button[title="Редактировать сезон"]');
+        await expect(page.locator('h3:has-text("Редактирование сезона")')).toBeVisible();
+
+        // Кликаем по крестику в шапке формы
+        await page.getByTestId('close-season-form-btn').click();
+
+        // Проверяем: форма редактирования закрылась, открыт список сезонов с элементом "Зимний Сезон"
+        await expect(page.getByTestId('season-name-input')).toBeHidden();
+        await expect(page.locator('h3:has-text("Управление сезонами")')).toBeVisible();
+        await expect(page.getByTestId('seasons-manager-modal').getByText('Зимний Сезон')).toBeVisible();
+        await expect(app.statsModal).toBeVisible();
+    });
 });
