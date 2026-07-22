@@ -109,6 +109,18 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     }
   }, [isOpen]);
 
+  // Фиксация первоначальной высоты вьюпорта и состояния фокуса на инпутах
+  const initialWindowHeightRef = useRef<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (!initialWindowHeightRef.current || window.innerHeight > initialWindowHeightRef.current) {
+        initialWindowHeightRef.current = window.innerHeight;
+      }
+    }
+  }, [isRendered]);
+
   // Отслеживание физических размеров вьюпорта (для защиты от перекрытия виртуальной клавиатурой)
   const [viewportStyle, setViewportStyle] = useState<{ height?: number; top?: number; maxModalHeight?: number; isKeyboardOpen?: boolean }>({});
 
@@ -119,7 +131,19 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       if (window.visualViewport) {
         const height = window.visualViewport.height;
         const top = window.visualViewport.offsetTop;
-        const isKeyboardOpen = height < window.innerHeight - 100;
+
+        const activeEl = typeof document !== 'undefined' ? document.activeElement : null;
+        const isFocusedOnInput = !!(
+          activeEl &&
+          (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || (activeEl as HTMLElement).isContentEditable)
+        );
+
+        // Клавиатура считается открытой, если сфокусирован инпут ИЛИ если текущая высота вьюпорта
+        // ощутимо меньше первоначальной высоты экрана без клавиатуры
+        const isKeyboardOpen =
+          isInputFocused ||
+          isFocusedOnInput ||
+          (initialWindowHeightRef.current > 0 && height < initialWindowHeightRef.current - 100);
 
         // Если клавиатура открыта — отдаем все 100% доступной высоты над клавиатурой,
         // чтобы модалка-шторка занимала всю доступную верхнюю часть экрана и не оставляла пустой зазор.
@@ -153,15 +177,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       }
       window.removeEventListener('resize', updateViewport);
     };
-  }, [isRendered]);
+  }, [isRendered, isInputFocused]);
 
-  // Сброс возможного паразитного скролла страницы и плавная докрутка сфокусированного инпута
+  // Сброс возможного паразитного скролла страницы и отслеживание фокуса инпутов
   useEffect(() => {
     if (!isRendered) return;
 
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement | null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        setIsInputFocused(true);
         if (window.scrollY !== 0) {
           window.scrollTo(0, 0);
         }
@@ -171,9 +196,19 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       }
     };
 
+    const handleFocusOut = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        setIsInputFocused(false);
+      }
+    };
+
     document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('focusout', handleFocusOut);
+
     return () => {
       document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('focusout', handleFocusOut);
     };
   }, [isRendered]);
 
