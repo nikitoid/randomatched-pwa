@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useConnectivity } from './useConnectivity';
 
 const STORAGE_KEY_SEASONS = 'randomatched_seasons_v1';
+const STORAGE_KEY_DELETED_SEASONS = 'randomatched_deleted_seasons_v1';
 
 // Helper to remove any undefined fields before sending data to Firebase Firestore
 const cleanSeasonForFirestore = (season: Season) => {
@@ -24,6 +25,7 @@ export const useSeasons = (
 ) => {
     const { isOnline } = useConnectivity();
     const [seasons, setSeasons] = useState<Season[]>([]);
+    const [deletedSeasonIds, setDeletedSeasonIds] = useState<Set<string>>(new Set());
     const [isLoaded, setIsLoaded] = useState(false);
     const [isSyncingSeasons, setIsSyncingSeasons] = useState(false);
 
@@ -35,6 +37,13 @@ export const useSeasons = (
                 const parsed = JSON.parse(savedSeasons);
                 if (Array.isArray(parsed)) {
                     setSeasons(parsed);
+                }
+            }
+            const savedDeleted = localStorage.getItem(STORAGE_KEY_DELETED_SEASONS);
+            if (savedDeleted) {
+                const parsedDeleted = JSON.parse(savedDeleted);
+                if (Array.isArray(parsedDeleted)) {
+                    setDeletedSeasonIds(new Set(parsedDeleted));
                 }
             }
         } catch (e) {
@@ -54,6 +63,16 @@ export const useSeasons = (
         }
     }, [seasons, isLoaded]);
 
+    // Save deletedSeasonIds to localStorage
+    useEffect(() => {
+        if (!isLoaded) return;
+        try {
+            localStorage.setItem(STORAGE_KEY_DELETED_SEASONS, JSON.stringify(Array.from(deletedSeasonIds)));
+        } catch (e) {
+            console.error('Failed to save deleted seasons to local storage', e);
+        }
+    }, [deletedSeasonIds, isLoaded]);
+
     // Sort seasons by startDate ascending
     const sortedSeasons = [...seasons].sort((a, b) => a.startDate.localeCompare(b.startDate));
 
@@ -64,6 +83,13 @@ export const useSeasons = (
         const trimmedName = name.trim();
         if (!trimmedName || !startDate) return null;
 
+        const normalizedName = trimmedName.toLowerCase();
+        const isDuplicate = seasons.some(s => s.name.trim().toLowerCase() === normalizedName);
+        if (isDuplicate) {
+            if (addToast) addToast('Сезон с таким названием уже существует', 'warning');
+            return null;
+        }
+
         const newSeason: Season = {
             id: crypto.randomUUID(),
             name: trimmedName,
@@ -72,10 +98,16 @@ export const useSeasons = (
             lastUpdated: Date.now()
         };
 
+        setDeletedSeasonIds(prev => {
+            const next = new Set(prev);
+            next.delete(newSeason.id);
+            return next;
+        });
+
         setSeasons(prev => [...prev, newSeason]);
         if (addToast) addToast(`Сезон "${trimmedName}" успешно создан`, 'success');
         return newSeason;
-    }, [addToast]);
+    }, [seasons, addToast]);
 
     const updateSeason = useCallback((id: string, updatedData: Partial<Omit<Season, 'id'>>) => {
         setSeasons(prev => prev.map(s => {
@@ -98,6 +130,7 @@ export const useSeasons = (
 
     const deleteSeason = useCallback((id: string) => {
         setSeasons(prev => prev.filter(s => s.id !== id));
+        setDeletedSeasonIds(prev => new Set(prev).add(id));
         if (addToast) addToast('Сезон удален', 'info');
     }, [addToast]);
 
@@ -117,27 +150,92 @@ export const useSeasons = (
 
         setIsSyncingSeasons(true);
         try {
+            // 1. Push local tombstones (deleted items) to Firestore
+            if (deletedSeasonIds.size > 0) {
+                for (const deletedId of deletedSeasonIds) {
+                    await db.collection('seasons').doc(deletedId).set({
+                        id: deletedId,
+                        deleted: true,
+                        lastUpdated: Date.now()
+                    }, { merge: true });
+                }
+            }
+
+            // 2. Fetch remote seasons from cloud
             const snapshot = await db.collection('seasons').get();
-            const remoteSeasonsMap = new Map<string, Season>();
+            const remoteSeasonsMap = new Map<string, Season & { deleted?: boolean }>();
+            const remoteByNameMap = new Map<string, Season>();
+
             if (snapshot && snapshot.docs) {
                 snapshot.docs.forEach((doc: any) => {
-                    const data = doc.data() as Season;
-                    remoteSeasonsMap.set(doc.id, { ...data, id: doc.id });
+                    const data = doc.data() as Season & { deleted?: boolean };
+                    const seasonObj = { ...data, id: doc.id };
+                    remoteSeasonsMap.set(doc.id, seasonObj);
+                    if (!data.deleted && data.name) {
+                        const normName = data.name.trim().toLowerCase();
+                        remoteByNameMap.set(normName, seasonObj);
+                    }
                 });
             }
 
             const localSeasonsMap = new Map<string, Season>();
-            seasons.forEach(s => localSeasonsMap.set(s.id, s));
+            seasons.forEach(s => {
+                if (!deletedSeasonIds.has(s.id)) {
+                    localSeasonsMap.set(s.id, s);
+                }
+            });
 
             const mergedSeasonsMap = new Map<string, Season>();
+            const nextDeletedIds = new Set(deletedSeasonIds);
             let hasChanges = false;
+            let duplicateReplacedName: string | null = null;
 
-            // Merge local and remote
+            // Process duplicate detection for local seasons against cloud
+            const localDuplicatesToRemove = new Set<string>();
+            for (const [id, local] of localSeasonsMap.entries()) {
+                const normName = local.name.trim().toLowerCase();
+                const remoteSameName = remoteByNameMap.get(normName);
+                if (remoteSameName && remoteSameName.id !== id) {
+                    // Duplicate detected! Use remote version as canonical.
+                    localDuplicatesToRemove.add(id);
+                    duplicateReplacedName = remoteSameName.name;
+                    hasChanges = true;
+                }
+            }
+
+            // Remove local duplicates
+            for (const dupId of localDuplicatesToRemove) {
+                localSeasonsMap.delete(dupId);
+            }
+
+            // All IDs to evaluate
             const allIds = new Set([...Array.from(localSeasonsMap.keys()), ...Array.from(remoteSeasonsMap.keys())]);
 
             for (const id of allIds) {
                 const local = localSeasonsMap.get(id);
                 const remote = remoteSeasonsMap.get(id);
+
+                if (remote?.deleted) {
+                    // Cloud says season is deleted
+                    if (local) {
+                        const localTime = local.lastUpdated || 0;
+                        const remoteTime = remote.lastUpdated || 0;
+                        if (localTime > remoteTime) {
+                            // Local updated after remote delete -> resurrect
+                            mergedSeasonsMap.set(id, local);
+                            await db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local));
+                            nextDeletedIds.delete(id);
+                            hasChanges = true;
+                        } else {
+                            // Remote deletion wins -> remove local
+                            nextDeletedIds.add(id);
+                            hasChanges = true;
+                        }
+                    } else {
+                        nextDeletedIds.add(id);
+                    }
+                    continue;
+                }
 
                 if (local && remote) {
                     const localTime = local.lastUpdated || 0;
@@ -151,20 +249,37 @@ export const useSeasons = (
                         if (remoteTime > localTime) hasChanges = true;
                     }
                 } else if (local) {
+                    // Local only -> push to cloud
                     mergedSeasonsMap.set(id, local);
                     await db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local));
                     hasChanges = true;
                 } else if (remote) {
-                    mergedSeasonsMap.set(id, remote);
-                    hasChanges = true;
+                    // Remote only
+                    if (nextDeletedIds.has(id)) {
+                        // We locally deleted this season, but remote wasn't marked deleted yet -> mark deleted in cloud
+                        await db.collection('seasons').doc(id).set({
+                            id,
+                            deleted: true,
+                            lastUpdated: Date.now()
+                        }, { merge: true });
+                        hasChanges = true;
+                    } else {
+                        mergedSeasonsMap.set(id, remote);
+                        hasChanges = true;
+                    }
                 }
             }
 
+            setDeletedSeasonIds(nextDeletedIds);
             const mergedList = Array.from(mergedSeasonsMap.values());
             setSeasons(mergedList);
 
-            if (!options?.silentIfNoChanges && addToast && hasChanges) {
-                addToast('Сезоны успешно синхронизированы с облаком', 'success');
+            if (!options?.silentIfNoChanges && addToast) {
+                if (duplicateReplacedName) {
+                    addToast(`Обнаружен дубликат сезона "${duplicateReplacedName}". Использована облачная версия`, 'info');
+                } else if (hasChanges) {
+                    addToast('Сезоны успешно синхронизированы с облаком', 'success');
+                }
             }
             return true;
         } catch (e) {
@@ -176,7 +291,7 @@ export const useSeasons = (
         } finally {
             setIsSyncingSeasons(false);
         }
-    }, [isOnline, seasons, addToast]);
+    }, [isOnline, seasons, deletedSeasonIds, addToast]);
 
     return {
         seasons: sortedSeasons,

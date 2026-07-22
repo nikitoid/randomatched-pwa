@@ -73,6 +73,15 @@ export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
         const trimmedName = nameInput.trim();
         if (!trimmedName || !startDateInput) return;
 
+        const normalizedInputName = trimmedName.toLowerCase();
+        const isDuplicate = seasons.some(s => s.name.trim().toLowerCase() === normalizedInputName && s.id !== editingSeasonId);
+
+        if (isDuplicate) {
+            setFormError('Сезон с таким названием уже существует');
+            triggerHaptic([30, 50, 30]);
+            return;
+        }
+
         if (endDateInput && endDateInput < startDateInput) {
             setFormError('Дата окончания не может быть раньше даты начала');
             triggerHaptic([30, 50, 30]);

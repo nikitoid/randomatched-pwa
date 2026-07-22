@@ -1005,16 +1005,19 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 {/* Period / Season Filter Pill Button */}
                                 <button
                                     onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
+                                    title={isDateFilterOpen ? "Свернуть настройки периода" : "Открыть настройки периода"}
                                     className={`h-9 px-2.5 text-xs font-bold rounded-xl flex items-center justify-between gap-1 flex-1 min-w-0 transition-all active:scale-95 border ${
-                                        filterStartDate && filterEndDate && filterEndDate < filterStartDate
-                                            ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-900/30 dark:border-rose-800 dark:text-rose-400'
-                                            : !isDefaultFilterState
-                                                ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400 font-extrabold'
-                                                : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                                        isDateFilterOpen
+                                            ? 'bg-primary-500/10 dark:bg-primary-500/20 border-primary-500/60 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500/30 shadow-xs font-extrabold'
+                                            : filterStartDate && filterEndDate && filterEndDate < filterStartDate
+                                                ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-900/30 dark:border-rose-800 dark:text-rose-400'
+                                                : !isDefaultFilterState
+                                                    ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400 font-extrabold'
+                                                    : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
                                     }`}
                                 >
                                     <div className="flex items-center gap-1.5 min-w-0 truncate">
-                                        <Calendar size={14} className={filterStartDate && filterEndDate && filterEndDate < filterStartDate ? 'text-rose-500 shrink-0' : !isDefaultFilterState ? 'text-primary-500 shrink-0' : 'text-slate-400 shrink-0'} />
+                                        <Calendar size={14} className={isDateFilterOpen || !isDefaultFilterState ? 'text-primary-500 shrink-0' : filterStartDate && filterEndDate && filterEndDate < filterStartDate ? 'text-rose-500 shrink-0' : 'text-slate-400 shrink-0'} />
                                         <span className="hidden sm:inline shrink-0 text-slate-400 font-normal">Период: </span>
                                         <span className="truncate text-left">{formatPeriodLabel()}</span>
                                     </div>
@@ -1034,8 +1037,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                                 <X size={13} strokeWidth={2.5} />
                                             </span>
                                         )}
-                                        <div className="p-0.5 text-slate-400">
-                                            {isDateFilterOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                        <div className={`p-0.5 rounded-lg transition-all flex items-center justify-center ${
+                                            isDateFilterOpen
+                                                ? 'bg-primary-500 text-white shadow-xs'
+                                                : 'text-slate-400'
+                                        }`}>
+                                            {isDateFilterOpen ? <ChevronUp size={14} strokeWidth={2.5} /> : <ChevronDown size={14} />}
                                         </div>
                                     </div>
                                 </button>

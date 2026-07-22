@@ -387,4 +387,28 @@ test.describe('Управление сезонами и статистика', (
         await expect(page.getByTestId('seasons-manager-modal').getByText('Зимний Сезон')).toBeVisible();
         await expect(app.statsModal).toBeVisible();
     });
+
+    test('попытка создания дублирующего сезона отображает ошибку валидации', async ({ app, page }) => {
+        await page.context().addInitScript(() => {
+            const season = [{ id: 's1', name: 'Осенний Сезон', startDate: '2026-09-01' }];
+            localStorage.setItem('randomatched_seasons_v1', JSON.stringify(season));
+        });
+
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await page.click('text=Период: Осенний Сезон');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        await page.click('button:has-text("Создать новый сезон")');
+        await page.getByTestId('season-name-input').fill('осенний сезон');
+        await page.getByTestId('season-start-date-input').fill('2026-10-01');
+        await page.click('button[type="submit"]:has-text("Сохранить")');
+
+        // Должно отобразиться сообщение об ошибке
+        await expect(page.getByText('Сезон с таким названием уже существует')).toBeVisible();
+        // Форма не должна закрываться
+        await expect(page.getByTestId('season-name-input')).toBeVisible();
+    });
 });

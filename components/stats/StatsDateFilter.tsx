@@ -189,6 +189,19 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                 </button>
                             )}
                         </div>
+
+                        {/* Bottom Collapse Action */}
+                        <div className="pt-2.5 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center justify-center">
+                            <button
+                                type="button"
+                                onClick={() => { triggerHaptic(10); setIsDateFilterOpen(false); }}
+                                className="w-full py-2.5 px-4 rounded-xl bg-slate-200/70 hover:bg-slate-300/80 dark:bg-slate-800/90 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] border border-slate-300/50 dark:border-slate-700/60 shadow-xs"
+                                aria-label="Свернуть выбор периода"
+                            >
+                                <ChevronUp size={16} className="text-primary-500 dark:text-primary-400 stroke-[2.5]" />
+                                <span>Свернуть выбор периода</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
