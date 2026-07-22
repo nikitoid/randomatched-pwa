@@ -109,6 +109,64 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     }
   }, [isOpen]);
 
+  // Отслеживание физических размеров вьюпорта (для защиты от перекрытия виртуальной клавиатурой)
+  const [viewportStyle, setViewportStyle] = useState<{ height?: number; top?: number; maxModalHeight?: number }>({});
+
+  useEffect(() => {
+    if (!isRendered || typeof window === 'undefined') return;
+
+    const updateViewport = () => {
+      if (window.visualViewport) {
+        const height = window.visualViewport.height;
+        const top = window.visualViewport.offsetTop;
+        const maxModalHeight = Math.min(window.innerHeight * 0.85, height - 16);
+
+        setViewportStyle({
+          height,
+          top,
+          maxModalHeight: Math.max(200, maxModalHeight),
+        });
+      }
+    };
+
+    updateViewport();
+
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', updateViewport);
+      vv.addEventListener('scroll', updateViewport);
+    }
+
+    window.addEventListener('resize', updateViewport);
+
+    return () => {
+      if (vv) {
+        vv.removeEventListener('resize', updateViewport);
+        vv.removeEventListener('scroll', updateViewport);
+      }
+      window.removeEventListener('resize', updateViewport);
+    };
+  }, [isRendered]);
+
+  // Сброс возможного паразитного скролла страницы при фокусе инпутов
+  useEffect(() => {
+    if (!isRendered) return;
+
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        if (window.scrollY !== 0) {
+          window.scrollTo(0, 0);
+        }
+      }
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+    };
+  }, [isRendered]);
+
   // Расчет слоев z-index на основе позиции в стеке
   const stackIndex = isRendered ? getStackIndex(resolvedId) : 0;
   const { backdropZIndex, modalZIndex } = getModalZIndex(stackIndex, isAlert, priority);
@@ -235,7 +293,11 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   return (
     <div
       className={`fixed inset-0 flex bg-slate-950/60 backdrop-blur-md transition-opacity duration-300 ${getContainerLayoutClass()} ${getBackdropOpacity()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
-      style={{ zIndex: backdropZIndex }}
+      style={{
+        zIndex: backdropZIndex,
+        ...(viewportStyle.height ? { height: `${viewportStyle.height}px` } : {}),
+        ...(viewportStyle.top !== undefined ? { top: `${viewportStyle.top}px` } : {}),
+      }}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
@@ -249,6 +311,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         } ${className} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
         style={{
           zIndex: modalZIndex,
+          ...(viewportStyle.maxModalHeight ? { maxHeight: `${viewportStyle.maxModalHeight}px` } : {}),
           ...getCardTransformStyle(),
         }}
       >
