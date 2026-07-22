@@ -110,7 +110,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   }, [isOpen]);
 
   // Отслеживание физических размеров вьюпорта (для защиты от перекрытия виртуальной клавиатурой)
-  const [viewportStyle, setViewportStyle] = useState<{ height?: number; top?: number; maxModalHeight?: number }>({});
+  const [viewportStyle, setViewportStyle] = useState<{ height?: number; top?: number; maxModalHeight?: number; isKeyboardOpen?: boolean }>({});
 
   useEffect(() => {
     if (!isRendered || typeof window === 'undefined') return;
@@ -119,12 +119,19 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       if (window.visualViewport) {
         const height = window.visualViewport.height;
         const top = window.visualViewport.offsetTop;
-        const maxModalHeight = Math.min(window.innerHeight * 0.85, height - 16);
+        const isKeyboardOpen = height < window.innerHeight - 100;
+
+        // Если клавиатура открыта — отдаем все 100% доступной высоты над клавиатурой,
+        // чтобы модалка-шторка занимала всю доступную верхнюю часть экрана и не оставляла пустой зазор.
+        const maxModalHeight = isKeyboardOpen
+          ? height
+          : Math.min(window.innerHeight * 0.85, height - 16);
 
         setViewportStyle({
           height,
           top,
           maxModalHeight: Math.max(200, maxModalHeight),
+          isKeyboardOpen,
         });
       }
     };
@@ -148,7 +155,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     };
   }, [isRendered]);
 
-  // Сброс возможного паразитного скролла страницы при фокусе инпутов
+  // Сброс возможного паразитного скролла страницы и плавная докрутка сфокусированного инпута
   useEffect(() => {
     if (!isRendered) return;
 
@@ -158,6 +165,9 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         if (window.scrollY !== 0) {
           window.scrollTo(0, 0);
         }
+        setTimeout(() => {
+          target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }, 100);
       }
     };
 
@@ -306,12 +316,15 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       <div
         className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
           isBottomSheetScreen
-            ? 'rounded-t-3xl sm:rounded-3xl max-h-[85vh] sm:max-h-[85vh]'
+            ? viewportStyle.isKeyboardOpen
+              ? 'rounded-t-2xl sm:rounded-3xl h-full'
+              : 'rounded-t-3xl sm:rounded-3xl max-h-[85vh] sm:max-h-[85vh]'
             : 'rounded-3xl max-h-[85vh]'
         } ${className} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
         style={{
           zIndex: modalZIndex,
           ...(viewportStyle.maxModalHeight ? { maxHeight: `${viewportStyle.maxModalHeight}px` } : {}),
+          ...(viewportStyle.isKeyboardOpen && viewportStyle.maxModalHeight ? { height: `${viewportStyle.maxModalHeight}px` } : {}),
           ...getCardTransformStyle(),
         }}
       >
