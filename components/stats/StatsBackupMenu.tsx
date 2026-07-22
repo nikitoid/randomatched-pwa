@@ -45,6 +45,7 @@ export const StatsBackupMenu: React.FC<StatsBackupMenuProps> = ({
             variant="auto"
             modalId="stats-backup-menu"
             priority={50}
+            showCloseButton={false}
             footer={modalFooter}
         >
             <div className="space-y-5">

@@ -778,6 +778,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     variant="auto"
                     modalId="winner-record-modal"
                     priority={40}
+                    showCloseButton={false}
                 >
                     <div className="flex flex-col gap-4 w-full">
                         {canRecordStats && (
@@ -926,6 +927,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 variant="auto"
                 modalId="generation-weights-modal"
                 priority={40}
+                showCloseButton={false}
                 subHeader={
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />

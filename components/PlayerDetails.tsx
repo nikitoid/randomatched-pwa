@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { PlayerStat, MatchRecord } from '../types';
 import { Trophy, ChevronLeft, Shield, Calendar, Skull, Star, TrendingUp, ChevronDown, ChevronUp, User, Edit2, Check, X } from 'lucide-react';
+import { calculateWilsonScore, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
 
 interface PlayerDetailsProps {
     player: PlayerStat;
@@ -32,26 +33,28 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
     const [partnersState, setPartnersState] = useState<'partial' | 'expanded' | 'collapsed'>('partial');
     const [matchesState, setMatchesState] = useState<'partial' | 'expanded' | 'collapsed'>('partial');
 
-    // Calculate additional stats
-    // ... (rest is same, but I need to make sure I don't cut off too much or too little)
-    // Actually wait, I am replacing the top part up to props destructuring and state init.
-
-    const { recentMatches, topHeroes, partnerStats, bestStreak, totalKills, maxKills, matchesWithKillsCount, avgKills } = useMemo(() => {
+    // Dynamic stats calculated directly from the passed history slice
+    const { recentMatches, topHeroes, partnerStats, bestStreak, totalKills, maxKills, matchesCount, winsCount, lossesCount, dynamicScore } = useMemo(() => {
         // Filter matches involving this player
         const playerMatches = history.filter(m =>
             m.team1.some(p => p.name === player.name) ||
             m.team2.some(p => p.name === player.name)
         ).sort((a, b) => b.timestamp - a.timestamp); // Newest first
 
+        let winsCount = 0;
+        let lossesCount = 0;
+        let totalKills = 0;
+
         // Top Heroes
         const heroesMap = new Map<string, { matches: number, wins: number }>();
-        let totalKills = 0;
-        let matchesWithKillsCount = 0;
 
         playerMatches.forEach(m => {
             const isTeam1 = m.team1.some(p => p.name === player.name);
             const pData = isTeam1 ? m.team1.find(p => p.name === player.name) : m.team2.find(p => p.name === player.name);
             const won = (isTeam1 && m.winner === 'team1') || (!isTeam1 && m.winner === 'team2');
+
+            if (won) winsCount++;
+            else lossesCount++;
 
             if (pData && pData.heroName) {
                 const hStart = heroesMap.get(pData.heroName) || { matches: 0, wins: 0 };
@@ -62,9 +65,14 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
             if (pData && pData.kills !== undefined && pData.kills !== null) {
                 totalKills += pData.kills;
-                matchesWithKillsCount++;
             }
         });
+
+        const matchesCount = playerMatches.length;
+
+        // Calculate dynamic Wilson Score for this history selection
+        const weightedBreakdown = getPlayerWeightedBreakdown(player.name, history);
+        const dynamicScore = calculateWilsonScore(weightedBreakdown.totalWeightedWins, weightedBreakdown.totalWeightedMatches);
 
         // Calculate max kills in a series of games (gap <= 6 hours)
         const chronologicalMatches = [...playerMatches].sort((a, b) => a.timestamp - b.timestamp);
@@ -148,8 +156,6 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             .sort((a, b) => b.score - a.score || b.matches - a.matches)
             .slice(0, 5);
 
-        const avgKills = matchesWithKillsCount > 0 ? totalKills / matchesWithKillsCount : 0;
-
         return {
             recentMatches: playerMatches.slice(0, 10),
             topHeroes,
@@ -157,14 +163,12 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             bestStreak,
             totalKills,
             maxKills,
-            matchesWithKillsCount,
-            avgKills
+            matchesCount,
+            winsCount,
+            lossesCount,
+            dynamicScore
         };
-    }, [player, history]);
-
-    const getMatchesWord = (count: number) => {
-        return (count % 10 === 1 && count % 100 !== 11) ? 'матчу' : 'матчам';
-    };
+    }, [player.name, history]);
 
     return (
         <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 bg-grid-pattern animate-in slide-in-from-right duration-300">
@@ -203,7 +207,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 )}
                 {!isEditing && (
                     <div className="flex gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
-                        <span>Lvl {Math.floor(player.matches / 5) + 1}</span>
+                        <span>Lvl {Math.floor(matchesCount / 5) + 1}</span>
                     </div>
                 )}
             </div>
@@ -214,23 +218,23 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1">Матчи</div>
-                        <div className="text-2xl font-black text-slate-900 dark:text-white">{player.matches}</div>
+                        <div className="text-2xl font-black text-slate-900 dark:text-white">{matchesCount}</div>
                         <div className="text-[10px] text-green-500 font-bold flex items-center gap-1 mt-1">
                             <TrendingUp size={12} /> Лучшая серия: {bestStreak}
                         </div>
                     </div>
                     <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1">Винрейт</div>
-                        <div className={`text-2xl font-black ${player.wins / player.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>
-                            {Math.round((player.wins / player.matches) * 100)}%
+                        <div className={`text-2xl font-black ${matchesCount > 0 && winsCount / matchesCount >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>
+                            {(matchesCount > 0 ? (winsCount / matchesCount) * 100 : 0).toFixed(1)}%
                         </div>
                         <div className="text-[10px] text-slate-500 font-bold mt-1">
-                            {player.wins}W - {player.losses}L
+                            {winsCount}W - {lossesCount}L
                         </div>
                     </div>
                 </div>
 
-                {/* Kills Stats Cards */}
+                {/* Kills & Efficiency Stats Cards */}
                 <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
@@ -243,13 +247,13 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                     </div>
                     <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-700/60 shadow-sm">
                         <div className="text-xs font-bold text-slate-400 uppercase mb-1 flex items-center gap-1">
-                            <TrendingUp size={12} className="text-primary-500" /> Ср. убийств
+                            <TrendingUp size={12} className="text-primary-500" /> Эффективность
                         </div>
-                        <div className="text-2xl font-black text-slate-900 dark:text-white">
-                            {avgKills.toFixed(1)}
+                        <div className="text-2xl font-black text-primary-600 dark:text-primary-400">
+                            {(dynamicScore * 100).toFixed(1)}%
                         </div>
-                        <div className="text-[10px] text-slate-500 font-bold mt-1">
-                            По {matchesWithKillsCount} {getMatchesWord(matchesWithKillsCount)}
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1">
+                            Рейтинг Уилсона (80%)
                         </div>
                     </div>
                 </div>
@@ -281,7 +285,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                             <div key={h.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{h.name}</div>
                                                 <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                    <span className={`${h.wins / h.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((h.wins / h.matches) * 100)}%</span>
+                                                    <span className={`${h.wins / h.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{((h.wins / h.matches) * 100).toFixed(1)}%</span>
                                                     <span className="opacity-30">|</span>
                                                     <span>{h.matches} игр</span>
                                                 </div>
@@ -295,7 +299,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                                         <div key={h.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                             <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{h.name}</div>
                                                             <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                                <span className={`${h.wins / h.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((h.wins / h.matches) * 100)}%</span>
+                                                                <span className={`${h.wins / h.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{((h.wins / h.matches) * 100).toFixed(1)}%</span>
                                                                 <span className="opacity-30">|</span>
                                                                 <span>{h.matches} игр</span>
                                                             </div>
@@ -349,7 +353,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                             <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                 <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
                                                 <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                    <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((s.wins / s.matches) * 100)}%</span>
+                                                    <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{((s.wins / s.matches) * 100).toFixed(1)}%</span>
                                                     <span className="opacity-30">|</span>
                                                     <span>{s.matches} игр</span>
                                                 </div>
@@ -363,7 +367,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                                         <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
                                                             <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
                                                             <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                                <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((s.wins / s.matches) * 100)}%</span>
+                                                                <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{((s.wins / s.matches) * 100).toFixed(1)}%</span>
                                                                 <span className="opacity-30">|</span>
                                                                 <span>{s.matches} игр</span>
                                                             </div>

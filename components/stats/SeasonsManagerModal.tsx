@@ -226,6 +226,7 @@ export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
                 modalId="season-form-modal"
                 closeButtonTestId="close-season-form-btn"
                 priority={70}
+                showCloseButton={false}
             >
                 <form onSubmit={handleSave} className="space-y-4">
                     {formError && (

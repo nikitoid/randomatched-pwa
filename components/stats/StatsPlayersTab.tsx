@@ -177,7 +177,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                                 {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}
                                             </div>
                                             <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                                {Math.round((player.wins / (player.matches || 1)) * 100)}% побед
+                                                {((player.wins / (player.matches || 1)) * 100).toFixed(1)}% побед
                                             </div>
                                         </>
                                     ) : playerSort === 'kills' ? (
@@ -198,10 +198,19 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                                 {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}
                                             </div>
                                         </>
+                                    ) : playerSort === 'efficiency' ? (
+                                        <>
+                                            <div className={`text-sm font-bold ${player.score >= 0.5 ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                {(player.score * 100).toFixed(1)}%
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}
+                                            </div>
+                                        </>
                                     ) : (
                                         <>
                                             <div className={`text-sm font-bold ${player.wins / (player.matches || 1) >= 0.5 ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                                                {Math.round((player.wins / (player.matches || 1)) * 100)}%
+                                                {((player.wins / (player.matches || 1)) * 100).toFixed(1)}%
                                             </div>
                                             <div className="text-[10px] text-slate-400 dark:text-slate-500">
                                                 {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}

@@ -52,7 +52,7 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
             </div>
             <div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight">Что нового?</h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">История обновлений</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">История обновлений</p>
             </div>
         </div>
     );
@@ -76,6 +76,7 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
             variant="auto"
             modalId="changelog-overlay"
             priority={40}
+            showCloseButton={false}
             footer={modalFooter}
         >
             <div className="space-y-8 pr-1">
@@ -83,7 +84,7 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                     <div key={release.version} className="relative">
                         {/* Line connecting releases */}
                         {idx < CHANGELOG.length - 1 && (
-                            <div className="absolute left-[19px] top-[40px] bottom-[-40px] w-0.5 bg-slate-100 dark:bg-slate-800 pointer-events-none" />
+                            <div className="absolute left-[19px] top-[40px] bottom-[-40px] w-0.5 bg-slate-200 dark:bg-slate-800 pointer-events-none" />
                         )}
 
                         {/* Release Header */}
@@ -95,7 +96,7 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                                 <h4 className="text-sm sm:text-base font-black text-slate-800 dark:text-white truncate">
                                     {release.title || `Версия ${release.version}`}
                                 </h4>
-                                <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 font-bold">{release.date}</p>
+                                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">{release.date}</p>
                             </div>
                         </div>
 
@@ -110,8 +111,8 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                                     </div>
                                     <ul className="space-y-1.5 pl-1.5">
                                         {section.items.map((item, iIdx) => (
-                                            <li key={iIdx} className="text-xs sm:text-sm text-slate-600 dark:text-slate-350 flex items-start gap-2 leading-relaxed">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 mt-[7px] shrink-0" />
+                                            <li key={iIdx} className="text-xs sm:text-sm text-slate-700 dark:text-slate-200 flex items-start gap-2.5 leading-relaxed font-normal">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 mt-[7px] shrink-0" />
                                                 <span>{item}</span>
                                             </li>
                                         ))}

@@ -99,7 +99,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                         <>
                             <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{mvp.name}</div>
                             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                Винрейт: <span className="font-bold text-green-600">{Math.round((mvp.wins / mvp.matches) * 100)}%</span>
+                                Винрейт: <span className="font-bold text-green-600">{((mvp.wins / mvp.matches) * 100).toFixed(1)}%</span>
                             </div>
                             <div className="text-[10px] text-slate-400 mt-0.5">{mvp.matches} игр</div>
                         </>
@@ -155,7 +155,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                                         <>
                                             <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{underdog.name}</div>
                                             <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                                Винрейт: <span className="font-bold text-red-500">{Math.round((underdog.wins / underdog.matches) * 100)}%</span>
+                                                Винрейт: <span className="font-bold text-red-500">{((underdog.wins / underdog.matches) * 100).toFixed(1)}%</span>
                                             </div>
                                             <div className="text-[10px] text-slate-400 mt-0.5">{underdog.matches} игр</div>
                                         </>
@@ -186,7 +186,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                             <>
                                 <div className="text-lg font-bold text-slate-900 dark:text-white truncate">{underdog.name}</div>
                                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Винрейт: <span className="font-bold text-red-500">{Math.round((underdog.wins / underdog.matches) * 100)}%</span>
+                                    Винрейт: <span className="font-bold text-red-500">{((underdog.wins / underdog.matches) * 100).toFixed(1)}%</span>
                                 </div>
                                 <div className="text-[10px] text-slate-400 mt-0.5">{underdog.matches} игр</div>
                             </>
@@ -272,7 +272,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                                                     </span>
                                                 )}
                                             </span>
-                                            <span className="text-slate-500 dark:text-slate-400">{Math.round(winRate)}% <span className="text-[9px] opacity-65 font-normal">({player.wins}/{player.matches})</span></span>
+                                            <span className="text-slate-500 dark:text-slate-400">{winRate.toFixed(1)}% <span className="text-[9px] opacity-65 font-normal">({player.wins}/{player.matches})</span></span>
                                         </div>
                                         <div className="h-2.5 w-full bg-slate-100/70 dark:bg-slate-800/50 rounded-full overflow-hidden">
                                             <div className="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-500" style={{ width: `${winRate}%` }}></div>

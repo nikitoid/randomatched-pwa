@@ -1018,6 +1018,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 variant="auto"
                 modalId="list-name-modal"
                 priority={40}
+                showCloseButton={false}
             >
                 <form onSubmit={handleNameSubmit} className="space-y-4"> 
                     <input autoFocus={isNameModalOpen} type="text" value={nameInputValue} onChange={(e) => setNameInputValue(e.target.value)} className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white select-text" placeholder="Название..." /> 
@@ -1063,6 +1064,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 variant="auto"
                 modalId="list-export-modal"
                 priority={40}
+                showCloseButton={false}
                 footer={() => (
                     <div className="flex gap-3 w-full"> 
                         <button onClick={handleCopyText} className="flex-1 py-3 font-bold text-white bg-primary-600 rounded-xl">Копировать</button> 
@@ -1084,6 +1086,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 variant="auto"
                 modalId="list-import-modal"
                 priority={40}
+                showCloseButton={false}
                 footer={() => (
                     <div className="grid grid-cols-2 gap-3 w-full"> 
                         <button onClick={() => setImportMode('none')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
@@ -1104,6 +1107,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 variant="auto"
                 modalId="rank-import-modal"
                 priority={40}
+                showCloseButton={false}
                 footer={() => (
                     <div className="grid grid-cols-2 gap-3 w-full">
                         <button onClick={() => setImportMode('none')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>

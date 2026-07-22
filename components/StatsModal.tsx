@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye, HelpCircle, Crown, Flame } from 'lucide-react';
+import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, ChevronRight, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye, HelpCircle, Crown, Flame, Sparkles, Calculator, Info } from 'lucide-react';
 import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBackup, Season, ToastType } from '../types';
 import { PlayerDetails } from './PlayerDetails';
 import { HeroDetails } from './HeroDetails';
@@ -115,6 +115,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [showEfficiencyBreakdown, setShowEfficiencyBreakdown] = useState(false);
     const [activeNominationModal, setActiveNominationModal] = useState<'mvp' | 'underdog' | 'streak' | 'seriesKills' | 'totalKills' | null>(null);
     const [selectedWeightedPlayer, setSelectedWeightedPlayer] = useState<{ player: PlayerStat; focusType: 'wins' | 'matches' } | null>(null);
+    const [expandedPlayerMath, setExpandedPlayerMath] = useState<Record<string, boolean>>({});
 
 
     const {
@@ -1415,6 +1416,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 variant="auto"
                 modalId="stats-efficiency-modal"
                 priority={80}
+                showCloseButton={false}
                 footer={(close) => (
                     <button
                         onClick={() => { close(); triggerHaptic(10); }}
@@ -1425,25 +1427,25 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 )}
             >
                 <div className="space-y-3.5 text-xs text-slate-600 dark:text-slate-300">
-                    {/* Формула */}
+                    {/* Главная идея */}
                     <div className="p-3.5 bg-primary-50/80 dark:bg-primary-950/50 rounded-2xl border border-primary-100 dark:border-primary-900/30">
                         <div className="font-bold text-primary-900 dark:text-primary-300 mb-1.5 flex items-center gap-1.5 text-xs sm:text-sm">
                             <span className="w-2 h-2 rounded-full bg-primary-500"></span>
-                            <span>Как рассчитывается балл</span>
+                            <span>Зачем необходим данный расчёт?</span>
                         </div>
                         <div className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                            Используется <strong>Нижняя граница интервала Уилсона (95% надежность)</strong> с затуханием давности игр (период полураспада 180 дней).
+                            Простой процент побед обманчив. Игрок с <strong>3 победами из 4 матчей (75%)</strong> ещё не доказал стабильность. Алгоритм вычисляет <strong>минимальный гарантированный винрейт</strong> с учётом дистанции и давности игр.
                         </div>
                     </div>
 
-                    {/* Сравнение и примеры корректности */}
+                    {/* Наглядное сравнение */}
                     <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl space-y-2 border border-slate-100 dark:border-slate-800">
                         <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs sm:text-sm">
                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                             <span>Почему этот расчёт справедлив?</span>
                         </div>
                         <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                            Алгоритм вычисляет надежную нижнюю границу рейтинга и объективно ранжирует игроков:
+                            Сравнение результатов игроков на разной дистанции:
                         </p>
 
                         <div className="space-y-1.5 pt-1">
@@ -1452,8 +1454,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <span className="font-semibold text-slate-800 dark:text-slate-200">2 победы / 10 матчей</span>
                                     <span className="text-[10px] text-slate-400 ml-1">(20% винрейт)</span>
                                 </div>
-                                <div className="font-mono font-bold text-slate-500">
-                                    Нижняя граница: <span className="text-red-500">~6.0%</span>
+                                <div className="font-bold text-slate-500">
+                                    Эффективность: <span className="font-mono text-red-500">6.0%</span>
                                 </div>
                             </div>
 
@@ -1462,8 +1464,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <span className="font-semibold text-emerald-900 dark:text-emerald-300">39 побед / 95 матчей</span>
                                     <span className="text-[10px] text-emerald-600 dark:text-emerald-400 ml-1">(41% винрейт)</span>
                                 </div>
-                                <div className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                                    Нижняя граница: <span className="text-emerald-900 dark:text-emerald-200">~31.6%</span>
+                                <div className="font-bold text-emerald-700 dark:text-emerald-400">
+                                    Эффективность: <span className="font-mono text-emerald-900 dark:text-emerald-200">31.6%</span> 🏆
                                 </div>
                             </div>
 
@@ -1473,24 +1475,24 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     <span className="text-[10px] text-primary-600 dark:text-primary-400 ml-1">(75% винрейт)</span>
                                 </div>
                                 <div className="font-mono font-bold text-primary-700 dark:text-primary-400">
-                                    Нижняя граница: <span className="text-primary-900 dark:text-primary-200">~30.1%</span>
+                                    Эффективность: <span className="text-primary-900 dark:text-primary-200">30.1%</span>
                                 </div>
                             </div>
                         </div>
                         <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1">
-                            * Игрок с 39/95 по праву стоит выше игрока с 2/10 и выше 3/4 на малой дистанции.
+                            * Игрок с 39/95 по праву стоит выше игрока с 3/4 на малой дистанции, так как подкрепил результат 95 играми.
                         </p>
                     </div>
 
-                    {/* Правила активности */}
+                    {/* Учёт времени */}
                     <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/90 rounded-2xl border border-slate-100 dark:border-slate-800">
                         <div className="font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-1.5 text-xs sm:text-sm">
                             <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                            <span>Временное затухание и активность</span>
+                            <span>Учёт давности игр и активность</span>
                         </div>
                         <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400 pl-0.5 leading-relaxed">
-                            <li>Каждый матч имеет вес W = 2^(-дни / 180). Вес матча снижается в 2 раза каждые 180 дней (6 месяцев).</li>
-                            <li>Неактивные игроки, не посещавшие игры более 60 дней, уходят в конец списка.</li>
+                            <li>Свежие победы ценнее: вес матча уменьшается в 2 раза каждые 6 месяцев.</li>
+                            <li>Игроки без активных матчей более 60 дней автоматически опускаются в конец списка.</li>
                         </ul>
                     </div>
                 </div>
@@ -1518,6 +1520,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 variant="auto"
                 modalId="nomination-modal"
                 priority={80}
+                showCloseButton={false}
                 footer={(close) => (
                     <button
                         onClick={() => { close(); triggerHaptic(10); }}
@@ -1685,6 +1688,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 variant="auto"
                 modalId="stats-efficiency-breakdown-modal"
                 priority={80}
+                showCloseButton={false}
                 footer={(close) => (
                     <button
                         onClick={() => { close(); triggerHaptic(10); }}
@@ -1695,12 +1699,12 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 )}
             >
                 <div className="space-y-3">
-                    {/* Simple Algorithm Explanation */}
-                    <div className="p-3.5 bg-slate-50/90 dark:bg-slate-800/80 rounded-2xl text-xs text-slate-600 dark:text-slate-300 space-y-2 shadow-sm dark:shadow-slate-950/40 shadow-slate-200/50">
+                    {/* Visual Summary Header */}
+                    <div className="p-3.5 bg-gradient-to-br from-primary-50/80 via-slate-50 to-emerald-50/60 dark:from-primary-950/30 dark:via-slate-800/80 dark:to-emerald-950/20 rounded-2xl text-xs text-slate-600 dark:text-slate-300 space-y-2.5 shadow-sm border border-slate-200/60 dark:border-slate-700/50">
                         <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full bg-primary-500"></span>
-                                <span>Алгоритм Уилсона</span>
+                                <Sparkles size={14} className="text-primary-500" />
+                                <span>Как рассчитывается рейтинг?</span>
                             </div>
                             <button
                                 type="button"
@@ -1712,30 +1716,46 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 className="px-2.5 py-1 text-[11px] font-extrabold rounded-xl bg-primary-500/10 hover:bg-primary-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/20 active:scale-95 transition-all flex items-center gap-1 shrink-0"
                             >
                                 <HelpCircle size={12} />
-                                <span>Подробнее</span>
+                                <span>Инфо</span>
                             </button>
                         </div>
-                        <p className="leading-relaxed">
-                            Рейтинг рассчитывается по математическому <strong>алгоритму Уилсона</strong> с учётом процента побед, количества игр и их свежести.
-                        </p>
-                        <div className="pt-1.5 border-t border-slate-200/40 dark:border-slate-700/40">
-                            <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-1">🌟 Плюсы алгоритма:</span>
-                            <ul className="list-disc list-inside space-y-1 text-slate-500 dark:text-slate-400 pl-0.5">
-                                <li><strong>Объективность:</strong> не даёт игрокам с 2–3 случайными победами взлетать на верхние места без дистанции.</li>
-                                <li><strong>Справедливость:</strong> поощряет постоянных участников с хорошим стабильным процентом побед.</li>
-                                <li><strong>Учёт времени:</strong> свежие матчи влияют на рейтинг сильнее старых.</li>
-                            </ul>
+
+                        <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
+                            <div className="p-1.5 bg-white/80 dark:bg-slate-900/60 rounded-xl border border-slate-200/50 dark:border-slate-700/50 flex flex-col justify-center">
+                                <span className="font-bold text-slate-800 dark:text-slate-200 block">1. Факты</span>
+                                <span className="text-slate-400">Победы / игры</span>
+                            </div>
+                            <div className="p-1.5 bg-emerald-100/70 dark:bg-emerald-950/60 rounded-xl border-2 border-emerald-400/80 dark:border-emerald-500/70 shadow-sm flex flex-col justify-center">
+                                <span className="font-bold text-emerald-800 dark:text-emerald-300 flex items-center justify-center gap-0.5">
+                                    2. Свежесть
+                                </span>
+                                <span className="text-emerald-700/90 dark:text-emerald-300/90 font-extrabold text-[9px]">Нажмите ниже 👇</span>
+                            </div>
+                            <div className="p-1.5 bg-primary-50/80 dark:bg-primary-950/40 rounded-xl border border-primary-200/50 dark:border-primary-800/40 flex flex-col justify-center">
+                                <span className="font-bold text-primary-700 dark:text-primary-400 block">3. Рейтинг</span>
+                                <span className="text-primary-600/80 dark:text-primary-400/80">Защита от случая</span>
+                            </div>
                         </div>
                     </div>
 
                     {sortedPlayers.map((player, idx) => {
-                        const rawWinrate = player.matches > 0 ? Math.round((player.wins / player.matches) * 100) : 0;
-                        const effScore = Math.round(player.score * 100);
+                        const rawWinrateNum = player.matches > 0 ? (player.wins / player.matches) * 100 : 0;
+                        const rawWinrateFormatted = rawWinrateNum.toFixed(1);
+                        const effScoreNum = player.score * 100;
+                        const effScoreFormatted = effScoreNum.toFixed(1);
+
                         const wWins = player.weightedWins ?? player.wins;
                         const wMatches = player.weightedMatches ?? player.matches;
+                        const weightedWinrateNum = wMatches > 0 ? (wWins / wMatches) * 100 : 0;
+                        const weightedWinrateFormatted = weightedWinrateNum.toFixed(1);
+
+                        const decayDiff = Number((weightedWinrateNum - rawWinrateNum).toFixed(1));
+                        const wilsonDiff = Number((effScoreNum - weightedWinrateNum).toFixed(1));
+
+                        const isMathExpanded = !!expandedPlayerMath[player.name];
 
                         return (
-                            <div key={player.name} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 space-y-2.5 transition-all shadow-md dark:shadow-slate-950/50 shadow-slate-200/60 ring-1 ring-black/5 dark:ring-white/5">
+                            <div key={player.name} className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 space-y-3 transition-all shadow-md dark:shadow-slate-950/50 shadow-slate-200/60 ring-1 ring-black/5 dark:ring-white/5">
                                 {/* Player Header */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 min-w-0">
@@ -1748,60 +1768,100 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         )}
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <span className="text-sm font-black text-primary-600 dark:text-primary-400">{effScore}%</span>
-                                        <span className="text-[10px] text-slate-400 block leading-none">Рейтинг</span>
+                                        <span className="text-base font-black text-primary-600 dark:text-primary-400">{effScoreFormatted}%</span>
+                                        <span className="text-[9px] text-slate-400 block leading-none font-semibold uppercase tracking-wider">Рейтинг</span>
                                     </div>
                                 </div>
 
-                                {/* Math breakdown row */}
-                                <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
-                                    <div className="bg-slate-50 dark:bg-slate-900/70 p-1.5 rounded-xl flex flex-col items-center justify-center text-center border border-transparent min-h-[50px]">
-                                        <div className="text-[10px] text-slate-400 font-medium leading-tight">
-                                            Процент побед
-                                        </div>
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">
-                                            {rawWinrate}% <span className="text-[9px] font-normal opacity-70">({player.wins}/{player.matches})</span>
-                                        </div>
+                                {/* Visual 3-Step Chain */}
+                                <div className="bg-slate-50 dark:bg-slate-900/60 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-1.5">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between px-0.5">
+                                        <span>Воронка расчёта</span>
+                                        <span className="text-slate-400 font-normal normal-case">3 шага к рейтингу</span>
                                     </div>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedWeightedPlayer({ player, focusType: 'wins' });
-                                            triggerHaptic(10);
-                                        }}
-                                        className="relative bg-emerald-50/80 active:bg-emerald-100 dark:bg-emerald-950/30 dark:active:bg-emerald-900/40 border border-emerald-200/50 dark:border-emerald-800/40 p-1.5 rounded-xl cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group min-h-[50px]"
-                                    >
-                                        <HelpCircle size={10} className="absolute top-1 right-1 text-emerald-600/70 dark:text-emerald-400/70 group-active:scale-110 shrink-0 pointer-events-none" />
-                                        <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium leading-tight px-1">
-                                            Взвеш. победы
+                                    <div className="grid grid-cols-3 gap-1.5 text-center items-stretch">
+                                        {/* Step 1: Raw */}
+                                        <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 flex flex-col items-center justify-between min-h-[60px]">
+                                            <span className="text-[9px] text-slate-400 font-medium">1. Факты</span>
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 my-0.5">{rawWinrateFormatted}%</span>
+                                            <span className="text-[9px] text-slate-400">{player.wins}/{player.matches} игр</span>
                                         </div>
-                                        <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                                            {wWins}
-                                        </div>
-                                    </button>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedWeightedPlayer({ player, focusType: 'matches' });
-                                            triggerHaptic(10);
-                                        }}
-                                        className="relative bg-slate-50 active:bg-slate-100 dark:bg-slate-900/70 dark:active:bg-slate-800 border border-slate-200/50 dark:border-slate-800/40 p-1.5 rounded-xl cursor-pointer active:scale-95 transition-all text-center flex flex-col items-center justify-center group min-h-[50px]"
-                                    >
-                                        <HelpCircle size={10} className="absolute top-1 right-1 text-slate-400/70 dark:text-slate-400/60 group-active:scale-110 shrink-0 pointer-events-none" />
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-tight px-1">
-                                            Взвеш. матчи
+                                        {/* Step 2: Weighted */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedWeightedPlayer({ player, focusType: 'wins' });
+                                                triggerHaptic(10);
+                                            }}
+                                            className="bg-gradient-to-b from-emerald-50 to-emerald-100/80 dark:from-emerald-950/70 dark:to-emerald-900/50 hover:from-emerald-100 hover:to-emerald-200/80 dark:hover:from-emerald-900/80 dark:hover:to-emerald-800/60 p-1.5 rounded-xl border-2 border-emerald-400/80 dark:border-emerald-500/70 shadow-sm shadow-emerald-500/10 flex flex-col items-center justify-between min-h-[60px] cursor-pointer active:scale-95 transition-all group relative overflow-hidden"
+                                            title="Нажмите для подробного расчёта весов по периодам"
+                                        >
+                                            <span className="text-[9px] text-emerald-800 dark:text-emerald-300 font-bold">2. Свежесть</span>
+                                            <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 my-0.5">{weightedWinrateFormatted}%</span>
+                                            <div className="w-full text-[8px] font-extrabold uppercase px-1 py-0.5 bg-emerald-600 text-white dark:bg-emerald-500 dark:text-slate-950 rounded flex items-center justify-center gap-0.5 group-hover:bg-emerald-700 transition-colors">
+                                                <span>Детали</span>
+                                                <ChevronRight size={9} strokeWidth={3} className="group-hover:translate-x-0.5 transition-transform" />
+                                            </div>
+                                        </button>
+
+                                        {/* Step 3: Wilson */}
+                                        <div className="bg-primary-50 dark:bg-primary-950/40 p-2 rounded-xl border border-primary-200/60 dark:border-primary-800/50 flex flex-col items-center justify-between min-h-[60px]">
+                                            <span className="text-[9px] text-primary-700 dark:text-primary-400 font-medium">3. Рейтинг</span>
+                                            <span className="text-xs font-black text-primary-600 dark:text-primary-400 my-0.5">{effScoreFormatted}%</span>
+                                            <span className="text-[9px] text-primary-600/80 dark:text-primary-400/80">Уилсон (80%)</span>
                                         </div>
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5">
-                                            {wMatches}
-                                        </div>
-                                    </button>
+                                    </div>
                                 </div>
 
-                                {/* Applied formula text */}
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center bg-slate-50/80 dark:bg-slate-900/50 p-1.5 rounded-xl">
-                                    Итоговый балл: {(player.score * 100).toFixed(1)}% ({wWins} побед / {wMatches} игр)
+                                {/* Explanation items */}
+                                <div className="space-y-1.5 text-[11px]">
+                                    <div className="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 text-slate-600 dark:text-slate-300 leading-snug">
+                                        <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-0.5">
+                                            ⏱️ Влияние давности: <span className={decayDiff >= 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold'}>{decayDiff > 0 ? `+${decayDiff}%` : `${decayDiff}%`}</span>
+                                        </span>
+                                        {decayDiff < 0
+                                            ? `В давних матчах винрейт был выше. С учетом полураспада весов за 6 месяцев недавний винрейт составляет ${weightedWinrateFormatted}%.`
+                                            : decayDiff > 0
+                                            ? `В недавних матчах игрок выигрывает чаще! Свежие победы поднимают взвешенный винрейт до ${weightedWinrateFormatted}%.`
+                                            : `Свежие и старые матчи показывают одинаковую результативность (${weightedWinrateFormatted}%).`}
+                                    </div>
+
+                                    <div className="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/60 text-slate-600 dark:text-slate-300 leading-snug">
+                                        <span className="font-semibold text-slate-800 dark:text-slate-200 block mb-0.5">
+                                            🛡️ Поправка на объём выборки (Уилсон): <span className="text-slate-500 font-bold">{wilsonDiff > 0 ? `+${wilsonDiff}%` : `${wilsonDiff}%`}</span>
+                                        </span>
+                                        Защита от случайностей. Для дистанции в {wMatches} взвеш. игр алгоритм гарантирует 80% надежность с результатом не ниже <strong>{effScoreFormatted}%</strong>.
+                                    </div>
+                                </div>
+
+                                {/* Math toggle */}
+                                <div className="pt-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setExpandedPlayerMath(prev => ({ ...prev, [player.name]: !prev[player.name] }));
+                                            triggerHaptic(10);
+                                        }}
+                                        className="text-[10px] font-semibold text-slate-400 hover:text-primary-500 flex items-center gap-1 transition-colors active:scale-95"
+                                    >
+                                        <Calculator size={11} />
+                                        <span>{isMathExpanded ? 'Скрыть параметры Уилсона' : 'Параметры Уилсона (для гиков)'}</span>
+                                        <ChevronDown size={11} className={`transition-transform duration-200 ${isMathExpanded ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                        {isMathExpanded && (
+                                            <div className="mt-2 p-2.5 bg-slate-900 text-slate-200 rounded-xl text-[10px] font-mono space-y-1 overflow-x-auto">
+                                                <div className="text-slate-400">// 1. Переменные для подстановки в формулу</div>
+                                                <div>p (взвеш. винрейт в долях) = {wWins} / {wMatches} = {(weightedWinrateNum / 100).toFixed(4)}</div>
+                                                <div>N (взвеш. объём игр) = {wMatches}</div>
+                                                <div>z (константа 80% доверия) = 1.28</div>
+                                                <div className="text-slate-400 pt-1">// 2. Формула нижней границы Уилсона</div>
+                                                <div className="text-slate-300">Score = (p + z²/2N - z*√(p(1-p)/N + z²/4N²)) / (1 + z²/N)</div>
+                                                <div className="text-emerald-400 font-bold pt-0.5">Score = {player.score.toFixed(4)} (в долях 0..1) ➔ {effScoreFormatted}%</div>
+                                            </div>
+                                        )}
                                 </div>
                             </div>
                         );
@@ -1823,11 +1883,38 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             >
                 {selectedWeightedPlayer && (() => {
                     const breakdown = getPlayerWeightedBreakdown(selectedWeightedPlayer.player.name, filteredHistory);
-                    const rawWinrate = breakdown.totalMatches > 0 ? Math.round((breakdown.totalWins / breakdown.totalMatches) * 100) : 0;
-                    const effScore = Math.round(selectedWeightedPlayer.player.score * 100);
+                    const rawWinrateNum = breakdown.totalMatches > 0 ? (breakdown.totalWins / breakdown.totalMatches) * 100 : 0;
+                    const rawWinrateFormatted = rawWinrateNum.toFixed(1);
+                    const weightedWinrateNum = breakdown.totalWeightedMatches > 0 ? (breakdown.totalWeightedWins / breakdown.totalWeightedMatches) * 100 : 0;
+                    const weightedWinrateFormatted = weightedWinrateNum.toFixed(1);
+                    const effScoreFormatted = (selectedWeightedPlayer.player.score * 100).toFixed(1);
 
                     return (
                         <div className="space-y-4">
+                            {/* 3-Step Summary Banner */}
+                            <div className="p-3 bg-slate-50 dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
+                                    Воронка расчёта рейтинга
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5 text-center">
+                                    <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/60 dark:border-slate-700/50">
+                                        <div className="text-[9px] text-slate-400 font-medium">1. Фактический</div>
+                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">{rawWinrateFormatted}%</div>
+                                        <div className="text-[9px] text-slate-400">{breakdown.totalWins}/{breakdown.totalMatches} игр</div>
+                                    </div>
+                                    <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl border border-emerald-200/60 dark:border-emerald-800/50">
+                                        <div className="text-[9px] text-emerald-700 dark:text-emerald-400 font-medium">2. Взвешенный</div>
+                                        <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">{weightedWinrateFormatted}%</div>
+                                        <div className="text-[9px] text-emerald-600/80 dark:text-emerald-400/80">{breakdown.totalWeightedWins}/{breakdown.totalWeightedMatches}</div>
+                                    </div>
+                                    <div className="p-2 bg-primary-50 dark:bg-primary-950/40 rounded-xl border border-primary-200/60 dark:border-primary-800/50">
+                                        <div className="text-[9px] text-primary-700 dark:text-primary-400 font-medium">3. Рейтинг</div>
+                                        <div className="text-xs font-black text-primary-600 dark:text-primary-400 mt-0.5">{effScoreFormatted}%</div>
+                                        <div className="text-[9px] text-primary-600/80 dark:text-primary-400/80">Уилсон (80%)</div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* KPI Summary Cards */}
                             <div className="grid grid-cols-2 gap-2.5">
                                 <div className={`p-3 rounded-2xl border transition-colors ${selectedWeightedPlayer.focusType === 'matches' ? 'bg-primary-50/80 dark:bg-primary-950/40 border-primary-300 dark:border-primary-700' : 'bg-slate-50 dark:bg-slate-800/80 border-slate-100 dark:border-slate-700/50'}`}>
@@ -1850,7 +1937,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         <span className="text-sm font-bold">{breakdown.totalWeightedWins}</span>
                                     </div>
                                     <div className="text-[10px] text-emerald-700/80 dark:text-emerald-400/80 mt-1">
-                                        Винрейт: <span className="font-semibold">{rawWinrate}%</span> (Рейтинг: <span className="font-bold">{effScore}%</span>)
+                                        Винрейт: <span className="font-semibold">{rawWinrateFormatted}%</span> (Рейтинг: <span className="font-bold">{effScoreFormatted}%</span>)
                                     </div>
                                 </div>
                             </div>

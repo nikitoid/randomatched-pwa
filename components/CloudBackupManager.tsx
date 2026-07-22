@@ -95,26 +95,6 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
         }
     };
 
-    const headerButton = (
-        <button
-            onClick={handleCreate}
-            data-testid="backup-manager-create-btn"
-            disabled={isCreatingBackup || !isOnline}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all active:scale-95 min-h-[44px] ${
-                isCreatingBackup || !isOnline
-                    ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
-                    : 'bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-primary-500/20'
-            }`}
-        >
-            {isCreatingBackup ? (
-                <Loader2 size={16} className="animate-spin" />
-            ) : (
-                <Cloud size={16} />
-            )}
-            <span>Создать бэкап</span>
-        </button>
-    );
-
     return (
         <>
             <BaseModal
@@ -127,9 +107,27 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                 variant="auto"
                 modalId="cloud-backup-manager"
                 priority={50}
-                headerActions={headerButton}
             >
                 <div className="space-y-4">
+                    {/* Create Backup Button */}
+                    <button
+                        onClick={handleCreate}
+                        data-testid="backup-manager-create-btn"
+                        disabled={isCreatingBackup || !isOnline}
+                        className={`w-full flex items-center justify-center gap-2.5 p-3.5 rounded-2xl font-bold text-sm shadow-md transition-all active:scale-[0.98] min-h-[48px] ${
+                            isCreatingBackup || !isOnline
+                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed shadow-none'
+                                : 'bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-primary-500/20'
+                        }`}
+                    >
+                        {isCreatingBackup ? (
+                            <Loader2 size={18} className="animate-spin" />
+                        ) : (
+                            <Cloud size={18} />
+                        )}
+                        <span>Создать бэкап</span>
+                    </button>
+
                     {/* Search bar */}
                     <div className="relative">
                         <input

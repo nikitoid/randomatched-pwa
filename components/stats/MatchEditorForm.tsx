@@ -301,6 +301,7 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
             modalId="match-editor-modal"
             priority={50}
             closeButtonTestId="close-match-editor-btn"
+            showCloseButton={false}
             footer={(close) => (
                 <div className="flex gap-3 w-full">
                     <button
