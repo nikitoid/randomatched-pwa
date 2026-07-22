@@ -193,4 +193,48 @@ test.describe('Управление сезонами и статистика', (
         // Проверяем, что в списке отобразилось "Сезоны не созданы"
         await expect(page.locator('text=Сезоны не созданы')).toBeVisible();
     });
+
+    test('редактирование сезона скрывает список сезонов и валидирует некорректную дату окончания', async ({ app, page }) => {
+        await page.context().addInitScript(() => {
+            const season = [{ id: 's-edit', name: 'Сезон для редактирования', startDate: '2026-06-01' }];
+            localStorage.setItem('randomatched_seasons_v1', JSON.stringify(season));
+        });
+
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await page.click('text=Период: Сезон для редактирования');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        // Открываем редактирование
+        await page.click('button[title="Редактировать сезон"]');
+
+        // Проверяем, что заголовок списка сезонов скрыт в режиме форматирования
+        await expect(page.locator('text=Список сезонов')).toBeHidden();
+
+        // Пробуем поставить дату окончания раньше даты начала
+        await page.getByTestId('season-end-date-input').fill('2026-05-01');
+        await page.click('button[type="submit"]:has-text("Сохранить")');
+
+        // Должна появиться плашка с ошибкой и форма остаётся открытой
+        await expect(page.locator('text=Дата окончания не может быть раньше даты начала')).toBeVisible();
+        await expect(page.getByTestId('season-name-input')).toBeVisible();
+    });
+
+    test('ручной ввод невалидного периода отображает предупреждение об ошибке', async ({ app, page }) => {
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await page.click('text=Период: Все время');
+
+        // Устанавливаем дату с 2026-06-10 по 2026-06-01 (невалидный диапазон)
+        const inputs = page.locator('div:has-text("Произвольные даты") + div input[type="date"]');
+        await inputs.nth(0).fill('2026-06-10');
+        await inputs.nth(1).fill('2026-06-01');
+
+        // Проверяем выведение текста ошибки
+        await expect(page.locator('text=Дата окончания не может быть раньше даты начала')).toBeVisible();
+    });
 });

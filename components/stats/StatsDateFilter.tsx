@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp, Settings, AlertCircle } from 'lucide-react';
 import { Season } from '../../types';
 
 interface StatsDateFilterProps {
@@ -53,6 +53,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
     onOpenSeasonsManager
 }) => {
     const isFiltered = !isDefaultFilterState;
+    const isInvalidDateRange = Boolean(filterStartDate && filterEndDate && filterEndDate < filterStartDate);
 
     return (
         <div className="border-b border-slate-100 dark:border-slate-800 shrink-0 bg-white dark:bg-slate-900 select-none">
@@ -61,9 +62,9 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                 className="w-full px-4 py-3 min-h-[48px] flex items-center justify-between text-xs font-bold text-slate-500 active:bg-slate-100 dark:active:bg-slate-800/40 transition-colors transform-gpu"
             >
                 <div className="flex items-center gap-2 min-w-0 pr-2">
-                    <Calendar size={16} className={isFiltered ? 'text-primary-500 shrink-0' : 'text-slate-400 shrink-0'} />
+                    <Calendar size={16} className={isInvalidDateRange ? 'text-rose-500 shrink-0' : isFiltered ? 'text-primary-500 shrink-0' : 'text-slate-400 shrink-0'} />
                     <span className="shrink-0">Период: </span>
-                    <span className={`truncate ${isFiltered ? 'text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-300 font-bold'}`}>
+                    <span className={`truncate ${isInvalidDateRange ? 'text-rose-600 dark:text-rose-400 font-extrabold' : isFiltered ? 'text-primary-600 dark:text-primary-400 font-extrabold' : 'text-slate-700 dark:text-slate-300 font-bold'}`}>
                         {formatPeriodLabel()}
                     </span>
                 </div>
@@ -157,7 +158,11 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                         type="date"
                                         value={filterStartDate}
                                         onChange={(e) => { setFilterStartDate(e.target.value); triggerHaptic(5); }}
-                                        className="w-full min-h-[44px] px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
+                                        className={`w-full min-h-[44px] px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border outline-none transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark] ${
+                                            isInvalidDateRange
+                                                ? 'border-rose-500 dark:border-rose-500 focus:border-rose-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:border-primary-500'
+                                        }`}
                                     />
                                 </div>
                                 <div className="space-y-1">
@@ -166,10 +171,20 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                         type="date"
                                         value={filterEndDate}
                                         onChange={(e) => { setFilterEndDate(e.target.value); triggerHaptic(5); }}
-                                        className="w-full min-h-[44px] px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark]"
+                                        className={`w-full min-h-[44px] px-3 py-2 bg-white dark:bg-slate-800 rounded-xl text-xs font-medium border outline-none transition-colors text-slate-900 dark:text-white dark:[color-scheme:dark] ${
+                                            isInvalidDateRange
+                                                ? 'border-rose-500 dark:border-rose-500 focus:border-rose-500'
+                                                : 'border-slate-200 dark:border-slate-700 focus:border-primary-500'
+                                        }`}
                                     />
                                 </div>
                             </div>
+                            {isInvalidDateRange && (
+                                <div className="text-[11px] font-semibold text-rose-500 dark:text-rose-400 flex items-center gap-1.5 pt-0.5 animate-in fade-in duration-150">
+                                    <AlertCircle size={14} className="shrink-0" />
+                                    <span>Дата окончания не может быть раньше даты начала</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Presets */}
