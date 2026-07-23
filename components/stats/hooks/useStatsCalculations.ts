@@ -279,7 +279,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
         let bestStreakPlayer: { name: string, streak: number } | null = null;
         let bestStreakMatchIndex = -1;
         Object.entries(streakStats).forEach(([name, stats]) => {
-            if (stats.current >= 3) {
+            if (stats.current >= 3 && !playerStats[name]?.isInactive) {
                 if (!bestStreakPlayer ||
                     stats.current > bestStreakPlayer.streak ||
                     (stats.current === bestStreakPlayer.streak && stats.lastStreakMatchIndex > bestStreakMatchIndex)) {
@@ -298,7 +298,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
         Object.entries(streakStats).forEach(([name, stats]) => {
             if (stats.loseStreak >= 3) {
                 const player = playerStats[name];
-                if (player && (!mvp || player.name !== mvp.name)) {
+                if (player && !player.isInactive && (!mvp || player.name !== mvp.name)) {
                     if (!underdogByLoseStreak ||
                         stats.loseStreak > underdogByLoseStreak.loseStreak ||
                         (stats.loseStreak === underdogByLoseStreak.loseStreak && stats.lastLoseStreakMatchIndex > underdogLoseStreakMatchIndex)) {
@@ -365,18 +365,19 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             };
         });
 
-        // 1. Лидер по серии убийств
+        // 1. Лидер по серии убийств (только среди активных игроков)
         let topKillsSeriesPlayer: { name: string, record: number } | null = null;
         Object.entries(playerKillsStats).forEach(([name, stats]) => {
-            if (stats.maxSeries > 0) {
+            if (stats.maxSeries > 0 && !playerStats[name]?.isInactive) {
                 if (!topKillsSeriesPlayer || stats.maxSeries > topKillsSeriesPlayer.record) {
                     topKillsSeriesPlayer = { name, record: stats.maxSeries };
                 }
             }
         });
 
-        // 2. Лидеры по общему числу убийств (топ-3)
+        // 2. Лидеры по общему числу убийств (топ-3 среди активных игроков)
         const topTotalKillers = Object.entries(playerKillsStats)
+            .filter(([name]) => !playerStats[name]?.isInactive)
             .map(([name, stats]) => ({ name, total: stats.total }))
             .filter(k => k.total > 0)
             .sort((a, b) => b.total - a.total)
@@ -406,11 +407,11 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
 
         const avgKillsPerMatch = filteredHistory.length > 0 ? totalKillsAll / filteredHistory.length : 0;
 
-        // 1. Кандидаты на MVP (топ-5 по эффективности из игроков с >= 3 матчами)
-        const mvpCandidates = sortedPlayers.filter(p => p.matches >= 3).slice(0, 5);
+        // 1. Кандидаты на MVP (топ-5 по эффективности из активных игроков с >= 3 матчами)
+        const mvpCandidates = sortedPlayers.filter(p => !p.isInactive && p.matches >= 3).slice(0, 5);
 
-        // 2. Кандидаты на Underdog (топ-5)
-        const playersWithStats = sortedPlayers.filter(p => p.matches >= 3 && (!mvp || p.name !== mvp.name));
+        // 2. Кандидаты на Underdog (топ-5 из активных игроков)
+        const playersWithStats = sortedPlayers.filter(p => !p.isInactive && p.matches >= 3 && (!mvp || p.name !== mvp.name));
         const withLoseStreak = playersWithStats
             .filter(p => (streakStats[p.name]?.loseStreak || 0) >= 3)
             .sort((a, b) => {
@@ -423,22 +424,25 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             .reverse();
         const underdogCandidates = [...withLoseStreak, ...withoutLoseStreak].slice(0, 5);
 
-        // 3. Кандидаты на "В огне" (топ-5 по текущей серии побед >= 3)
+        // 3. Кандидаты на "В огне" (топ-5 по текущей серии побед >= 3 среди активных игроков)
         const streakCandidates = Object.entries(streakStats)
+            .filter(([name]) => !playerStats[name]?.isInactive)
             .map(([name, stats]) => ({ name, streak: stats.current }))
             .filter(s => s.streak >= 3)
             .sort((a, b) => b.streak - a.streak || (streakStats[b.name]?.lastStreakMatchIndex || 0) - (streakStats[a.name]?.lastStreakMatchIndex || 0))
             .slice(0, 5);
 
-        // 4. Кандидаты на Рекорд за встречу (серия убийств, топ-5)
+        // 4. Кандидаты на Рекорд за встречу (серия убийств, топ-5 среди активных игроков)
         const seriesKillsCandidates = Object.entries(playerKillsStats)
+            .filter(([name]) => !playerStats[name]?.isInactive)
             .map(([name, stats]) => ({ name, record: stats.maxSeries }))
             .filter(k => k.record > 0)
             .sort((a, b) => b.record - a.record)
             .slice(0, 5);
 
-        // 5. Кандидаты на Короля убийств (топ-5 по общему числу убийств)
+        // 5. Кандидаты на Короля убийств (топ-5 по общему числу убийств среди активных игроков)
         const totalKillsCandidates = Object.entries(playerKillsStats)
+            .filter(([name]) => !playerStats[name]?.isInactive)
             .map(([name, stats]) => ({ name, total: stats.total }))
             .filter(k => k.total > 0)
             .sort((a, b) => b.total - a.total)

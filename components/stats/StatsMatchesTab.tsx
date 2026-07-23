@@ -134,9 +134,9 @@ export const StatsMatchesTab: React.FC<StatsMatchesTabProps> = ({
                                                                         <div className="flex items-center gap-1 shrink-0 ml-1">
                                                                             {isWinner && p.kills === 2 && (
                                                                                 <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-md">
-                                                                                    <span className="hidden min-[400px]:inline">Double Kill</span>
-                                                                                    <span className="hidden min-[350px]:inline min-[400px]:hidden">2 Kill</span>
-                                                                                    <span className="min-[350px]:hidden">2K</span> 🔥
+                                                                                    <span className="hidden min-[390px]:inline">Double Kill</span>
+                                                                                    <span className="hidden min-[340px]:inline min-[390px]:hidden">2 Kill</span>
+                                                                                    <span className="min-[340px]:hidden">2K</span> 🔥
                                                                                 </span>
                                                                             )}
                                                                             {isWinner && t1Teamwork && (
@@ -183,9 +183,9 @@ export const StatsMatchesTab: React.FC<StatsMatchesTabProps> = ({
                                                                         <div className="flex items-center gap-1 shrink-0 ml-1">
                                                                             {isWinner && p.kills === 2 && (
                                                                                 <span className="text-[9px] font-black px-1.5 py-0.5 bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-md">
-                                                                                    <span className="hidden min-[400px]:inline">Double Kill</span>
-                                                                                    <span className="hidden min-[350px]:inline min-[400px]:hidden">2 Kill</span>
-                                                                                    <span className="min-[350px]:hidden">2K</span> 🔥
+                                                                                    <span className="hidden min-[390px]:inline">Double Kill</span>
+                                                                                    <span className="hidden min-[340px]:inline min-[390px]:hidden">2 Kill</span>
+                                                                                    <span className="min-[340px]:hidden">2K</span> 🔥
                                                                                 </span>
                                                                             )}
                                                                             {isWinner && t2Teamwork && (
