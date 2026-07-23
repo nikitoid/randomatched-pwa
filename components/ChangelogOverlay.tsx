@@ -125,27 +125,25 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                                 )}
 
                                 {/* Release Header */}
-                                <div className="flex items-center justify-between gap-3 mb-3.5">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`px-3 h-7 rounded-full flex items-center justify-center text-xs font-black tracking-tight shrink-0 min-w-[46px] z-10 ${
+                                <div className="flex items-start justify-between gap-2.5 mb-3.5">
+                                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                                        <div className={`px-3 h-7 rounded-full flex items-center justify-center text-xs font-black tracking-tight shrink-0 min-w-[46px] z-10 mt-0.5 ${
                                             isUnread
                                                 ? 'bg-primary-500 text-white shadow-md shadow-primary-500/30 border border-primary-400/40 dark:border-primary-400/30'
                                                 : 'bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 text-slate-800 dark:text-slate-200 shadow-sm'
                                         }`}>
                                             v{release.version}
                                         </div>
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <h4 className="text-sm sm:text-base font-black text-slate-800 dark:text-white truncate">
-                                                    {release.title || `Версия ${release.version}`}
-                                                </h4>
-                                            </div>
-                                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold">{release.date}</p>
+                                        <div className="min-w-0 flex-1">
+                                            <h4 className="text-sm sm:text-base font-black text-slate-800 dark:text-white leading-snug break-words">
+                                                {release.title || `Версия ${release.version}`}
+                                            </h4>
+                                            <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">{release.date}</p>
                                         </div>
                                     </div>
 
                                     {isUnread && (
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-primary-500 text-white shadow-xs shadow-primary-500/20 shrink-0">
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-primary-500 text-white shadow-xs shadow-primary-500/20 shrink-0 mt-0.5">
                                             <Sparkles size={11} className="fill-white/30 animate-pulse" />
                                             <span>Новое</span>
                                         </span>
