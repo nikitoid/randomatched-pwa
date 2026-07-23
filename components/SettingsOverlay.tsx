@@ -3,7 +3,7 @@ import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Term
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
-import { APP_VERSION } from '../utils/changelog';
+import { APP_VERSION, CHANGELOG, getUnreadReleasesCount } from '../utils/changelog';
 
 interface SettingsOverlayProps {
     isOpen: boolean;
@@ -31,6 +31,8 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onImportData?: (data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => boolean;
     addToast?: (message: string, type: 'info' | 'success' | 'error' | 'warning', duration?: number) => void;
     onOpenChangelog: () => void;
+    lastSeenVersion?: string | null;
+    onSetLastSeenVersion?: (version: string | null) => void;
 }
 
 type TabType = 'appearance' | 'app_settings' | 'info' | 'debug';
@@ -57,7 +59,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     onImportData,
     addToast,
     onOpenChangelog,
+    lastSeenVersion,
+    onSetLastSeenVersion,
 }) => {
+    const unreadChangelogCount = getUnreadReleasesCount(lastSeenVersion ?? null);
     const [activeTab, setActiveTab] = useState<TabType>('appearance');
     const [appearanceSubTab, setAppearanceSubTab] = useState<'colors' | 'effects'>('colors');
 
@@ -502,10 +507,15 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 </div>
                                 <button
                                     onClick={() => { onOpenChangelog(); triggerHaptic(10); }}
-                                    className="mb-6 px-4 py-2 border border-slate-200 dark:border-slate-800 active:bg-slate-50 dark:active:bg-slate-900/40 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all"
+                                    className="relative mb-6 px-4 py-2 border border-slate-200 dark:border-slate-800 active:bg-slate-50 dark:active:bg-slate-900/40 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all"
                                 >
                                     <Sparkles size={14} className="text-amber-500 fill-amber-500/20" />
                                     <span>Что нового?</span>
+                                    {unreadChangelogCount > 0 && (
+                                        <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white font-black text-[9px] rounded-full shadow-md shadow-amber-500/30 animate-pulse tracking-wider">
+                                            NEW
+                                        </span>
+                                    )}
                                 </button>
                                 <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-6 shadow-sm border border-slate-150 dark:border-slate-800/60 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
                                     <p className="mb-3"> Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>. </p>
@@ -567,6 +577,71 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                             <Trash size={16} />
                                             <span>Полная очистка истории</span>
                                         </button>
+                                    </div>
+
+                                    {/* Отладка чейнджлога */}
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-150 dark:border-slate-800/60 space-y-3 shadow-sm">
+                                        <h3 className="font-bold flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                            <Sparkles size={16} /> Прочитанная версия чейнджлога
+                                        </h3>
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-slate-600 dark:text-slate-400 font-medium">Сохраненная версия:</span>
+                                            <span className="font-mono font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded-md">
+                                                {lastSeenVersion ? `v${lastSeenVersion}` : 'null (Новый юзер)'}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <select
+                                                value={lastSeenVersion || 'ALL_UNREAD'}
+                                                onChange={(e) => {
+                                                    onSetLastSeenVersion && onSetLastSeenVersion(e.target.value === 'ALL_UNREAD' ? null : e.target.value);
+                                                    triggerHaptic(10);
+                                                }}
+                                                className="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs font-bold rounded-xl px-3 py-2.5 border border-slate-200 dark:border-slate-700 focus:outline-none truncate cursor-pointer"
+                                            >
+                                                <option value="ALL_UNREAD">null — (Новый юзер: ВСЁ непрочитано)</option>
+                                                <option value="2.2.6">v2.2.6 — (Старый юзер: от v2.3.0 непрочитано)</option>
+                                                {CHANGELOG.map(r => (
+                                                    <option key={r.version} value={r.version}>
+                                                        v{r.version} — {r.title ? r.title.slice(0, 26) + '...' : r.date}
+                                                    </option>
+                                                ))}
+                                            </select>
+
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    onClick={() => {
+                                                        onSetLastSeenVersion && onSetLastSeenVersion('2.2.6');
+                                                        triggerHaptic(10);
+                                                    }}
+                                                    className="py-2.5 px-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl text-[11px] font-bold transition-colors shadow-sm text-center truncate"
+                                                    title="От v2.3.0 и выше непрочитано (существующий юзер)"
+                                                >
+                                                    v2.2.6 (Старый)
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        onSetLastSeenVersion && onSetLastSeenVersion(null);
+                                                        triggerHaptic(10);
+                                                    }}
+                                                    className="py-2.5 px-2 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition-colors shadow-sm text-center truncate"
+                                                    title="Вся история непрочитана (новый юзер)"
+                                                >
+                                                    Всё новое (Новый)
+                                                </button>
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    onOpenChangelog();
+                                                    triggerHaptic(10);
+                                                }}
+                                                className="w-full py-2.5 px-2.5 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-sm shadow-primary-500/20 truncate"
+                                            >
+                                                <Sparkles size={14} />
+                                                <span>Протестировать чейнджлог</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

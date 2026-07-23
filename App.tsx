@@ -28,7 +28,7 @@ import { getUniqueHeroesFromLists } from './utils/generator';
 import { NavigationProvider } from './context/NavigationContext';
 import { AddHeroesModal } from './components/AddHeroesModal';
 import { ChangelogOverlay } from './components/ChangelogOverlay';
-import { APP_VERSION } from './utils/changelog';
+import { APP_VERSION, getInitialLastSeenVersion } from './utils/changelog';
 import { Hero } from './types';
 
 const App: React.FC = () => {
@@ -119,6 +119,9 @@ const App: React.FC = () => {
     const [isGenConfirmOpen, setIsGenConfirmOpen] = useState(false);
     const [isAddHeroesOpen, setIsAddHeroesOpen] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(false);
+    const [lastSeenVersion, setLastSeenVersion] = useState<string | null>(() =>
+        getInitialLastSeenVersion()
+    );
 
     // Custom Hooks
     // const { consoleLogs, isDebugMode, setIsDebugMode } = useDebugLogs(); // REMOVED
@@ -224,15 +227,28 @@ const App: React.FC = () => {
                 window.history.replaceState({}, '', window.location.pathname);
             }
 
-            const lastSeenVersion = localStorage.getItem('randomatched_last_seen_version');
-            if (!lastSeenVersion) {
-                localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
-            } else if (lastSeenVersion !== APP_VERSION) {
+            const storedVersion = localStorage.getItem('randomatched_last_seen_version');
+            if (!storedVersion || storedVersion !== APP_VERSION) {
                 setIsChangelogOpen(true);
-                localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
             }
         }
     }, [isLoaded]);
+
+    const handleCloseChangelog = () => {
+        setIsChangelogOpen(false);
+        localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
+        setLastSeenVersion(APP_VERSION);
+    };
+
+    const handleSetLastSeenVersion = (version: string | null) => {
+        if (!version || version === 'ALL_UNREAD') {
+            localStorage.removeItem('randomatched_last_seen_version');
+            setLastSeenVersion(null);
+        } else {
+            localStorage.setItem('randomatched_last_seen_version', version);
+            setLastSeenVersion(version);
+        }
+    };
 
     // Handlers wrapped with haptics
     const handleSelectList = (id: string) => {
@@ -454,6 +470,8 @@ const App: React.FC = () => {
                     onImportData={importData}
                     addToast={addToast}
                     onOpenChangelog={() => setIsChangelogOpen(true)}
+                    lastSeenVersion={lastSeenVersion}
+                    onSetLastSeenVersion={handleSetLastSeenVersion}
                 />
 
                 <StatsModal
@@ -552,7 +570,8 @@ const App: React.FC = () => {
 
                 <ChangelogOverlay
                     isOpen={isChangelogOpen}
-                    onClose={() => setIsChangelogOpen(false)}
+                    onClose={handleCloseChangelog}
+                    lastSeenVersion={lastSeenVersion}
                     triggerHaptic={triggerHaptic}
                 />
 

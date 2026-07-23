@@ -320,3 +320,66 @@ export const CHANGELOG: ChangelogRelease[] = [
     ]
   }
 ];
+
+/**
+ * Возвращает начальную прочитанную версию.
+ * Если ключ randomatched_last_seen_version отсутствует в localStorage:
+ * - Если пользователь УЖЕ пользовался приложением (есть списки, история или тема), возвращается '2.2.6'.
+ * - Если это первая установка (чистый localStorage), возвращается null (вся история подсвечивается как новая).
+ */
+export function getInitialLastSeenVersion(): string | null {
+  if (typeof window === 'undefined') return '2.2.6';
+
+  const stored = localStorage.getItem('randomatched_last_seen_version');
+  if (stored) {
+    return stored;
+  }
+
+  const hasExistingData = Boolean(
+    localStorage.getItem('randomatched_lists_v1') ||
+    localStorage.getItem('randomatched_history_v1') ||
+    localStorage.getItem('theme') ||
+    localStorage.getItem('colorScheme')
+  );
+
+  return hasExistingData ? '2.2.6' : null;
+}
+
+/**
+ * Сравнивает две строки семантических версий (например '2.6.0' и '2.5.0').
+ * Возвращает > 0 если v1 > v2, < 0 если v1 < v2, и 0 если v1 === v2.
+ */
+export function compareVersions(v1: string, v2: string): number {
+  const parts1 = v1.split('.').map(n => parseInt(n, 10) || 0);
+  const parts2 = v2.split('.').map(n => parseInt(n, 10) || 0);
+  const maxLen = Math.max(parts1.length, parts2.length);
+
+  for (let i = 0; i < maxLen; i++) {
+    const p1 = parts1[i] ?? 0;
+    const p2 = parts2[i] ?? 0;
+    if (p1 !== p2) {
+      return p1 - p2;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Проверяет, является ли конкретный релиз непрочитанным пользователем.
+ * Если lastSeenVersion === null (абсолютно новый пользователь), все релизы считаются непрочитанными.
+ * Иначе релиз считается непрочитанным, если compareVersions(releaseVersion, lastSeenVersion) > 0.
+ */
+export function isReleaseUnread(releaseVersion: string, lastSeenVersion: string | null): boolean {
+  if (!lastSeenVersion) {
+    return true;
+  }
+  return compareVersions(releaseVersion, lastSeenVersion) > 0;
+}
+
+/**
+ * Возвращает количество непрочитанных релизов в CHANGELOG.
+ */
+export function getUnreadReleasesCount(lastSeenVersion: string | null): number {
+  return CHANGELOG.filter(r => isReleaseUnread(r.version, lastSeenVersion)).length;
+}
+
