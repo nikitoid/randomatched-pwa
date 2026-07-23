@@ -227,12 +227,11 @@ const App: React.FC = () => {
                 window.history.replaceState({}, '', window.location.pathname);
             }
 
-            const storedVersion = localStorage.getItem('randomatched_last_seen_version');
-            if (!storedVersion || storedVersion !== APP_VERSION) {
+            if (!lastSeenVersion || lastSeenVersion !== APP_VERSION) {
                 setIsChangelogOpen(true);
             }
         }
-    }, [isLoaded]);
+    }, [isLoaded, lastSeenVersion]);
 
     const handleCloseChangelog = () => {
         setIsChangelogOpen(false);

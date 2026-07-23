@@ -323,17 +323,14 @@ export const CHANGELOG: ChangelogRelease[] = [
 
 /**
  * Возвращает начальную прочитанную версию.
- * Если ключ randomatched_last_seen_version отсутствует в localStorage:
- * - Если пользователь УЖЕ пользовался приложением (есть списки, история или тема), возвращается '2.2.6'.
- * - Если это первая установка (чистый localStorage), возвращается null (вся история подсвечивается как новая).
+ * При внедрении новой системы чейнджлога один раз сбрасывает просмотренную версию
+ * существующих пользователей до '2.2.6', чтобы подсветить релизы от v2.3.0 и выше.
  */
 export function getInitialLastSeenVersion(): string | null {
   if (typeof window === 'undefined') return '2.2.6';
 
-  const stored = localStorage.getItem('randomatched_last_seen_version');
-  if (stored) {
-    return stored;
-  }
+  const MIGRATION_KEY = 'randomatched_changelog_v230_migrated';
+  const isMigrated = localStorage.getItem(MIGRATION_KEY);
 
   const hasExistingData = Boolean(
     localStorage.getItem('randomatched_lists_v1') ||
@@ -341,6 +338,19 @@ export function getInitialLastSeenVersion(): string | null {
     localStorage.getItem('theme') ||
     localStorage.getItem('colorScheme')
   );
+
+  if (!isMigrated) {
+    localStorage.setItem(MIGRATION_KEY, 'true');
+    if (hasExistingData) {
+      localStorage.setItem('randomatched_last_seen_version', '2.2.6');
+      return '2.2.6';
+    }
+  }
+
+  const stored = localStorage.getItem('randomatched_last_seen_version');
+  if (stored) {
+    return stored;
+  }
 
   return hasExistingData ? '2.2.6' : null;
 }
