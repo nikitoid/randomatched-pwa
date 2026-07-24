@@ -109,6 +109,7 @@ export async function injectTestData(page: any, lists: HeroList[] = [TEST_LIST_P
         // Сохраняем списки героев
         localStorage.setItem('randomatched_lists_v1', JSON.stringify(listsData));
         localStorage.setItem('randomatched_last_seen_version', version);
+        localStorage.setItem('randomatched_changelog_v230_migrated', 'true');
 
         // Тема и цветовая схема (хранятся напрямую, не в JSON)
         localStorage.setItem('theme', 'dark');
