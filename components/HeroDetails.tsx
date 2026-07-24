@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { HeroStat, MatchRecord } from '../types';
-import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull } from 'lucide-react';
+import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles } from 'lucide-react';
 
 interface HeroDetailsProps {
     hero: HeroStat;
@@ -116,15 +116,23 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
         };
     }, [hero, history]);
 
+    const heroInitial = hero.name.trim().charAt(0).toUpperCase() || 'H';
+    const winRate = hero.matches > 0 ? (hero.wins / hero.matches) * 100 : 0;
+
     return (
         <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 bg-grid-pattern animate-in slide-in-from-right duration-300">
-            {/* Header */}
-            <div className="py-3 px-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/60 flex items-center gap-3 shrink-0 sticky top-0 z-10">
+            {/* Sticky Header with Backdrop Blur */}
+            <div className="py-3 px-4 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 flex items-center gap-3 shrink-0 sticky top-0 z-20 shadow-xs">
                 {!isEditing && (
-                    <button onClick={onBack} className="p-2 -ml-2 rounded-full active:bg-slate-100 dark:active:bg-slate-800 transition-colors">
-                        <ChevronLeft size={24} className="text-slate-600 dark:text-slate-300" />
+                    <button
+                        onClick={onBack}
+                        className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all text-slate-600 dark:text-slate-300"
+                        aria-label="Назад"
+                    >
+                        <ChevronLeft size={22} />
                     </button>
                 )}
+
                 {isEditing ? (
                     <form
                         className="flex-1 min-w-0 flex gap-2"
@@ -135,100 +143,217 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                             type="text"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
-                            className="flex-1 min-w-0 px-3 py-1.5 text-lg font-bold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500"
+                            className="flex-1 min-w-0 px-3 py-1.5 text-base font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white"
                         />
-                        <button type="submit" className="shrink-0 p-2 bg-green-100 text-green-600 rounded-xl"><Check size={20} /></button>
-                        <button type="button" onClick={() => setIsEditing(false)} className="shrink-0 p-2 bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-400 rounded-xl"><X size={20} /></button>
+                        <button type="submit" className="shrink-0 p-2 bg-emerald-500 text-white rounded-xl active:scale-95 transition-transform"><Check size={18} /></button>
+                        <button type="button" onClick={() => setIsEditing(false)} className="shrink-0 p-2 bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 rounded-xl active:scale-95 transition-transform"><X size={18} /></button>
                     </form>
                 ) : (
                     <>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white truncate flex-1">{hero.name}</h2>
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="p-2 text-slate-400 active:text-primary-500 transition-colors"
-                        >
-                            <Edit2 size={18} />
-                        </button>
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
+                            {heroInitial}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-lg font-black text-slate-900 dark:text-white truncate">{hero.name}</h2>
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="p-1 text-slate-400 hover:text-primary-500 active:scale-95 transition-colors"
+                                    aria-label="Редактировать имя"
+                                >
+                                    <Edit2 size={15} />
+                                </button>
+                            </div>
+                            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                <span>{hero.matches} {hero.matches === 1 ? 'игра' : [2, 3, 4].includes(hero.matches % 10) && ![12, 13, 14].includes(hero.matches % 100) ? 'игры' : 'игр'}</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                <span>{hero.wins}W - {hero.matches - hero.wins}L</span>
+                            </div>
+                        </div>
+
+                        <div className="px-2.5 py-1 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-500/20 text-[11px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 shadow-2xs">
+                            ГЕРОЙ
+                        </div>
                     </>
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-                {/* Stats Cards */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
+                {/* Stats 2x2 Grid */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 shadow-sm">
-                        <div className="text-xs font-bold text-slate-400 uppercase mb-1">Популярность</div>
-                        <div className="text-2xl font-black text-slate-900 dark:text-white">{hero.matches} <span className="text-sm text-slate-400 font-normal">игр</span></div>
+                    {/* Matches / Popularity */}
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Популярность</span>
+                            <div className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                                <Swords size={15} />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{hero.matches}</div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1">
+                                Всего матчей сыграно
+                            </div>
+                        </div>
                     </div>
-                    <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 shadow-sm">
-                        <div className="text-xs font-bold text-slate-400 uppercase mb-1">Общий Винрейт</div>
-                        <div className={`text-2xl font-black ${hero.wins / hero.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>
-                            {Math.round((hero.wins / hero.matches) * 100)}%
+
+                    {/* Winrate Card */}
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Винрейт</span>
+                            <div className="w-7 h-7 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                <Trophy size={15} />
+                            </div>
+                        </div>
+                        <div>
+                            <div className={`text-2xl font-black tracking-tight ${winRate >= 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400'}`}>
+                                {winRate.toFixed(1)}%
+                            </div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1">
+                                {hero.wins} побед / {hero.matches - hero.wins} поражений
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Top Performers Card */}
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Исполнители</span>
+                            <div className="w-7 h-7 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                                <User size={15} />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{topPlayers.length}</div>
+                            <div className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold mt-1">
+                                Лучших игроков
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Synergies Card */}
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Связки</span>
+                            <div className="w-7 h-7 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                                <Sparkles size={15} />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight">{topSynergies.length}</div>
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1">
+                                Синергичных героев
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Top Players */}
-                <div>
+                {/* Top Players Section */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
+                        className="flex items-center justify-between cursor-pointer select-none"
                         onClick={() => setPlayersState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
                             return 'collapsed';
                         })}
                     >
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <User size={16} className="text-primary-500" /> Лучшие исполнители
-                        </h3>
-                        <div className="text-slate-400">
-                            {playersState === 'collapsed' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+                                <User size={16} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Лучшие исполнители</h3>
+                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                {topPlayers.length}
+                            </span>
+                        </div>
+                        <div className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                            {playersState === 'collapsed' ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${playersState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${playersState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="pt-1">
+                            <div className="pt-3 space-y-2">
                                 {topPlayers.length > 0 ? (
-                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
-                                        {topPlayers.slice(0, 3).map(p => (
-                                            <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
-                                                <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{p.name}</div>
-                                                <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                    <span className={`${p.wins / p.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((p.wins / p.matches) * 100)}%</span>
-                                                    <span className="opacity-30">|</span>
-                                                    <span>{p.matches} игр</span>
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                        {topPlayers.slice(0, 3).map((p, idx) => {
+                                            const pWinrate = (p.wins / p.matches) * 100;
+                                            return (
+                                                <div key={p.name} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                        <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
+                                                            {idx + 1}
+                                                        </div>
+                                                        <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{p.name}</div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden hidden sm:block">
+                                                            <div
+                                                                className={`h-full rounded-full ${pWinrate >= 50 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                                                style={{ width: `${Math.min(100, Math.max(5, pWinrate))}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5 w-24 justify-end">
+                                                            <span className={pWinrate >= 50 ? 'text-emerald-600 dark:text-emerald-400 font-extrabold' : 'text-amber-500 font-extrabold'}>
+                                                                {pWinrate.toFixed(1)}%
+                                                            </span>
+                                                            <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                            <span className="text-slate-500 dark:text-slate-400">{p.matches} {p.matches === 1 ? 'игра' : 'игр'}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
 
                                         {topPlayers.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${playersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
-                                                    {topPlayers.slice(3).map(p => (
-                                                        <div key={p.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
-                                                            <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{p.name}</div>
-                                                            <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                                <span className={`${p.wins / p.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((p.wins / p.matches) * 100)}%</span>
-                                                                <span className="opacity-30">|</span>
-                                                                <span>{p.matches} игр</span>
+                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${playersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                    {topPlayers.slice(3).map((p, idx) => {
+                                                        const pWinrate = (p.wins / p.matches) * 100;
+                                                        return (
+                                                            <div key={p.name} className="py-2.5 flex items-center justify-between gap-3">
+                                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                    <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
+                                                                        {idx + 4}
+                                                                    </div>
+                                                                    <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{p.name}</div>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-3 shrink-0">
+                                                                    <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden hidden sm:block">
+                                                                        <div
+                                                                            className={`h-full rounded-full ${pWinrate >= 50 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                                                            style={{ width: `${Math.min(100, Math.max(5, pWinrate))}%` }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5 w-24 justify-end">
+                                                                        <span className={pWinrate >= 50 ? 'text-emerald-600 dark:text-emerald-400 font-extrabold' : 'text-amber-500 font-extrabold'}>
+                                                                            {pWinrate.toFixed(1)}%
+                                                                        </span>
+                                                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                                        <span className="text-slate-500 dark:text-slate-400">{p.matches} {p.matches === 1 ? 'игра' : 'игр'}</span>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-3">Нет данных по игрокам</div>
                                 )}
 
                                 {topPlayers.length > 3 && (
                                     <button
                                         onClick={() => setPlayersState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full pt-2 text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline transition-colors flex items-center justify-center gap-1"
                                     >
-                                        {playersState === 'partial' ? 'Показать все' : 'Свернуть'}
+                                        {playersState === 'partial' ? 'Показать всех' : 'Свернуть'}
                                     </button>
                                 )}
                             </div>
@@ -236,65 +361,109 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                     </div>
                 </div>
 
-                {/* Top Synergies */}
-                <div>
+                {/* Top Synergies Section */}
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
+                        className="flex items-center justify-between cursor-pointer select-none"
                         onClick={() => setSynergiesState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
                             return 'collapsed';
                         })}
                     >
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <TrendingUp size={16} className="text-primary-500" /> Лучшие связки
-                        </h3>
-                        <div className="text-slate-400">
-                            {synergiesState === 'collapsed' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400">
+                                <TrendingUp size={16} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Лучшие связки</h3>
+                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                {topSynergies.length}
+                            </span>
+                        </div>
+                        <div className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                            {synergiesState === 'collapsed' ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${synergiesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${synergiesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="pt-1">
+                            <div className="pt-3 space-y-2">
                                 {topSynergies.length > 0 ? (
-                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
-                                        {topSynergies.slice(0, 3).map(s => (
-                                            <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
-                                                <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
-                                                <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                    <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((s.wins / s.matches) * 100)}%</span>
-                                                    <span className="opacity-30">|</span>
-                                                    <span>{s.matches} игр</span>
+                                    <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                        {topSynergies.slice(0, 3).map((s, idx) => {
+                                            const sWinrate = (s.wins / s.matches) * 100;
+                                            return (
+                                                <div key={s.name} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                        <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
+                                                            {idx + 1}
+                                                        </div>
+                                                        <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{s.name}</div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden hidden sm:block">
+                                                            <div
+                                                                className={`h-full rounded-full ${sWinrate >= 50 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                                                style={{ width: `${Math.min(100, Math.max(5, sWinrate))}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5 w-24 justify-end">
+                                                            <span className={sWinrate >= 50 ? 'text-emerald-600 dark:text-emerald-400 font-extrabold' : 'text-amber-500 font-extrabold'}>
+                                                                {sWinrate.toFixed(1)}%
+                                                            </span>
+                                                            <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                            <span className="text-slate-500 dark:text-slate-400">{s.matches} {s.matches === 1 ? 'игра' : 'игр'}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
 
                                         {topSynergies.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${synergiesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
-                                                    {topSynergies.slice(3).map(s => (
-                                                        <div key={s.name} className="flex items-center justify-between px-3.5 py-2.5 transition-colors">
-                                                            <div className="font-bold text-sm text-slate-700 dark:text-slate-200">{s.name}</div>
-                                                            <div className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                                <span className={`${s.wins / s.matches >= 0.5 ? 'text-green-500' : 'text-orange-500'}`}>{Math.round((s.wins / s.matches) * 100)}%</span>
-                                                                <span className="opacity-30">|</span>
-                                                                <span>{s.matches} игр</span>
+                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${synergiesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                    {topSynergies.slice(3).map((s, idx) => {
+                                                        const sWinrate = (s.wins / s.matches) * 100;
+                                                        return (
+                                                            <div key={s.name} className="py-2.5 flex items-center justify-between gap-3">
+                                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                    <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
+                                                                        {idx + 4}
+                                                                    </div>
+                                                                    <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{s.name}</div>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-3 shrink-0">
+                                                                    <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden hidden sm:block">
+                                                                        <div
+                                                                            className={`h-full rounded-full ${sWinrate >= 50 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                                                            style={{ width: `${Math.min(100, Math.max(5, sWinrate))}%` }}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="text-xs font-bold text-slate-500 flex items-center gap-1.5 w-24 justify-end">
+                                                                        <span className={sWinrate >= 50 ? 'text-emerald-600 dark:text-emerald-400 font-extrabold' : 'text-amber-500 font-extrabold'}>
+                                                                            {sWinrate.toFixed(1)}%
+                                                                        </span>
+                                                                        <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                                        <span className="text-slate-500 dark:text-slate-400">{s.matches} {s.matches === 1 ? 'игра' : 'игр'}</span>
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Недостаточно данных</div>
+                                    <div className="text-center text-slate-400 text-xs py-3">Недостаточно данных для связок</div>
                                 )}
 
                                 {topSynergies.length > 3 && (
                                     <button
                                         onClick={() => setSynergiesState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full pt-2 text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline transition-colors flex items-center justify-center gap-1"
                                     >
                                         {synergiesState === 'partial' ? 'Показать все' : 'Свернуть'}
                                     </button>
@@ -303,124 +472,172 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         </div>
                     </div>
                 </div>
+
+                {/* Match History Section */}
                 <div>
                     <div
-                        className="flex items-center justify-between mb-2 cursor-pointer select-none transform-gpu will-change-transform"
+                        className="flex items-center justify-between mb-3 cursor-pointer select-none"
                         onClick={() => setMatchesState(prev => {
                             if (prev === 'collapsed') return 'partial';
                             if (prev === 'partial') return 'expanded';
                             return 'collapsed';
                         })}
                     >
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <Calendar size={16} className="text-primary-500" /> История игр
-                        </h3>
-                        <div className="text-slate-400">
-                            {matchesState === 'collapsed' ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                                <Calendar size={16} />
+                            </div>
+                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">История игр</h3>
+                            <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                {recentMatches.length}
+                            </span>
+                        </div>
+                        <div className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                            {matchesState === 'collapsed' ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
                         </div>
                     </div>
 
-                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${matchesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
+                    <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${matchesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="pt-1">
-                                {recentMatches.length > 0 ? (
-                                    <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
-                                        {recentMatches.slice(0, 3).map(m => {
-                                            const t1HasHero = m.team1.some(p => p.heroName === hero.name);
-                                            const t2HasHero = m.team2.some(p => p.heroName === hero.name);
-                                            const isTeam1 = t1HasHero;
-                                            const myTeam = isTeam1 ? m.team1 : m.team2;
-                                            const enemyTeam = isTeam1 ? m.team2 : m.team1;
-                                            const won = m.winner === (isTeam1 ? 'team1' : 'team2');
-                                            const playerOnHero = myTeam.find(p => p.heroName === hero.name);
+                            {recentMatches.length > 0 ? (
+                                <div className="space-y-2.5">
+                                    {recentMatches.slice(0, 3).map(m => {
+                                        const t1HasHero = m.team1.some(p => p.heroName === hero.name);
+                                        const isTeam1 = t1HasHero;
+                                        const myTeam = isTeam1 ? m.team1 : m.team2;
+                                        const enemyTeam = isTeam1 ? m.team2 : m.team1;
+                                        const won = m.winner === (isTeam1 ? 'team1' : 'team2');
+                                        const playerOnHero = myTeam.find(p => p.heroName === hero.name);
 
-                                            return (
-                                                <div key={m.id} className="relative pl-5 pr-3.5 py-3 transition-colors flex flex-col">
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${won ? 'bg-green-500' : 'bg-red-500'}`} />
-                                                    <div className="flex justify-between items-center mb-1.5">
-                                                        <span className={`text-[10px] font-black uppercase tracking-wider ${won ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>{won ? 'Победа' : 'Поражение'}</span>
-                                                        <span className="text-[10px] text-slate-400">{new Date(m.timestamp).toLocaleDateString()}</span>
+                                        return (
+                                            <div
+                                                key={m.id}
+                                                className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden active:scale-[0.99] transition-transform"
+                                            >
+                                                {/* Left Accent Strip */}
+                                                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${won ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${won ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                        {won ? 'Победа' : 'Поражение'}
+                                                    </span>
+                                                    <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                                                        <Calendar size={12} />
+                                                        {new Date(m.timestamp).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 text-xs py-1">
+                                                    <div className="flex-1 text-right font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                                                        {myTeam.map((p, i) => (
+                                                            <span key={i} className={p.heroName === hero.name ? 'text-indigo-600 dark:text-indigo-400 underline decoration-indigo-500/40' : ''}>
+                                                                {p.name}{i < myTeam.length - 1 ? ', ' : ''}
+                                                            </span>
+                                                        ))}
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-xs">
-                                                        <div className="flex-1 text-right font-bold text-slate-700 dark:text-slate-300 truncate">
-                                                            {myTeam.map(p => p.name).join(', ')}
-                                                        </div>
-                                                        <span className="text-slate-400 font-bold text-[10px]">VS</span>
-                                                        <div className="flex-1 text-left font-bold text-slate-700 dark:text-slate-300 truncate">
-                                                            {enemyTeam.map(p => p.name).join(', ')}
-                                                        </div>
+                                                    <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 font-black text-[9px] shrink-0">VS</span>
+                                                    <div className="flex-1 text-left font-bold text-slate-600 dark:text-slate-400 truncate">
+                                                        {enemyTeam.map(p => p.name).join(', ')}
                                                     </div>
-                                                    {playerOnHero && (
-                                                        <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 text-[10px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
-                                                            <span>Игрок: <span className="font-bold text-slate-700 dark:text-slate-300">{playerOnHero.name}</span></span>
-                                                            {playerOnHero.kills !== undefined && playerOnHero.kills !== null && (
-                                                                <span className="font-bold text-red-500 flex items-center gap-0.5"><Skull size={10} /> {playerOnHero.kills} {playerOnHero.kills === 1 ? 'убийство' : [2, 3, 4].includes(playerOnHero.kills % 10) && ![12, 13, 14].includes(playerOnHero.kills % 100) ? 'убийства' : 'убийств'}</span>
+                                                </div>
+
+                                                {playerOnHero && (
+                                                    <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60 text-[11px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
+                                                        <span className="flex items-center gap-1">
+                                                            <User size={12} className="text-slate-400" />
+                                                            <span>Игрок: <span className="font-bold text-slate-800 dark:text-slate-200">{playerOnHero.name}</span></span>
+                                                        </span>
+                                                        {playerOnHero.kills !== undefined && playerOnHero.kills !== null && (
+                                                            <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 font-extrabold text-[10px] flex items-center gap-1">
+                                                                <Skull size={11} /> {playerOnHero.kills} {playerOnHero.kills === 1 ? 'убийство' : [2, 3, 4].includes(playerOnHero.kills % 10) && ![12, 13, 14].includes(playerOnHero.kills % 100) ? 'убийства' : 'убийств'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+
+                                    {recentMatches.length > 3 && (
+                                        <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${matchesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                                            <div className="overflow-hidden space-y-2.5">
+                                                {recentMatches.slice(3).map(m => {
+                                                    const t1HasHero = m.team1.some(p => p.heroName === hero.name);
+                                                    const isTeam1 = t1HasHero;
+                                                    const myTeam = isTeam1 ? m.team1 : m.team2;
+                                                    const enemyTeam = isTeam1 ? m.team2 : m.team1;
+                                                    const won = m.winner === (isTeam1 ? 'team1' : 'team2');
+                                                    const playerOnHero = myTeam.find(p => p.heroName === hero.name);
+
+                                                    return (
+                                                        <div
+                                                            key={m.id}
+                                                            className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden active:scale-[0.99] transition-transform"
+                                                        >
+                                                            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${won ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${won ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                                    {won ? 'Победа' : 'Поражение'}
+                                                                </span>
+                                                                <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                                                                    <Calendar size={12} />
+                                                                    {new Date(m.timestamp).toLocaleDateString()}
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-2 text-xs py-1">
+                                                                <div className="flex-1 text-right font-extrabold text-slate-800 dark:text-slate-200 truncate">
+                                                                    {myTeam.map((p, i) => (
+                                                                        <span key={i} className={p.heroName === hero.name ? 'text-indigo-600 dark:text-indigo-400 underline decoration-indigo-500/40' : ''}>
+                                                                            {p.name}{i < myTeam.length - 1 ? ', ' : ''}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                                <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 font-black text-[9px] shrink-0">VS</span>
+                                                                <div className="flex-1 text-left font-bold text-slate-600 dark:text-slate-400 truncate">
+                                                                    {enemyTeam.map(p => p.name).join(', ')}
+                                                                </div>
+                                                            </div>
+
+                                                            {playerOnHero && (
+                                                                <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/60 text-[11px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
+                                                                    <span className="flex items-center gap-1">
+                                                                        <User size={12} className="text-slate-400" />
+                                                                        <span>Игрок: <span className="font-bold text-slate-800 dark:text-slate-200">{playerOnHero.name}</span></span>
+                                                                    </span>
+                                                                    {playerOnHero.kills !== undefined && playerOnHero.kills !== null && (
+                                                                        <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 font-extrabold text-[10px] flex items-center gap-1">
+                                                                            <Skull size={11} /> {playerOnHero.kills} {playerOnHero.kills === 1 ? 'убийство' : [2, 3, 4].includes(playerOnHero.kills % 10) && ![12, 13, 14].includes(playerOnHero.kills % 100) ? 'убийства' : 'убийств'}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
-
-                                        {recentMatches.length > 3 && (
-                                            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out transform-gpu will-change-[grid-template-rows] ${matchesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/50">
-                                                    {recentMatches.slice(3).map(m => {
-                                                        const t1HasHero = m.team1.some(p => p.heroName === hero.name);
-                                                        const t2HasHero = m.team2.some(p => p.heroName === hero.name);
-                                                        const isTeam1 = t1HasHero;
-                                                        const myTeam = isTeam1 ? m.team1 : m.team2;
-                                                        const enemyTeam = isTeam1 ? m.team2 : m.team1;
-                                                        const won = m.winner === (isTeam1 ? 'team1' : 'team2');
-                                                        const playerOnHero = myTeam.find(p => p.heroName === hero.name);
-
-                                                        return (
-                                                            <div key={m.id} className="relative pl-5 pr-3.5 py-3 transition-colors flex flex-col">
-                                                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${won ? 'bg-green-500' : 'bg-red-500'}`} />
-                                                                <div className="flex justify-between items-center mb-1.5">
-                                                                    <span className={`text-[10px] font-black uppercase tracking-wider ${won ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>{won ? 'Победа' : 'Поражение'}</span>
-                                                                    <span className="text-[10px] text-slate-400">{new Date(m.timestamp).toLocaleDateString()}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2 text-xs">
-                                                                    <div className="flex-1 text-right font-bold text-slate-700 dark:text-slate-300 truncate">
-                                                                        {myTeam.map(p => p.name).join(', ')}
-                                                                    </div>
-                                                                    <span className="text-slate-400 font-bold text-[10px]">VS</span>
-                                                                    <div className="flex-1 text-left font-bold text-slate-700 dark:text-slate-300 truncate">
-                                                                        {enemyTeam.map(p => p.name).join(', ')}
-                                                                    </div>
-                                                                </div>
-                                                                {playerOnHero && (
-                                                                    <div className="mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 text-[10px] text-slate-500 dark:text-slate-400 flex justify-between items-center">
-                                                                        <span>Игрок: <span className="font-bold text-slate-700 dark:text-slate-300">{playerOnHero.name}</span></span>
-                                                                        {playerOnHero.kills !== undefined && playerOnHero.kills !== null && (
-                                                                            <span className="font-bold text-red-500 flex items-center gap-0.5"><Skull size={10} /> {playerOnHero.kills} {playerOnHero.kills === 1 ? 'убийство' : [2, 3, 4].includes(playerOnHero.kills % 10) && ![12, 13, 14].includes(playerOnHero.kills % 100) ? 'убийства' : 'убийств'}</span>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
+                                                    );
+                                                })}
                                             </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-slate-400 text-xs py-4 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 rounded-2xl shadow-sm">Нет данных</div>
-                                )}
+                                        </div>
+                                    )}
 
-                                {recentMatches.length > 3 && (
-                                    <button
-                                        onClick={() => setMatchesState(prev => prev === 'partial' ? 'expanded' : 'partial')}
-                                        className="w-full py-2 text-xs font-bold text-slate-400 active:text-primary-500 transition-colors flex items-center justify-center gap-1"
-                                    >
-                                        {matchesState === 'partial' ? 'Показать все' : 'Свернуть'}
-                                    </button>
-                                )}
-                            </div>
+                                    {recentMatches.length > 3 && (
+                                        <button
+                                            onClick={() => setMatchesState(prev => prev === 'partial' ? 'expanded' : 'partial')}
+                                            className="w-full py-2 text-xs font-bold text-primary-600 dark:text-primary-400 hover:underline transition-colors flex items-center justify-center gap-1"
+                                        >
+                                            {matchesState === 'partial' ? 'Показать всю историю' : 'Свернуть'}
+                                        </button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 text-center text-slate-400 text-xs">
+                                    История игр отсутствует
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     );
