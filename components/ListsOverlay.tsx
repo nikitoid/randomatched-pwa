@@ -700,7 +700,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         >
             {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
 
-            <div className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-opacity duration-200 ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}>
+            <div className={`bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/60 transition-opacity duration-200 shadow-2xs ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}>
                 <div 
                     className="px-4 py-3 touch-manipulation"
                     style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
@@ -708,25 +708,25 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     {editingListId ? (
                         <>
                             <div className="flex items-center justify-between gap-2 min-h-[44px]">
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
                                     <button 
                                         onClick={handleCancelEditor} 
                                         aria-label="Назад"
-                                        className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all shrink-0"
+                                        className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all shrink-0 border border-slate-200/50 dark:border-slate-700/50"
                                     > 
-                                        <ChevronLeft size={24} /> 
+                                        <ChevronLeft size={22} /> 
                                     </button>
                                     <div className="flex-1 min-w-0 pr-1">
                                         <h2 
-                                            className="font-heading text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate"
+                                            className="font-heading text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate leading-tight"
                                             title={lists.find(l => l.id === editingListId)?.name}
                                         >
                                             {lists.find(l => l.id === editingListId)?.name}
                                         </h2>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Героев: {getCleanHeroes(editorHeroes).length}</span>
                                             {updatedListIds?.has(editingListId) && (
-                                                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">
+                                                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold border border-emerald-500/20">
                                                     Обновлен
                                                 </span>
                                             )}
@@ -738,8 +738,9 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                     <button 
                                         ref={sortButtonRef}
                                         onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); triggerHaptic(10); }} 
-                                        className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
+                                        className={`w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 active:scale-95 transition-all ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white ring-2 ring-primary-500/30' : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'}`}
                                         aria-label="Сортировка списка"
+                                        title="Сортировка"
                                     > 
                                         {heroSortType === 'name' ? (
                                             heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />
@@ -749,7 +750,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                     </button>
                                     <button 
                                         onClick={handleToggleEditorMenu} 
-                                        className={`w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 active:scale-95 transition-transform ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white' : ''}`}
+                                        className={`w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 active:scale-95 transition-all ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white ring-2 ring-primary-500/30' : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'}`}
                                         aria-label="Дополнительные функции списка"
                                         title="Опции списка"
                                     >
@@ -758,22 +759,22 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                     {!isReadOnly ? (
                                         <button 
                                             onClick={handleSaveEditor} 
-                                            className="h-11 min-h-[44px] w-11 sm:w-auto sm:px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-primary-600 text-white font-bold text-xs shadow-lg shadow-primary-600/25 active:scale-95 transition-transform"
+                                            className="h-10 min-h-[40px] px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-xs shadow-md shadow-primary-600/20 active:scale-95 transition-all"
                                             aria-label="Сохранить изменения"
                                             title="Сохранить изменения"
                                         > 
-                                            <Save size={18} /> 
+                                            <Save size={17} /> 
                                             <span className="hidden sm:inline">Сохранить</span> 
                                         </button>
                                     ) : (
                                         !isPermanentlyReadOnly && (
                                             <button 
                                                 onClick={() => { setIsEditMode(true); triggerHaptic(10); }} 
-                                                className="h-11 min-h-[44px] w-11 sm:w-auto sm:px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-primary-50 dark:bg-primary-900/30 border border-primary-200/60 dark:border-primary-800/60 text-primary-600 dark:text-primary-300 font-bold text-xs active:scale-95 transition-transform"
+                                                className="h-10 min-h-[40px] px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-600 dark:text-primary-300 font-bold text-xs active:scale-95 transition-all"
                                                 aria-label="Редактировать список"
                                                 title="Редактировать список"
                                             > 
-                                                <Edit2 size={18} /> 
+                                                <Edit2 size={17} /> 
                                                 <span className="hidden sm:inline">Редактировать</span> 
                                             </button>
                                         )
@@ -788,11 +789,11 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                 onClick={onClose} 
                                 aria-label="Закрыть списки"
                                 data-testid="lists-close-btn"
-                                className="absolute left-0 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all"
+                                className="absolute left-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all border border-slate-200/50 dark:border-slate-700/50"
                             > 
-                                <ChevronLeft size={24} /> 
+                                <ChevronLeft size={22} /> 
                             </button>
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Списки героев</h2>
+                            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Списки героев</h2>
                         </div>
                     )}
                 </div>
@@ -854,18 +855,29 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 <div ref={listContainerRef} onTouchMove={handleTouchMove} className={`absolute inset-0 overflow-y-auto no-scrollbar ${editingListId ? 'hidden pointer-events-none' : 'block pointer-events-auto'}`}>
                     <div className="pb-safe-area-bottom">
                         <div className="animate-in fade-in slide-in-from-bottom-2">
-                            <div className="flex items-center justify-between sticky top-0 z-30 px-4 pt-4 pb-3 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800/60">
-                                <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border ${isOnline ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30' : 'bg-slate-200 text-slate-500 border-slate-300'}`}>
-                                    {isSyncing ? <><Loader2 size={10} className="animate-spin" /> Sync</> : isOnline ? <><Wifi size={10} /> Online</> : <><WifiOff size={10} /> Offline</>}
+                            <div className="flex items-center justify-between sticky top-0 z-30 px-4 pt-3 pb-3 bg-slate-50/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/50">
+                                <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-2xs ${isOnline ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-slate-200/80 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
+                                    {isSyncing ? <><Loader2 size={11} className="animate-spin text-amber-500" /> Sync</> : isOnline ? <><Wifi size={11} className="text-emerald-500" /> Online</> : <><WifiOff size={11} className="text-slate-400" /> Offline</>}
                                 </div>
-                                <div className="flex gap-2">
-                                    <button onClick={handleToggleReorderMode} className={`w-9 h-9 flex items-center justify-center rounded-full border shadow-sm transition-colors ${isReorderMode ? 'bg-primary-100 text-primary-600 border-primary-200 dark:bg-primary-900/40 dark:text-primary-300 dark:border-primary-800' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}> <GripVertical size={18} /> </button>
-                                    <button onClick={handleToggleSort} className="w-9 h-9 flex items-center justify-center rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-slate-600 dark:text-slate-300"> {sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />} </button>
-                                    <button onClick={handleOpenCreate} className="h-9 px-4 flex items-center gap-2 bg-primary-600 text-white rounded-full shadow-md shadow-primary-600/20 active:scale-95 transition-transform" data-testid="new-list-btn"> <Plus size={18} /> <span className="text-sm font-bold">Новый</span> </button>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={handleToggleReorderMode} className={`w-9 h-9 flex items-center justify-center rounded-full border shadow-2xs transition-all ${isReorderMode ? 'bg-primary-500/15 text-primary-600 border-primary-500/40 dark:bg-primary-900/40 dark:text-primary-300' : 'bg-white/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}> <GripVertical size={18} /> </button>
+                                    <button onClick={handleToggleSort} className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"> {sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />} </button>
+                                    <button onClick={handleOpenCreate} className="h-9 px-4 flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-full shadow-md shadow-primary-600/25 active:scale-95 transition-all font-bold text-xs" data-testid="new-list-btn"> <Plus size={17} /> <span>Новый</span> </button>
                                 </div>
                             </div>
                             <div className="px-4 pt-4 pb-4">
-                                {lists.length === 0 && <div className="text-center py-20 text-slate-400">Нет списков</div>}
+                                {lists.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                                        <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-4 shadow-inner">
+                                            <Files size={32} />
+                                        </div>
+                                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">Нет списков</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mb-5">Создайте свой первый список героев для генерации команд и отслеживания статистики</p>
+                                        <button onClick={handleOpenCreate} className="h-10 px-5 flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-md shadow-primary-600/20 font-bold text-xs active:scale-95 transition-all">
+                                            <Plus size={16} /> Создать список
+                                        </button>
+                                    </div>
+                                )}
                                 {lists.map((list, idx) => (
                                     <ListItem 
                                         key={list.id} 
@@ -896,7 +908,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 <>
                     <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsSortMenuOpen(false)} />
                     <div 
-                        className="fixed z-[61] w-52 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200" 
+                        className="fixed z-[61] w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200 p-1.5" 
                         style={{ 
                             top: sortButtonRef.current.getBoundingClientRect().bottom + 8, 
                             right: window.innerWidth - sortButtonRef.current.getBoundingClientRect().right, 
@@ -904,44 +916,44 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     >
                         <button 
                             onClick={() => { handleSort('name', 'asc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
                         >
-                            <span className="flex items-center gap-2">
-                                <ArrowDownAZ size={16} />
+                            <span className="flex items-center gap-2.5">
+                                <ArrowDownAZ size={16} className="text-slate-500" />
                                 Имя: А-Я
                             </span>
-                            {heroSortType === 'name' && heroSortDirection === 'asc' && <Check size={16} className="text-primary-600" />}
+                            {heroSortType === 'name' && heroSortDirection === 'asc' && <Check size={16} className="text-primary-600 dark:text-primary-400 font-bold" />}
                         </button>
                         <button 
                             onClick={() => { handleSort('name', 'desc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
                         >
-                            <span className="flex items-center gap-2">
-                                <ArrowUpAZ size={16} />
+                            <span className="flex items-center gap-2.5">
+                                <ArrowUpAZ size={16} className="text-slate-500" />
                                 Имя: Я-А
                             </span>
-                            {heroSortType === 'name' && heroSortDirection === 'desc' && <Check size={16} className="text-primary-600" />}
+                            {heroSortType === 'name' && heroSortDirection === 'desc' && <Check size={16} className="text-primary-600 dark:text-primary-400 font-bold" />}
                         </button>
-                        <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" />
+                        <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" />
                         <button 
                             onClick={() => { handleSort('rank', 'desc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
                         >
-                            <span className="flex items-center gap-2">
-                                <ArrowLeftRight size={16} className="rotate-90" />
+                            <span className="flex items-center gap-2.5">
+                                <ArrowLeftRight size={16} className="rotate-90 text-slate-500" />
                                 Ранг: по убыванию
                             </span>
-                            {heroSortType === 'rank' && heroSortDirection === 'desc' && <Check size={16} className="text-primary-600" />}
+                            {heroSortType === 'rank' && heroSortDirection === 'desc' && <Check size={16} className="text-primary-600 dark:text-primary-400 font-bold" />}
                         </button>
                         <button 
                             onClick={() => { handleSort('rank', 'asc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-4 py-3 flex items-center justify-between active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"
+                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
                         >
-                            <span className="flex items-center gap-2">
-                                <ArrowLeftRight size={16} className="rotate-90" />
+                            <span className="flex items-center gap-2.5">
+                                <ArrowLeftRight size={16} className="rotate-90 text-slate-500" />
                                 Ранг: по возрастанию
                             </span>
-                            {heroSortType === 'rank' && heroSortDirection === 'asc' && <Check size={16} className="text-primary-600" />}
+                            {heroSortType === 'rank' && heroSortDirection === 'asc' && <Check size={16} className="text-primary-600 dark:text-primary-400 font-bold" />}
                         </button>
                     </div>
                 </>,
@@ -953,22 +965,22 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 <>
                     <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsEditorMenuOpen(false)} /> 
                     <div 
-                        className="fixed z-[61] w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700/80 overflow-hidden animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200" 
+                        className="fixed z-[61] w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200 p-1.5" 
                         style={{ top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right }}
                     > 
-                        <button onClick={() => handleEditorMenuAction(() => setIsStatsModalOpen(true))} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <BarChart3 size={16} className="text-violet-500" /> <span>Баланс героев</span> </button>
-                        <div className="h-px bg-slate-100 dark:bg-slate-700/80 mx-2" />
-                        <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileJson size={16} /> <span>Экспорт в файл</span> </button> 
+                        <button onClick={() => handleEditorMenuAction(() => setIsStatsModalOpen(true))} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <BarChart3 size={16} className="text-violet-500" /> <span>Баланс героев</span> </button>
+                        <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" />
+                        <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <FileJson size={16} className="text-slate-500" /> <span>Экспорт в файл</span> </button> 
                         {!isReadOnly && !currentList?.isTemporary && (
-                            <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Upload size={16} /> <span>Импорт из файла</span> </button> 
+                            <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <Upload size={16} className="text-slate-500" /> <span>Импорт из файла</span> </button> 
                         )} 
-                        <div className="h-px bg-slate-100 dark:bg-slate-700/80 mx-2" /> 
-                        <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <Copy size={16} /> <span>Экспорт (Текст)</span> </button> 
+                        <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" /> 
+                        <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <Copy size={16} className="text-slate-500" /> <span>Экспорт (Текст)</span> </button> 
                         {!isReadOnly && !currentList?.isTemporary && (
                             <> 
-                                <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium"> <FileText size={16} /> <span>Импорт (Текст)</span> </button> 
-                                <div className="h-px bg-slate-100 dark:bg-slate-700/80 mx-2" /> 
-                                <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-4 py-3 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-violet-600 dark:text-violet-400 text-sm font-medium"> <ArrowLeftRight size={16} /> <span>Импорт рангов</span> </button> 
+                                <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <FileText size={16} className="text-slate-500" /> <span>Импорт (Текст)</span> </button> 
+                                <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" /> 
+                                <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-violet-50 dark:hover:bg-violet-900/30 active:bg-violet-100 dark:active:bg-violet-900/50 text-violet-600 dark:text-violet-300 text-xs font-semibold transition-colors"> <ArrowLeftRight size={16} /> <span>Импорт рангов</span> </button> 
                             </>
                         )} 
                     </div> 
@@ -979,31 +991,31 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             {/* Context Menu Portal */}
             {contextMenuTargetId && menuPosition && activeListForMenu && activeItemRect && createPortal(
                 <>
-                    <div className="fixed inset-0 z-[60] bg-slate-900/20 backdrop-blur-[2px] animate-in fade-in duration-200" onClick={(e) => { e.stopPropagation(); handleCloseMenu(); }} /> 
-                    <div onClick={() => handleCloseMenu()} className="fixed z-[61] bg-white dark:bg-slate-900 p-4 rounded-2xl flex items-center shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10" style={{ top: activeItemRect.top, left: activeItemRect.left, width: activeItemRect.width, height: activeItemRect.height, transformOrigin: 'center center' }}> 
-                        <div className="mr-4 ml-1 flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 shrink-0 border border-slate-100 dark:border-slate-700/50 relative"> 
+                    <div className="fixed inset-0 z-[60] bg-slate-950/30 backdrop-blur-[2px] animate-in fade-in duration-200" onClick={(e) => { e.stopPropagation(); handleCloseMenu(); }} /> 
+                    <div onClick={() => handleCloseMenu()} className="fixed z-[61] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-4 rounded-2xl flex items-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10" style={{ top: activeItemRect.top, left: activeItemRect.left, width: activeItemRect.width, height: activeItemRect.height, transformOrigin: 'center center' }}> 
+                        <div className="mr-3.5 flex items-center justify-center w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/60 dark:border-slate-700/60 relative"> 
                             {getListIcon(activeListForMenu)} 
-                            {updatedListIds && updatedListIds.has(activeListForMenu.id) && (<span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white dark:border-slate-900"></span>)} 
+                            {updatedListIds && updatedListIds.has(activeListForMenu.id) && (<span className="absolute -top-1 -right-1 w-3 h-3 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900"></span>)} 
                         </div> 
-                        <div className="flex-1 mr-4"> 
-                            <h3 className={`font-bold text-lg leading-tight mb-0.5 ${activeListForMenu.isTemporary ? 'text-primary-900 dark:text-primary-300 italic' : 'text-slate-900 dark:text-slate-100'}`}> {activeListForMenu.name} </h3> 
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-500 flex items-center gap-2"> 
+                        <div className="flex-1 min-w-0 mr-3"> 
+                            <h3 className={`font-bold text-base leading-snug truncate mb-0.5 ${activeListForMenu.isTemporary ? 'text-primary-900 dark:text-primary-300 italic' : 'text-slate-900 dark:text-slate-100'}`}> {activeListForMenu.name} </h3> 
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2"> 
                                 <span>Героев: {activeListForMenu.heroes.length}</span> 
-                                {activeListForMenu.isTemporary && <span className="text-primary-500 dark:text-primary-400">временный</span>} 
+                                {activeListForMenu.isTemporary && <span className="text-primary-500 dark:text-primary-400 font-bold">временный</span>} 
                                 {activeListForMenu.isCloud && !isOnline && <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px]">Offline</span>} 
                             </p> 
                         </div> 
-                        <div className="p-2.5 rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300 shrink-0"> 
-                            <MoreVertical size={20} /> 
+                        <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-primary-500/10 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 flex items-center justify-center shrink-0"> 
+                            <MoreVertical size={18} /> 
                         </div> 
                     </div> 
-                    <div className={`fixed z-[62] w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden ${menuPosition.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-right' : 'animate-menu-in origin-top-right'}`} style={{ top: menuPosition.top, bottom: menuPosition.bottom, right: menuPosition.right }}> 
-                        {!activeListForMenu.isCloud && !activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleUpload(activeListForMenu.id); }} disabled={!isOnline} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium border-b border-slate-50 dark:border-slate-700/50 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'active:bg-slate-50 dark:active:bg-slate-700 text-sky-600 dark:text-sky-400'}`}> <UploadCloud size={16} /> Выгрузить в облако </button>)} 
-                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleOpenRename(activeListForMenu); }} disabled={(!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${(!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200'}`}> <Edit2 size={16} /> Переименовать </button>)} 
-                        <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}> <Copy size={16} /> Экспорт (Текст) </button> 
-                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 active:bg-slate-50 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium`}> <FileJson size={16} /> Экспорт в файл </button>)} 
-                        <div className="h-px bg-slate-100 dark:bg-slate-700 mx-2" /> 
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(activeListForMenu); }} disabled={activeListForMenu.isCloud && !isOnline} className={`w-full text-left px-4 py-3.5 flex items-center gap-3 text-sm font-medium transition-colors ${activeListForMenu.isCloud && !isOnline ? 'opacity-40 cursor-not-allowed text-slate-400' : 'active:bg-red-50 dark:active:bg-red-900/20 text-red-600 dark:text-red-400'}`}> <Trash2 size={16} /> {activeListForMenu.isCloud ? 'Удалить из облака' : 'Удалить'} </button> 
+                    <div className={`fixed z-[62] w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 p-1.5 ${menuPosition.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-right' : 'animate-menu-in origin-top-right'}`} style={{ top: menuPosition.top, bottom: menuPosition.bottom, right: menuPosition.right }}> 
+                        {!activeListForMenu.isCloud && !activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleUpload(activeListForMenu.id); }} disabled={!isOnline} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors border-b border-slate-100 dark:border-slate-800/60 mb-1 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'hover:bg-sky-50 dark:hover:bg-sky-950/30 text-sky-600 dark:text-sky-400'}`}> <UploadCloud size={16} /> Выгрузить в облако </button>)} 
+                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleOpenRename(activeListForMenu); }} disabled={(!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors ${(!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200'}`}> <Edit2 size={16} className="text-slate-500" /> Переименовать </button>)} 
+                        <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <Copy size={16} className="text-slate-500" /> Экспорт (Текст) </button> 
+                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <FileJson size={16} className="text-slate-500" /> Экспорт в файл </button>)} 
+                        <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" /> 
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(activeListForMenu); }} disabled={activeListForMenu.isCloud && !isOnline} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors ${activeListForMenu.isCloud && !isOnline ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400'}`}> <Trash2 size={16} /> {activeListForMenu.isCloud ? 'Удалить из облака' : 'Удалить'} </button> 
                     </div> 
                 </>, 
                 document.body
