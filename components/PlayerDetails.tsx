@@ -131,22 +131,32 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
         // Partner Stats (Other players played WITH this player)
         const partnerMap = new Map<string, { matches: number, wins: number }>();
         playerMatches.forEach(m => {
-            const isTeam1 = m.team1.some(p => p.name === player.name);
-            const myTeam = isTeam1 ? m.team1 : m.team2;
-            const won = m.winner === (isTeam1 ? 'team1' : 'team2');
-
-            myTeam.forEach(p => {
-                if (p.name !== player.name && p.name) {
-                    const s = partnerMap.get(p.name) || { matches: 0, wins: 0 };
-                    s.matches++;
-                    if (won) s.wins++;
-                    partnerMap.set(p.name, s);
-                }
-            });
+            if (m.team1.some(p => p.name === player.name)) {
+                const won = m.winner === 'team1';
+                m.team1.forEach(p => {
+                    if (p.name !== player.name && p.name) {
+                        const s = partnerMap.get(p.name) || { matches: 0, wins: 0 };
+                        s.matches++;
+                        if (won) s.wins++;
+                        partnerMap.set(p.name, s);
+                    }
+                });
+            }
+            if (m.team2.some(p => p.name === player.name)) {
+                const won = m.winner === 'team2';
+                m.team2.forEach(p => {
+                    if (p.name !== player.name && p.name) {
+                        const s = partnerMap.get(p.name) || { matches: 0, wins: 0 };
+                        s.matches++;
+                        if (won) s.wins++;
+                        partnerMap.set(p.name, s);
+                    }
+                });
+            }
         });
 
         const partnerStats = Array.from(partnerMap.entries())
-            .filter(([_, stats]) => stats.matches >= 3)
+            .filter(([_, stats]) => stats.matches >= 1)
             .map(([name, stats]) => {
                 const C = 3;
                 const m = 0.5;

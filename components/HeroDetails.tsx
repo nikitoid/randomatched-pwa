@@ -71,25 +71,35 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
             .sort((a, b) => b.score - a.score || b.matches - a.matches)
             .slice(0, 5);
 
-        // Best Synergies (Heroes played WITH this hero)
+        // Best Synergies (Heroes played WITH this hero on the same team)
         const synergyMap = new Map<string, { matches: number, wins: number }>();
         heroMatches.forEach(m => {
-            const isTeam1 = m.team1.some(p => p.heroName === hero.name);
-            const myTeam = isTeam1 ? m.team1 : m.team2;
-            const won = m.winner === (isTeam1 ? 'team1' : 'team2');
-
-            myTeam.forEach(p => {
-                if (p.heroName !== hero.name && p.heroName) {
-                    const s = synergyMap.get(p.heroName) || { matches: 0, wins: 0 };
-                    s.matches++;
-                    if (won) s.wins++;
-                    synergyMap.set(p.heroName, s);
-                }
-            });
+            if (m.team1.some(p => p.heroName === hero.name)) {
+                const won = m.winner === 'team1';
+                m.team1.forEach(p => {
+                    if (p.heroName !== hero.name && p.heroName) {
+                        const s = synergyMap.get(p.heroName) || { matches: 0, wins: 0 };
+                        s.matches++;
+                        if (won) s.wins++;
+                        synergyMap.set(p.heroName, s);
+                    }
+                });
+            }
+            if (m.team2.some(p => p.heroName === hero.name)) {
+                const won = m.winner === 'team2';
+                m.team2.forEach(p => {
+                    if (p.heroName !== hero.name && p.heroName) {
+                        const s = synergyMap.get(p.heroName) || { matches: 0, wins: 0 };
+                        s.matches++;
+                        if (won) s.wins++;
+                        synergyMap.set(p.heroName, s);
+                    }
+                });
+            }
         });
 
         const topSynergies = Array.from(synergyMap.entries())
-            .filter(([_, stats]) => stats.matches >= 3)
+            .filter(([_, stats]) => stats.matches >= 1)
             .map(([name, stats]) => {
                 const C = 3;
                 const m = 0.5;
