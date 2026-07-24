@@ -173,6 +173,7 @@ const App: React.FC = () => {
         handleShowLastResult, handleRecordResult, handleRerollHero,
         handleRerollAllHeroes, handleShuffleTeams, handleBanHero, handleBanAllCurrent,
         handleSwapPositions, handleManualHeroSelect, getAvailableHeroesPool,
+        extraMode, setExtraMode,
         prioritizeUnplayed, setPrioritizeUnplayed, isDebugMode, setIsDebugMode
     } = useTeamGeneration({
         lists, activeList, isGroupMode, selectedGroupIds, addToast, triggerHaptic,
@@ -417,6 +418,8 @@ const App: React.FC = () => {
                     onRecordResult={handleRecordResult}
                     onManualSelect={handleManualHeroSelect}
                     availableHeroes={getAvailableHeroesPool()}
+                    extraMode={extraMode}
+                    setExtraMode={setExtraMode}
                     prioritizeUnplayed={prioritizeUnplayed}
                     setPrioritizeUnplayed={setPrioritizeUnplayed}
                     isDebugMode={isDebugMode}

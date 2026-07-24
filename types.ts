@@ -38,6 +38,7 @@ export interface ToastMessage {
 }
 
 export type GenerationMode = 'random' | 'balanced' | 'strict';
+export type ExtraGenerationMode = 'none' | 'global_freshness' | 'player_freshness';
 
 export type ColorScheme = 'indigo' | 'emerald' | 'rose' | 'amber' | 'violet' | 'sky' | 'slate' | 'forest' | 'cyberpunk' | 'sunset';
 

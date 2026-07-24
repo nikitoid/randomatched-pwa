@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog, History, Terminal, Search } from 'lucide-react';
-import { AssignedPlayer, GenerationMode, Hero, MatchRecord } from '../types';
+import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog, History, Terminal, Search, UserCheck, Minus } from 'lucide-react';
+import { AssignedPlayer, GenerationMode, ExtraGenerationMode, Hero, MatchRecord } from '../types';
 import { HeroSelectionModal } from './HeroSelectionModal';
 import { useBackHandler } from '../hooks/useBackHandler';
-import { getHeroHistoryWeights, getHeroWeight } from '../utils/generator';
+import { getHeroHistoryWeights, getPlayerHeroHistoryWeights, getHeroWeight } from '../utils/generator';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
 
@@ -26,6 +26,8 @@ interface ResultOverlayProps {
     onRecordResult?: (winner: 'team1' | 'team2', playerKills?: Record<string, number>) => void;
     onManualSelect?: (playerNumber: number, hero: Hero) => void;
     availableHeroes?: Hero[];
+    extraMode?: ExtraGenerationMode;
+    setExtraMode?: (mode: ExtraGenerationMode) => void;
     prioritizeUnplayed?: boolean;
     setPrioritizeUnplayed?: (val: boolean) => void;
     isDebugMode?: boolean;
@@ -38,6 +40,12 @@ const GENERATION_MODES = [
     { id: 'random', label: 'Рандом', desc: 'Чистая случайность', icon: Dice5, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' },
     { id: 'balanced', label: 'Баланс', desc: 'Умный баланс сил', icon: Sparkles, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-900/20' },
     { id: 'strict', label: 'Лимит', desc: 'Точный контроль (±)', icon: SlidersHorizontal, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20' }
+] as const;
+
+const EXTRA_MODES = [
+    { id: 'none', label: 'Без истории', desc: 'Все герои равны', icon: Minus, color: 'text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800' },
+    { id: 'global_freshness', label: 'История матчей', desc: 'Общая свежесть героев', icon: History, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-900/20' },
+    { id: 'player_freshness', label: 'Свежесть игрока', desc: 'Индивидуально для игрока', icon: UserCheck, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' }
 ] as const;
 
 export const ResultOverlay: React.FC<ResultOverlayProps> = ({
@@ -59,6 +67,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     onRecordResult,
     onManualSelect,
     availableHeroes = [],
+    extraMode,
+    setExtraMode,
     prioritizeUnplayed = false,
     setPrioritizeUnplayed,
     isDebugMode = false,
@@ -73,9 +83,13 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const [isHeroSelectionOpen, setIsHeroSelectionOpen] = useState(false);
     const [selectedPlayerForEdit, setSelectedPlayerForEdit] = useState<number | null>(null);
     const [isModeSelectorOpen, setIsModeSelectorOpen] = useState(false);
+    const [isExtraModeSelectorOpen, setIsExtraModeSelectorOpen] = useState(false);
     const [isWeightsModalOpen, setIsWeightsModalOpen] = useState(false);
     const [weightsSearchTerm, setWeightsSearchTerm] = useState('');
     const [playerKills, setPlayerKills] = useState<Record<number, number>>({});
+    const [selectedDebugPlayerTab, setSelectedDebugPlayerTab] = useState<'global' | number>('global');
+
+    const activeExtraMode = extraMode || (prioritizeUnplayed ? 'global_freshness' : 'none');
 
     useEffect(() => {
         if (isOpen) {
@@ -89,8 +103,17 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     // Вычисление весов для отладки
     const weightsMap = useMemo(() => {
-        return getHeroHistoryWeights(history, availableHeroes, true);
-    }, [history, availableHeroes]);
+        if (activeExtraMode === 'player_freshness' && selectedDebugPlayerTab !== 'global') {
+            const playerAss = assignments.find(a => a.playerNumber === selectedDebugPlayerTab);
+            if (playerAss) {
+                const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+                const idx = positionToIndex[playerAss.position] ?? 0;
+                const name = playerNames[idx]?.trim() || `Игрок ${playerAss.playerNumber}`;
+                return getPlayerHeroHistoryWeights(history, availableHeroes, name, true);
+            }
+        }
+        return getHeroHistoryWeights(history, availableHeroes, activeExtraMode !== 'none');
+    }, [history, availableHeroes, activeExtraMode, selectedDebugPlayerTab, assignments, playerNames]);
 
     // Список героев, отсортированных по весу для модального окна
     const sortedHeroesWithWeights = useMemo(() => {
@@ -143,6 +166,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     useBackHandler(isOpen, () => {
         if (isRerollConfirm) { setIsRerollConfirm(false); return; }
         if (isModeSelectorOpen) { setIsModeSelectorOpen(false); return; }
+        if (isExtraModeSelectorOpen) { setIsExtraModeSelectorOpen(false); return; }
 
         onClose();
     }, { id: 'result-overlay', priority: 20 });
@@ -154,6 +178,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             setActiveDrag(null);
             setHoveredTarget(null);
             setIsModeSelectorOpen(false);
+            setIsExtraModeSelectorOpen(false);
         }
     }, [isOpen]);
 
@@ -593,8 +618,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                 {/* Backdrop for Mode Selector */}
                 <div
-                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-all duration-300 ${isModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
-                    onClick={() => setIsModeSelectorOpen(false)}
+                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-all duration-300 ${isModeSelectorOpen || isExtraModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                    onClick={() => { setIsModeSelectorOpen(false); setIsExtraModeSelectorOpen(false); }}
                 />
 
                 {/* Controls Bar */}
@@ -603,10 +628,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}
                 >
                     {setGenerationMode && (
-                        <div className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen ? 'z-[61] ring-2 ring-primary-500/50' : 'z-50'}`}>
+                        <div className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen || isExtraModeSelectorOpen ? 'z-[61] ring-2 ring-primary-500/50' : 'z-50'}`}>
 
                             <button
-                                onClick={() => setIsModeSelectorOpen(!isModeSelectorOpen)}
+                                onClick={() => { setIsModeSelectorOpen(!isModeSelectorOpen); setIsExtraModeSelectorOpen(false); }}
                                 className="relative h-full flex items-center pl-2 pr-3 gap-2 outline-none cursor-pointer rounded-l-2xl active:bg-slate-50 dark:active:bg-slate-700/50 transition-colors"
                             >
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${currentMode.bg} ${currentMode.color}`}>
@@ -620,6 +645,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                             <div className={`absolute top-[calc(100%+8px)] left-0 w-[240px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 origin-top-left ${isModeSelectorOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'}`}>
                                 <div className="p-1.5 flex flex-col gap-0.5">
+                                    <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                                        Основной режим генерации
+                                    </div>
                                     {GENERATION_MODES.map(mode => (
                                         <button
                                             key={mode.id}
@@ -659,17 +687,60 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             ) : (
                                 <div className="w-1" />
                             )}
-                            {setPrioritizeUnplayed && (
-                                <button
-                                    onClick={() => setPrioritizeUnplayed(!prioritizeUnplayed)}
-                                    className={`p-2 rounded-full transition-all duration-200 ${prioritizeUnplayed
-                                        ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-500/20'
-                                        : 'text-slate-400 active:text-slate-600 dark:active:text-slate-200 active:bg-slate-100 dark:active:bg-slate-700'
+                            {(setExtraMode || setPrioritizeUnplayed) && (
+                                <div className="flex items-center">
+                                    <button
+                                        onClick={() => { setIsExtraModeSelectorOpen(!isExtraModeSelectorOpen); setIsModeSelectorOpen(false); }}
+                                        className={`p-2 rounded-full transition-all duration-200 ${
+                                            activeExtraMode !== 'none'
+                                                ? activeExtraMode === 'player_freshness'
+                                                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 ring-1 ring-emerald-500/20'
+                                                    : 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-500/20'
+                                                : 'text-slate-400 active:text-slate-600 dark:active:text-slate-200 active:bg-slate-100 dark:active:bg-slate-700'
                                         }`}
-                                    aria-label="Приоритет редко игравших героев"
-                                >
-                                    <History size={20} />
-                                </button>
+                                        aria-label="Дополнительный режим свежести"
+                                        title="Дополнительный режим генерации"
+                                    >
+                                        {(() => {
+                                            const currentExtra = EXTRA_MODES.find(m => m.id === activeExtraMode) || EXTRA_MODES[0];
+                                            const Icon = currentExtra.icon;
+                                            return <Icon size={20} />;
+                                        })()}
+                                    </button>
+
+                                    {/* Dropdown Menu for Extra Mode */}
+                                    <div className={`absolute top-[calc(100%+8px)] left-0 w-[240px] max-w-[calc(100vw-32px)] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 origin-top-left z-[62] ${isExtraModeSelectorOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'}`}>
+                                        <div className="p-1.5 flex flex-col gap-0.5">
+                                            <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                                                Доп. режим свежести
+                                            </div>
+                                            {EXTRA_MODES.map(m => {
+                                                const isSelected = activeExtraMode === m.id;
+                                                const Icon = m.icon;
+                                                return (
+                                                    <button
+                                                        key={m.id}
+                                                        onClick={() => {
+                                                            if (setExtraMode) setExtraMode(m.id as ExtraGenerationMode);
+                                                            else if (setPrioritizeUnplayed) setPrioritizeUnplayed(m.id !== 'none');
+                                                            setIsExtraModeSelectorOpen(false);
+                                                        }}
+                                                        className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors ${isSelected ? 'bg-slate-100 dark:bg-slate-800' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
+                                                    >
+                                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-white dark:bg-slate-900 shadow-sm ring-1 ring-slate-900/5' : 'bg-slate-50 dark:bg-slate-800'} ${m.color}`}>
+                                                            <Icon size={18} />
+                                                        </div>
+                                                        <div className="flex-1 text-left">
+                                                            <div className={`text-xs font-bold ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{m.label}</div>
+                                                            <div className="text-[10px] text-slate-400 leading-tight">{m.desc}</div>
+                                                        </div>
+                                                        {isSelected && <Check size={16} className="text-primary-500 shrink-0" />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
                             )}
 
                             {isDebugMode && (
@@ -906,8 +977,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
                         <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5 mb-1">
-                            <History size={12} className={prioritizeUnplayed ? "text-primary-500" : "text-slate-400"} />
-                            Приоритет истории: {prioritizeUnplayed ? "Включен" : "Выключен"}
+                            {activeExtraMode === 'player_freshness' ? (
+                                <UserCheck size={14} className="text-emerald-500" />
+                            ) : (
+                                <History size={14} className={activeExtraMode !== 'none' ? "text-primary-500" : "text-slate-400"} />
+                            )}
+                            {activeExtraMode === 'player_freshness'
+                                ? "Свежесть относительно игрока: Включена"
+                                : activeExtraMode === 'global_freshness'
+                                    ? "Свежесть по истории: Включена"
+                                    : "Доп. режим свежести: Выключен"}
                         </h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             {getPrioritizeUnplayedDescription()}
@@ -929,22 +1008,50 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 priority={40}
                 showCloseButton={false}
                 subHeader={
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Поиск героя..."
-                            value={weightsSearchTerm}
-                            onChange={(e) => setWeightsSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                        />
-                        {weightsSearchTerm && (
-                            <button
-                                onClick={() => setWeightsSearchTerm('')}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 active:text-slate-600 dark:active:text-slate-200 transition-colors"
-                            >
-                                Очистить
-                            </button>
+                    <div className="flex flex-col gap-2">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
+                            <input
+                                type="text"
+                                placeholder="Поиск героя..."
+                                value={weightsSearchTerm}
+                                onChange={(e) => setWeightsSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                            />
+                            {weightsSearchTerm && (
+                                <button
+                                    onClick={() => setWeightsSearchTerm('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 active:text-slate-600 dark:active:text-slate-200 transition-colors"
+                                >
+                                    Очистить
+                                </button>
+                            )}
+                        </div>
+
+                        {activeExtraMode === 'player_freshness' && (
+                            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+                                <button
+                                    onClick={() => setSelectedDebugPlayerTab('global')}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${selectedDebugPlayerTab === 'global' ? 'bg-primary-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}
+                                >
+                                    Общий
+                                </button>
+                                {assignments.map(a => {
+                                    const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+                                    const idx = positionToIndex[a.position] ?? 0;
+                                    const pName = playerNames[idx]?.trim() || `Игрок ${a.playerNumber}`;
+                                    const isTabActive = selectedDebugPlayerTab === a.playerNumber;
+                                    return (
+                                        <button
+                                            key={a.playerNumber}
+                                            onClick={() => setSelectedDebugPlayerTab(a.playerNumber)}
+                                            className={`px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${isTabActive ? 'bg-primary-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'}`}
+                                        >
+                                            {pName}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
                 }

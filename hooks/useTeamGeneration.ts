@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Hero, HeroList, AssignedPlayer, GenerationMode, MatchRecord } from '../types';
-import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists, getHeroHistoryWeights, selectWeightedSingle } from '../utils/generator';
+import { Hero, HeroList, AssignedPlayer, GenerationMode, ExtraGenerationMode, MatchRecord } from '../types';
+import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists, getHeroHistoryWeights, getPlayerHeroHistoryWeights, selectWeightedSingle } from '../utils/generator';
 
 const STORAGE_KEY_ASSIGNMENTS = 'randomatched_last_session_v1';
 const STORAGE_KEY_DEBUG_MODE = 'randomatched_debug_mode_v1';
@@ -79,12 +79,23 @@ export const useTeamGeneration = ({
         }
     });
     const [balanceThreshold, setBalanceThreshold] = useState<number>(1);
-    const [prioritizeUnplayed, setPrioritizeUnplayed] = useState<boolean>(() => {
+    const [extraMode, setExtraMode] = useState<ExtraGenerationMode>(() => {
         try {
-            const saved = localStorage.getItem('randomatched_prioritize_unplayed_v1');
-            return saved ? JSON.parse(saved) : false;
+            const savedExtra = localStorage.getItem('randomatched_extra_mode_v1');
+            if (savedExtra) {
+                const parsed = JSON.parse(savedExtra);
+                if (parsed === 'none' || parsed === 'global_freshness' || parsed === 'player_freshness') {
+                    return parsed;
+                }
+            }
+            const savedPrioritize = localStorage.getItem('randomatched_prioritize_unplayed_v1');
+            if (savedPrioritize) {
+                const parsed = JSON.parse(savedPrioritize);
+                if (parsed === true) return 'global_freshness';
+            }
+            return 'none';
         } catch (e) {
-            return false;
+            return 'none';
         }
     });
     const [isDebugMode, setIsDebugMode] = useState<boolean>(() => {
@@ -108,12 +119,30 @@ export const useTeamGeneration = ({
     }, [generationMode]);
 
     useEffect(() => {
-        localStorage.setItem('randomatched_prioritize_unplayed_v1', JSON.stringify(prioritizeUnplayed));
-    }, [prioritizeUnplayed]);
+        localStorage.setItem('randomatched_extra_mode_v1', JSON.stringify(extraMode));
+    }, [extraMode]);
 
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY_DEBUG_MODE, JSON.stringify(isDebugMode));
     }, [isDebugMode]);
+
+    const getWeightsForGeneration = () => {
+        const pool = getAvailableHeroesPool();
+        if (extraMode === 'global_freshness') {
+            const weights = getHeroHistoryWeights(history, pool, true);
+            return { weights, playerWeightsArray: undefined };
+        }
+        if (extraMode === 'player_freshness') {
+            const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+            const playerWeightsArray: Map<string, number>[] = assignments.map(a => {
+                const idx = positionToIndex[a.position] ?? 0;
+                const name = playerNames[idx]?.trim() || `Игрок ${a.playerNumber}`;
+                return getPlayerHeroHistoryWeights(history, pool, name, true);
+            });
+            return { weights: undefined, playerWeightsArray };
+        }
+        return { weights: undefined, playerWeightsArray: undefined };
+    };
 
     const handleGenerate = () => {
         triggerHaptic(20);
@@ -159,10 +188,6 @@ export const useTeamGeneration = ({
         }
 
         saveTeamHistory();
-        // Ideally we should close modals here, but state is external. 
-        // We can return a success indicator or have the parent handle closing.
-        // For now we will assume parent handles closing via "isGenerating" effects or similar, 
-        // OR we just focus on logic here. Use a callback or return value if needed.
 
         setIsAnimating(true);
 
@@ -196,9 +221,8 @@ export const useTeamGeneration = ({
             if (activeList) targetLists = [activeList];
         }
 
-        const pool = getAvailableHeroesPool();
-        const weights = getHeroHistoryWeights(history, pool, prioritizeUnplayed);
-        const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast, weights);
+        const { weights, playerWeightsArray } = getWeightsForGeneration();
+        const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast, weights, playerWeightsArray);
         setAssignments(generated);
         triggerHaptic(30);
     };
@@ -210,12 +234,6 @@ export const useTeamGeneration = ({
 
     const confirmReset = () => {
         setAssignments([]);
-        // Clearing player names is handled by parent or we need a setter for it
-        // But wait, App.tsx cleared player names too. 
-        // 'setPlayerNames' is not passed here. 
-        // Maybe we should keep playerNames state management separate or pass the setter?
-        // Let's assume for now we only reset session-related stuff (assignments).
-        // If we want to reset names, we need the setter.
         resetTemporaryLists();
         localStorage.removeItem(STORAGE_KEY_ASSIGNMENTS);
         setIsResetConfirmOpen(false);
@@ -264,12 +282,24 @@ export const useTeamGeneration = ({
         }
 
         const pool = getAvailableHeroesPool();
-        const weights = getHeroHistoryWeights(history, pool, prioritizeUnplayed);
+        let weights: Map<string, number> | undefined = undefined;
+
+        if (extraMode === 'global_freshness') {
+            weights = getHeroHistoryWeights(history, pool, true);
+        } else if (extraMode === 'player_freshness') {
+            const targetAssignment = assignments.find(a => a.playerNumber === playerNumber);
+            if (targetAssignment) {
+                const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+                const idx = positionToIndex[targetAssignment.position] ?? 0;
+                const name = playerNames[idx]?.trim() || `Игрок ${playerNumber}`;
+                weights = getPlayerHeroHistoryWeights(history, pool, name, true);
+            }
+        }
 
         let newHero: Hero;
 
         if (generationMode === 'random') {
-            if (prioritizeUnplayed && weights) {
+            if (weights) {
                 newHero = selectWeightedSingle(availableHeroes, h => weights.get(h.id) || 1);
             } else {
                 newHero = availableHeroes[Math.floor(Math.random() * availableHeroes.length)];
@@ -297,7 +327,7 @@ export const useTeamGeneration = ({
                 const validOptions = candidates.filter(c => c.diff <= balanceThreshold);
 
                 if (validOptions.length > 0) {
-                    if (prioritizeUnplayed && weights) {
+                    if (weights) {
                         newHero = selectWeightedSingle(validOptions, c => weights.get(c.hero.id) || 1).hero;
                     } else {
                         newHero = validOptions[Math.floor(Math.random() * validOptions.length)].hero;
@@ -305,7 +335,7 @@ export const useTeamGeneration = ({
                 } else {
                     const bestPossibleDiff = Math.min(...candidates.map(c => c.diff));
                     const bestOptions = candidates.filter(c => c.diff === bestPossibleDiff);
-                    if (prioritizeUnplayed && weights) {
+                    if (weights) {
                         newHero = selectWeightedSingle(bestOptions, c => weights.get(c.hero.id) || 1).hero;
                     } else {
                         newHero = bestOptions[Math.floor(Math.random() * bestOptions.length)].hero;
@@ -319,7 +349,7 @@ export const useTeamGeneration = ({
                 const solvers = candidates.filter(c => c.diff <= TARGET_DIFF);
 
                 if (solvers.length > 0) {
-                    if (prioritizeUnplayed && weights) {
+                    if (weights) {
                         newHero = selectWeightedSingle(solvers, c => weights.get(c.hero.id) || 1).hero;
                     } else {
                         newHero = solvers[Math.floor(Math.random() * solvers.length)].hero;
@@ -328,7 +358,7 @@ export const useTeamGeneration = ({
                     const minDiff = Math.min(...candidates.map(c => c.diff));
                     const bestOptions = candidates.filter(c => c.diff <= minDiff + 0.5);
 
-                    if (prioritizeUnplayed && weights) {
+                    if (weights) {
                         newHero = selectWeightedSingle(bestOptions, c => weights.get(c.hero.id) || 1).hero;
                     } else {
                         newHero = bestOptions[Math.floor(Math.random() * bestOptions.length)].hero;
@@ -356,9 +386,8 @@ export const useTeamGeneration = ({
             return;
         }
 
-        const pool = getAvailableHeroesPool();
-        const weights = getHeroHistoryWeights(history, pool, prioritizeUnplayed);
-        const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast, weights);
+        const { weights, playerWeightsArray } = getWeightsForGeneration();
+        const generated = generateAssignmentsWithMode(targetLists, generationMode, balanceThreshold, assignments, addToast, weights, playerWeightsArray);
         setAssignments(generated);
     };
 
@@ -391,8 +420,17 @@ export const useTeamGeneration = ({
 
         if (availableForReplacement.length === 0) { addToast("Некого брать на замену!", "warning"); triggerHaptic([20, 50, 20]); return; }
         
-        const weights = getHeroHistoryWeights(history, allHeroes, prioritizeUnplayed);
-        const newHero = (prioritizeUnplayed && weights)
+        let weights: Map<string, number> | undefined = undefined;
+        if (extraMode === 'global_freshness') {
+            weights = getHeroHistoryWeights(history, allHeroes, true);
+        } else if (extraMode === 'player_freshness') {
+            const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
+            const idx = positionToIndex[assignmentToBan.position] ?? 0;
+            const name = playerNames[idx]?.trim() || `Игрок ${playerNumber}`;
+            weights = getPlayerHeroHistoryWeights(history, allHeroes, name, true);
+        }
+
+        const newHero = weights
             ? selectWeightedSingle(availableForReplacement, h => weights.get(h.id) || 1)
             : availableForReplacement[Math.floor(Math.random() * availableForReplacement.length)];
 
@@ -461,8 +499,6 @@ export const useTeamGeneration = ({
             const a2 = newAssignments.find(a => a.position === pos2);
 
             if (a1 && a2) {
-                // Swap POSITIONS, keeping everything else (team, hero, playerNumber) attached to the object
-                // effectively moving the card to the new slot visually
                 const tempPos = a1.position;
                 a1.position = a2.position;
                 a2.position = tempPos;
@@ -478,6 +514,8 @@ export const useTeamGeneration = ({
         setGenerationMode,
         balanceThreshold,
         setBalanceThreshold,
+        extraMode,
+        setExtraMode,
         showResult,
         setShowResult,
         isAnimating,
@@ -507,8 +545,8 @@ export const useTeamGeneration = ({
             setAssignments(prev => prev.map(p => p.playerNumber === playerNumber ? { ...p, hero } : p));
             addToast(`Герой изменен на ${hero.name}`, "success");
         },
-        prioritizeUnplayed,
-        setPrioritizeUnplayed,
+        prioritizeUnplayed: extraMode !== 'none',
+        setPrioritizeUnplayed: (val: boolean) => setExtraMode(val ? 'global_freshness' : 'none'),
         isDebugMode,
         setIsDebugMode
     };

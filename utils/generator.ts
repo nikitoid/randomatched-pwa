@@ -142,16 +142,164 @@ export const getHeroHistoryWeights = (
       return;
     }
 
-    // Степенная зависимость давности (1.5) для контраста
-    const recencyWeight = 1 + Math.pow(inactivityScore, 1.5) * 1.5;
+    // Степенная зави  weights.set(hero.id, Math.max(0.001, finalWeight));
+  });
 
-    // Штраф за частоту игр в анализируемом периоде
-    const finalWeight = recencyWeight / (1 + playCount * 0.5);
+  return weights;
+};
+
+// Calculate hero weights for a specific player based on their match history
+export const getPlayerHeroHistoryWeights = (
+  history: MatchRecord[],
+  allHeroes: Hero[],
+  playerName: string,
+  prioritizeUnplayed: boolean = true
+): Map<string, number> => {
+  const weights = new Map<string, number>();
+
+  if (!prioritizeUnplayed || !playerName.trim() || history.length === 0) {
+    allHeroes.forEach(h => weights.set(h.id, 1));
+    return weights;
+  }
+
+  const normTargetName = playerName.trim().toLowerCase();
+
+  // Динамическая глубина на основе истории игр
+  const DEPTH = Math.min(
+    Math.max(20, Math.floor(allHeroes.length * 2)),
+    history.length
+  );
+
+  const lastPlayedIndicesByName = new Map<string, number>();
+  const playCountsByName = new Map<string, number>();
+
+  for (let i = 0; i < DEPTH; i++) {
+    const match = history[i];
+    let foundPlayerInMatch = false;
+    const heroKeysForPlayerInMatch = new Set<string>();
+
+    const checkMatchPlayer = (p: { name: string; heroId?: string; heroName?: string }) => {
+      if (p.name && p.name.trim().toLowerCase() === normTargetName) {
+        foundPlayerInMatch = true;
+        if (p.heroName && p.heroName.trim()) {
+          heroKeysForPlayerInMatch.add(p.heroName.trim().toLowerCase());
+        }
+        if (p.heroId && p.heroId !== 'manual' && p.heroId !== 'unknown') {
+          heroKeysForPlayerInMatch.add(p.heroId);
+        }
+      }
+    };
+
+    if (match.team1) match.team1.forEach(checkMatchPlayer);
+    if (match.team2) match.team2.forEach(checkMatchPlayer);
+
+    if (foundPlayerInMatch) {
+      for (const key of heroKeysForPlayerInMatch) {
+        if (!lastPlayedIndicesByName.has(key)) {
+          lastPlayedIndicesByName.set(key, i);
+        }
+        playCountsByName.set(key, (playCountsByName.get(key) || 0) + 1);
+      }
+    }
+  }
+
+  const HARD_COOLDOWN_MATCHES = 2;
+  const allowHardCooldown = allHeroes.length >= 6;
+
+  allHeroes.forEach(hero => {
+    const normName = hero.name.trim().toLowerCase();
+    const lastPlayedIndex = lastPlayedIndicesByName.get(normName) ?? lastPlayedIndicesByName.get(hero.id);
+    const playCount = (playCountsByName.get(normName) || 0) + (playCountsByName.get(hero.id) || 0);
+
+    let inactivityScore = DEPTH;
+
+    if (lastPlayedIndex !== undefined) {
+      inactivityScore = lastPlayedIndex;
+    }
+
+    if (allowHardCooldown && lastPlayedIndex !== undefined && lastPlayedIndex < HARD_COOLDOWN_MATCHES) {
+      weights.set(hero.id, 0.001);
+      return;
+    }
+
+    const recencyWeight = 1 + Math.pow(inactivityScore, 1.5) * 1.5;
+    const finalWeight = recencyWeight / (1 + playCount * 0.7);
 
     weights.set(hero.id, Math.max(0.001, finalWeight));
   });
 
   return weights;
+};
+
+// Helper to get best assignment of 4 heroes to 4 specific player slots considering teams & player weights
+export const getBestPlayerAssignmentForPermutation = (
+  perm: { groupA: Hero[]; groupB: Hero[]; diff: number },
+  assignments: AssignedPlayer[],
+  playerWeightsArray?: Map<string, number>[]
+): { assignmentHeroes: (Hero | null)[]; freshnessScore: number } => {
+  if (!playerWeightsArray || playerWeightsArray.length !== 4) {
+    const res: (Hero | null)[] = new Array(4).fill(null);
+    let gA = 0, gB = 0;
+    assignments.forEach((a, idx) => {
+      if (a.team === 'Odd') {
+        res[idx] = perm.groupA[gA++];
+      } else {
+        res[idx] = perm.groupB[gB++];
+      }
+    });
+    const freshnessScore = res.reduce((sum, h) => sum + 1, 0);
+    return { assignmentHeroes: res, freshnessScore };
+  }
+
+  const oddIndices = assignments.map((a, i) => (a.team === 'Odd' ? i : -1)).filter(i => i !== -1);
+  const evenIndices = assignments.map((a, i) => (a.team === 'Even' ? i : -1)).filter(i => i !== -1);
+
+  if (oddIndices.length !== 2 || evenIndices.length !== 2) {
+    const res: (Hero | null)[] = new Array(4).fill(null);
+    let gA = 0, gB = 0;
+    assignments.forEach((a, idx) => {
+      if (a.team === 'Odd') {
+        res[idx] = perm.groupA[gA++];
+      } else {
+        res[idx] = perm.groupB[gB++];
+      }
+    });
+    const freshnessScore = res.reduce((sum, h, idx) => sum + (h ? (playerWeightsArray[idx].get(h.id) || 1) : 1), 0);
+    return { assignmentHeroes: res, freshnessScore };
+  }
+
+  const oddOptions = [
+    [perm.groupA[0], perm.groupA[1]],
+    [perm.groupA[1], perm.groupA[0]]
+  ];
+  const evenOptions = [
+    [perm.groupB[0], perm.groupB[1]],
+    [perm.groupB[1], perm.groupB[0]]
+  ];
+
+  let bestScore = -1;
+  let bestHeroes: (Hero | null)[] = new Array(4).fill(null);
+
+  for (const oddOpt of oddOptions) {
+    for (const evenOpt of evenOptions) {
+      const current: (Hero | null)[] = new Array(4).fill(null);
+      current[oddIndices[0]] = oddOpt[0];
+      current[oddIndices[1]] = oddOpt[1];
+      current[evenIndices[0]] = evenOpt[0];
+      current[evenIndices[1]] = evenOpt[1];
+
+      const score = current.reduce((sum, h, idx) => {
+        return sum + (h ? (playerWeightsArray[idx].get(h.id) || 1) : 1);
+      }, 0);
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestHeroes = current;
+      }
+    }
+  }
+
+  return { assignmentHeroes: bestHeroes, freshnessScore: bestScore };
 };
 
 // Helper to get weight
@@ -225,7 +373,8 @@ export const generateAssignmentsWithMode = (
     threshold: number, 
     currentAssignments: AssignedPlayer[],
     onToast?: (msg: string, type: 'warning' | 'info', duration?: number) => void,
-    weights?: Map<string, number>
+    weights?: Map<string, number>,
+    playerWeightsArray?: Map<string, number>[]
 ): AssignedPlayer[] => {
   // Use unique heroes logic to avoid duplicates across lists
   const allHeroes = getUniqueHeroesFromLists(lists);
@@ -235,31 +384,56 @@ export const generateAssignmentsWithMode = (
   let chosenHeroes: Hero[] = [];
   let newAssignments = [...currentAssignments];
 
+  const hasPlayerWeights = Array.isArray(playerWeightsArray) && playerWeightsArray.length === 4;
+
   if (mode === 'random') {
-      if (weights) {
+      if (hasPlayerWeights) {
+          const NUM_SAMPLES = 200;
+          const samples: { heroes: Hero[]; assignmentHeroes: (Hero | null)[]; freshnessScore: number }[] = [];
+
+          for (let s = 0; s < NUM_SAMPLES; s++) {
+              const sample = shuffleArray(allHeroes).slice(0, 4);
+              const perm = getBestPermutation(sample);
+              const { assignmentHeroes, freshnessScore } = getBestPlayerAssignmentForPermutation(perm, currentAssignments, playerWeightsArray);
+              samples.push({ heroes: sample, assignmentHeroes, freshnessScore });
+          }
+
+          const chosenSample = selectWeightedSingle(samples, s => Math.max(0.01, s.freshnessScore));
+          chosenSample.assignmentHeroes.forEach((h, idx) => {
+              if (h) newAssignments[idx] = { ...newAssignments[idx], hero: h };
+          });
+      } else if (weights) {
           chosenHeroes = selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4);
+          newAssignments.forEach((assign, idx) => {
+             newAssignments[idx] = { ...assign, hero: chosenHeroes[idx] };
+          });
       } else {
           chosenHeroes = shuffleArray(allHeroes).slice(0, 4);
+          newAssignments.forEach((assign, idx) => {
+             newAssignments[idx] = { ...assign, hero: chosenHeroes[idx] };
+          });
       }
-      newAssignments.forEach((assign, idx) => {
-         newAssignments[idx] = { ...assign, hero: chosenHeroes[idx] };
-      });
   } 
   else if (mode === 'balanced') {
       const TARGET_DIFF = 1;
       const NUM_SAMPLES = 120;
       
-      const samples: { heroes: Hero[]; perm: ReturnType<typeof getBestPermutation>; freshnessScore: number }[] = [];
+      const samples: { heroes: Hero[]; perm: ReturnType<typeof getBestPermutation>; freshnessScore: number; assignmentHeroes?: (Hero | null)[] }[] = [];
 
       for (let s = 0; s < NUM_SAMPLES; s++) {
-          const sample = weights
-              ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4)
-              : shuffleArray(allHeroes).slice(0, 4);
+          const sample = hasPlayerWeights
+              ? shuffleArray(allHeroes).slice(0, 4)
+              : (weights ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4) : shuffleArray(allHeroes).slice(0, 4));
           
           const perm = getBestPermutation(sample);
-          const freshnessScore = sample.reduce((sum, h) => sum + (weights ? (weights.get(h.id) || 1) : 1), 0);
 
-          samples.push({ heroes: sample, perm, freshnessScore });
+          if (hasPlayerWeights) {
+              const { assignmentHeroes, freshnessScore } = getBestPlayerAssignmentForPermutation(perm, currentAssignments, playerWeightsArray);
+              samples.push({ heroes: sample, perm, freshnessScore, assignmentHeroes });
+          } else {
+              const freshnessScore = sample.reduce((sum, h) => sum + (weights ? (weights.get(h.id) || 1) : 1), 0);
+              samples.push({ heroes: sample, perm, freshnessScore });
+          }
       }
 
       // Находим кандидатов с diff <= TARGET_DIFF
@@ -278,34 +452,44 @@ export const generateAssignmentsWithMode = (
           chosenSample = selectWeightedSingle(bestDiffSamples, s => Math.max(0.01, s.freshnessScore));
       }
 
-      const bestResult = chosenSample.perm;
+      if (hasPlayerWeights && chosenSample.assignmentHeroes) {
+          chosenSample.assignmentHeroes.forEach((h, idx) => {
+              if (h) newAssignments[idx] = { ...newAssignments[idx], hero: h };
+          });
+      } else {
+          const bestResult = chosenSample.perm;
+          let groupAIndex = 0;
+          let groupBIndex = 0;
 
-      let groupAIndex = 0;
-      let groupBIndex = 0;
-
-      newAssignments.forEach((assign, idx) => {
-          if (assign.team === 'Odd') {
-             newAssignments[idx] = { ...assign, hero: bestResult.groupA[groupAIndex] };
-             groupAIndex++;
-          } else {
-             newAssignments[idx] = { ...assign, hero: bestResult.groupB[groupBIndex] };
-             groupBIndex++;
-          }
-      });
+          newAssignments.forEach((assign, idx) => {
+              if (assign.team === 'Odd') {
+                 newAssignments[idx] = { ...assign, hero: bestResult.groupA[groupAIndex] };
+                 groupAIndex++;
+              } else {
+                 newAssignments[idx] = { ...assign, hero: bestResult.groupB[groupBIndex] };
+                 groupBIndex++;
+              }
+          });
+      }
   }
   else if (mode === 'strict') {
       const NUM_SAMPLES = 200;
-      const samples: { heroes: Hero[]; perm: ReturnType<typeof getBestPermutation>; freshnessScore: number }[] = [];
+      const samples: { heroes: Hero[]; perm: ReturnType<typeof getBestPermutation>; freshnessScore: number; assignmentHeroes?: (Hero | null)[] }[] = [];
 
       for (let s = 0; s < NUM_SAMPLES; s++) {
-          const sample = weights
-              ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4)
-              : shuffleArray(allHeroes).slice(0, 4);
+          const sample = hasPlayerWeights
+              ? shuffleArray(allHeroes).slice(0, 4)
+              : (weights ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4) : shuffleArray(allHeroes).slice(0, 4));
           
           const perm = getBestPermutation(sample);
-          const freshnessScore = sample.reduce((sum, h) => sum + (weights ? (weights.get(h.id) || 1) : 1), 0);
 
-          samples.push({ heroes: sample, perm, freshnessScore });
+          if (hasPlayerWeights) {
+              const { assignmentHeroes, freshnessScore } = getBestPlayerAssignmentForPermutation(perm, currentAssignments, playerWeightsArray);
+              samples.push({ heroes: sample, perm, freshnessScore, assignmentHeroes });
+          } else {
+              const freshnessScore = sample.reduce((sum, h) => sum + (weights ? (weights.get(h.id) || 1) : 1), 0);
+              samples.push({ heroes: sample, perm, freshnessScore });
+          }
       }
 
       const validStrictSamples = samples.filter(s => s.perm.diff <= threshold);
@@ -321,19 +505,24 @@ export const generateAssignmentsWithMode = (
           }
       }
 
-      const bestFound = chosenSample.perm;
-      
-      let groupAIndex = 0;
-      let groupBIndex = 0;
-      newAssignments.forEach((assign, idx) => {
-          if (assign.team === 'Odd') {
-             newAssignments[idx] = { ...assign, hero: bestFound.groupA[groupAIndex] };
-             groupAIndex++;
-          } else {
-             newAssignments[idx] = { ...assign, hero: bestFound.groupB[groupBIndex] };
-             groupBIndex++;
-          }
-      });
+      if (hasPlayerWeights && chosenSample.assignmentHeroes) {
+          chosenSample.assignmentHeroes.forEach((h, idx) => {
+              if (h) newAssignments[idx] = { ...newAssignments[idx], hero: h };
+          });
+      } else {
+          const bestFound = chosenSample.perm;
+          let groupAIndex = 0;
+          let groupBIndex = 0;
+          newAssignments.forEach((assign, idx) => {
+              if (assign.team === 'Odd') {
+                 newAssignments[idx] = { ...assign, hero: bestFound.groupA[groupAIndex] };
+                 groupAIndex++;
+              } else {
+                 newAssignments[idx] = { ...assign, hero: bestFound.groupB[groupBIndex] };
+                 groupBIndex++;
+              }
+          });
+      }
   }
 
   return newAssignments;
