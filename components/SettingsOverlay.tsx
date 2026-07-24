@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles } from 'lucide-react';
+import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles, Sliders, Layers, ShieldCheck, Activity } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
@@ -169,38 +169,44 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         }
     };
 
-    const renderTabButton = (id: TabType, label: string, icon: React.ReactNode) => (
-        <button
-            data-tab-id={id}
-            onClick={(e) => {
-                if (isDragScroll) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return;
-                }
-                setActiveTab(id);
-                triggerHaptic(10);
-                e.currentTarget.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'nearest'
-                });
-            }}
-            onFocus={(e) => {
-                e.currentTarget.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'nearest'
-                });
-            }}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full text-sm font-bold transition-all active:scale-95 whitespace-nowrap select-none border touch-manipulation ${activeTab === id
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-md'
-                : 'bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-800'
+    const renderTabButton = (id: TabType, label: string, icon: React.ReactNode, badge?: React.ReactNode) => {
+        const isActive = activeTab === id;
+        return (
+            <button
+                data-tab-id={id}
+                onClick={(e) => {
+                    if (isDragScroll) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                    }
+                    setActiveTab(id);
+                    triggerHaptic(10);
+                    e.currentTarget.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'nearest'
+                    });
+                }}
+                onFocus={(e) => {
+                    e.currentTarget.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'nearest'
+                    });
+                }}
+                className={`relative shrink-0 flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full text-xs sm:text-sm font-bold transition-all duration-200 active:scale-95 whitespace-nowrap select-none border touch-manipulation ${
+                    isActive
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-md shadow-slate-900/10 dark:shadow-white/10'
+                        : 'bg-white/90 dark:bg-slate-900/90 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800/70'
                 } ${isDragScroll ? 'pointer-events-none' : ''}`}
-        >
-            {icon} <span>{label}</span>
-        </button>
-    );
+            >
+                {icon}
+                <span>{label}</span>
+                {badge}
+            </button>
+        );
+    };
 
     const handleGenerateDemoHistory = () => {
         triggerHaptic(20);
@@ -256,8 +262,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     };
 
     return (
-        <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800/60 transition-all duration-300">
+        <div className={`fixed inset-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
+            {/* Header with Safe Area */}
+            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/70 transition-all duration-300 shadow-xs">
                 <div 
                     className="px-4 py-3"
                     style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
@@ -267,149 +274,197 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             onClick={onClose}
                             aria-label="Закрыть"
                             data-testid="settings-close-btn"
-                            className="absolute left-0 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all"
+                            className="absolute left-0 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-90 transition-all shadow-xs"
                         >
-                            <ChevronLeft size={24} />
+                            <ChevronLeft size={22} />
                         </button>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Настройки</h2>
+                        <div className="flex items-center gap-2">
+                            <Sliders size={20} className="text-primary-500" />
+                            <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Настройки</h2>
+                        </div>
                     </div>
                 </div>
 
+                {/* Tabs Bar */}
                 <div className="px-4 pb-3">
-                    <div ref={tabsContainerRef} onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} className={`flex items-center gap-2 overflow-x-auto overscroll-contain no-scrollbar pb-1 touch-manipulation ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}>
+                    <div 
+                        ref={tabsContainerRef} 
+                        onMouseDown={handleMouseDown} 
+                        onMouseLeave={handleMouseLeave} 
+                        onMouseUp={handleMouseUp} 
+                        onMouseMove={handleMouseMove} 
+                        className={`flex items-center gap-2 overflow-x-auto overscroll-contain no-scrollbar pb-0.5 touch-manipulation ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+                    >
                         {renderTabButton('appearance', 'Внешний вид', <Palette size={16} />)}
                         {renderTabButton('app_settings', 'Приложение', <SmartphoneNfc size={16} />)}
-                        {renderTabButton('info', 'Инфо', <Info size={16} />)}
+                        {renderTabButton(
+                            'info', 
+                            'Инфо', 
+                            <Info size={16} />, 
+                            unreadChangelogCount > 0 ? (
+                                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse ml-0.5" />
+                            ) : null
+                        )}
                         {isDebugMode && renderTabButton('debug', 'Debug', <Terminal size={16} />)}
                     </div>
                 </div>
             </div>
 
+            {/* Scrollable Tab Content Container */}
             <div className="flex-1 relative overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
                 <div className="absolute inset-0 overflow-y-auto overscroll-contain no-scrollbar">
-                    <div className="pb-safe-area-bottom">
+                    <div className="pb-safe-area-bottom min-h-full">
+                        {/* TAB 1: APPEARANCE */}
                         {activeTab === 'appearance' && (
-                            <div className="flex flex-col items-center justify-start min-h-full px-4 py-3 sm:p-6 text-center animate-in fade-in slide-in-from-bottom-2">
+                            <div className="flex flex-col items-center justify-start min-h-full px-4 py-4 sm:p-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-200">
                                 <div className="w-full max-w-sm">
-                                    {/* Переключатель подвкладок */}
-                                    <div className="flex bg-slate-100 dark:bg-slate-900/60 p-1 rounded-2xl mb-4 border border-slate-200/20 dark:border-slate-800/50 touch-manipulation">
+                                    {/* Segmented Sub-Tab Switcher */}
+                                    <div className="flex bg-slate-200/60 dark:bg-slate-900/80 p-1 rounded-2xl mb-5 border border-slate-300/40 dark:border-slate-800/60 shadow-xs touch-manipulation">
                                         <button
                                             onClick={() => { setAppearanceSubTab('colors'); triggerHaptic(10); }}
-                                            className={`flex-1 py-2.5 px-3 min-h-[44px] text-xs sm:text-sm font-bold rounded-xl transition-all duration-150 ease-in-out active:scale-95 border ${
+                                            className={`flex-1 py-2.5 px-3 min-h-[44px] text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ease-out active:scale-95 border ${
                                                 appearanceSubTab === 'colors'
-                                                    ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/50'
-                                                    : 'bg-transparent text-slate-500 border-transparent active:text-slate-800 dark:text-slate-400 dark:active:text-slate-200'
+                                                    ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/60'
+                                                    : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                                             }`}
                                         >
                                             Цветовая схема
                                         </button>
                                         <button
                                             onClick={() => { setAppearanceSubTab('effects'); triggerHaptic(10); }}
-                                            className={`flex-1 py-2.5 px-3 min-h-[44px] text-xs sm:text-sm font-bold rounded-xl transition-all duration-150 ease-in-out active:scale-95 border ${
+                                            className={`flex-1 py-2.5 px-3 min-h-[44px] text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ease-out active:scale-95 border ${
                                                 appearanceSubTab === 'effects'
-                                                    ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/50'
-                                                    : 'bg-transparent text-slate-500 border-transparent active:text-slate-800 dark:text-slate-400 dark:active:text-slate-200'
+                                                    ? 'bg-white text-slate-900 border-slate-200/80 shadow-sm dark:bg-slate-800 dark:text-white dark:border-slate-700/60'
+                                                    : 'bg-transparent text-slate-500 border-transparent hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
                                             }`}
                                         >
                                             Оформление
                                         </button>
                                     </div>
 
+                                    {/* Sub-Tab 1: Colors */}
                                     {appearanceSubTab === 'colors' && (
                                         <div className="animate-in fade-in duration-200">
-                                            <h3 className="text-left text-xs sm:text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Предпросмотр темы</h3>
+                                            {/* Preview Header */}
+                                            <div className="flex items-center justify-between mb-2 px-1">
+                                                <h3 className="text-left text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Предпросмотр темы</h3>
+                                                <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 px-2 py-0.5 rounded-full border border-primary-200/40 dark:border-primary-800/30 uppercase tracking-widest">
+                                                    {COLOR_SCHEMES_DATA[colorScheme]?.label || colorScheme}
+                                                </span>
+                                            </div>
                                             
-                                            <div className="mb-4 bg-white/60 dark:bg-slate-900/60 rounded-2xl p-3 border border-slate-150/60 dark:border-slate-800/60 shadow-sm relative overflow-hidden">
-                                                {/* Фоновый градиент темы */}
-                                                <div className="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-primary-500/10 to-transparent dark:from-primary-500/5 pointer-events-none" />
+                                            {/* Live UI Mockup Card */}
+                                            <div className="mb-5 bg-white/80 dark:bg-slate-900/80 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm relative overflow-hidden text-left">
+                                                {/* Theme Ambient Glow */}
+                                                <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-primary-500/10 dark:bg-primary-500/15 blur-2xl pointer-events-none" />
+                                                <div className="absolute -bottom-10 -right-10 w-40 h-40 rounded-full bg-secondary-500/10 dark:bg-secondary-500/15 blur-2xl pointer-events-none" />
 
-                                                {/* Заголовок демо-окна */}
-                                                <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-slate-200/50 dark:border-slate-800/50 relative z-10">
+                                                {/* Mock Toolbar */}
+                                                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-slate-150 dark:border-slate-800/80 relative z-10">
                                                     <div className="flex items-center gap-1.5">
-                                                        <div className="w-2 h-2 rounded-full bg-red-400" />
-                                                        <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                                                        <div className="w-2 h-2 rounded-full bg-green-400" />
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-rose-400/90" />
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-400/90" />
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/90" />
                                                     </div>
-                                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Интерфейс</span>
-                                                    <div className="w-8 h-2.5 rounded bg-slate-200 dark:bg-slate-800" />
+                                                    <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Randomatched PWA</span>
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-primary-500/40 animate-pulse" />
                                                 </div>
 
-                                                {/* Имитация UI */}
-                                                <div className="space-y-2.5 relative z-10 text-left">
-                                                    {/* Хедер mini-интерфейса */}
+                                                {/* Mock UI Details */}
+                                                <div className="space-y-2.5 relative z-10">
+                                                    {/* Header */}
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-[11px] font-black text-slate-800 dark:text-white">RandoMatched</span>
-                                                        <span className="text-[8px] font-bold text-primary-600 dark:text-primary-400 bg-primary-100/50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded-full">v2.8</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-6 h-6 rounded-lg bg-primary-500 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                                                                R
+                                                            </div>
+                                                            <span className="text-xs font-black text-slate-900 dark:text-white">Матчмейкер</span>
+                                                        </div>
+                                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">v{APP_VERSION}</span>
                                                     </div>
 
-                                                    {/* Выбор списка */}
-                                                    <div className="bg-white dark:bg-slate-900 border border-slate-150/60 dark:border-slate-800/50 p-1.5 rounded-xl flex items-center justify-between shadow-sm">
+                                                    {/* List Selector Pill */}
+                                                    <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/70 p-2 rounded-xl flex items-center justify-between shadow-xs">
                                                         <div className="flex items-center gap-2">
-                                                            <div className="w-5 h-5 rounded-lg bg-primary-500/10 dark:bg-primary-500/20 flex items-center justify-center text-primary-500">
-                                                                <Palette size={10} />
+                                                            <div className="w-5 h-5 rounded-md bg-primary-500/15 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+                                                                <Palette size={11} />
                                                             </div>
                                                             <div>
-                                                                <div className="text-[8px] text-slate-400 dark:text-slate-500 font-bold">Список героев</div>
-                                                                <div className="text-[9px] font-bold text-slate-800 dark:text-slate-200">Все персонажи (12)</div>
+                                                                <div className="text-[8px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Выбранный набор</div>
+                                                                <div className="text-[10px] font-black text-slate-800 dark:text-slate-200">Все персонажи (12)</div>
                                                             </div>
                                                         </div>
-                                                        <div className="w-1 h-1 rounded-full bg-primary-500 animate-pulse" />
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-ping" />
                                                     </div>
 
-                                                    {/* Карточки команд с primary & secondary акцентами */}
+                                                    {/* Team Preview Cards */}
                                                     <div className="grid grid-cols-2 gap-2">
-                                                        {/* Команда 1 (Primary) */}
-                                                        <div className="bg-primary-50/15 dark:bg-primary-950/15 border border-primary-500/25 dark:border-primary-500/20 p-1.5 rounded-xl">
-                                                            <span className="text-[7px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest block mb-0.5">Команда 1</span>
+                                                        {/* Team 1 (Primary Highlight) */}
+                                                        <div className="bg-primary-500/10 border border-primary-500/30 p-2 rounded-xl relative overflow-hidden">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[8px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest">Команда 1</span>
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                                                            </div>
                                                             <div className="space-y-1">
-                                                                <div className="w-8 h-1 bg-primary-300/40 dark:bg-primary-800/40 rounded animate-pulse" />
-                                                                <div className="w-6 h-1 bg-primary-200/40 dark:bg-primary-900/40 rounded animate-pulse" />
+                                                                <div className="h-1.5 w-3/4 bg-primary-500/40 rounded-full" />
+                                                                <div className="h-1.5 w-1/2 bg-primary-500/30 rounded-full" />
                                                             </div>
                                                         </div>
-                                                        
-                                                        {/* Команда 2 (Secondary) */}
-                                                        <div className="bg-secondary-50/15 dark:bg-secondary-950/15 border border-secondary-500/25 dark:border-secondary-500/20 p-1.5 rounded-xl">
-                                                            <span className="text-[7px] font-black text-secondary-600 dark:text-secondary-400 uppercase tracking-widest block mb-0.5">Команда 2</span>
+
+                                                        {/* Team 2 (Secondary Highlight) */}
+                                                        <div className="bg-secondary-500/10 border border-secondary-500/30 p-2 rounded-xl relative overflow-hidden">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-[8px] font-black text-secondary-600 dark:text-secondary-400 uppercase tracking-widest">Команда 2</span>
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-secondary-500" />
+                                                            </div>
                                                             <div className="space-y-1">
-                                                                <div className="w-8 h-1 bg-secondary-300/40 dark:bg-secondary-800/40 rounded animate-pulse" />
-                                                                <div className="w-6 h-1 bg-secondary-200/40 dark:bg-secondary-900/40 rounded animate-pulse" />
+                                                                <div className="h-1.5 w-3/4 bg-secondary-500/40 rounded-full" />
+                                                                <div className="h-1.5 w-1/2 bg-secondary-500/30 rounded-full" />
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Кнопка действия */}
-                                                    <div className="w-full bg-primary-500 text-white rounded-xl py-1 text-[9px] font-bold shadow-md shadow-primary-500/10 flex items-center justify-center gap-1 cursor-default pointer-events-none select-none">
-                                                        <span>Сгенерировать</span>
+                                                    {/* Primary CTA Mock Button */}
+                                                    <div className="w-full bg-primary-500 text-white rounded-xl py-1.5 text-[10px] font-bold shadow-md shadow-primary-500/20 flex items-center justify-center gap-1.5 cursor-default pointer-events-none select-none">
+                                                        <Sparkles size={11} />
+                                                        <span>Сгенерировать состав</span>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <h3 className="text-left text-xs sm:text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Выберите цветовую схему</h3>
-                                            <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
+                                            {/* Color Schemes Grid */}
+                                            <h3 className="text-left text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5 px-1">Выберите цветовую схему</h3>
+                                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
                                                 {Object.entries(COLOR_SCHEMES_DATA).map(([key, data]) => {
                                                     const isSelected = colorScheme === key;
                                                     return (
                                                         <button
                                                             key={key}
                                                             onClick={() => { setColorScheme && setColorScheme(key as any); triggerHaptic(10); }}
-                                                            className={`relative flex items-center gap-1.5 sm:gap-3 py-1.5 px-2 sm:p-3 rounded-xl border-2 transition-all duration-200 active:scale-95 ${isSelected ? 'border-primary-500 bg-white dark:bg-slate-800 shadow-sm ring-2 ring-primary-500/20' : 'border-transparent bg-white dark:bg-slate-900'} `}
+                                                            className={`relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95 text-left ${
+                                                                isSelected 
+                                                                    ? 'border-primary-500 bg-white dark:bg-slate-900 shadow-md ring-2 ring-primary-500/20' 
+                                                                    : 'border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-700'
+                                                            }`}
                                                         >
-                                                            <div className="relative w-9 h-6 sm:w-12 sm:h-8 shrink-0 flex items-center">
-                                                                {/* Вторичный цвет (secondary) */}
+                                                            {/* Color Orbs Container */}
+                                                            <div className="relative w-10 h-8 shrink-0 flex items-center justify-center">
+                                                                {/* Secondary Color Circle */}
                                                                 <div 
-                                                                    className="absolute right-0.5 w-[18px] h-[18px] sm:w-6 sm:h-6 rounded-full shadow-sm border border-slate-100/20 dark:border-slate-800/50" 
+                                                                    className="absolute right-0 w-6 h-6 rounded-full shadow-xs border border-white/20 dark:border-slate-900/40" 
                                                                     style={{ backgroundColor: `rgb(${data.secondary[500]})` }}
                                                                 />
-                                                                {/* Основной цвет (primary) */}
+                                                                {/* Primary Color Circle */}
                                                                 <div 
-                                                                    className="absolute left-0 w-[24px] h-[24px] sm:w-8 sm:h-8 rounded-full shadow-sm flex items-center justify-center border border-slate-100/20 dark:border-slate-800/50 z-10" 
+                                                                    className="absolute left-0 w-7 h-7 rounded-full shadow-sm flex items-center justify-center border border-white/20 dark:border-slate-900/40 z-10 transition-transform" 
                                                                     style={{ backgroundColor: `rgb(${data.primary[500]})` }}
                                                                 >
-                                                                    {isSelected && <Check size={12} className="text-white drop-shadow-md sm:size-16" />}
+                                                                    {isSelected && <Check size={14} className="text-white drop-shadow-md" />}
                                                                 </div>
                                                             </div>
-                                                            <div className="text-left min-w-0">
-                                                                <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>
+                                                            
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className={`text-xs sm:text-sm font-bold truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                                                                     {data.label}
                                                                 </div>
                                                             </div>
@@ -420,56 +475,63 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                         </div>
                                     )}
 
+                                    {/* Sub-Tab 2: Effects & Roundness */}
                                     {appearanceSubTab === 'effects' && (
-                                        <div className="animate-in fade-in duration-200 text-left">
-                                            {/* Скругление углов */}
+                                        <div className="animate-in fade-in duration-200 text-left space-y-5">
+                                            {/* Border Radius (Roundness) */}
                                             <div className="w-full">
-                                                <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Скругление углов</h3>
-                                                <div className="flex bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800/60 p-1 rounded-2xl shadow-sm">
+                                                <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5 px-1">Скругление углов</h3>
+                                                <div className="grid grid-cols-3 gap-2 bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 p-1.5 rounded-2xl shadow-xs">
                                                     {(['sharp', 'medium', 'full'] as ThemeRoundness[]).map((r) => {
                                                         const labels: Record<ThemeRoundness, string> = {
                                                             sharp: 'Острые',
                                                             medium: 'Стандарт',
                                                             full: 'Круглые'
                                                         };
+                                                        const previewClass: Record<ThemeRoundness, string> = {
+                                                            sharp: 'rounded-none',
+                                                            medium: 'rounded-md',
+                                                            full: 'rounded-full'
+                                                        };
                                                         const isSelected = roundness === r;
                                                         return (
                                                             <button
                                                                 key={r}
                                                                 onClick={() => { setRoundness && setRoundness(r); triggerHaptic(10); }}
-                                                                className={`flex-1 py-2 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+                                                                className={`flex flex-col items-center justify-center py-2.5 px-2 text-xs font-bold rounded-xl transition-all duration-200 active:scale-95 ${
                                                                     isSelected 
                                                                         ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm' 
-                                                                        : 'text-slate-500 active:text-slate-900 dark:active:text-white'
+                                                                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                                                                 }`}
                                                             >
-                                                                {labels[r]}
+                                                                <div className={`w-5 h-5 mb-1 border-2 border-current ${previewClass[r]}`} />
+                                                                <span>{labels[r]}</span>
                                                             </button>
                                                         );
                                                     })}
                                                 </div>
                                             </div>
 
-                                            {/* Визуальные эффекты */}
-                                            <div className="mt-6 w-full">
-                                                <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Визуальные эффекты</h3>
-                                                <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-150 dark:border-slate-800/60 flex flex-col gap-4">
-                                                    {/* Фоновый узор */}
+                                            {/* Visual Effects */}
+                                            <div className="w-full">
+                                                <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5 px-1">Визуальные эффекты</h3>
+                                                <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80">
+                                                    {/* Background Grid Pattern Toggle */}
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgPattern ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgPattern ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                                                                 <Grid size={20} />
                                                             </div>
                                                             <div>
                                                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm">Фоновая сетка</h4>
-                                                                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Текстурный точечный паттерн</p>
+                                                                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Текстурный точечный паттерн интерфейса</p>
                                                             </div>
                                                         </div>
                                                         <button
                                                             onClick={() => { setBgPattern && setBgPattern(!bgPattern); triggerHaptic(10); }}
-                                                            className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                            className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                                         >
-                                                            <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${bgPattern ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                            <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${bgPattern ? 'translate-x-6' : 'translate-x-1'}`} />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -480,47 +542,50 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             </div>
                         )}
 
+                        {/* TAB 2: APP SETTINGS */}
                         {activeTab === 'app_settings' && (
-                            <div className="flex flex-col items-center justify-start min-h-full p-6 animate-in fade-in slide-in-from-bottom-2">
-                                <div className="w-full max-w-sm flex flex-col gap-4">
-                                    {/* Haptics */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-150 dark:border-slate-800/60">
+                            <div className="flex flex-col items-center justify-start min-h-full p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                <div className="w-full max-w-sm flex flex-col gap-3">
+                                    <h3 className="text-left text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mb-0.5">Системные параметры</h3>
+
+                                    {/* Haptics Setting Card */}
+                                    <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${hapticsEnabled ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${hapticsEnabled ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                                                     <Vibrate size={20} />
                                                 </div>
                                                 <div className="text-left">
-                                                    <h3 className="font-bold text-slate-900 dark:text-white">Тактильный отклик</h3>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Вибрация при действиях</p>
+                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">Тактильный отклик</h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Вибрация при нажатии элементов</p>
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={() => { onToggleHaptics && onToggleHaptics(); triggerHaptic(10); }}
-                                                className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${hapticsEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${hapticsEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                             >
-                                                <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${hapticsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${hapticsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
                                             </button>
                                         </div>
                                     </div>
 
-                                    {/* Режим разработчика */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-150 dark:border-slate-800/60">
+                                    {/* Developer Mode Setting Card */}
+                                    <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDebugMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDebugMode ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                                                     <Terminal size={20} />
                                                 </div>
                                                 <div className="text-left">
-                                                    <h3 className="font-bold text-slate-900 dark:text-white">Режим разработчика</h3>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Отображение весов и отладка</p>
+                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">Режим разработчика</h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Отображение весов алгоритма и Debug вкладки</p>
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={() => { onToggleDebug && onToggleDebug(!isDebugMode); triggerHaptic(10); }}
-                                                className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${isDebugMode ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${isDebugMode ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                             >
-                                                <span className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ease-in-out ${isDebugMode ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${isDebugMode ? 'translate-x-6' : 'translate-x-1'}`} />
                                             </button>
                                         </div>
                                     </div>
@@ -528,100 +593,129 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             </div>
                         )}
 
+                        {/* TAB 3: INFO */}
                         {activeTab === 'info' && (
-                            <div className="flex flex-col items-center justify-center h-full p-6 text-center animate-in fade-in slide-in-from-bottom-2">
-                                <div className="w-24 h-24 bg-primary-100 dark:bg-primary-900/30 rounded-3xl flex items-center justify-center text-primary-600 dark:text-primary-400 mb-6 shadow-xl shadow-primary-500/10 rotate-3">
-                                    <Dice5 size={48} />
+                            <div className="flex flex-col items-center justify-center min-h-full p-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                <div className="relative mb-4">
+                                    <div className="w-24 h-24 bg-gradient-to-br from-primary-500 to-primary-600 rounded-3xl flex items-center justify-center text-white shadow-xl shadow-primary-500/25 rotate-3 hover:rotate-0 transition-transform duration-300">
+                                        <Dice5 size={48} className="drop-shadow-md" />
+                                    </div>
+                                    <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center shadow-md">
+                                        <Sparkles size={14} className="text-amber-500" />
+                                    </div>
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-1 tracking-tight">Randomatched</h3>
-                                <div className="relative inline-block mb-4">
-                                    <p className="text-sm font-bold text-primary-500 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full select-none">v{APP_VERSION}</p>
+
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-1">Randomatched</h3>
+                                
+                                <div className="mb-4">
+                                    <span className="text-xs font-extrabold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-3 py-1 rounded-full border border-primary-200/40 dark:border-primary-800/30 select-none">
+                                        v{APP_VERSION}
+                                    </span>
                                 </div>
+
+                                {/* What's New Button */}
                                 <button
                                     onClick={() => { onOpenChangelog(); triggerHaptic(10); }}
-                                    className="relative mb-6 px-4 py-2 border border-slate-200 dark:border-slate-800 active:bg-slate-50 dark:active:bg-slate-900/40 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all"
+                                    className="relative mb-5 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 active:bg-slate-50 dark:active:bg-slate-800 text-slate-800 dark:text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all shadow-xs hover:border-slate-300 dark:hover:border-slate-700"
                                 >
-                                    <Sparkles size={14} className="text-amber-500 fill-amber-500/20" />
-                                    <span>Что нового?</span>
+                                    <Sparkles size={15} className="text-amber-500 fill-amber-500/20" />
+                                    <span>Что нового в приложении?</span>
                                     {unreadChangelogCount > 0 && (
-                                        <span className="absolute -top-2 -right-2 px-1.5 py-0.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white font-black text-[9px] rounded-full shadow-md shadow-amber-500/30 animate-pulse tracking-wider">
+                                        <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-gradient-to-r from-amber-500 to-rose-500 text-white font-black text-[9px] rounded-full shadow-md shadow-amber-500/30 animate-pulse tracking-wider">
                                             NEW
                                         </span>
                                     )}
                                 </button>
-                                <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-6 shadow-sm border border-slate-150 dark:border-slate-800/60 w-full max-w-xs text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
-                                    <p className="mb-3"> Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>. </p>
-                                    <p> Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей. </p>
+
+                                {/* App Info Description Card */}
+                                <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-5 shadow-xs border border-slate-200/80 dark:border-slate-800/80 w-full max-w-xs text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-5 text-center">
+                                    <p className="mb-2.5">
+                                        Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>.
+                                    </p>
+                                    <p>
+                                        Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей.
+                                    </p>
                                 </div>
+
+                                {/* Update PWA Button */}
                                 {isUpdateAvailable && onUpdateApp && (
-                                    <button onClick={onUpdateApp} className="mb-6 px-4 py-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-transform">
-                                        <Download size={14} /> Обновить и перезапустить
+                                    <button 
+                                        onClick={onUpdateApp} 
+                                        className="mb-6 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all shadow-md shadow-emerald-600/20"
+                                    >
+                                        <Download size={16} />
+                                        <span>Обновить и перезапустить PWA</span>
                                     </button>
                                 )}
-                                <div className="mt-auto pt-4 pb-4 text-[10px] font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest flex flex-col gap-1 items-center">
+
+                                {/* Footer Copyright */}
+                                <div className="mt-auto pt-2 pb-4 text-[10px] font-extrabold text-slate-400 dark:text-slate-600 uppercase tracking-widest flex flex-col gap-1 items-center">
                                     <span>Designed for Unmatched Fans</span>
-                                    <span>by Nikitoid</span>
+                                    <span className="text-slate-300 dark:text-slate-700">by Nikitoid</span>
                                 </div>
                             </div>
                         )}
 
+                        {/* TAB 4: DEBUG */}
                         {activeTab === 'debug' && isDebugMode && (
-                            <div className="flex flex-col items-center justify-start min-h-full p-6 animate-in fade-in slide-in-from-bottom-2">
+                            <div className="flex flex-col items-center justify-start min-h-full p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-2 duration-200">
                                 <div className="w-full max-w-sm flex flex-col gap-4">
-                                    {/* LocalStorage Summary */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-150 dark:border-slate-800/60 shadow-sm">
-                                        <h3 className="font-bold mb-3 flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                                            <Database size={16} /> Сводка LocalStorage
+                                    {/* LocalStorage Summary Card */}
+                                    <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+                                        <h3 className="font-bold mb-3 flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                            <Database size={15} /> Сводка LocalStorage
                                         </h3>
-                                        <div className="text-xs font-mono space-y-1.5 max-h-40 overflow-y-auto no-scrollbar bg-slate-50/50 dark:bg-slate-950/30 p-3 rounded-xl border border-slate-150 dark:border-slate-900/60">
+                                        <div className="text-xs font-mono space-y-1.5 max-h-40 overflow-y-auto no-scrollbar bg-slate-900 text-slate-200 p-3 rounded-xl border border-slate-800">
                                             {Object.keys(localStorage).map(key => {
                                                 const val = localStorage.getItem(key) || '';
                                                 let displaySize = `${(val.length * 2) / 1024}`;
                                                 displaySize = parseFloat(displaySize).toFixed(2);
                                                 return (
-                                                    <div key={key} className="flex justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-1 last:border-0 last:pb-0">
-                                                        <span className="truncate text-slate-600 dark:text-slate-400">{key}</span>
-                                                        <span className="font-bold text-slate-800 dark:text-slate-200 shrink-0">{displaySize} KB</span>
+                                                    <div key={key} className="flex justify-between gap-4 border-b border-slate-800/80 pb-1 last:border-0 last:pb-0">
+                                                        <span className="truncate text-slate-400">{key}</span>
+                                                        <span className="font-bold text-emerald-400 shrink-0">{displaySize} KB</span>
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                     </div>
 
-                                    {/* Actions */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-150 dark:border-slate-800/60 space-y-3 shadow-sm">
-                                        <h3 className="font-bold flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                    {/* Quick Actions Card */}
+                                    <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 space-y-2.5 shadow-xs">
+                                        <h3 className="font-bold flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
                                             Быстрые действия
                                         </h3>
 
                                         <button
                                             onClick={handleGenerateDemoHistory}
-                                            className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-violet-600 dark:bg-violet-700 text-white rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform"
+                                            className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 active:scale-95 text-white rounded-xl font-bold text-xs shadow-md shadow-violet-600/20 transition-all"
                                         >
-                                            <RefreshCw size={16} />
+                                            <RefreshCw size={15} />
                                             <span>Создать демо-историю (15 игр)</span>
                                         </button>
 
                                         <button
                                             onClick={handleClearAllHistory}
-                                            className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-red-650 dark:bg-red-750 text-white rounded-xl font-bold text-sm shadow-md active:scale-95 transition-transform"
+                                            className="w-full py-3 px-4 flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 active:scale-95 text-white rounded-xl font-bold text-xs shadow-md shadow-rose-600/20 transition-all"
                                         >
-                                            <Trash size={16} />
+                                            <Trash size={15} />
                                             <span>Полная очистка истории</span>
                                         </button>
                                     </div>
 
-                                    {/* Отладка чейнджлога */}
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-150 dark:border-slate-800/60 space-y-3 shadow-sm">
-                                        <h3 className="font-bold flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                            <Sparkles size={16} /> Прочитанная версия чейнджлога
+                                    {/* Changelog Debug Card */}
+                                    <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 space-y-3 shadow-xs">
+                                        <h3 className="font-bold flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                                            <Sparkles size={15} /> Прочитанная версия чейнджлога
                                         </h3>
+                                        
                                         <div className="flex items-center justify-between text-xs">
                                             <span className="text-slate-600 dark:text-slate-400 font-medium">Сохраненная версия:</span>
-                                            <span className="font-mono font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded-md">
+                                            <span className="font-mono font-bold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-2 py-0.5 rounded-md border border-primary-200/40 dark:border-primary-800/30">
                                                 {lastSeenVersion ? `v${lastSeenVersion}` : 'null (Новый юзер)'}
                                             </span>
                                         </div>
+
                                         <div className="space-y-2">
                                             <select
                                                 value={lastSeenVersion || 'ALL_UNREAD'}
@@ -629,7 +723,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                     onSetLastSeenVersion && onSetLastSeenVersion(e.target.value === 'ALL_UNREAD' ? null : e.target.value);
                                                     triggerHaptic(10);
                                                 }}
-                                                className="w-full bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-white text-xs font-bold rounded-xl px-3 py-2.5 border border-slate-200 dark:border-slate-700 focus:outline-none truncate cursor-pointer"
+                                                className="w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white text-xs font-bold rounded-xl px-3 py-2.5 border border-slate-200 dark:border-slate-800 focus:outline-none truncate cursor-pointer"
                                             >
                                                 <option value="ALL_UNREAD">null — (Новый юзер: ВСЁ непрочитано)</option>
                                                 <option value="2.2.6">v2.2.6 — (Старый юзер: от v2.3.0 непрочитано)</option>
@@ -646,7 +740,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                         onSetLastSeenVersion && onSetLastSeenVersion('2.2.6');
                                                         triggerHaptic(10);
                                                     }}
-                                                    className="py-2.5 px-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl text-[11px] font-bold transition-colors shadow-sm text-center truncate"
+                                                    className="py-2.5 px-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl text-[11px] font-bold transition-all shadow-xs text-center truncate"
                                                     title="От v2.3.0 и выше непрочитано (существующий юзер)"
                                                 >
                                                     v2.2.6 (Старый)
@@ -656,7 +750,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                         onSetLastSeenVersion && onSetLastSeenVersion(null);
                                                         triggerHaptic(10);
                                                     }}
-                                                    className="py-2.5 px-2 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition-colors shadow-sm text-center truncate"
+                                                    className="py-2.5 px-2 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition-all shadow-xs text-center truncate"
                                                     title="Вся история непрочитана (новый юзер)"
                                                 >
                                                     Всё новое (Новый)
@@ -668,9 +762,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                     onOpenChangelog();
                                                     triggerHaptic(10);
                                                 }}
-                                                className="w-full py-2.5 px-2.5 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-sm shadow-primary-500/20 truncate"
+                                                className="w-full py-2.5 px-2.5 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs shadow-primary-500/20 truncate"
                                             >
-                                                <Sparkles size={14} />
+                                                <Sparkles size={15} />
                                                 <span>Протестировать чейнджлог</span>
                                             </button>
                                         </div>
@@ -684,3 +778,4 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         </div>
     );
 };
+
