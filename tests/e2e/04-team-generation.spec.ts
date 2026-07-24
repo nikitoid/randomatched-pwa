@@ -66,4 +66,51 @@ test.describe('Генерация команд', () => {
         // После сброса кнопка генерации должна быть видна и активна
         await expect(app.generateButton).toBeEnabled({ timeout: 10000 });
     });
+
+    test('выпадающие меню основного и дополнительного режимов должны содержать заголовки разделов', async ({ app }) => {
+        await app.clickGenerate();
+        await expect(app.page.getByTestId('result-overlay')).toBeVisible();
+
+        // Проверяем заголовок в меню основного режима
+        const mainModeBtn = app.page.getByTestId('result-overlay').locator('button').filter({ hasText: /Рандом|Баланс|Лимит/ }).first();
+        await mainModeBtn.click();
+        await expect(app.page.getByText('ОСНОВНОЙ РЕЖИМ ГЕНЕРАЦИИ')).toBeVisible();
+
+        // Проверяем заголовок в меню доп. режима
+        const extraModeBtn = app.page.getByRole('button', { name: 'Дополнительный режим свежести' });
+        await extraModeBtn.click();
+        await expect(app.page.getByText('ДОП. РЕЖИМ СВЕЖЕСТИ')).toBeVisible();
+    });
+
+    test('должен переключать дополнительные режимы генерации и сохранять выбор в localStorage', async ({ app }) => {
+        await app.clickGenerate();
+        await expect(app.page.getByTestId('result-overlay')).toBeVisible();
+
+        const extraModeBtn = app.page.getByRole('button', { name: 'Дополнительный режим свежести' });
+        await extraModeBtn.click();
+
+        // Выбираем "Свежесть игрока"
+        const playerFreshnessBtn = app.page.getByRole('button', { name: /Свежесть игрока/ });
+        await playerFreshnessBtn.click();
+
+        // Проверяем сохранение в localStorage
+        const savedMode = await app.getLocalStorageItem('randomatched_extra_mode_v1');
+        expect(savedMode).toBe('player_freshness');
+
+        // Переключаем на "История матчей"
+        await extraModeBtn.click();
+        const globalFreshnessBtn = app.page.getByRole('button', { name: /История матчей/ });
+        await globalFreshnessBtn.click();
+
+        const savedMode2 = await app.getLocalStorageItem('randomatched_extra_mode_v1');
+        expect(savedMode2).toBe('global_freshness');
+
+        // Переключаем на "Без истории"
+        await extraModeBtn.click();
+        const noneModeBtn = app.page.getByRole('button', { name: /Без истории/ });
+        await noneModeBtn.click();
+
+        const savedMode3 = await app.getLocalStorageItem('randomatched_extra_mode_v1');
+        expect(savedMode3).toBe('none');
+    });
 });
