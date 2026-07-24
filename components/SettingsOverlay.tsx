@@ -87,6 +87,26 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         }
     }, [isOpen]);
 
+    // Scroll active tab into view when activeTab or isOpen changes
+    React.useEffect(() => {
+        if (!isOpen) return;
+
+        const timer = setTimeout(() => {
+            const container = tabsContainerRef.current;
+            if (!container) return;
+            const activeEl = container.querySelector<HTMLElement>(`[data-tab-id="${activeTab}"]`);
+            if (activeEl) {
+                activeEl.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'nearest'
+                });
+            }
+        }, 50);
+
+        return () => clearTimeout(timer);
+    }, [activeTab, isOpen]);
+
     useBackHandler(isOpen, () => {
         onClose();
     }, { id: 'settings-overlay', priority: 20 });
@@ -160,6 +180,18 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                 }
                 setActiveTab(id);
                 triggerHaptic(10);
+                e.currentTarget.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'nearest'
+                });
+            }}
+            onFocus={(e) => {
+                e.currentTarget.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'nearest'
+                });
             }}
             className={`shrink-0 flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full text-sm font-bold transition-all active:scale-95 whitespace-nowrap select-none border touch-manipulation ${activeTab === id
                 ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-md'
