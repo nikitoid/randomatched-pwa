@@ -92,40 +92,63 @@ export const getHeroHistoryWeights = (
     Math.max(20, Math.floor(allHeroes.length * 1.5)),
     history.length
   );
-  const lastPlayedIndices = new Map<string, number>();
-  const playCounts = new Map<string, number>();
+  
+  // Сопоставление истории по нормализованным именам (и fallback heroId)
+  const lastPlayedIndicesByName = new Map<string, number>();
+  const playCountsByName = new Map<string, number>();
 
   for (let i = 0; i < DEPTH; i++) {
     const match = history[i];
-    const heroIdsInMatch = new Set<string>();
+    const heroKeysInMatch = new Set<string>();
     
-    if (match.team1) match.team1.forEach(p => { if (p.heroId) heroIdsInMatch.add(p.heroId); });
-    if (match.team2) match.team2.forEach(p => { if (p.heroId) heroIdsInMatch.add(p.heroId); });
-
-    for (const heroId of heroIdsInMatch) {
-      if (!lastPlayedIndices.has(heroId)) {
-        lastPlayedIndices.set(heroId, i);
+    const processPlayer = (p: { heroId?: string; heroName?: string }) => {
+      if (p.heroName && p.heroName.trim()) {
+        heroKeysInMatch.add(p.heroName.trim().toLowerCase());
       }
-      playCounts.set(heroId, (playCounts.get(heroId) || 0) + 1);
+      if (p.heroId && p.heroId !== 'manual' && p.heroId !== 'unknown') {
+        heroKeysInMatch.add(p.heroId);
+      }
+    };
+
+    if (match.team1) match.team1.forEach(processPlayer);
+    if (match.team2) match.team2.forEach(processPlayer);
+
+    for (const key of heroKeysInMatch) {
+      if (!lastPlayedIndicesByName.has(key)) {
+        lastPlayedIndicesByName.set(key, i);
+      }
+      playCountsByName.set(key, (playCountsByName.get(key) || 0) + 1);
     }
   }
 
+  // Жесткий кулдаун для последних 2 матчей сессии (если в пуле достаточно героев)
+  const HARD_COOLDOWN_MATCHES = 2;
+  const allowHardCooldown = allHeroes.length >= 6;
+
   allHeroes.forEach(hero => {
-    const lastPlayedIndex = lastPlayedIndices.get(hero.id);
+    const normName = hero.name.trim().toLowerCase();
+    const lastPlayedIndex = lastPlayedIndicesByName.get(normName) ?? lastPlayedIndicesByName.get(hero.id);
+    const playCount = (playCountsByName.get(normName) || 0) + (playCountsByName.get(hero.id) || 0);
+
     let inactivityScore = DEPTH;
 
     if (lastPlayedIndex !== undefined) {
       inactivityScore = lastPlayedIndex;
     }
 
-    // Степенная зависимость давности (1.5) для лучшего контраста
+    // Если герой играл в последних 2 матчах и пул достаточен — ставим почти нулевой вес
+    if (allowHardCooldown && lastPlayedIndex !== undefined && lastPlayedIndex < HARD_COOLDOWN_MATCHES) {
+      weights.set(hero.id, 0.001);
+      return;
+    }
+
+    // Степенная зависимость давности (1.5) для контраста
     const recencyWeight = 1 + Math.pow(inactivityScore, 1.5) * 1.5;
 
     // Штраф за частоту игр в анализируемом периоде
-    const playCount = playCounts.get(hero.id) || 0;
     const finalWeight = recencyWeight / (1 + playCount * 0.5);
 
-    weights.set(hero.id, finalWeight);
+    weights.set(hero.id, Math.max(0.001, finalWeight));
   });
 
   return weights;
@@ -223,60 +246,39 @@ export const generateAssignmentsWithMode = (
       });
   } 
   else if (mode === 'balanced') {
-      if (weights) {
-          chosenHeroes = selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4);
-      } else {
-          chosenHeroes = shuffleArray(allHeroes).slice(0, 4);
-      }
-
       const TARGET_DIFF = 1;
-      const MAX_SWAPS = 2;
+      const NUM_SAMPLES = 120;
+      
+      const samples: { heroes: Hero[]; perm: ReturnType<typeof getBestPermutation>; freshnessScore: number }[] = [];
 
-      let bestResult = getBestPermutation(chosenHeroes);
-
-      for (let swapCount = 0; swapCount < MAX_SWAPS; swapCount++) {
-          if (bestResult.diff <= TARGET_DIFF) break;
-
-          const currentIds = new Set(chosenHeroes.map(h => h.id));
-          const pool = allHeroes.filter(h => !currentIds.has(h.id));
+      for (let s = 0; s < NUM_SAMPLES; s++) {
+          const sample = weights
+              ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4)
+              : shuffleArray(allHeroes).slice(0, 4);
           
-          const potentialMoves: { idx: number, hero: Hero, diff: number }[] = [];
+          const perm = getBestPermutation(sample);
+          const freshnessScore = sample.reduce((sum, h) => sum + (weights ? (weights.get(h.id) || 1) : 1), 0);
 
-          for (let i = 0; i < 4; i++) {
-              for (const candidate of pool) {
-                  const testSet = [...chosenHeroes];
-                  testSet[i] = candidate;
-                  const res = getBestPermutation(testSet);
-
-                  if (res.diff < bestResult.diff) {
-                      potentialMoves.push({ idx: i, hero: candidate, diff: res.diff });
-                  }
-              }
-          }
-
-          if (potentialMoves.length === 0) break;
-
-          const solvers = potentialMoves.filter(m => m.diff <= TARGET_DIFF);
-          
-          if (solvers.length > 0) {
-              const move = weights
-                  ? selectWeightedSingle(solvers, m => weights.get(m.hero.id) || 1)
-                  : solvers[Math.floor(Math.random() * solvers.length)];
-              chosenHeroes[move.idx] = move.hero;
-              bestResult = getBestPermutation(chosenHeroes);
-              break;
-          } else {
-              potentialMoves.sort((a, b) => a.diff - b.diff);
-              const topTierCount = Math.max(1, Math.floor(potentialMoves.length * 0.25));
-              const topMoves = potentialMoves.slice(0, topTierCount);
-              
-              const move = weights
-                  ? selectWeightedSingle(topMoves, m => weights.get(m.hero.id) || 1)
-                  : topMoves[Math.floor(Math.random() * topMoves.length)];
-              chosenHeroes[move.idx] = move.hero;
-              bestResult = getBestPermutation(chosenHeroes);
-          }
+          samples.push({ heroes: sample, perm, freshnessScore });
       }
+
+      // Находим кандидатов с diff <= TARGET_DIFF
+      const balancedSamples = samples.filter(s => s.perm.diff <= TARGET_DIFF);
+
+      let chosenSample: typeof samples[0];
+
+      if (balancedSamples.length > 0) {
+          // Выбираем из сбалансированных наборов взвешенно по показателю свежести
+          chosenSample = selectWeightedSingle(balancedSamples, s => Math.max(0.01, s.freshnessScore));
+      } else {
+          // Если идеального баланса нет, выбираем из вариантов с наименьшим diff
+          samples.sort((a, b) => a.perm.diff - b.perm.diff);
+          const minDiff = samples[0].perm.diff;
+          const bestDiffSamples = samples.filter(s => s.perm.diff <= minDiff + 0.5);
+          chosenSample = selectWeightedSingle(bestDiffSamples, s => Math.max(0.01, s.freshnessScore));
+      }
+
+      const bestResult = chosenSample.perm;
 
       let groupAIndex = 0;
       let groupBIndex = 0;
@@ -292,36 +294,34 @@ export const generateAssignmentsWithMode = (
       });
   }
   else if (mode === 'strict') {
-      let attempts = 0;
-      const MAX_STRICT_ATTEMPTS = 200;
+      const NUM_SAMPLES = 200;
+      const samples: { heroes: Hero[]; perm: ReturnType<typeof getBestPermutation>; freshnessScore: number }[] = [];
 
-      let sample = weights
-          ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4)
-          : shuffleArray(allHeroes).slice(0, 4);
-      let bestFound = getBestPermutation(sample);
-      let bestDiffFound = bestFound.diff;
-
-      while (attempts < MAX_STRICT_ATTEMPTS) {
-          if (bestDiffFound <= threshold) break;
-          sample = weights
+      for (let s = 0; s < NUM_SAMPLES; s++) {
+          const sample = weights
               ? selectWeightedUnique(allHeroes, h => weights.get(h.id) || 1, 4)
               : shuffleArray(allHeroes).slice(0, 4);
-          const result = getBestPermutation(sample);
-          if (result.diff <= threshold) {
-              bestFound = result;
-              bestDiffFound = result.diff;
-              break; 
-          }
-          if (result.diff < bestDiffFound) {
-              bestDiffFound = result.diff;
-              bestFound = result;
-          }
-          attempts++;
+          
+          const perm = getBestPermutation(sample);
+          const freshnessScore = sample.reduce((sum, h) => sum + (weights ? (weights.get(h.id) || 1) : 1), 0);
+
+          samples.push({ heroes: sample, perm, freshnessScore });
       }
-      
-      if (bestDiffFound > threshold && onToast) {
-          onToast(`Не удалось найти баланс с погрешностью ${threshold}. Лучшая разница: ${bestDiffFound}`, "warning", 3000);
+
+      const validStrictSamples = samples.filter(s => s.perm.diff <= threshold);
+      let chosenSample: typeof samples[0];
+
+      if (validStrictSamples.length > 0) {
+          chosenSample = selectWeightedSingle(validStrictSamples, s => Math.max(0.01, s.freshnessScore));
+      } else {
+          samples.sort((a, b) => a.perm.diff - b.perm.diff);
+          chosenSample = samples[0];
+          if (onToast) {
+              onToast(`Не удалось найти баланс с погрешностью ${threshold}. Лучшая разница: ${chosenSample.perm.diff}`, "warning", 3000);
+          }
       }
+
+      const bestFound = chosenSample.perm;
       
       let groupAIndex = 0;
       let groupBIndex = 0;

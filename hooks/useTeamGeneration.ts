@@ -254,7 +254,7 @@ export const useTeamGeneration = ({
         const allHeroes = getAvailableHeroesPool();
         const currentHeroIds = assignments.map(a => a.hero ? a.hero.id : '').filter(id => id !== '');
 
-        // Filter duplicates by name for safety during reroll check
+        // Filter duplicates by name & ID for safety during reroll check
         const availableHeroes = allHeroes.filter(h => !currentHeroIds.includes(h.id));
 
         if (availableHeroes.length === 0) {
@@ -314,15 +314,25 @@ export const useTeamGeneration = ({
                 }
 
             } else {
-                const bestPossibleDiff = Math.min(...candidates.map(c => c.diff));
-                const TOLERANCE = 1;
+                // Balanced Mode
+                const TARGET_DIFF = 1;
+                const solvers = candidates.filter(c => c.diff <= TARGET_DIFF);
 
-                const validOptions = candidates.filter(c => c.diff <= bestPossibleDiff + TOLERANCE);
-
-                if (prioritizeUnplayed && weights) {
-                    newHero = selectWeightedSingle(validOptions, c => weights.get(c.hero.id) || 1).hero;
+                if (solvers.length > 0) {
+                    if (prioritizeUnplayed && weights) {
+                        newHero = selectWeightedSingle(solvers, c => weights.get(c.hero.id) || 1).hero;
+                    } else {
+                        newHero = solvers[Math.floor(Math.random() * solvers.length)].hero;
+                    }
                 } else {
-                    newHero = validOptions[Math.floor(Math.random() * validOptions.length)].hero;
+                    const minDiff = Math.min(...candidates.map(c => c.diff));
+                    const bestOptions = candidates.filter(c => c.diff <= minDiff + 0.5);
+
+                    if (prioritizeUnplayed && weights) {
+                        newHero = selectWeightedSingle(bestOptions, c => weights.get(c.hero.id) || 1).hero;
+                    } else {
+                        newHero = bestOptions[Math.floor(Math.random() * bestOptions.length)].hero;
+                    }
                 }
             }
         }
@@ -380,7 +390,11 @@ export const useTeamGeneration = ({
         const availableForReplacement = allHeroes.filter(h => !currentHeroIds.includes(h.id));
 
         if (availableForReplacement.length === 0) { addToast("Некого брать на замену!", "warning"); triggerHaptic([20, 50, 20]); return; }
-        const newHero = availableForReplacement[Math.floor(Math.random() * availableForReplacement.length)];
+        
+        const weights = getHeroHistoryWeights(history, allHeroes, prioritizeUnplayed);
+        const newHero = (prioritizeUnplayed && weights)
+            ? selectWeightedSingle(availableForReplacement, h => weights.get(h.id) || 1)
+            : availableForReplacement[Math.floor(Math.random() * availableForReplacement.length)];
 
         setAssignments(prev => prev.map(p => p.playerNumber === playerNumber ? { ...p, hero: newHero } : p));
 
