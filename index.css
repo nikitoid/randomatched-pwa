@@ -380,3 +380,37 @@ body {
 .dark[data-bg-pattern="true"] .bg-grid-pattern {
   background-image: radial-gradient(rgb(var(--primary-400) / 0.16) 1.5px, transparent 1.5px) !important;
 }
+
+/* Градиентный задний фон приложения (Gradient Background) */
+[data-bg-gradient="true"] body,
+[data-bg-gradient="true"] .bg-grid-pattern {
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgb(var(--primary-500) / 0.15), transparent 55%),
+    radial-gradient(circle at 90% 90%, rgb(var(--secondary-500) / 0.15), transparent 55%) !important;
+}
+
+.dark[data-bg-gradient="true"] body,
+.dark[data-bg-gradient="true"] .bg-grid-pattern {
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgb(var(--primary-500) / 0.22), transparent 55%),
+    radial-gradient(circle at 90% 90%, rgb(var(--secondary-500) / 0.22), transparent 55%) !important;
+}
+
+/* Комбинация фоновой сетки и градиентного фона */
+[data-bg-pattern="true"][data-bg-gradient="true"] body,
+[data-bg-pattern="true"][data-bg-gradient="true"] .bg-grid-pattern {
+  background-image: 
+    radial-gradient(rgb(var(--primary-500) / 0.12) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 10% 10%, rgb(var(--primary-500) / 0.15), transparent 55%),
+    radial-gradient(circle at 90% 90%, rgb(var(--secondary-500) / 0.15), transparent 55%) !important;
+  background-size: 24px 24px, 100% 100%, 100% 100% !important;
+}
+
+.dark[data-bg-pattern="true"][data-bg-gradient="true"] body,
+.dark[data-bg-pattern="true"][data-bg-gradient="true"] .bg-grid-pattern {
+  background-image: 
+    radial-gradient(rgb(var(--primary-400) / 0.16) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 10% 10%, rgb(var(--primary-500) / 0.22), transparent 55%),
+    radial-gradient(circle at 90% 90%, rgb(var(--secondary-500) / 0.22), transparent 55%) !important;
+  background-size: 24px 24px, 100% 100%, 100% 100% !important;
+}

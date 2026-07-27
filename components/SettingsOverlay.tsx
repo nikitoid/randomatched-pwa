@@ -19,6 +19,8 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     setRoundness?: (val: ThemeRoundness) => void;
     bgPattern?: boolean;
     setBgPattern?: (val: boolean) => void;
+    bgGradient?: boolean;
+    setBgGradient?: (val: boolean) => void;
     checkForUpdate?: () => void;
     isCheckingUpdate?: boolean;
     isUpdateAvailable?: boolean;
@@ -47,6 +49,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     setRoundness,
     bgPattern = false,
     setBgPattern,
+    bgGradient = false,
+    setBgGradient,
     isCheckingUpdate = false,
     isUpdateAvailable = false,
     onUpdateApp,
@@ -264,7 +268,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     return (
         <div className={`fixed inset-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
             {/* Header with Safe Area */}
-            <div className="bg-white/85 dark:bg-slate-900/85 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/70 transition-all duration-300 shadow-xs">
+            <div className="bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl sticky top-0 z-30 border-b border-slate-200/40 dark:border-slate-800/40 transition-all duration-300 shadow-xs">
                 <div 
                     className="px-4 py-3"
                     style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
@@ -532,6 +536,25 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                             className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                                         >
                                                             <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${bgPattern ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Background Gradient Toggle */}
+                                                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgGradient ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                                <Sparkles size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Градиентный фон</h4>
+                                                                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Мягкое эмбиентное свечение цветовой схемы</p>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => { setBgGradient && setBgGradient(!bgGradient); triggerHaptic(10); }}
+                                                            className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgGradient ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                        >
+                                                            <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${bgGradient ? 'translate-x-6' : 'translate-x-1'}`} />
                                                         </button>
                                                     </div>
                                                 </div>

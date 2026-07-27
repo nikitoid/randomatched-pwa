@@ -903,15 +903,15 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
             <div
                 data-testid="stats-modal"
-                className={`fixed inset-0 z-[60] flex items-center justify-center bg-slate-50 dark:bg-slate-950 transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`fixed inset-0 z-[60] flex items-center justify-center bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl bg-grid-pattern transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                 onClick={onClose}
             >
                 <div
-                    className={`bg-slate-50 dark:bg-slate-950 bg-grid-pattern w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
+                    className={`bg-transparent w-full h-full flex flex-col overflow-hidden transition-all duration-300 ${isOpen ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'}`}
                     onClick={e => e.stopPropagation()}
                 >
                     <div 
-                        className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl z-10 sticky top-0 touch-manipulation"
+                        className="p-4 border-b border-slate-200/40 dark:border-slate-800/40 flex items-center justify-between shrink-0 bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl z-10 sticky top-0 touch-manipulation"
                         style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
                     >
                         <h2
@@ -942,14 +942,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 onClick={onClose}
                                 data-testid="stats-close-btn"
                                 aria-label="Закрыть"
-                                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all"
+                                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/60 dark:bg-slate-800/60 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 shadow-xs"
                             >
                                 <X size={20} />
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex border-b border-slate-100 dark:border-slate-800 shrink-0 overflow-x-auto overscroll-contain no-scrollbar bg-white dark:bg-slate-900 touch-manipulation">
+                    <div className="flex border-b border-slate-200/40 dark:border-slate-800/40 shrink-0 overflow-x-auto overscroll-contain no-scrollbar bg-white/30 dark:bg-slate-950/30 backdrop-blur-xl touch-manipulation">
                         {['overview', 'players', 'heroes', 'matches'].map(tab => (
                             <button
                                 key={tab}
@@ -961,7 +961,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                     setSelectedHero(null);
                                     triggerHaptic(10);
                                 }}
-                                className={`flex-1 min-w-[84px] min-h-[44px] py-2.5 text-sm font-bold border-b-2 transition-all active:scale-95 capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 active:bg-slate-50 dark:active:bg-slate-800/50'}`}
+                                className={`flex-1 min-w-[84px] min-h-[44px] py-2.5 text-sm font-bold border-b-2 transition-all active:scale-95 capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/20 dark:hover:bg-slate-900/20'}`}
                             >
                                 {tab === 'overview' ? 'Обзор' : tab === 'players' ? 'Игроки' : tab === 'heroes' ? 'Герои' : 'Матчи'}
                             </button>
@@ -970,7 +970,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
 
                     {/* Unified Stats Control Toolbar */}
-                    <div className="flex items-center justify-between gap-1.5 px-3 py-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-b border-slate-100 dark:border-slate-800/60 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
+                    <div className="flex items-center justify-between gap-1.5 px-3 py-2 bg-white/20 dark:bg-slate-950/20 backdrop-blur-xl z-10 border-b border-slate-200/40 dark:border-slate-800/40 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
                         {isSearchExpanded && currentSearchState ? (
                             /* Full-width Search Input Mode */
                             <div className="flex-1 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
@@ -981,7 +981,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         value={currentSearchState.value}
                                         onChange={(e) => currentSearchState.onChange(e.target.value)}
                                         placeholder={currentSearchState.placeholder}
-                                        className="w-full pl-8 pr-8 py-1.5 h-9 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
+                                        className="w-full pl-8 pr-8 py-1.5 h-9 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-xl text-xs border border-slate-200/80 dark:border-slate-700/60 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
                                     />
                                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                     {currentSearchState.value && (
@@ -995,7 +995,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 </div>
                                 <button
                                     onClick={() => { setIsSearchExpanded(false); triggerHaptic(10); }}
-                                    className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 active:scale-95 transition-all"
+                                    className="h-9 px-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 active:scale-95 transition-all"
                                 >
                                     Готово
                                 </button>
@@ -1007,14 +1007,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 <button
                                     onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
                                     title={isDateFilterOpen ? "Свернуть настройки периода" : "Открыть настройки периода"}
-                                    className={`h-9 px-2.5 text-xs font-bold rounded-xl flex items-center justify-between gap-1 flex-1 min-w-0 transition-all active:scale-95 border ${
+                                    className={`h-9 px-2.5 text-xs font-bold rounded-xl flex items-center justify-between gap-1 flex-1 min-w-0 transition-all active:scale-95 border backdrop-blur-md ${
                                         isDateFilterOpen
                                             ? 'bg-primary-500/10 dark:bg-primary-500/20 border-primary-500/60 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500/30 shadow-xs font-extrabold'
                                             : filterStartDate && filterEndDate && filterEndDate < filterStartDate
-                                                ? 'bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-900/30 dark:border-rose-800 dark:text-rose-400'
+                                                ? 'bg-rose-50/80 border-rose-200 text-rose-600 dark:bg-rose-900/40 dark:border-rose-800 dark:text-rose-400'
                                                 : !isDefaultFilterState
-                                                    ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400 font-extrabold'
-                                                    : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
+                                                    ? 'bg-primary-50/80 border-primary-200 text-primary-600 dark:bg-primary-900/40 dark:border-primary-800 dark:text-primary-400 font-extrabold'
+                                                    : 'bg-white/60 border-slate-200/80 text-slate-700 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
                                     }`}
                                 >
                                     <div className="flex items-center gap-1.5 min-w-0 truncate">
@@ -1054,7 +1054,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         !currentSearchState.value ? (
                                             <button
                                                 onClick={() => { setIsSearchExpanded(true); triggerHaptic(10); }}
-                                                className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 active:scale-95 transition-all shrink-0"
+                                                className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md text-slate-500 dark:text-slate-400 active:scale-95 transition-all shrink-0"
                                                 aria-label="Поиск"
                                             >
                                                 <Search size={16} />

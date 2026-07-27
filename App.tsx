@@ -40,7 +40,9 @@ const App: React.FC = () => {
         roundness,
         setRoundness,
         bgPattern,
-        setBgPattern
+        setBgPattern,
+        bgGradient,
+        setBgGradient
     } = useTheme();
     const { toasts, addToast, removeToast } = useToast();
     const { trigger: triggerHaptic, toggle: toggleHaptics, isEnabled: hapticsEnabled } = useHaptics();
@@ -316,7 +318,6 @@ const App: React.FC = () => {
     return (
         <NavigationProvider>
             <div className="relative h-full w-full flex flex-col bg-transparent transition-colors duration-300 overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-primary-50/50 to-transparent dark:from-primary-950/20 pointer-events-none" />
                 <ToastContainer toasts={toasts} removeToast={removeToast} />
 
                 <Header
@@ -459,6 +460,8 @@ const App: React.FC = () => {
                     setRoundness={setRoundness}
                     bgPattern={bgPattern}
                     setBgPattern={setBgPattern}
+                    bgGradient={bgGradient}
+                    setBgGradient={setBgGradient}
                     checkForUpdate={checkForUpdate}
                     isCheckingUpdate={isCheckingUpdate}
                     isUpdateAvailable={isUpdateAvailable}

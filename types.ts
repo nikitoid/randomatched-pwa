@@ -48,6 +48,7 @@ export interface AppearanceSettings {
   colorScheme: ColorScheme;
   roundness: ThemeRoundness;
   bgPattern: boolean;
+  bgGradient: boolean;
 }
 
 // History & Stats Types

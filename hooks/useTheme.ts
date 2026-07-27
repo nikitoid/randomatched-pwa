@@ -42,6 +42,12 @@ export const useTheme = () => {
     return saved !== null ? saved === 'true' : false;
   });
 
+  const [bgGradient, setBgGradient] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const saved = localStorage.getItem('themeBgGradient');
+    return saved !== null ? saved === 'true' : false;
+  });
+
   useLayoutEffect(() => {
     // Apply theme class to document
     if (theme === 'dark') {
@@ -98,6 +104,11 @@ export const useTheme = () => {
     localStorage.setItem('themeBgPattern', String(bgPattern));
   }, [bgPattern]);
 
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute('data-bg-gradient', String(bgGradient));
+    localStorage.setItem('themeBgGradient', String(bgGradient));
+  }, [bgGradient]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
@@ -110,6 +121,8 @@ export const useTheme = () => {
     roundness,
     setRoundness,
     bgPattern,
-    setBgPattern
+    setBgPattern,
+    bgGradient,
+    setBgGradient
   };
 };
