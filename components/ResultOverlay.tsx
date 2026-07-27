@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog, History, Terminal, Search, UserCheck, Minus } from 'lucide-react';
+import { X, Users, RefreshCw, Ban, Shuffle, Trash2, Dice5, HelpCircle, Info, Check, Move, Sparkles, SlidersHorizontal, ChevronDown, Trophy, AlertTriangle, CheckCircle2, UserCog, History, Terminal, Search, UserCheck, Minus, LayoutGrid, Compass } from 'lucide-react';
 import { AssignedPlayer, GenerationMode, ExtraGenerationMode, Hero, MatchRecord } from '../types';
 import { HeroSelectionModal } from './HeroSelectionModal';
 import { useBackHandler } from '../hooks/useBackHandler';
@@ -90,6 +90,35 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const [weightsSearchTerm, setWeightsSearchTerm] = useState('');
     const [playerKills, setPlayerKills] = useState<Record<number, number>>({});
     const [selectedDebugPlayerTab, setSelectedDebugPlayerTab] = useState<'global' | number>('global');
+
+    // Режим отображения оверлея: facing (лицом к пользователю) или cross (по кругу / крест)
+    const [viewMode, setViewMode] = useState<'facing' | 'cross'>(() => {
+        try {
+            const saved = localStorage.getItem('randomatched_result_view_mode');
+            if (saved === 'facing' || saved === 'cross') return saved;
+            return 'facing';
+        } catch {
+            return 'facing';
+        }
+    });
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('randomatched_result_view_mode', viewMode);
+        } catch (e) {
+            console.error('Failed to save result view mode:', e);
+        }
+    }, [viewMode]);
+
+    const toggleViewMode = () => {
+        setViewMode(prev => {
+            const next = prev === 'facing' ? 'cross' : 'facing';
+            if (next === 'facing') {
+                setIsDragMode(false);
+            }
+            return next;
+        });
+    };
 
     const activeExtraMode = extraMode || (prioritizeUnplayed ? 'global_freshness' : 'none');
 
@@ -408,7 +437,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
         const cardSizeClass = isFloating
             ? 'w-32 h-20'
-            : 'w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px]';
+            : viewMode === 'facing'
+                ? 'w-[calc(50vw-18px)] h-[30vmin] max-w-[280px] max-h-[190px]'
+                : 'w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px]';
 
         return (
             <div
@@ -432,15 +463,21 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {/* Динамическое широкое свечение карточки при включенной опции "Эмбиент-фон" */}
                 {isGradientActive && (
                     <div
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full transition-all duration-500 ease-out blur-[60px] sm:blur-[80px] opacity-90 dark:opacity-95 animate-pulse-soft -z-10"
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none -z-10"
                         style={{
-                            width: isFloating ? 'min(70vw, 360px)' : 'min(75vmin, 480px)',
-                            height: isFloating ? 'min(70vw, 360px)' : 'min(75vmin, 480px)',
-                            background: isTeamOdd
-                                ? 'radial-gradient(circle, rgba(var(--secondary-500)/0.7) 0%, rgba(var(--secondary-500)/0.25) 45%, transparent 75%)'
-                                : 'radial-gradient(circle, rgba(var(--primary-500)/0.7) 0%, rgba(var(--primary-500)/0.25) 45%, transparent 75%)',
+                            width: isFloating ? 'min(70vw, 360px)' : viewMode === 'facing' ? 'min(60vw, 340px)' : 'min(75vmin, 480px)',
+                            height: isFloating ? 'min(70vw, 360px)' : viewMode === 'facing' ? 'min(60vw, 340px)' : 'min(75vmin, 480px)',
                         }}
-                    />
+                    >
+                        <div
+                            className="w-full h-full rounded-full transition-all duration-500 ease-out blur-[60px] sm:blur-[80px] opacity-90 dark:opacity-95 animate-pulse-soft"
+                            style={{
+                                background: isTeamOdd
+                                    ? 'radial-gradient(circle, rgba(var(--secondary-500)/0.7) 0%, rgba(var(--secondary-500)/0.25) 45%, transparent 75%)'
+                                    : 'radial-gradient(circle, rgba(var(--primary-500)/0.7) 0%, rgba(var(--primary-500)/0.25) 45%, transparent 75%)',
+                            }}
+                        />
+                    </div>
                 )}
                 {!isFloating && hasHero && !isDragMode && (
                     <div className="absolute top-0 left-0 w-full flex justify-between p-2 animate-fade-in z-20">
@@ -503,52 +540,84 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
         let positionStyle: React.CSSProperties = {};
 
-        // Layout Logic (same as before)
-        const btnRadius = '45px';
-        const gap = '8px';
-        const halfH = 'min(16vmin, 100px)';
-        const halfW = 'min(26vmin, 160px)';
+        if (viewMode === 'facing') {
+            const horizOffset = 'min(calc(25vw - 3px), 148px)';
+            const vertOffset = 'min(26vmin, 160px)';
 
-        const sideOffsetFromCenter = `calc(${btnRadius} + ${gap} + ${halfH})`;
-        const verticalOffsetFromCenter = `calc(${halfW} + ${gap} + ${halfH})`;
+            const teamOddPlayers = assignments.filter(a => a.team === 'Odd');
+            const teamEvenPlayers = assignments.filter(a => a.team === 'Even');
 
-        switch (position) {
-            case 'top':
+            if (player.team === 'Odd') {
+                // Top Row (Team 1 - Odd)
+                const idx = teamOddPlayers.findIndex(a => a.position === player.position);
+                const isLeft = idx <= 0;
                 positionStyle = {
                     position: 'absolute',
-                    top: `calc(50% - ${verticalOffsetFromCenter})`,
-                    left: '50%',
-                    transform: 'translate(-50%, -50%) rotate(180deg)',
+                    left: `calc(50% ${isLeft ? '-' : '+'} ${horizOffset})`,
+                    top: `calc(50% - ${vertOffset})`,
+                    transform: 'translate(-50%, -50%) rotate(0deg)',
                     transformOrigin: 'center'
                 };
-                break;
-            case 'bottom':
+            } else {
+                // Bottom Row (Team 2 - Even)
+                const idx = teamEvenPlayers.findIndex(a => a.position === player.position);
+                const isLeft = idx <= 0;
                 positionStyle = {
                     position: 'absolute',
-                    top: `calc(50% + ${verticalOffsetFromCenter})`,
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
+                    left: `calc(50% ${isLeft ? '-' : '+'} ${horizOffset})`,
+                    top: `calc(50% + ${vertOffset})`,
+                    transform: 'translate(-50%, -50%) rotate(0deg)',
                     transformOrigin: 'center'
                 };
-                break;
-            case 'left':
-                positionStyle = {
-                    position: 'absolute',
-                    left: `calc(50% - ${sideOffsetFromCenter})`,
-                    top: '50%',
-                    transform: 'translate(-50%, -50%) rotate(90deg)',
-                    transformOrigin: 'center'
-                };
-                break;
-            case 'right':
-                positionStyle = {
-                    position: 'absolute',
-                    left: `calc(50% + ${sideOffsetFromCenter})`,
-                    top: '50%',
-                    transform: 'translate(-50%, -50%) rotate(-90deg)',
-                    transformOrigin: 'center'
-                };
-                break;
+            }
+        } else {
+            // Layout Logic for cross mode
+            const btnRadius = '45px';
+            const gap = '8px';
+            const halfH = 'min(16vmin, 100px)';
+            const halfW = 'min(26vmin, 160px)';
+
+            const sideOffsetFromCenter = `calc(${btnRadius} + ${gap} + ${halfH})`;
+            const verticalOffsetFromCenter = `calc(${halfW} + ${gap} + ${halfH})`;
+
+            switch (position) {
+                case 'top':
+                    positionStyle = {
+                        position: 'absolute',
+                        top: `calc(50% - ${verticalOffsetFromCenter})`,
+                        left: '50%',
+                        transform: 'translate(-50%, -50%) rotate(180deg)',
+                        transformOrigin: 'center'
+                    };
+                    break;
+                case 'bottom':
+                    positionStyle = {
+                        position: 'absolute',
+                        top: `calc(50% + ${verticalOffsetFromCenter})`,
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        transformOrigin: 'center'
+                    };
+                    break;
+                case 'left':
+                    positionStyle = {
+                        position: 'absolute',
+                        left: `calc(50% - ${sideOffsetFromCenter})`,
+                        top: '50%',
+                        transform: 'translate(-50%, -50%) rotate(90deg)',
+                        transformOrigin: 'center'
+                    };
+                    break;
+                case 'right':
+                    positionStyle = {
+                        position: 'absolute',
+                        left: `calc(50% + ${sideOffsetFromCenter})`,
+                        top: '50%',
+                        transform: 'translate(-50%, -50%) rotate(-90deg)',
+                        transformOrigin: 'center'
+                    };
+                    break;
+            }
         }
 
         return (
@@ -559,7 +628,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 onPointerDown={(e) => handlePointerDown(e, position)}
             >
                 {isDraggingThis && (
-                    <div className="absolute inset-0 w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px] rounded-3xl border-2 border-dashed border-white/30 bg-white/10 animate-pulse z-0" />
+                    <div className={`absolute inset-0 rounded-3xl border-2 border-dashed border-white/30 bg-white/10 animate-pulse z-0 ${viewMode === 'facing' ? 'w-[calc(50vw-18px)] h-[30vmin] max-w-[280px] max-h-[190px]' : 'w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px]'}`} />
                 )}
                 <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
                     {renderCardContent(player, false, isDraggingThis, isHoveredTarget)}
@@ -806,6 +875,34 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {/* Board Container */}
                 <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none flex items-center justify-center">
 
+                    {/* Horizontal Divider Line between teams in facing mode */}
+                    {viewMode === 'facing' && (
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[540px] px-6 z-20 pointer-events-none flex items-center justify-center animate-fade-in">
+                            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-400/40 dark:via-slate-500/40 to-transparent shadow-sm" />
+                        </div>
+                    )}
+
+                    {/* Team Badges in facing mode */}
+                    {viewMode === 'facing' && !isDragMode && (
+                        <>
+                            <div
+                                className="absolute left-1/2 -translate-x-1/2 -translate-y-full z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-500/15 dark:bg-secondary-500/25 backdrop-blur-md border border-secondary-400/30 text-secondary-700 dark:text-secondary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm animate-fade-in"
+                                style={{ top: 'calc(50% - min(43vmin, 265px))' }}
+                            >
+                                <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_8px_rgba(var(--secondary-500)/0.8)]" />
+                                <span>Команда 1</span>
+                            </div>
+
+                            <div
+                                className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-500/15 dark:bg-primary-500/25 backdrop-blur-md border border-primary-400/30 text-primary-700 dark:text-primary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm animate-fade-in"
+                                style={{ top: 'calc(50% + min(43vmin, 265px))' }}
+                            >
+                                <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(var(--primary-500)/0.8)]" />
+                                <span>Команда 2</span>
+                            </div>
+                        </>
+                    )}
+
                     {getPlayer('top') && renderCardContainer(getPlayer('top')!)}
                     {getPlayer('bottom') && renderCardContainer(getPlayer('bottom')!)}
                     {getPlayer('left') && renderCardContainer(getPlayer('left')!)}
@@ -846,12 +943,33 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                     {hasCustomNames && (
                         <>
-                            <button onClick={() => setIsDragMode(!isDragMode)} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${isDragMode ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-2 ring-primary-500 dark:ring-primary-400 shadow-inner' : 'active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
+                            <button
+                                onClick={() => setIsDragMode(!isDragMode)}
+                                disabled={viewMode === 'facing'}
+                                className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all ${
+                                    viewMode === 'facing'
+                                        ? 'opacity-40 cursor-not-allowed text-slate-400'
+                                        : isDragMode
+                                            ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400 ring-2 ring-primary-500 dark:ring-primary-400 shadow-inner'
+                                            : 'active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'
+                                }`}
+                            >
                                 <Move size={20} className="mb-1" /> <span className="text-[10px] font-bold">Двигать</span>
                             </button>
                             <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
                         </>
                     )}
+
+                    <button
+                        data-testid="toggle-view-mode-btn"
+                        onClick={toggleViewMode}
+                        disabled={isDragMode}
+                        className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                    >
+                        {viewMode === 'facing' ? <LayoutGrid size={20} className="mb-1 text-primary-500" /> : <Compass size={20} className="mb-1 text-slate-600 dark:text-slate-300" />}
+                        <span className="text-[10px] font-bold">{viewMode === 'facing' ? 'Лицом' : 'Крест'}</span>
+                    </button>
+                    <div className="w-px h-8 bg-slate-300 dark:bg-slate-700" />
 
                     <button data-testid="shuffle-teams-btn" onClick={onShuffleTeams} disabled={isDragMode} className={`flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-colors ${isDragMode ? 'opacity-40 cursor-not-allowed text-slate-400' : 'active:bg-white dark:active:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                         <Shuffle size={20} className="mb-1" /> <span className="text-[10px] font-bold">Команды</span>

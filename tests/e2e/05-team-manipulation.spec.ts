@@ -35,4 +35,44 @@ test.describe('Манипуляция командами', () => {
         await shuffleButton.click();
         await expect(app.page.getByTestId('result-overlay')).toBeVisible();
     });
+
+    test('должна быть возможность переключать режим отображения карточек (Лицом / Крест)', async ({ app }) => {
+        // Заполняем имена, чтобы кнопка "Двигать" была активна
+        await app.namesToggle.click();
+        await app.fillPlayerName(0, 'Игрок 1');
+        await app.fillPlayerName(1, 'Игрок 2');
+        await app.namesToggle.click();
+
+        await app.clickGenerate();
+        await expect(app.page.getByTestId('result-overlay')).toBeVisible();
+
+        const toggleBtn = app.page.getByTestId('toggle-view-mode-btn');
+        await expect(toggleBtn).toBeVisible();
+        await expect(toggleBtn).toContainText('Лицом');
+
+        // В режиме "Лицом" кнопка "Двигать" должна быть заблокирована (disabled)
+        const moveBtn = app.page.getByRole('button', { name: /Двигать/ });
+        await expect(moveBtn).toBeVisible();
+        await expect(moveBtn).toBeDisabled();
+
+        // Переключаем на режим "Крест"
+        await toggleBtn.click();
+        await expect(toggleBtn).toContainText('Крест');
+
+        const savedMode = await app.getLocalStorageItem('randomatched_result_view_mode');
+        expect(savedMode).toBe('cross');
+
+        // В режиме "Крест" кнопка "Двигать" должна стать активной (enabled)
+        await expect(moveBtn).toBeEnabled();
+
+        // Возвращаем в режим "Лицом"
+        await toggleBtn.click();
+        await expect(toggleBtn).toContainText('Лицом');
+
+        const savedMode2 = await app.getLocalStorageItem('randomatched_result_view_mode');
+        expect(savedMode2).toBe('facing');
+
+        // Кнопка "Двигать" снова должна стать заблокирована (disabled)
+        await expect(moveBtn).toBeDisabled();
+    });
 });
