@@ -266,9 +266,9 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     };
 
     return (
-        <div className={`fixed inset-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
+        <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
             {/* Header with Safe Area */}
-            <div className="bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl sticky top-0 z-30 border-b border-slate-200/40 dark:border-slate-800/40 transition-all duration-300 shadow-xs">
+            <div className="bg-white/70 dark:bg-slate-900/75 backdrop-blur-xl sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/60 transition-all duration-300 shadow-xs">
                 <div 
                     className="px-4 py-3"
                     style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}

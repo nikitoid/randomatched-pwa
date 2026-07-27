@@ -375,7 +375,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   return (
     <div
-      className={`fixed inset-0 flex bg-slate-950/60 backdrop-blur-md transition-opacity duration-300 ${getContainerLayoutClass()} ${getBackdropOpacity()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
+      className={`fixed inset-0 flex bg-slate-950/75 ${animateState === 'entered' && !isDragging ? 'backdrop-blur-md' : ''} transition-opacity duration-300 ${getContainerLayoutClass()} ${getBackdropOpacity()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
       style={{
         zIndex: backdropZIndex,
         ...(viewportStyle.height ? { height: `${viewportStyle.height}px` } : {}),

@@ -695,12 +695,13 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
 
     return (
         <div 
-            style={{ willChange: 'transform, opacity' }}
-            className={`fixed inset-0 z-50 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl bg-grid-pattern flex flex-col transition-[transform,opacity] duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}
+            className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-[transform,opacity] duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}
         >
             {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
 
-            <div className={`bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl sticky top-0 z-30 border-b border-slate-200/40 dark:border-slate-800/40 transition-opacity duration-200 shadow-2xs ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}>
+            <div 
+                className={`bg-white/70 dark:bg-slate-900/75 backdrop-blur-xl sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/60 transition-opacity duration-200 shadow-2xs ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}
+            >
                 <div 
                     className="px-4 py-3 touch-manipulation"
                     style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
@@ -802,7 +803,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             <div className="flex-1 relative overflow-hidden">
                 {/* Editor Container */}
                 <div 
-                    className={`absolute inset-0 overflow-hidden bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl bg-grid-pattern ${editingListId ? 'block pointer-events-auto' : 'hidden pointer-events-none'}`}
+                    className={`absolute inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 bg-grid-pattern ${editingListId ? 'block pointer-events-auto' : 'hidden pointer-events-none'}`}
                 >
                     <div ref={editorContainerRef} className="absolute inset-0 overflow-y-auto no-scrollbar">
                         <div className="pb-safe-area-bottom px-4 pt-4">
@@ -854,8 +855,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 {/* Lists Main Screen */}
                 <div ref={listContainerRef} onTouchMove={handleTouchMove} className={`absolute inset-0 overflow-y-auto no-scrollbar ${editingListId ? 'hidden pointer-events-none' : 'block pointer-events-auto'}`}>
                     <div className="pb-safe-area-bottom">
-                        <div className="animate-in fade-in slide-in-from-bottom-2">
-                            <div className="flex items-center justify-between sticky top-0 z-30 px-4 pt-3 pb-3 bg-white/30 dark:bg-slate-950/30 backdrop-blur-xl border-b border-slate-200/40 dark:border-slate-800/40">
+                        <div>
+                            <div 
+                                className="flex items-center justify-between sticky top-0 z-30 px-4 pt-3.5 pb-3.5 bg-white/70 dark:bg-slate-900/75 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-xs"
+                            >
                                 <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-2xs ${isOnline ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-slate-200/80 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
                                     {isSyncing ? <><Loader2 size={11} className="animate-spin text-amber-500" /> Sync</> : isOnline ? <><Wifi size={11} className="text-emerald-500" /> Online</> : <><WifiOff size={11} className="text-slate-400" /> Offline</>}
                                 </div>

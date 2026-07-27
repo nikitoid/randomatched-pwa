@@ -536,7 +536,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 onPointerDown={(e) => handlePointerDown(e, position)}
             >
                 {isDraggingThis && (
-                    <div className="absolute inset-0 w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px] rounded-3xl border-2 border-dashed border-white/30 bg-white/5 backdrop-blur-sm animate-pulse z-0" />
+                    <div className="absolute inset-0 w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px] rounded-3xl border-2 border-dashed border-white/30 bg-white/10 animate-pulse z-0" />
                 )}
                 <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
                     {renderCardContent(player, false, isDraggingThis, isHoveredTarget)}

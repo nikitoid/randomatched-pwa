@@ -77,7 +77,7 @@ export const ListItem: React.FC<ListItemProps> = memo(({
     >
       <div 
          ref={cardRef}
-          className={`bg-white/90 dark:bg-slate-900/90 glass-card-gradient backdrop-blur-md p-4 rounded-2xl flex items-center transition-all duration-200 shadow-xs border border-slate-200/80 dark:border-slate-800/80 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 ${isCloudOffline ? 'bg-slate-50/70 dark:bg-slate-900/40 opacity-80' : ''}`}
+          className={`bg-white/70 dark:bg-slate-900/75 glass-card-gradient p-4 rounded-2xl flex items-center transition-all duration-200 shadow-xs border border-slate-200/60 dark:border-slate-800/60 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 ${isCloudOffline ? 'bg-slate-50/70 dark:bg-slate-900/40 opacity-80' : ''}`}
       >
         {isReorderMode && (
           <div 

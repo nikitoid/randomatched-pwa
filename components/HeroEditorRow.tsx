@@ -83,7 +83,7 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
                     onChange={handleNameChange}
                     placeholder={isPlaceholderRow ? "Добавить героя..." : "Имя героя"}
                     readOnly={isReadOnly || isFocused}
-                    className={`w-full px-3.5 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border outline-none transition-all duration-200 text-sm font-medium text-slate-900 dark:text-slate-100 shadow-2xs
+                    className={`w-full px-3.5 py-2 rounded-xl bg-white/70 dark:bg-slate-900/75 glass-card-gradient border outline-none transition-all duration-200 text-sm font-medium text-slate-900 dark:text-slate-100 shadow-2xs
                         ${hasLocalUpdate ? 'border-primary-400 dark:border-primary-600 ring-2 ring-primary-500/20' : 'border-slate-200/80 dark:border-slate-800/80 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20'}
                         ${isPlaceholderRow ? 'border-dashed border-slate-300 dark:border-slate-700/80 placeholder:italic placeholder:text-slate-400 dark:placeholder:text-slate-500' : ''}
                     `}
@@ -155,7 +155,7 @@ export const HeroViewRow: React.FC<HeroViewRowProps> = memo(({
             </div>
 
             {/* Name display */}
-            <div className={`flex-1 min-w-0 px-3.5 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border text-sm text-slate-800 dark:text-slate-200 font-medium truncate relative shadow-2xs
+            <div className={`flex-1 min-w-0 px-3.5 py-2 rounded-xl bg-white/70 dark:bg-slate-900/75 glass-card-gradient border text-sm text-slate-800 dark:text-slate-200 font-medium truncate relative shadow-2xs
                 ${hasLocalUpdate ? 'border-primary-400 dark:border-primary-600 ring-2 ring-primary-500/20' : 'border-slate-200/80 dark:border-slate-800/80'}
             `}>
                 {hero.name || <span className="text-slate-400 italic">Без имени</span>}

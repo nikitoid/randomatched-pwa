@@ -76,7 +76,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => { triggerHaptic(10); onOpenSeasonsManager(); }}
-                                        className="min-h-[36px] px-3 py-1.5 rounded-xl border border-primary-500/30 bg-primary-500/10 hover:bg-primary-500/20 text-primary-600 dark:text-primary-400 font-extrabold text-[11px] flex items-center gap-1.5 active:scale-95 transition-all backdrop-blur-md"
+                                        className="min-h-[36px] px-3 py-1.5 rounded-xl border border-primary-500/30 bg-primary-500/10 hover:bg-primary-500/20 text-primary-600 dark:text-primary-400 font-extrabold text-[11px] flex items-center gap-1.5 active:scale-95 transition-all"
                                     >
                                         <Settings size={13} />
                                         <span>Настройка сезонов</span>
@@ -91,7 +91,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                     className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${
                                         selectedSeasonId === 'all'
                                             ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                                            : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/60 text-slate-700 dark:text-slate-200'
+                                            : 'bg-white/70 dark:bg-slate-900/75 border border-slate-200/80 dark:border-slate-700/60 text-slate-700 dark:text-slate-200'
                                     }`}
                                 >
                                     Все время
@@ -107,7 +107,7 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                         className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${
                                             selectedSeasonId === season.id
                                                 ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                                                : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/60 text-slate-700 dark:text-slate-200'
+                                                : 'bg-white/70 dark:bg-slate-900/75 border border-slate-200/80 dark:border-slate-700/60 text-slate-700 dark:text-slate-200'
                                         }`}
                                     >
                                         {season.name}

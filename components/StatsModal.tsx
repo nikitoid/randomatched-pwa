@@ -903,7 +903,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
             <div
                 data-testid="stats-modal"
-                className={`fixed inset-0 z-[60] flex items-center justify-center bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl bg-grid-pattern transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                className={`fixed inset-0 z-[60] flex items-center justify-center bg-slate-50 dark:bg-slate-950 bg-grid-pattern transition-all duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
                 onClick={onClose}
             >
                 <div
@@ -911,7 +911,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     onClick={e => e.stopPropagation()}
                 >
                     <div 
-                        className="p-4 border-b border-slate-200/40 dark:border-slate-800/40 flex items-center justify-between shrink-0 bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl z-10 sticky top-0 touch-manipulation"
+                        className="p-4 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/70 dark:bg-slate-900/75 backdrop-blur-xl z-10 sticky top-0 touch-manipulation"
                         style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
                     >
                         <h2
@@ -981,7 +981,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         value={currentSearchState.value}
                                         onChange={(e) => currentSearchState.onChange(e.target.value)}
                                         placeholder={currentSearchState.placeholder}
-                                        className="w-full pl-8 pr-8 py-1.5 h-9 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md rounded-xl text-xs border border-slate-200/80 dark:border-slate-700/60 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
+                                        className="w-full pl-8 pr-8 py-1.5 h-9 bg-white/80 dark:bg-slate-900/80 rounded-xl text-xs border border-slate-200/80 dark:border-slate-700/60 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
                                     />
                                     <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                     {currentSearchState.value && (
@@ -995,7 +995,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 </div>
                                 <button
                                     onClick={() => { setIsSearchExpanded(false); triggerHaptic(10); }}
-                                    className="h-9 px-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 active:scale-95 transition-all"
+                                    className="h-9 px-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 active:scale-95 transition-all"
                                 >
                                     Готово
                                 </button>
@@ -1007,7 +1007,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 <button
                                     onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
                                     title={isDateFilterOpen ? "Свернуть настройки периода" : "Открыть настройки периода"}
-                                    className={`h-9 px-2.5 text-xs font-bold rounded-xl flex items-center justify-between gap-1 flex-1 min-w-0 transition-all active:scale-95 border backdrop-blur-md ${
+                                    className={`h-9 px-2.5 text-xs font-bold rounded-xl flex items-center justify-between gap-1 flex-1 min-w-0 transition-all active:scale-95 border ${
                                         isDateFilterOpen
                                             ? 'bg-primary-500/10 dark:bg-primary-500/20 border-primary-500/60 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500/30 shadow-xs font-extrabold'
                                             : filterStartDate && filterEndDate && filterEndDate < filterStartDate
