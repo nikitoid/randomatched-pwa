@@ -425,6 +425,7 @@ const App: React.FC = () => {
                     setPrioritizeUnplayed={setPrioritizeUnplayed}
                     isDebugMode={isDebugMode}
                     history={history}
+                    bgGradient={bgGradient}
                 />
 
                 <ListsOverlay

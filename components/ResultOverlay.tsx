@@ -32,6 +32,7 @@ interface ResultOverlayProps {
     setPrioritizeUnplayed?: (val: boolean) => void;
     isDebugMode?: boolean;
     history?: MatchRecord[];
+    bgGradient?: boolean;
 }
 
 type Position = 'top' | 'bottom' | 'left' | 'right';
@@ -72,7 +73,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     prioritizeUnplayed = false,
     setPrioritizeUnplayed,
     isDebugMode = false,
-    history = []
+    history = [],
+    bgGradient
 }) => {
     const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
     const [displayModal, setDisplayModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
@@ -388,9 +390,17 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
         const isTeamOdd = player.team === 'Odd';
 
+        const shadowStyle = isGradientActive
+            ? isTeamOdd
+                ? "shadow-[0_0_50px_rgba(var(--secondary-500)/0.65)] ring-1 ring-secondary-300/40"
+                : "shadow-[0_0_50px_rgba(var(--primary-500)/0.65)] ring-1 ring-primary-300/40"
+            : isTeamOdd
+                ? "shadow-[0_0_25px_rgba(var(--secondary-500)/0.4)]"
+                : "shadow-[0_0_25px_rgba(var(--primary-500)/0.4)]";
+
         const gradient = isTeamOdd
-            ? "bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white shadow-[0_0_25px_rgba(var(--secondary-500)/0.4)] border border-secondary-200/30"
-            : "bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white shadow-[0_0_25px_rgba(var(--primary-500)/0.4)] border border-primary-200/30";
+            ? `bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white ${shadowStyle} border border-secondary-200/30`
+            : `bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white ${shadowStyle} border border-primary-200/30`;
 
         const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 active:from-white/30 active:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
 
@@ -419,6 +429,19 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     pointerEvents: 'none',
                 } : undefined}
             >
+                {/* Динамическое широкое свечение карточки при включенной опции "Градиентный фон" */}
+                {isGradientActive && (
+                    <div
+                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full transition-all duration-500 ease-out blur-[60px] sm:blur-[80px] opacity-90 dark:opacity-95 animate-pulse-soft -z-10"
+                        style={{
+                            width: isFloating ? 'min(70vw, 360px)' : 'min(75vmin, 480px)',
+                            height: isFloating ? 'min(70vw, 360px)' : 'min(75vmin, 480px)',
+                            background: isTeamOdd
+                                ? 'radial-gradient(circle, rgba(var(--secondary-500)/0.7) 0%, rgba(var(--secondary-500)/0.25) 45%, transparent 75%)'
+                                : 'radial-gradient(circle, rgba(var(--primary-500)/0.7) 0%, rgba(var(--primary-500)/0.25) 45%, transparent 75%)',
+                        }}
+                    />
+                )}
                 {!isFloating && hasHero && !isDragMode && (
                     <div className="absolute top-0 left-0 w-full flex justify-between p-2 animate-fade-in z-20">
                         <button onClick={(e) => handleBanClick(e, player)} className={buttonStyle}><Ban size={14} /></button>
@@ -602,6 +625,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         return names.join(' и ');
     };
 
+    const isGradientActive = bgGradient ?? (typeof document !== 'undefined' && document.documentElement.getAttribute('data-bg-gradient') === 'true');
+
     const handleResetClick = () => {
         if (filledNamesCount === 0) {
             setConfirmModal({ type: 'ban_all' });
@@ -612,7 +637,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     return (
         <>
-            <div data-testid="result-overlay" className={`fixed inset-0 z-50 bg-slate-200/90 dark:bg-slate-950/90 backdrop-blur-xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
+            <div data-testid="result-overlay" className={`fixed inset-0 z-50 bg-slate-200/95 dark:bg-slate-950/95 backdrop-blur-2xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
                 {/* Мягкая фоновая сетка с размытием */}
                 <div className="absolute inset-0 bg-grid-pattern opacity-40 dark:opacity-30 pointer-events-none blur-[1.5px] z-0" />
 
