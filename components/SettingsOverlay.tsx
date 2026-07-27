@@ -549,7 +549,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                                 <Sparkles size={20} className={bgGradient ? 'animate-pulse' : ''} />
                                                             </div>
                                                             <div className="text-left min-w-0 flex-1">
-                                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Градиентный фон</h4>
+                                                                <h4 className="font-bold text-slate-900 dark:text-white text-sm">Эмбиент-фон</h4>
                                                                 <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Мягкое эмбиентное свечение цветовой схемы</p>
                                                             </div>
                                                         </div>

@@ -429,7 +429,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     pointerEvents: 'none',
                 } : undefined}
             >
-                {/* Динамическое широкое свечение карточки при включенной опции "Градиентный фон" */}
+                {/* Динамическое широкое свечение карточки при включенной опции "Эмбиент-фон" */}
                 {isGradientActive && (
                     <div
                         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none rounded-full transition-all duration-500 ease-out blur-[60px] sm:blur-[80px] opacity-90 dark:opacity-95 animate-pulse-soft -z-10"
