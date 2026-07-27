@@ -450,7 +450,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
         const transitionClass = (isFloating || !isViewModeAnimating)
             ? 'transition-none'
-            : 'transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
+            : 'transition-[width,height,transform,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
         const cardSizeClass = isFloating
             ? 'w-32 h-20'
@@ -461,7 +461,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         return (
             <div
                 className={`
-                relative flex flex-col items-center justify-center p-3 select-none ${transitionClass}
+                relative flex flex-col items-center justify-center p-3 select-none [transform:translateZ(0)] [backface-visibility:hidden] ${transitionClass}
                 ${gradient}
                 ${isFloating
                         ? `${cardSizeClass} rounded-2xl shadow-2xl ring-4 ring-white/50 z-[100]`
@@ -480,14 +480,21 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {/* Динамическое широкое свечение карточки при включенной опции "Эмбиент-фон" */}
                 {isGradientActive && (
                     <div
-                        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none -z-10"
+                        className="absolute left-1/2 top-1/2 pointer-events-none -z-10 [transform:translateZ(0)] [backface-visibility:hidden]"
                         style={{
-                            width: isFloating ? 'min(70vw, 360px)' : viewMode === 'facing' ? 'min(60vw, 340px)' : 'min(75vmin, 480px)',
-                            height: isFloating ? 'min(70vw, 360px)' : viewMode === 'facing' ? 'min(60vw, 340px)' : 'min(75vmin, 480px)',
+                            width: '320px',
+                            height: '320px',
+                            transform: isFloating
+                                ? 'translate(-50%, -50%) scale(0.95)'
+                                : viewMode === 'facing'
+                                    ? 'translate(-50%, -50%) scale(0.9)'
+                                    : 'translate(-50%, -50%) scale(1.1)',
+                            transition: isViewModeAnimating ? 'transform 500ms cubic-bezier(0.34,1.56,0.64,1)' : 'none',
+                            willChange: isViewModeAnimating ? 'transform' : 'auto'
                         }}
                     >
                         <div
-                            className="w-full h-full rounded-full transition-all duration-500 ease-out blur-[60px] sm:blur-[80px] opacity-90 dark:opacity-95 animate-pulse-soft"
+                            className={`w-full h-full rounded-full blur-[45px] sm:blur-[55px] opacity-90 dark:opacity-95 [transform:translateZ(0)] [backface-visibility:hidden] ${isViewModeAnimating ? '' : 'animate-pulse-soft'}`}
                             style={{
                                 background: isTeamOdd
                                     ? 'radial-gradient(circle, rgba(var(--secondary-500)/0.7) 0%, rgba(var(--secondary-500)/0.25) 45%, transparent 75%)'
@@ -523,7 +530,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 )}
 
                 {/* Main Content */}
-                <div className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${isFloating ? 'scale-75' : ''}`}>
+                <div className={`flex flex-col items-center justify-center w-full transition-transform duration-300 ${isFloating ? 'scale-75' : ''}`}>
                     {!isFloating && (
                         <h2
                             className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-lg sm:text-2xl'}`}
@@ -536,7 +543,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         <div className="text-3xl font-bold opacity-90 drop-shadow-md">{displayName.charAt(0).toUpperCase() || <Users size={32} />}</div>
                     )}
 
-                    <div className={`flex items-center gap-2 opacity-90 z-10 transition-all duration-300 ${isFloating ? 'mt-0' : 'absolute bottom-3'}`}>
+                    <div className={`flex items-center gap-2 opacity-90 z-10 transition-[transform,opacity] duration-300 ${isFloating ? 'mt-0' : 'absolute bottom-3'}`}>
                         {!isFloating && !showNumberBadge && <Users size={14} />}
                         {showNumberBadge && !isFloating && (
                             <div className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 text-[10px] sm:text-xs font-black shadow-sm border border-white/10">{player.playerNumber}</div>
@@ -640,7 +647,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             <div
                 key={player.position}
                 ref={(el) => { cardRefs.current[position] = el; }}
-                className={`z-10 pointer-events-auto ${shouldAnimate ? 'transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]' : 'transition-none'}`}
+                className={`z-10 pointer-events-auto [transform:translateZ(0)] [backface-visibility:hidden] ${shouldAnimate ? 'transition-[top,left,transform] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]' : 'transition-none'}`}
                 style={{
                     ...positionStyle,
                     touchAction: 'none',
@@ -894,7 +901,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 )}
 
                 {/* Board Container */}
-                <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none flex items-center justify-center">
+                <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none flex items-center justify-center [transform:translateZ(0)]">
 
                     {/* Horizontal Divider Line between teams in facing mode */}
                     <div
