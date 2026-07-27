@@ -492,10 +492,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                             medium: 'Стандарт',
                                                             full: 'Круглые'
                                                         };
-                                                        const previewClass: Record<ThemeRoundness, string> = {
-                                                            sharp: 'rounded-none',
-                                                            medium: 'rounded-md',
-                                                            full: 'rounded-full'
+                                                        const previewStyle: Record<ThemeRoundness, React.CSSProperties> = {
+                                                            sharp: { borderRadius: '0px' },
+                                                            medium: { borderRadius: '6px' },
+                                                            full: { borderRadius: '9999px' }
                                                         };
                                                         const isSelected = roundness === r;
                                                         return (
@@ -508,7 +508,10 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
                                                                 }`}
                                                             >
-                                                                <div className={`w-5 h-5 mb-1 border-2 border-current ${previewClass[r]}`} />
+                                                                <div 
+                                                                    className="w-5 h-5 mb-1 border-2 border-current" 
+                                                                    style={previewStyle[r]} 
+                                                                />
                                                                 <span>{labels[r]}</span>
                                                             </button>
                                                         );
