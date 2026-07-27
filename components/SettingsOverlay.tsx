@@ -521,38 +521,38 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                 <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5 px-1">Визуальные эффекты</h3>
                                                 <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80">
                                                     {/* Background Grid Pattern Toggle */}
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgPattern ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                            <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgPattern ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                                                                 <Grid size={20} />
                                                             </div>
-                                                            <div>
+                                                            <div className="text-left min-w-0 flex-1">
                                                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm">Фоновая сетка</h4>
                                                                 <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Текстурный точечный паттерн интерфейса</p>
                                                             </div>
                                                         </div>
                                                         <button
                                                             onClick={() => { setBgPattern && setBgPattern(!bgPattern); triggerHaptic(10); }}
-                                                            className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                            className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                                         >
                                                             <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${bgPattern ? 'translate-x-6' : 'translate-x-1'}`} />
                                                         </button>
                                                     </div>
 
                                                     {/* Background Gradient Toggle */}
-                                                    <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-200/60 dark:border-slate-800/60">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${bgGradient ? 'bg-gradient-to-br from-primary-500/20 to-secondary-500/20 text-primary-600 dark:text-primary-300 ring-1 ring-primary-500/40 shadow-sm' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                    <div className="flex items-center justify-between gap-3 pt-3 mt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+                                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                            <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${bgGradient ? 'bg-gradient-to-br from-primary-500/20 to-secondary-500/20 text-primary-600 dark:text-primary-300 ring-1 ring-primary-500/40 shadow-sm' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                                                                 <Sparkles size={20} className={bgGradient ? 'animate-pulse' : ''} />
                                                             </div>
-                                                            <div>
+                                                            <div className="text-left min-w-0 flex-1">
                                                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm">Градиентный фон</h4>
                                                                 <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">Мягкое эмбиентное свечение цветовой схемы</p>
                                                             </div>
                                                         </div>
                                                         <button
                                                             onClick={() => { setBgGradient && setBgGradient(!bgGradient); triggerHaptic(10); }}
-                                                            className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgGradient ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                            className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgGradient ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                                         >
                                                             <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${bgGradient ? 'translate-x-6' : 'translate-x-1'}`} />
                                                         </button>
@@ -573,19 +573,19 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
                                     {/* Haptics Setting Card */}
                                     <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${hapticsEnabled ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${hapticsEnabled ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                                                     <Vibrate size={20} />
                                                 </div>
-                                                <div className="text-left">
+                                                <div className="text-left min-w-0 flex-1">
                                                     <h4 className="font-bold text-slate-900 dark:text-white text-sm">Тактильный отклик</h4>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400">Вибрация при нажатии элементов</p>
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={() => { onToggleHaptics && onToggleHaptics(); triggerHaptic(10); }}
-                                                className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${hapticsEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${hapticsEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                             >
                                                 <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${hapticsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
                                             </button>
@@ -594,19 +594,19 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
                                     {/* Developer Mode Setting Card */}
                                     <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDebugMode ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isDebugMode ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
                                                     <Terminal size={20} />
                                                 </div>
-                                                <div className="text-left">
+                                                <div className="text-left min-w-0 flex-1">
                                                     <h4 className="font-bold text-slate-900 dark:text-white text-sm">Режим разработчика</h4>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400">Отображение весов алгоритма и Debug вкладки</p>
                                                 </div>
                                             </div>
                                             <button
                                                 onClick={() => { onToggleDebug && onToggleDebug(!isDebugMode); triggerHaptic(10); }}
-                                                className={`relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${isDebugMode ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                                className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${isDebugMode ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                             >
                                                 <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${isDebugMode ? 'translate-x-6' : 'translate-x-1'}`} />
                                             </button>
