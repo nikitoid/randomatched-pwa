@@ -542,8 +542,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                     {/* Background Gradient Toggle */}
                                                     <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-200/60 dark:border-slate-800/60">
                                                         <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${bgGradient ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
-                                                                <Sparkles size={20} />
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${bgGradient ? 'bg-gradient-to-br from-primary-500/20 to-secondary-500/20 text-primary-600 dark:text-primary-300 ring-1 ring-primary-500/40 shadow-sm' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                                <Sparkles size={20} className={bgGradient ? 'animate-pulse' : ''} />
                                                             </div>
                                                             <div>
                                                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm">Градиентный фон</h4>

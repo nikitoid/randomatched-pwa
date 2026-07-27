@@ -117,7 +117,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                 onClick={() => {
                                     openPlayerDetails(player);
                                 }}
-                                className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
+                                className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer"
                             >
                                 <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                                     <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400' :

@@ -45,14 +45,14 @@ export const MainControls: React.FC<MainControlsProps> = ({
                 </button>
             </div>
 
-            <div className="mt-5 flex items-center justify-center gap-2.5 flex-wrap relative z-0 touch-manipulation min-h-[44px]">
+            <div className="mt-5 flex items-center justify-center gap-2.5 w-full max-w-xs mx-auto relative z-0 touch-manipulation min-h-[44px]">
                 {hasResult && (
                     <button 
                         data-testid="open-session-button"
                         onClick={handleOpenSession} 
-                        className="flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-full bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-primary-100 dark:active:bg-primary-900/50 transition-all duration-150"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full bg-primary-100/70 dark:bg-primary-950/60 glass-pill-gradient text-primary-700 dark:text-primary-300 shadow-sm text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-primary-200/80 dark:active:bg-primary-900/70 transition-all duration-150 border-none outline-none"
                     >
-                        <Eye size={14} /> Открыть сессию
+                        <Eye size={14} className="shrink-0" /> <span className="truncate">Открыть сессию</span>
                     </button>
                 )}
 
@@ -60,9 +60,9 @@ export const MainControls: React.FC<MainControlsProps> = ({
                     <button 
                         data-testid="reset-session-button"
                         onClick={handleResetSessionClick} 
-                        className="flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-full bg-red-100/50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-red-100 dark:active:bg-red-900/50 transition-all duration-150"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full bg-rose-100/70 dark:bg-rose-950/60 glass-pill-gradient text-rose-700 dark:text-rose-300 shadow-sm text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-rose-200/80 dark:active:bg-rose-900/70 transition-all duration-150 border-none outline-none"
                     >
-                        <Trash2 size={14} /> Сбросить сессию
+                        <Trash2 size={14} className="shrink-0" /> <span className="truncate">Сбросить сессию</span>
                     </button>
                 )}
             </div>

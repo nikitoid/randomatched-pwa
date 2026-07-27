@@ -184,9 +184,9 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
     const winRate = matchesCount > 0 ? (winsCount / matchesCount) * 100 : 0;
 
     return (
-        <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950 bg-grid-pattern animate-in slide-in-from-right duration-300">
+        <div className="h-full flex flex-col bg-transparent animate-in slide-in-from-right duration-300">
             {/* Sticky Header with Backdrop Blur */}
-            <div className="py-3 px-4 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 flex items-center gap-3 shrink-0 sticky top-0 z-20 shadow-xs">
+            <div className="py-3 px-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-b border-slate-200/40 dark:border-slate-800/40 flex items-center gap-3 shrink-0 sticky top-0 z-20 shadow-xs">
                 {!isEditing && (
                     <button
                         onClick={onBack}

@@ -72,7 +72,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
         <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-50' : 'z-20'}`}>
             <button
                 onClick={() => setIsNamesOpen(!isNamesOpen)}
-                className={`w-full p-4 min-h-[64px] flex items-center justify-between text-left bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 transition-all duration-300 touch-manipulation ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm active:scale-[0.99]'}`}
+                className={`w-full p-4 min-h-[64px] flex items-center justify-between text-left bg-white dark:bg-slate-900 glass-card-gradient border border-slate-100 dark:border-slate-800 transition-all duration-300 touch-manipulation ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm active:scale-[0.99]'}`}
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                     <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${hasFilledNames ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
@@ -88,7 +88,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                 </div>
             </button>
 
-            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl transition-all duration-300 origin-top ${isNamesOpen ? 'opacity-100 scale-y-100 pointer-events-auto overflow-visible' : 'opacity-0 scale-y-0 pointer-events-none overflow-hidden'}`}>
+            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 glass-dropdown-gradient border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl transition-all duration-300 origin-top ${isNamesOpen ? 'opacity-100 scale-y-100 pointer-events-auto overflow-visible' : 'opacity-0 scale-y-0 pointer-events-none overflow-hidden'}`}>
                 <div className="p-4 pt-5">
 
                     {savedTeams.length > 0 && (
