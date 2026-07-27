@@ -238,7 +238,7 @@ body {
   animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Hero Reveal Animations */
+/* Hero Reveal Animations (GPU Accelerated) */
 @keyframes heroIn {
   0% {
     opacity: 0;
@@ -255,6 +255,7 @@ body {
 
 .animate-hero-reveal {
   animation: heroIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  will-change: transform, opacity, filter;
 }
 
 /* Smother Hero Reveal */
@@ -274,6 +275,7 @@ body {
 
 .reveal-smooth {
   animation: heroInSmooth 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  will-change: transform, opacity, filter;
 }
 
 /* Адаптивное вертикальное выравнивание для главного экрана */
@@ -369,7 +371,7 @@ body {
 }
 
 
-/* Фоновый узор (Background Pattern) - задается прямо на body для надежности */
+/* Фоновый узор (Background Pattern) */
 [data-bg-pattern="true"] body,
 [data-bg-pattern="true"] .bg-grid-pattern {
   background-image: radial-gradient(rgb(var(--primary-500) / 0.12) 1.5px, transparent 1.5px) !important;
@@ -379,6 +381,7 @@ body {
 .dark[data-bg-pattern="true"] body,
 .dark[data-bg-pattern="true"] .bg-grid-pattern {
   background-image: radial-gradient(rgb(var(--primary-400) / 0.16) 1.5px, transparent 1.5px) !important;
+  background-size: 24px 24px !important;
 }
 
 /* Градиентный задний фон приложения (Gradient Background) */
@@ -415,17 +418,21 @@ body {
   background-size: 24px 24px, 100% 100%, 100% 100% !important;
 }
 
-/* Glassmorphism & Gradient UI Enhancements (High-Performance GPU-Friendly) */
+/* Glassmorphism & Gradient UI Enhancements (GPU Accelerated & Cached) */
 [data-bg-gradient="true"] .glass-card-gradient {
   background-color: rgba(255, 255, 255, 0.65) !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .dark[data-bg-gradient="true"] .glass-card-gradient {
   background-color: rgba(15, 23, 42, 0.65) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.04) !important;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 [data-bg-gradient="true"] .glass-dropdown-gradient {
@@ -434,6 +441,9 @@ body {
   -webkit-backdrop-filter: blur(16px);
   border-color: rgba(255, 255, 255, 0.6) !important;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12) !important;
+  will-change: transform, opacity;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .dark[data-bg-gradient="true"] .glass-dropdown-gradient {
@@ -442,6 +452,9 @@ body {
   -webkit-backdrop-filter: blur(16px);
   border-color: rgba(255, 255, 255, 0.1) !important;
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.45) !important;
+  will-change: transform, opacity;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 [data-bg-gradient="true"] .glass-pill-gradient {
@@ -458,6 +471,9 @@ body {
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow: 0 0 25px 3px rgba(var(--primary-500) / 0.22), 0 8px 25px -3px rgba(0, 0, 0, 0.1) !important;
   border: none !important;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .dark[data-bg-gradient="true"] nav.main-nav-gradient {
@@ -466,6 +482,9 @@ body {
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow: 0 0 32px 5px rgba(var(--primary-500) / 0.38), 0 12px 30px -5px rgba(0, 0, 0, 0.7) !important;
   border: none !important;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Minimal subtle micro-glow for secondary session action buttons */
