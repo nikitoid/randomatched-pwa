@@ -382,7 +382,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                             <div className="w-6 h-6 rounded-lg bg-primary-500 text-white flex items-center justify-center font-black text-xs shadow-xs">
                                                                 R
                                                             </div>
-                                                            <span className="text-xs font-black text-slate-900 dark:text-white">Матчмейкер</span>
+                                                            <span className="text-xs font-black text-slate-900 dark:text-white">Randomatched</span>
                                                         </div>
                                                         <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">v{APP_VERSION}</span>
                                                     </div>
