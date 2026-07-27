@@ -185,7 +185,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                 {/* Stats 2x2 Grid */}
                 <div className="grid grid-cols-2 gap-3">
                     {/* Matches / Popularity */}
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Популярность</span>
                             <div className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
@@ -201,7 +201,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                     </div>
 
                     {/* Winrate Card */}
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Винрейт</span>
                             <div className="w-7 h-7 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -219,7 +219,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                     </div>
 
                     {/* Top Performers Card */}
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Исполнители</span>
                             <div className="w-7 h-7 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
@@ -235,7 +235,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                     </div>
 
                     {/* Synergies Card */}
-                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
+                    <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
                         <div className="flex items-center justify-between mb-2">
                             <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Связки</span>
                             <div className="w-7 h-7 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -252,7 +252,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                 </div>
 
                 {/* Top Players Section */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
+                <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                     <div
                         className="flex items-center justify-between cursor-pointer select-none"
                         onClick={() => setPlayersState(prev => {
@@ -364,7 +364,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                 </div>
 
                 {/* Top Synergies Section */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
+                <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                     <div
                         className="flex items-center justify-between cursor-pointer select-none"
                         onClick={() => setSynergiesState(prev => {
@@ -514,7 +514,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                         return (
                                             <div
                                                 key={m.id}
-                                                className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden active:scale-[0.99] transition-transform"
+                                                className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden active:scale-[0.99] transition-transform"
                                             >
                                                 {/* Left Accent Strip */}
                                                 <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${won ? 'bg-emerald-500' : 'bg-rose-500'}`} />
@@ -574,7 +574,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                                     return (
                                                         <div
                                                             key={m.id}
-                                                            className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden active:scale-[0.99] transition-transform"
+                                                            className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-3.5 shadow-xs relative overflow-hidden active:scale-[0.99] transition-transform"
                                                         >
                                                             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${won ? 'bg-emerald-500' : 'bg-rose-500'}`} />
 
@@ -632,7 +632,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                     )}
                                 </div>
                             ) : (
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 text-center text-slate-400 text-xs">
+                                <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 text-center text-slate-400 text-xs">
                                     История игр отсутствует
                                 </div>
                             )}

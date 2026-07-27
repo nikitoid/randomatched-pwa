@@ -78,7 +78,7 @@ export const StatsMatchesTab: React.FC<StatsMatchesTabProps> = ({
                                     return (
                                         <div
                                             key={match.id}
-                                            className={`relative overflow-hidden p-3.5 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-150/80 dark:border-slate-800/60 transition-all ${editMode ? 'pr-12' : ''}`}
+                                            className={`relative overflow-hidden p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150/80 dark:border-slate-800/60 transition-all ${editMode ? 'pr-12' : ''}`}
                                         >
                                             {/* Шапка карточки матча */}
                                             <div className="flex justify-between items-center mb-3 border-b border-slate-50 dark:border-slate-700/50 pb-2">
@@ -242,7 +242,7 @@ export const StatsMatchesTab: React.FC<StatsMatchesTabProps> = ({
                             return (
                                 <div
                                     key={match.id}
-                                    className="relative overflow-hidden p-3 rounded-2xl bg-slate-50/90 dark:bg-slate-900/60 shadow-sm border border-red-200/60 dark:border-red-950/40 pr-20"
+                                    className="relative overflow-hidden p-3 rounded-2xl bg-slate-50/90 dark:bg-slate-900/60 glass-card-gradient shadow-sm border border-red-200/60 dark:border-red-950/40 pr-20"
                                 >
                                     <div className="flex justify-between items-start mb-3 border-b border-slate-100 dark:border-slate-700/50 pb-2">
                                         <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1"><Trash2 size={10} /> {date} <span className="opacity-50">|</span> {time}</span>
