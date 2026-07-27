@@ -102,6 +102,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         }
     });
 
+    const [isViewModeAnimating, setIsViewModeAnimating] = useState(false);
+    const viewModeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(() => {
         try {
             localStorage.setItem('randomatched_result_view_mode', viewMode);
@@ -110,7 +113,19 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         }
     }, [viewMode]);
 
+    useEffect(() => {
+        return () => {
+            if (viewModeTimerRef.current) clearTimeout(viewModeTimerRef.current);
+        };
+    }, []);
+
     const toggleViewMode = () => {
+        setIsViewModeAnimating(true);
+        if (viewModeTimerRef.current) clearTimeout(viewModeTimerRef.current);
+        viewModeTimerRef.current = setTimeout(() => {
+            setIsViewModeAnimating(false);
+        }, 550);
+
         setViewMode(prev => {
             const next = prev === 'facing' ? 'cross' : 'facing';
             if (next === 'facing') {
@@ -433,7 +448,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
         const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 active:from-white/30 active:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
 
-        const transitionClass = isFloating ? 'transition-none' : 'transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
+        const transitionClass = (isFloating || !isViewModeAnimating)
+            ? 'transition-none'
+            : 'transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
         const cardSizeClass = isFloating
             ? 'w-32 h-20'
@@ -509,9 +526,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 <div className={`flex flex-col items-center justify-center w-full transition-all duration-300 ${isFloating ? 'scale-75' : ''}`}>
                     {!isFloating && (
                         <h2
-                            key={player.hero?.id || 'unknown'}
-                            style={hasHero ? { animationDelay: `${index * 150}ms` } : {}}
-                            className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 ${hasHero ? 'reveal-smooth' : ''} ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-lg sm:text-2xl'}`}
+                            className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-lg sm:text-2xl'}`}
                         >
                             {hasHero ? heroName : <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>}
                         </h2>
@@ -537,6 +552,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         const position = player.position;
         const isDraggingThis = activeDrag?.id === position;
         const isHoveredTarget = hoveredTarget === position;
+        const shouldAnimate = isViewModeAnimating && !isDraggingThis;
 
         let positionStyle: React.CSSProperties = {};
 
@@ -622,9 +638,14 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
         return (
             <div
+                key={player.position}
                 ref={(el) => { cardRefs.current[position] = el; }}
-                className="z-10 pointer-events-auto"
-                style={{ ...positionStyle, touchAction: 'none' }}
+                className={`z-10 pointer-events-auto ${shouldAnimate ? 'transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]' : 'transition-none'}`}
+                style={{
+                    ...positionStyle,
+                    touchAction: 'none',
+                    willChange: shouldAnimate ? 'top, left, transform' : 'auto'
+                }}
                 onPointerDown={(e) => handlePointerDown(e, position)}
             >
                 {isDraggingThis && (
@@ -876,32 +897,34 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none flex items-center justify-center">
 
                     {/* Horizontal Divider Line between teams in facing mode */}
-                    {viewMode === 'facing' && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[540px] px-6 z-20 pointer-events-none flex items-center justify-center animate-fade-in">
-                            <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-400/40 dark:via-slate-500/40 to-transparent shadow-sm" />
-                        </div>
-                    )}
+                    <div
+                        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[540px] px-6 z-20 pointer-events-none flex items-center justify-center transition-all duration-500 ease-in-out ${
+                            viewMode === 'facing' ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                        }`}
+                    >
+                        <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-400/40 dark:via-slate-500/40 to-transparent shadow-sm" />
+                    </div>
 
                     {/* Team Badges in facing mode */}
-                    {viewMode === 'facing' && !isDragMode && (
-                        <>
-                            <div
-                                className="absolute left-1/2 -translate-x-1/2 -translate-y-full z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-500/15 dark:bg-secondary-500/25 backdrop-blur-md border border-secondary-400/30 text-secondary-700 dark:text-secondary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm animate-fade-in"
-                                style={{ top: 'calc(50% - min(43vmin, 265px))' }}
-                            >
-                                <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_8px_rgba(var(--secondary-500)/0.8)]" />
-                                <span>Команда 1</span>
-                            </div>
+                    <div
+                        className={`absolute left-1/2 -translate-x-1/2 -translate-y-full z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-500/15 dark:bg-secondary-500/25 backdrop-blur-md border border-secondary-400/30 text-secondary-700 dark:text-secondary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-500 ease-in-out ${
+                            viewMode === 'facing' && !isDragMode ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                        }`}
+                        style={{ top: 'calc(50% - min(43vmin, 265px))' }}
+                    >
+                        <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_8px_rgba(var(--secondary-500)/0.8)]" />
+                        <span>Команда 1</span>
+                    </div>
 
-                            <div
-                                className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-500/15 dark:bg-primary-500/25 backdrop-blur-md border border-primary-400/30 text-primary-700 dark:text-primary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm animate-fade-in"
-                                style={{ top: 'calc(50% + min(43vmin, 265px))' }}
-                            >
-                                <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(var(--primary-500)/0.8)]" />
-                                <span>Команда 2</span>
-                            </div>
-                        </>
-                    )}
+                    <div
+                        className={`absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-500/15 dark:bg-primary-500/25 backdrop-blur-md border border-primary-400/30 text-primary-700 dark:text-primary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-500 ease-in-out ${
+                            viewMode === 'facing' && !isDragMode ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                        }`}
+                        style={{ top: 'calc(50% + min(43vmin, 265px))' }}
+                    >
+                        <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(var(--primary-500)/0.8)]" />
+                        <span>Команда 2</span>
+                    </div>
 
                     {getPlayer('top') && renderCardContainer(getPlayer('top')!)}
                     {getPlayer('bottom') && renderCardContainer(getPlayer('bottom')!)}
