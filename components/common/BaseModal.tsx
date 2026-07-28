@@ -305,7 +305,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     if (e && 'pointerType' in e && e.pointerType === 'touch') return;
     setIsDragging(false);
 
-    if (e && e.cancelable) {
+    if (e && e.cancelable && Math.abs(currentDragYRef.current) > 10) {
       e.preventDefault();
     }
 
@@ -477,13 +477,20 @@ export const BaseModal: React.FC<BaseModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 pointer-events-auto" onPointerDown={e => e.stopPropagation()}>
+            <div
+              className="flex items-center gap-2 shrink-0 pointer-events-auto"
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               {headerActions}
               {showCloseButton && (
                 <button
+                  type="button"
                   onClick={handleRequestClose}
                   data-testid={closeButtonTestId}
-                  className="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white active:bg-slate-200 dark:active:bg-slate-700 active:scale-95 transition-all flex items-center justify-center"
+                  className="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white active:bg-slate-200 dark:active:bg-slate-700 active:scale-95 transition-all flex items-center justify-center cursor-pointer select-none"
                   aria-label="Закрыть"
                 >
                   <X size={18} />
