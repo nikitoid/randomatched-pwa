@@ -436,21 +436,21 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
         const shadowStyle = isGradientActive
             ? isTeamOdd
-                ? "shadow-[0_0_50px_rgba(var(--secondary-500)/0.65)] ring-1 ring-secondary-300/40"
-                : "shadow-[0_0_50px_rgba(var(--primary-500)/0.65)] ring-1 ring-primary-300/40"
+                ? "shadow-[0_0_30px_rgba(var(--primary-500)/0.5)] ring-1 ring-primary-300/40"
+                : "shadow-[0_0_30px_rgba(var(--secondary-500)/0.5)] ring-1 ring-secondary-300/40"
             : isTeamOdd
-                ? "shadow-[0_0_25px_rgba(var(--secondary-500)/0.4)]"
-                : "shadow-[0_0_25px_rgba(var(--primary-500)/0.4)]";
+                ? "shadow-[0_0_20px_rgba(var(--primary-500)/0.4)]"
+                : "shadow-[0_0_20px_rgba(var(--secondary-500)/0.4)]";
 
         const gradient = isTeamOdd
-            ? `bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white ${shadowStyle} border border-secondary-200/30`
-            : `bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white ${shadowStyle} border border-primary-200/30`;
+            ? `bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white ${shadowStyle} border border-primary-200/30`
+            : `bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white ${shadowStyle} border border-secondary-200/30`;
 
         const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 active:from-white/30 active:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
 
         const transitionClass = (isFloating || !isViewModeAnimating)
             ? 'transition-none'
-            : 'transition-[width,height,transform,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
+            : 'transition-[transform,opacity,box-shadow] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
         const cardSizeClass = isFloating
             ? 'w-32 h-20'
@@ -480,25 +480,25 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {/* Динамическое широкое свечение карточки при включенной опции "Эмбиент-фон" */}
                 {isGradientActive && (
                     <div
-                        className="absolute left-1/2 top-1/2 pointer-events-none -z-10 [transform:translateZ(0)] [backface-visibility:hidden]"
+                        className="absolute left-1/2 top-1/2 pointer-events-none -z-10 [transform:translateZ(0)] [backface-visibility:hidden] overflow-visible"
                         style={{
-                            width: '320px',
-                            height: '320px',
+                            width: '360px',
+                            height: '360px',
                             transform: isFloating
                                 ? 'translate(-50%, -50%) scale(0.95)'
                                 : viewMode === 'facing'
                                     ? 'translate(-50%, -50%) scale(0.9)'
-                                    : 'translate(-50%, -50%) scale(1.1)',
+                                    : 'translate(-50%, -50%) scale(1.05)',
                             transition: isViewModeAnimating ? 'transform 500ms cubic-bezier(0.34,1.56,0.64,1)' : 'none',
                             willChange: isViewModeAnimating ? 'transform' : 'auto'
                         }}
                     >
                         <div
-                            className={`w-full h-full rounded-full blur-[45px] sm:blur-[55px] opacity-90 dark:opacity-95 [transform:translateZ(0)] [backface-visibility:hidden] ${isViewModeAnimating ? '' : 'animate-pulse-soft'}`}
+                            className={`w-full h-full rounded-full blur-[35px] sm:blur-[45px] opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] ${isViewModeAnimating ? '' : 'animate-pulse-soft'}`}
                             style={{
                                 background: isTeamOdd
-                                    ? 'radial-gradient(circle, rgba(var(--secondary-500)/0.7) 0%, rgba(var(--secondary-500)/0.25) 45%, transparent 75%)'
-                                    : 'radial-gradient(circle, rgba(var(--primary-500)/0.7) 0%, rgba(var(--primary-500)/0.25) 45%, transparent 75%)',
+                                    ? 'radial-gradient(circle, rgba(var(--primary-500)/0.65) 0%, rgba(var(--primary-500)/0.2) 40%, transparent 70%)'
+                                    : 'radial-gradient(circle, rgba(var(--secondary-500)/0.65) 0%, rgba(var(--secondary-500)/0.2) 40%, transparent 70%)',
                             }}
                         />
                     </div>
@@ -734,9 +734,18 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     return (
         <>
-            <div data-testid="result-overlay" className={`fixed inset-0 z-50 bg-slate-200/95 dark:bg-slate-950/95 backdrop-blur-2xl transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}>
-                {/* Мягкая фоновая сетка с размытием */}
-                <div className="absolute inset-0 bg-grid-pattern opacity-40 dark:opacity-30 pointer-events-none blur-[1.5px] z-0" />
+            <div
+                data-testid="result-overlay"
+                className={`fixed inset-0 z-50 bg-slate-100 dark:bg-slate-950 transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}
+                style={{
+                    backgroundImage: `
+                        radial-gradient(circle at 10% 10%, rgba(var(--primary-500) / 0.18), transparent 55%),
+                        radial-gradient(circle at 90% 90%, rgba(var(--secondary-500) / 0.18), transparent 55%)
+                    `
+                }}
+            >
+                {/* Мягкая фоновая сетка */}
+                <div className="absolute inset-0 bg-grid-pattern opacity-30 dark:opacity-20 pointer-events-none z-0" />
 
                 {/* Backdrop for Mode Selector */}
                 <div
@@ -885,12 +894,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {isDebugMode && heroesRevealed && (
                     <div className="absolute top-[80px] left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 dark:bg-slate-900/95 border border-slate-700/50 text-white px-4 py-2 rounded-2xl flex items-center gap-3 text-xs font-bold shadow-lg animate-in slide-in-from-top-2 duration-300 pointer-events-auto">
                         <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-secondary-500" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />
                             <span>Сила Т1: {oddPower}</span>
                         </div>
                         <div className="w-px h-4 bg-slate-700" />
                         <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-secondary-500" />
                             <span>Сила Т2: {evenPower}</span>
                         </div>
                         <div className="w-px h-4 bg-slate-700" />
@@ -914,22 +923,22 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                     {/* Team Badges in facing mode */}
                     <div
-                        className={`absolute left-1/2 -translate-x-1/2 -translate-y-full z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-500/15 dark:bg-secondary-500/25 backdrop-blur-md border border-secondary-400/30 text-secondary-700 dark:text-secondary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-500 ease-in-out ${
+                        className={`absolute left-1/2 -translate-x-1/2 -translate-y-full z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-500/20 dark:bg-primary-500/30 border border-primary-400/30 text-primary-700 dark:text-primary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-500 ease-in-out ${
                             viewMode === 'facing' && !isDragMode ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                         }`}
                         style={{ top: 'calc(50% - min(43vmin, 265px))' }}
                     >
-                        <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_8px_rgba(var(--secondary-500)/0.8)]" />
+                        <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(var(--primary-500)/0.8)]" />
                         <span>Команда 1</span>
                     </div>
 
                     <div
-                        className={`absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-500/15 dark:bg-primary-500/25 backdrop-blur-md border border-primary-400/30 text-primary-700 dark:text-primary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-500 ease-in-out ${
+                        className={`absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-500/20 dark:bg-secondary-500/30 border border-secondary-400/30 text-secondary-700 dark:text-secondary-300 text-[10px] sm:text-xs font-black uppercase tracking-wider shadow-sm transition-all duration-500 ease-in-out ${
                             viewMode === 'facing' && !isDragMode ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                         }`}
                         style={{ top: 'calc(50% + min(43vmin, 265px))' }}
                     >
-                        <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(var(--primary-500)/0.8)]" />
+                        <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_8px_rgba(var(--secondary-500)/0.8)]" />
                         <span>Команда 2</span>
                     </div>
 
@@ -1094,10 +1103,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         <div className="flex flex-col gap-2 w-full">
                             {canRecordStats && (
                                 <>
-                                    <button data-testid="record-team1-win-btn" onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--secondary-500)/0.25)]">
+                                    <button data-testid="record-team1-win-btn" onClick={() => handleRecordWin('team1')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--primary-500)/0.25)]">
                                         <Trophy size={16} /> <span>{getTeamNames('Odd')}</span>
                                     </button>
-                                    <button data-testid="record-team2-win-btn" onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-primary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--primary-500)/0.25)]">
+                                    <button data-testid="record-team2-win-btn" onClick={() => handleRecordWin('team2')} className="py-3 px-4 font-bold text-white bg-secondary-500 rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-2 text-sm shadow-[0_4px_12px_rgba(var(--secondary-500)/0.25)]">
                                         <Trophy size={16} /> <span>{getTeamNames('Even')}</span>
                                     </button>
                                     <div className="h-px bg-slate-100 dark:bg-slate-800 my-1 w-full" />
