@@ -483,7 +483,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         }}
                     >
                         <div
-                            className={`w-full h-full rounded-full blur-[20px] sm:blur-[25px] opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] ${isViewModeAnimating ? '' : 'animate-pulse-soft'}`}
+                            className="w-full h-full rounded-full blur-[20px] sm:blur-[25px] opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] animate-pulse-soft"
                             style={{
                                 background: isTeamOdd
                                     ? 'radial-gradient(circle, rgba(var(--primary-500)/0.65) 0%, rgba(var(--primary-500)/0.2) 40%, transparent 70%)'
