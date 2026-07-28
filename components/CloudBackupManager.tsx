@@ -4,6 +4,7 @@ import { CloudBackup } from '../types';
 import { BackupViewer } from './BackupViewer';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface CloudBackupManagerProps {
     isOpen: boolean;
@@ -16,7 +17,7 @@ interface CloudBackupManagerProps {
     onRestoreBackup: (id: string) => Promise<boolean>;
     onDeleteBackup: (id: string) => Promise<boolean>;
     onGetBackupDetails: (id: string) => Promise<CloudBackup | null>;
-    triggerHaptic: (pattern?: number | number[]) => void;
+    triggerHaptic?: (pattern?: number | number[]) => void;
     isOnline: boolean;
 }
 
@@ -31,9 +32,12 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
     onRestoreBackup,
     onDeleteBackup,
     onGetBackupDetails,
-    triggerHaptic,
+    triggerHaptic: propTriggerHaptic,
     isOnline
 }) => {
+    const { trigger } = useHaptics();
+    const triggerHaptic = propTriggerHaptic || trigger;
+
     const [search, setSearch] = useState('');
     const [viewingBackup, setViewingBackup] = useState<CloudBackup | null>(null);
     const [isLoadingDetailsId, setIsLoadingDetailsId] = useState<string | null>(null);

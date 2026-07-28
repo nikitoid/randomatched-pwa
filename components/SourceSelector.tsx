@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronDown, X, SquareStack, Layers, BarChart3, Database, Filter, Cloud, Check, Plus } from 'lucide-react';
 import { HeroList } from '../types';
 import { useBackHandler } from '../hooks/useBackHandler';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface SourceSelectorProps {
     lists: HeroList[];
@@ -38,6 +39,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
     selectedGroupCount,
     onOpenAddHeroes
 }) => {
+    const { trigger } = useHaptics();
     useBackHandler(isListSelectorOpen, () => setIsListSelectorOpen(false), { id: 'source-selector', priority: 10 });
     // For UI display in main selector
     const groupableLists = lists.filter(l => l.isGroupable);
@@ -55,7 +57,10 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
             </label>
             <div className="relative touch-manipulation">
                 <button
-                    onClick={() => setIsListSelectorOpen(!isListSelectorOpen)}
+                    onClick={() => {
+                        trigger('medium');
+                        setIsListSelectorOpen(!isListSelectorOpen);
+                    }}
                     disabled={lists.length === 0}
                     className={`w-full relative bg-white dark:bg-slate-900 glass-card-gradient shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-100 dark:border-slate-800 flex items-center p-4 min-h-[72px] gap-4 text-left transition-all duration-300
                     ${isListSelectorOpen ? 'rounded-t-3xl rounded-b-none border-b-transparent' : 'rounded-3xl active:scale-[0.99]'}`}
@@ -102,20 +107,20 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                         <div className="flex gap-2">
                             <div className="flex-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex gap-1">
                                 <button
-                                    onClick={() => setIsGroupMode(false)}
+                                    onClick={() => { trigger('light'); setIsGroupMode(false); }}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-lg text-sm font-bold transition-all active:scale-95 ${!isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 active:text-slate-700'}`}
                                 >
                                     <Layers size={16} /> Один
                                 </button>
                                 <button
-                                    onClick={() => setIsGroupMode(true)}
+                                    onClick={() => { trigger('light'); setIsGroupMode(true); }}
                                     className={`flex-1 flex items-center justify-center gap-2 py-2.5 min-h-[44px] rounded-lg text-sm font-bold transition-all active:scale-95 ${isGroupMode ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-slate-500 dark:text-slate-400 active:text-slate-700'}`}
                                 >
                                     <SquareStack size={16} /> Группа
                                 </button>
                             </div>
                             <button
-                                onClick={() => { setIsGroupStatsOpen(true); setIsListSelectorOpen(false); }}
+                                onClick={() => { trigger('medium'); setIsGroupStatsOpen(true); setIsListSelectorOpen(false); }}
                                 disabled={isGroupMode ? groupTotalHeroes === 0 : !activeList || activeList.heroes.length === 0}
                                 className={`w-11 h-11 min-h-[44px] min-w-[44px] my-auto rounded-xl flex items-center justify-center transition-all border active:scale-95 ${isGroupMode
                                     ? 'bg-primary-50 text-primary-600 border-primary-100 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800 disabled:opacity-50'
@@ -126,6 +131,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                             </button>
                         </div>
                     </div>
+
 
                     <div className="overflow-y-auto overscroll-contain no-scrollbar py-2 flex-1">
                         {/* Render lists based on mode */}
@@ -156,7 +162,10 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                 return (
                                     <button
                                         key={list.id}
-                                        onClick={() => handleSelectList(list.id)}
+                                        onClick={() => {
+                                            trigger('light');
+                                            handleSelectList(list.id);
+                                        }}
                                         className={`w-full px-5 py-3 min-h-[48px] flex items-center gap-3 transition-colors active:scale-[0.99] touch-manipulation ${isSelected ? 'bg-slate-50 dark:bg-slate-800/50' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
                                     >
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
@@ -208,7 +217,10 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                     return (
                                         <button
                                             key={list.id}
-                                            onClick={() => handleToggleGroupItem(list.id)}
+                                            onClick={() => {
+                                                trigger('light');
+                                                handleToggleGroupItem(list.id);
+                                            }}
                                             className={`w-full px-5 py-3 min-h-[48px] flex items-center gap-3 transition-colors active:scale-[0.99] touch-manipulation ${isSelected ? 'bg-primary-50 dark:bg-primary-900/10' : 'active:bg-slate-50 dark:active:bg-slate-800'}`}
                                         >
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-primary-500 text-white' : `${iconBg} ${iconColor}`}`}>
@@ -243,6 +255,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    trigger('medium');
                                     setIsListSelectorOpen(false);
                                     onOpenAddHeroes();
                                 }}

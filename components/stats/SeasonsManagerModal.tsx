@@ -3,6 +3,7 @@ import { Plus, Calendar, Edit2, Trash2, Check, AlertCircle } from 'lucide-react'
 import { Season } from '../../types';
 import { BaseModal } from '../common/BaseModal';
 import { ConfirmModal } from '../common/ConfirmModal';
+import { useHaptics } from '../../hooks/useHaptics';
 
 interface SeasonsManagerModalProps {
     isOpen: boolean;
@@ -12,7 +13,7 @@ interface SeasonsManagerModalProps {
     onAddSeason: (name: string, startDate: string, endDate?: string) => void;
     onUpdateSeason: (id: string, updatedData: Partial<Omit<Season, 'id'>>) => void;
     onDeleteSeason: (id: string) => void;
-    triggerHaptic: (pattern?: number | number[]) => void;
+    triggerHaptic?: (pattern?: number | number[]) => void;
 }
 
 export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
@@ -23,8 +24,11 @@ export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
     onAddSeason,
     onUpdateSeason,
     onDeleteSeason,
-    triggerHaptic
+    triggerHaptic: propTriggerHaptic
 }) => {
+    const { trigger } = useHaptics();
+    const triggerHaptic = propTriggerHaptic || trigger;
+
     const [isAdding, setIsAdding] = useState(false);
     const [editingSeasonId, setEditingSeasonId] = useState<string | null>(null);
     const [deletingSeasonId, setDeletingSeasonId] = useState<string | null>(null);

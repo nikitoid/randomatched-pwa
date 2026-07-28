@@ -6,6 +6,8 @@ import { useBackHandler } from '../hooks/useBackHandler';
 import { getHeroHistoryWeights, getPlayerHeroHistoryWeights, getHeroWeight } from '../utils/generator';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
+import { useHaptics } from '../hooks/useHaptics';
+
 
 interface ResultOverlayProps {
     isOpen: boolean;
@@ -76,7 +78,15 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     history = [],
     bgGradient
 }) => {
+    const { trigger } = useHaptics();
     const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            trigger('heavy');
+        }
+    }, [isOpen, trigger]);
+
     const [displayModal, setDisplayModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string; } | null>(null);
     const activeModal = confirmModal || displayModal;
     const [showInfo, setShowInfo] = useState(false);

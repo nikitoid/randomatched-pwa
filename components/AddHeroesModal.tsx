@@ -4,6 +4,7 @@ import { HeroList, Hero } from '../types';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useNavigation } from '../context/NavigationContext';
 import { BaseModal } from './common/BaseModal';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface AddHeroesModalProps {
     isOpen: boolean;
@@ -20,8 +21,10 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
     lists,
     excludeListIds,
     onAddHeroes,
-    triggerHaptic
+    triggerHaptic: propTriggerHaptic
 }) => {
+    const { trigger } = useHaptics();
+
     const { close } = useNavigation();
     const [step, setStep] = useState<'select-list' | 'select-heroes'>('select-list');
     const [selectedList, setSelectedList] = useState<HeroList | null>(null);
@@ -29,12 +32,12 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
     const [selectedHeroesByList, setSelectedHeroesByList] = useState<Record<string, Set<string>>>({});
 
     const handleBack = () => {
-        if (triggerHaptic) triggerHaptic(10);
+        trigger('light');
         close('add-heroes-modal-step2');
     };
 
     useBackHandler(isOpen && step === 'select-heroes', () => {
-        if (triggerHaptic) triggerHaptic(10);
+        trigger('light');
         setStep('select-list');
         setSelectedList(null);
         setSearchQuery('');
@@ -77,7 +80,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
     }, [listHeroes, searchQuery]);
 
     const handleSelectList = (list: HeroList) => {
-        if (triggerHaptic) triggerHaptic(10);
+        trigger('light');
         setSelectedList(list);
         setStep('select-heroes');
         setSearchQuery('');
@@ -85,7 +88,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
 
     const handleToggleHero = (heroId: string) => {
         if (!selectedList) return;
-        if (triggerHaptic) triggerHaptic(10);
+        trigger('light');
         setSelectedHeroesByList(prev => {
             const next = { ...prev };
             const currentSet = new Set(next[selectedList.id] || []);
@@ -105,7 +108,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
 
     const handleSelectAllInList = () => {
         if (!selectedList) return;
-        if (triggerHaptic) triggerHaptic(10);
+        trigger('light');
         setSelectedHeroesByList(prev => {
             const next = { ...prev };
             const currentSet = new Set(next[selectedList.id] || []);
@@ -129,7 +132,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
 
     const handleConfirmAdd = () => {
         if (totalSelectedCount === 0) return;
-        if (triggerHaptic) triggerHaptic(10);
+        trigger('medium');
 
         const heroesToAdd: Hero[] = [];
         Object.entries(selectedHeroesByList).forEach(([listId, heroIdSet]) => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, Users, Clock, Trash2, X, User } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface PlayerNameInputProps {
     isNamesOpen: boolean;
@@ -41,6 +42,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
     handleNameChange,
     uniquePlayerNames,
 }) => {
+    const { trigger } = useHaptics();
     const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
     useBackHandler(isNamesOpen, () => setIsNamesOpen(false), { id: 'player-names-input', priority: 10 });
@@ -71,7 +73,10 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
     return (
         <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-50' : 'z-20'}`}>
             <button
-                onClick={() => setIsNamesOpen(!isNamesOpen)}
+                onClick={() => {
+                    trigger('medium');
+                    setIsNamesOpen(!isNamesOpen);
+                }}
                 className={`w-full p-4 min-h-[64px] flex items-center justify-between text-left bg-white dark:bg-slate-900 glass-card-gradient border border-slate-100 dark:border-slate-800 transition-all duration-300 touch-manipulation ${isNamesOpen ? 'rounded-t-3xl border-b-transparent shadow-lg' : 'rounded-3xl shadow-sm active:scale-[0.99]'}`}
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
@@ -119,6 +124,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                             <button
                                                 onClick={() => {
                                                     if (isHistoryDragScroll || isConfirmingDelete) return;
+                                                    trigger('light');
                                                     handleSelectSavedTeam(team);
                                                 }}
                                                 className={`pl-3 pr-8 py-2 min-h-[38px] rounded-xl text-xs font-medium transition-all border select-none active:scale-95 touch-manipulation
@@ -132,7 +138,10 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                                 {label}
                                             </button>
                                             <button
-                                                onClick={(e) => handleDeleteHistoryItem(e, idx)}
+                                                onClick={(e) => {
+                                                    trigger('warning');
+                                                    handleDeleteHistoryItem(e, idx);
+                                                }}
                                                 className={`absolute right-1 w-8 h-8 flex items-center justify-center rounded-lg transition-colors touch-manipulation
                                                     ${isConfirmingDelete
                                                         ? 'text-red-600 active:bg-red-100 dark:text-red-400'
@@ -148,6 +157,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                 })}
                             </div>
                         </div>
+
                     )}
 
                     <div className="grid grid-cols-2 gap-3">
@@ -174,6 +184,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                                     type="button"
                                                     onMouseDown={(e) => {
                                                         e.preventDefault();
+                                                        trigger('light');
                                                         handleNameChange(index, name);
                                                         setFocusedIndex(null);
                                                     }}

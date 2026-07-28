@@ -2,6 +2,7 @@
 import React, { useState, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { RANKS } from '../constants';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface RankSelectProps {
     value: string;
@@ -14,6 +15,7 @@ interface RankSelectProps {
 }
 
 export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen, onOpen, onClose, disabled, readOnly }) => {
+    const { trigger } = useHaptics();
     const [menuStyle, setMenuStyle] = useState<{ top?: number, bottom?: number, left: number, width: number, origin: string }>({ left: 0, width: 0, origin: 'top' });
     const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -78,6 +80,7 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
 
     const handleClick = () => {
         if (disabled || readOnly) return;
+        trigger('light');
         if (isOpen) onClose();
         else onOpen();
     };
@@ -111,6 +114,7 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
                             <button
                                 key={rank}
                                 onClick={() => {
+                                    trigger('light');
                                     onChange(rank);
                                     onClose();
                                 }}
@@ -126,3 +130,4 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
         </>
     );
 };
+

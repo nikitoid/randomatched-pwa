@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Hero } from '../types';
 import { Search, X } from 'lucide-react';
 import { BaseModal } from './common/BaseModal';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface HeroSelectionModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
     unavailableHeroIds,
     currentHeroId
 }) => {
+    const { trigger } = useHaptics();
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredHeroes = useMemo(() => {
@@ -46,7 +48,10 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
             />
             {searchQuery && (
                 <button
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => {
+                        trigger('light');
+                        setSearchQuery('');
+                    }}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                     aria-label="Очистить поиск"
                 >
@@ -84,7 +89,12 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
                             <button
                                 key={hero.id}
                                 data-testid="hero-select-button"
-                                onClick={() => !isUsed && !isCurrent && onSelect(hero)}
+                                onClick={() => {
+                                    if (!isUsed && !isCurrent) {
+                                        trigger('medium');
+                                        onSelect(hero);
+                                    }
+                                }}
                                 disabled={isUsed || isCurrent}
                                 className={`
                                     w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 text-left min-h-[52px]

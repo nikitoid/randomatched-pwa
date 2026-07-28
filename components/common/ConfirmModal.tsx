@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, AlertCircle, Info, HelpCircle } from 'lucide-react';
 import { BaseModal } from './BaseModal';
+import { useHaptics } from '../../hooks/useHaptics';
 
 export interface ConfirmModalProps {
   isOpen: boolean;
@@ -37,6 +38,8 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmTestId,
   cancelTestId,
 }) => {
+  const { trigger } = useHaptics();
+
   const getIconContainerStyle = () => {
     switch (confirmVariant) {
       case 'danger':
@@ -66,21 +69,24 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const getConfirmButtonStyle = () => {
     switch (confirmVariant) {
       case 'danger':
-        return 'bg-[#e5484d] hover:bg-[#d93d42] active:bg-[#c63439] text-white shadow-sm';
+        return 'bg-[#e5484d] hover:bg-[#dc3e43] text-white shadow-lg shadow-red-500/20';
       case 'danger-subtle':
-        return 'bg-red-50 hover:bg-red-100 active:bg-red-200 text-[#e5484d] dark:bg-[#e5484d]/15 dark:hover:bg-[#e5484d]/25 dark:active:bg-[#e5484d]/35 dark:text-[#ff6b6b] border border-red-200/60 dark:border-[#e5484d]/30';
+        return 'bg-red-100 hover:bg-red-200 dark:bg-red-950/60 dark:hover:bg-red-900/80 text-red-600 dark:text-red-400';
       case 'primary':
-        return 'bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white shadow-lg shadow-primary-500/20';
+        return 'bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-500/20';
       case 'warning':
       default:
-        return 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white shadow-lg shadow-orange-500/20';
+        return 'bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20';
     }
   };
 
   return (
     <BaseModal
       isOpen={isOpen}
-      onClose={onCancel}
+      onClose={() => {
+        trigger('light');
+        onCancel();
+      }}
       maxWidth="xs"
       variant="center"
       priority={priority}
@@ -106,14 +112,24 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         <div className="flex flex-col gap-3 w-full">
           <div className="grid grid-cols-2 gap-3 w-full">
             <button
-              onClick={onCancel}
+              onClick={() => {
+                trigger('light');
+                onCancel();
+              }}
               data-testid={cancelTestId || 'confirm-modal-cancel-btn'}
               className="py-3.5 px-4 font-bold text-sm text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 rounded-2xl active:scale-95 transition-all min-h-[48px]"
             >
               {cancelText}
             </button>
             <button
-              onClick={onConfirm}
+              onClick={() => {
+                if (confirmVariant === 'danger' || confirmVariant === 'danger-subtle') {
+                  trigger('warning');
+                } else {
+                  trigger('medium');
+                }
+                onConfirm();
+              }}
               data-testid={confirmTestId || testId}
               className={`py-3.5 px-4 font-bold text-sm rounded-2xl active:scale-95 transition-all min-h-[48px] ${getConfirmButtonStyle()}`}
             >

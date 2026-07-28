@@ -4,6 +4,8 @@ import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
 import { APP_VERSION, CHANGELOG, getUnreadReleasesCount } from '../utils/changelog';
+import { useHaptics } from '../hooks/useHaptics';
+
 
 interface SettingsOverlayProps {
     isOpen: boolean;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dice5, Shuffle, Eye, Trash2 } from 'lucide-react';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface MainControlsProps {
     handleGenerate: () => void;
@@ -20,11 +21,16 @@ export const MainControls: React.FC<MainControlsProps> = ({
     hasResult,
     handleOpenSession,
 }) => {
+    const { trigger } = useHaptics();
+
     return (
         <>
             <div className="w-full relative z-0 rounded-3xl touch-manipulation">
                 <button
-                    onClick={handleGenerate}
+                    onClick={() => {
+                        trigger('heavy');
+                        handleGenerate();
+                    }}
                     disabled={isAnimating || !hasLists}
                     className={`w-full relative group overflow-hidden rounded-3xl py-6 flex flex-col items-center justify-center 
                     bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 
@@ -49,7 +55,10 @@ export const MainControls: React.FC<MainControlsProps> = ({
                 {hasResult && (
                     <button 
                         data-testid="open-session-button"
-                        onClick={handleOpenSession} 
+                        onClick={() => {
+                            trigger('medium');
+                            handleOpenSession();
+                        }} 
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full bg-primary-100/70 dark:bg-primary-950/60 glass-pill-gradient text-primary-700 dark:text-primary-300 shadow-sm text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-primary-200/80 dark:active:bg-primary-900/70 transition-all duration-150 border-none outline-none"
                     >
                         <Eye size={14} className="shrink-0" /> <span className="truncate">Открыть сессию</span>
@@ -59,7 +68,10 @@ export const MainControls: React.FC<MainControlsProps> = ({
                 {canReset && (
                     <button 
                         data-testid="reset-session-button"
-                        onClick={handleResetSessionClick} 
+                        onClick={() => {
+                            trigger('medium');
+                            handleResetSessionClick();
+                        }} 
                         className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-full bg-rose-100/70 dark:bg-rose-950/60 glass-pill-gradient text-rose-700 dark:text-rose-300 shadow-sm text-xs font-bold uppercase tracking-wider active:scale-95 active:bg-rose-200/80 dark:active:bg-rose-900/70 transition-all duration-150 border-none outline-none"
                     >
                         <Trash2 size={14} className="shrink-0" /> <span className="truncate">Сбросить сессию</span>
@@ -69,3 +81,4 @@ export const MainControls: React.FC<MainControlsProps> = ({
         </>
     );
 };
+

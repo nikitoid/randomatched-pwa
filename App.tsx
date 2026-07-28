@@ -3,7 +3,7 @@ import { useTheme } from './hooks/useTheme';
 import { useHeroLists } from './hooks/useHeroLists';
 import { useToast } from './hooks/useToast';
 import { usePWA } from './hooks/usePWA';
-import { useHaptics } from './hooks/useHaptics';
+import { useHaptics, HapticsProvider } from './hooks/useHaptics';
 import { useMatchHistory } from './hooks/useMatchHistory';
 import { useAppStats } from './hooks/useAppStats';
 import { useGroupSelection } from './hooks/useGroupSelection';
@@ -587,4 +587,11 @@ const App: React.FC = () => {
     );
 };
 
-export default App;
+const AppWithHaptics: React.FC = () => (
+    <HapticsProvider>
+        <App />
+    </HapticsProvider>
+);
+
+export default AppWithHaptics;
+

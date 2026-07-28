@@ -66,10 +66,12 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
         if (activeOverviewCard === 0) {
             if (swipeOffset < -threshold) {
                 setActiveOverviewCard(1);
+                triggerHaptic(10);
             }
         } else {
             if (swipeOffset > threshold) {
                 setActiveOverviewCard(0);
+                triggerHaptic(10);
             }
         }
         setSwipeOffset(0);
