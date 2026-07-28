@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { MatchRecord, Season, ToastType } from '../../../types';
 
 export const useMatchFilters = (
@@ -8,9 +8,6 @@ export const useMatchFilters = (
     isOpen: boolean = false,
     addToast?: (message: string, type: ToastType, duration?: number) => void
 ) => {
-    const [selectedSeasonId, setSelectedSeasonId] = useState<string>('all');
-    const [filterStartDate, setFilterStartDate] = useState('');
-    const [filterEndDate, setFilterEndDate] = useState('');
     const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
 
     // Track if notice for ended season was shown during current modal session
@@ -42,6 +39,11 @@ export const useMatchFilters = (
         };
     }, [seasons]);
 
+    // Initial state setup from defaultSeasonInfo
+    const [selectedSeasonId, setSelectedSeasonId] = useState<string>(() => defaultSeasonInfo.defaultSeasonId);
+    const [filterStartDate, setFilterStartDate] = useState<string>(() => defaultSeasonInfo.defaultSeason?.startDate || '');
+    const [filterEndDate, setFilterEndDate] = useState<string>(() => defaultSeasonInfo.defaultSeasonId !== 'all' ? (defaultSeasonInfo.defaultSeason?.endDate || '') : '');
+
     // Apply default season configuration
     const applyDefaultFilter = useCallback((notifyEnded: boolean = false) => {
         const { defaultSeasonId, defaultSeason, isSeasonEnded, endedSeasonName } = defaultSeasonInfo;
@@ -65,14 +67,17 @@ export const useMatchFilters = (
         }
     }, [defaultSeasonInfo, addToast]);
 
-    // When stats modal is opened or seasons change, ensure default is selected if not custom
-    useEffect(() => {
-        if (isOpen) {
+    // Track previous isOpen state to trigger default filter application strictly on opening transition
+    const prevIsOpenRef = useRef(isOpen);
+
+    useLayoutEffect(() => {
+        if (isOpen && !prevIsOpenRef.current) {
             applyDefaultFilter(true);
-        } else {
+        } else if (!isOpen) {
             hasNotifiedSeasonEnded.current = false;
         }
-    }, [isOpen]);
+        prevIsOpenRef.current = isOpen;
+    }, [isOpen, applyDefaultFilter]);
 
     // Dynamic update when active selected season parameters are edited
     useEffect(() => {

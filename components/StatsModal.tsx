@@ -349,9 +349,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             setDeleteConfirmId(null);
             setSelectedPlayer(null);
             setSelectedHero(null);
-            // Reset date filters
-            setFilterStartDate('');
-            setFilterEndDate('');
             setIsDateFilterOpen(false);
         } else {
             // Always open on the first tab
