@@ -446,22 +446,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             ? `bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white ${shadowStyle} border border-primary-200/30`
             : `bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white ${shadowStyle} border border-secondary-200/30`;
 
-        const buttonStyle = "bg-gradient-to-b from-white/20 to-white/5 active:from-white/30 active:to-white/10 border-t border-white/40 border-b border-black/10 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.2)] active:shadow-none active:scale-95 active:border-white/10 text-white w-7 h-7 flex items-center justify-center rounded-lg backdrop-blur-sm transition-all duration-200";
-
-        const transitionClass = (isFloating || !isViewModeAnimating)
-            ? 'transition-none'
-            : 'transition-[transform,opacity,box-shadow] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]';
+        const buttonStyle = "bg-white/25 dark:bg-black/30 active:bg-white/40 dark:active:bg-black/50 border border-white/30 active:border-white/50 text-white w-7 h-7 flex items-center justify-center rounded-lg shadow-sm active:scale-95 transition-transform duration-150";
 
         const cardSizeClass = isFloating
             ? 'w-32 h-20'
-            : viewMode === 'facing'
-                ? 'w-[calc(50vw-18px)] h-[30vmin] max-w-[280px] max-h-[190px]'
-                : 'w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px]';
+            : 'w-[calc(50vw-18px)] h-[30vmin] max-w-[280px] max-h-[190px]';
 
         return (
             <div
                 className={`
-                relative flex flex-col items-center justify-center p-3 select-none [transform:translateZ(0)] [backface-visibility:hidden] ${transitionClass}
+                relative flex flex-col items-center justify-center p-3 select-none [transform:translateZ(0)] [backface-visibility:hidden] transition-none
                 ${gradient}
                 ${isFloating
                         ? `${cardSizeClass} rounded-2xl shadow-2xl ring-4 ring-white/50 z-[100]`
@@ -477,24 +471,19 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     pointerEvents: 'none',
                 } : undefined}
             >
-                {/* Динамическое широкое свечение карточки при включенной опции "Эмбиент-фон" */}
+                {/* Оптимизированное динамическое свечение карточки при включенной опции "Эмбиент-фон" */}
                 {isGradientActive && (
                     <div
                         className="absolute left-1/2 top-1/2 pointer-events-none -z-10 [transform:translateZ(0)] [backface-visibility:hidden] overflow-visible"
                         style={{
-                            width: '360px',
-                            height: '360px',
-                            transform: isFloating
-                                ? 'translate(-50%, -50%) scale(0.95)'
-                                : viewMode === 'facing'
-                                    ? 'translate(-50%, -50%) scale(0.9)'
-                                    : 'translate(-50%, -50%) scale(1.05)',
-                            transition: isViewModeAnimating ? 'transform 500ms cubic-bezier(0.34,1.56,0.64,1)' : 'none',
+                            width: '180px',
+                            height: '180px',
+                            transform: 'translate(-50%, -50%) scale(2.0)',
                             willChange: isViewModeAnimating ? 'transform' : 'auto'
                         }}
                     >
                         <div
-                            className={`w-full h-full rounded-full blur-[35px] sm:blur-[45px] opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] ${isViewModeAnimating ? '' : 'animate-pulse-soft'}`}
+                            className={`w-full h-full rounded-full blur-[20px] sm:blur-[25px] opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] ${isViewModeAnimating ? '' : 'animate-pulse-soft'}`}
                             style={{
                                 background: isTeamOdd
                                     ? 'radial-gradient(circle, rgba(var(--primary-500)/0.65) 0%, rgba(var(--primary-500)/0.2) 40%, transparent 70%)'
@@ -561,7 +550,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         const isHoveredTarget = hoveredTarget === position;
         const shouldAnimate = isViewModeAnimating && !isDraggingThis;
 
-        let positionStyle: React.CSSProperties = {};
+        let transformStyle = '';
 
         if (viewMode === 'facing') {
             const horizOffset = 'min(calc(25vw - 3px), 148px)';
@@ -574,24 +563,14 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 // Top Row (Team 1 - Odd)
                 const idx = teamOddPlayers.findIndex(a => a.position === player.position);
                 const isLeft = idx <= 0;
-                positionStyle = {
-                    position: 'absolute',
-                    left: `calc(50% ${isLeft ? '-' : '+'} ${horizOffset})`,
-                    top: `calc(50% - ${vertOffset})`,
-                    transform: 'translate(-50%, -50%) rotate(0deg)',
-                    transformOrigin: 'center'
-                };
+                const signX = isLeft ? '-' : '+';
+                transformStyle = `translate3d(calc(-50% ${signX} ${horizOffset}), calc(-50% - ${vertOffset}), 0) scale(1) rotate(0deg)`;
             } else {
                 // Bottom Row (Team 2 - Even)
                 const idx = teamEvenPlayers.findIndex(a => a.position === player.position);
                 const isLeft = idx <= 0;
-                positionStyle = {
-                    position: 'absolute',
-                    left: `calc(50% ${isLeft ? '-' : '+'} ${horizOffset})`,
-                    top: `calc(50% + ${vertOffset})`,
-                    transform: 'translate(-50%, -50%) rotate(0deg)',
-                    transformOrigin: 'center'
-                };
+                const signX = isLeft ? '-' : '+';
+                transformStyle = `translate3d(calc(-50% ${signX} ${horizOffset}), calc(-50% + ${vertOffset}), 0) scale(1) rotate(0deg)`;
             }
         } else {
             // Layout Logic for cross mode
@@ -603,42 +582,20 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             const sideOffsetFromCenter = `calc(${btnRadius} + ${gap} + ${halfH})`;
             const verticalOffsetFromCenter = `calc(${halfW} + ${gap} + ${halfH})`;
 
+            const crossScale = 1.12;
+
             switch (position) {
                 case 'top':
-                    positionStyle = {
-                        position: 'absolute',
-                        top: `calc(50% - ${verticalOffsetFromCenter})`,
-                        left: '50%',
-                        transform: 'translate(-50%, -50%) rotate(180deg)',
-                        transformOrigin: 'center'
-                    };
+                    transformStyle = `translate3d(-50%, calc(-50% - ${verticalOffsetFromCenter}), 0) scale(${crossScale}) rotate(180deg)`;
                     break;
                 case 'bottom':
-                    positionStyle = {
-                        position: 'absolute',
-                        top: `calc(50% + ${verticalOffsetFromCenter})`,
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        transformOrigin: 'center'
-                    };
+                    transformStyle = `translate3d(-50%, calc(-50% + ${verticalOffsetFromCenter}), 0) scale(${crossScale}) rotate(0deg)`;
                     break;
                 case 'left':
-                    positionStyle = {
-                        position: 'absolute',
-                        left: `calc(50% - ${sideOffsetFromCenter})`,
-                        top: '50%',
-                        transform: 'translate(-50%, -50%) rotate(90deg)',
-                        transformOrigin: 'center'
-                    };
+                    transformStyle = `translate3d(calc(-50% - ${sideOffsetFromCenter}), -50%, 0) scale(${crossScale}) rotate(90deg)`;
                     break;
                 case 'right':
-                    positionStyle = {
-                        position: 'absolute',
-                        left: `calc(50% + ${sideOffsetFromCenter})`,
-                        top: '50%',
-                        transform: 'translate(-50%, -50%) rotate(-90deg)',
-                        transformOrigin: 'center'
-                    };
+                    transformStyle = `translate3d(calc(-50% + ${sideOffsetFromCenter}), -50%, 0) scale(${crossScale}) rotate(-90deg)`;
                     break;
             }
         }
@@ -647,16 +604,18 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             <div
                 key={player.position}
                 ref={(el) => { cardRefs.current[position] = el; }}
-                className={`z-10 pointer-events-auto [transform:translateZ(0)] [backface-visibility:hidden] ${shouldAnimate ? 'transition-[top,left,transform] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]' : 'transition-none'}`}
+                className="absolute top-1/2 left-1/2 z-10 pointer-events-auto [transform:translateZ(0)] [backface-visibility:hidden]"
                 style={{
-                    ...positionStyle,
-                    touchAction: 'none',
-                    willChange: shouldAnimate ? 'top, left, transform' : 'auto'
+                    transform: transformStyle,
+                    transformOrigin: 'center',
+                    transition: shouldAnimate ? 'transform 500ms cubic-bezier(0.34,1.56,0.64,1)' : 'none',
+                    willChange: shouldAnimate ? 'transform' : 'auto',
+                    touchAction: 'none'
                 }}
                 onPointerDown={(e) => handlePointerDown(e, position)}
             >
                 {isDraggingThis && (
-                    <div className={`absolute inset-0 rounded-3xl border-2 border-dashed border-white/30 bg-white/10 animate-pulse z-0 ${viewMode === 'facing' ? 'w-[calc(50vw-18px)] h-[30vmin] max-w-[280px] max-h-[190px]' : 'w-[52vmin] h-[32vmin] max-w-[320px] max-h-[200px]'}`} />
+                    <div className={`absolute inset-0 rounded-3xl border-2 border-dashed border-white/30 bg-white/10 animate-pulse z-0 w-[calc(50vw-18px)] h-[30vmin] max-w-[280px] max-h-[190px]`} />
                 )}
                 <div className={isDraggingThis ? 'opacity-0 pointer-events-none' : ''}>
                     {renderCardContent(player, false, isDraggingThis, isHoveredTarget)}
