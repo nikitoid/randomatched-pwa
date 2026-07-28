@@ -14,8 +14,11 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
 }) => {
     return (
         <nav 
-            className="fixed left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 p-1.5 bg-white/90 dark:bg-slate-900/90 main-nav-gradient rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.12)] dark:shadow-[0_0_30px_rgba(0,0,0,0.5)] border-none transition-all duration-300 touch-manipulation"
-            style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+            className="fixed left-1/2 z-30 flex items-center gap-1.5 p-1.5 bg-white/90 dark:bg-slate-900/90 main-nav-gradient rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.12)] dark:shadow-[0_0_30px_rgba(0,0,0,0.5)] border-none transition-all duration-300 touch-manipulation"
+            style={{ 
+                bottom: 'calc(1rem + env(safe-area-inset-bottom))',
+                transform: 'translate3d(-50%, 0, 0)'
+            }}
         >
             <button 
                 onClick={(e) => { e.currentTarget.blur(); onOpenStats(); }} 

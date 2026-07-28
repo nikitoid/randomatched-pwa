@@ -21,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
         <header className="px-5 pt-5 mt-1 pb-2 flex justify-between items-center z-10 touch-manipulation">
             <div className="flex items-center gap-3">
                 <div className="relative flex items-center justify-center">
-                    <div className="absolute -inset-1 rounded-xl bg-primary-500/50 dark:bg-primary-400/60 blur-sm animate-pulse pointer-events-none" />
+                    <div className="absolute -inset-1 rounded-xl bg-primary-500/50 dark:bg-primary-400/60 blur-sm animate-pulse pointer-events-none [transform:translateZ(0)] will-change-[opacity]" />
                     <div className="relative bg-primary-600 p-2.5 rounded-xl shadow-lg shadow-primary-600/30 active:scale-95 transition-transform duration-150 flex items-center justify-center">
                         <Dice5 className="text-white w-6 h-6" />
                     </div>

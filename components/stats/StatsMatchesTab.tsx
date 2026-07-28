@@ -44,7 +44,7 @@ export const StatsMatchesTab: React.FC<StatsMatchesTabProps> = ({
     triggerHaptic
 }) => {
     return (
-        <div className="animate-in fade-in slide-in-from-right-4 duration-300 px-4 pb-4 pt-3">
+        <div className="animate-in fade-in duration-200 px-4 pb-4 pt-3">
             <div className="space-y-4">
                 {!showTrashOnly && (
                     <>

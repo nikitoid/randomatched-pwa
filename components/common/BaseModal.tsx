@@ -73,13 +73,18 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   const startYRef = useRef(0);
   const currentDragYRef = useRef(0);
 
+  // Ссылка на таймер закрытия для отмены при повторном открытии
+  const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Запуск плавной анимации закрытия уездом вниз
   const handleRequestClose = useCallback(() => {
     if (animateState === 'exiting') return;
     setAnimateState('exiting');
-    setTimeout(() => {
+    
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
       onClose();
-    }, 300);
+    }, 180);
   }, [animateState, onClose]);
 
   // Интеграция с нативной кнопкой "Назад"
@@ -88,6 +93,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   // Управление циклом жизни монтирования
   useEffect(() => {
     if (isOpen) {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
       setIsRendered(true);
       setAnimateState('entering');
       setDragY(0);
@@ -101,11 +107,19 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
       return () => clearTimeout(timer);
     } else if (isRendered) {
-      setAnimateState('exiting');
-      const timer = setTimeout(() => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      if (animateState === 'exiting') {
+        // Если анимация закрытия уже отработала в handleRequestClose — сбрасываем монтирование сразу!
         setIsRendered(false);
-      }, 300);
-      return () => clearTimeout(timer);
+      } else {
+        setAnimateState('exiting');
+        closeTimerRef.current = setTimeout(() => {
+          setIsRendered(false);
+        }, 180);
+        return () => {
+          if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+        };
+      }
     }
   }, [isOpen]);
 
@@ -257,6 +271,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   // Обработчики тач-свайпа
   const handleTouchStart = (e: React.TouchEvent | React.PointerEvent) => {
     if (!enableSwipeToClose) return;
+    if ('pointerType' in e && e.pointerType === 'touch') return; // Избегаем дублирования с touchstart
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.PointerEvent).clientY;
     startYRef.current = clientY;
     currentDragYRef.current = 0;
@@ -265,6 +280,13 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
   const handleTouchMove = (e: React.TouchEvent | React.PointerEvent) => {
     if (!isDragging || !enableSwipeToClose) return;
+    if ('pointerType' in e && e.pointerType === 'touch') return;
+    
+    // Блокируем стандартный скролл страницы и призрачные клики во время свайпа шапки
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.PointerEvent).clientY;
     const deltaY = clientY - startYRef.current;
 
@@ -278,14 +300,25 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e?: React.TouchEvent | React.PointerEvent) => {
     if (!isDragging || !enableSwipeToClose) return;
+    if (e && 'pointerType' in e && e.pointerType === 'touch') return;
     setIsDragging(false);
+
+    if (e && e.cancelable) {
+      e.preventDefault();
+    }
 
     const threshold = 110;
     if (currentDragYRef.current > threshold) {
       setDragY(window.innerHeight);
-      handleRequestClose();
+      if (animateState !== 'exiting') {
+        setAnimateState('exiting');
+        if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = setTimeout(() => {
+          onClose();
+        }, 60);
+      }
     } else {
       setDragY(0);
     }
@@ -338,7 +371,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   const getCardTransformStyle = (): React.CSSProperties => {
     const transitionStyle = isDragging
       ? 'none'
-      : 'transform 300ms cubic-bezier(0.32, 0.72, 0, 1), opacity 300ms ease-out';
+      : 'transform 180ms cubic-bezier(0.32, 0.72, 0, 1), opacity 180ms ease-out';
 
     if (isBottomSheetScreen) {
       let translateY = '100%';
@@ -410,8 +443,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onPointerDown={handleTouchStart}
-            onPointerMove={handleTouchMove}
-            onPointerUp={handleTouchEnd}
           >
             <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700/80 rounded-full" />
           </div>
@@ -425,8 +456,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onPointerDown={handleTouchStart}
-            onPointerMove={handleTouchMove}
-            onPointerUp={handleTouchEnd}
           >
             <div className="flex items-center gap-3 min-w-0 pr-2">
               {icon && (

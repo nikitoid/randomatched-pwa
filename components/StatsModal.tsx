@@ -727,11 +727,18 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         const container = contentContainerRef.current;
         if (!container) return;
 
+        // Reset touch state on tab switch to prevent leaks
+        touchStartX.current = 0;
+        touchStartY.current = 0;
+        isIgnoredSwipe.current = false;
+
         const handleTouchStartRaw = (e: TouchEvent) => {
             if (!e.targetTouches || e.targetTouches.length === 0) return;
             const target = e.target as HTMLElement | null;
             if (target?.closest('[data-no-tab-swipe="true"]')) {
                 isIgnoredSwipe.current = true;
+                touchStartX.current = 0;
+                touchStartY.current = 0;
                 return;
             }
             isIgnoredSwipe.current = false;
@@ -758,13 +765,22 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         const handleTouchEndRaw = (e: TouchEvent) => {
             if (isIgnoredSwipe.current) {
                 isIgnoredSwipe.current = false;
+                touchStartX.current = 0;
+                touchStartY.current = 0;
                 return;
             }
+            if (!touchStartX.current || !touchStartY.current) return;
             if (!e.changedTouches || e.changedTouches.length === 0) return;
+
             touchEndX.current = e.changedTouches[0].clientX;
             touchEndY.current = e.changedTouches[0].clientY;
             const diffX = touchStartX.current - touchEndX.current;
             const diffY = touchStartY.current - touchEndY.current;
+
+            // Reset start coordinates so past touch start doesn't leak into subsequent taps
+            touchStartX.current = 0;
+            touchStartY.current = 0;
+
             const SWIPE_THRESHOLD = 50;
 
             if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > SWIPE_THRESHOLD) {

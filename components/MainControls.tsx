@@ -30,7 +30,7 @@ export const MainControls: React.FC<MainControlsProps> = ({
                     bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 
                     shadow-[0_0_30px_rgb(var(--primary-500)/0.45)] dark:shadow-[0_0_35px_rgb(var(--primary-500)/0.55)] 
                     hover:shadow-[0_0_40px_rgb(var(--primary-500)/0.65)] 
-                    transition-all duration-300 active:scale-[0.97] focus:outline-none focus:ring-4 focus:ring-primary-500/30
+                    transition-[transform,shadow,opacity] duration-200 active:scale-[0.97] [transform:translateZ(0)] focus:outline-none focus:ring-4 focus:ring-primary-500/30
                     ${isAnimating || !hasLists ? 'opacity-70 cursor-not-allowed' : ''}
                 `}
                 >

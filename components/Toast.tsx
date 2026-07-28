@@ -62,12 +62,13 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
       </button>
       
       {/* Progress Bar */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-black/5 dark:bg-white/5">
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-black/5 dark:bg-white/5 overflow-hidden">
         <div 
-          className={`h-full ${progressColors[toast.type]}`}
+          className={`h-full w-full origin-left ${progressColors[toast.type]}`}
           style={{ 
-            width: isClosing ? '0%' : '100%',
-            transition: `width ${duration}ms linear`
+            transform: isClosing ? 'scaleX(0)' : 'scaleX(1)',
+            transition: `transform ${duration}ms linear`,
+            willChange: 'transform'
           }}
         />
       </div>

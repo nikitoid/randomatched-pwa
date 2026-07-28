@@ -73,16 +73,17 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
             }
         }
         setSwipeOffset(0);
+        touchStartX.current = 0;
     };
 
     return (
-        <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300 px-3 py-3.5">
+        <div className="space-y-4 animate-in fade-in duration-200 px-3 py-3.5">
             <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-primary-500/10 dark:from-slate-900 dark:to-primary-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800/80 text-center relative overflow-hidden">
                 <div className="relative z-10">
                     <div className="text-4xl font-black text-slate-900 dark:text-white mb-1">{totalMatches}</div>
                     <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">Всего матчей</div>
                 </div>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div className="absolute top-0 right-0 w-16 h-16 bg-primary-500/5 rounded-full blur-xl -translate-y-1/2 translate-x-1/2 scale-2 pointer-events-none [transform:translateZ(0)]"></div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
