@@ -446,7 +446,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             ? `bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white ${shadowStyle} border border-primary-200/30`
             : `bg-gradient-to-br from-secondary-500/90 to-secondary-700/90 text-white ${shadowStyle} border border-secondary-200/30`;
 
-        const buttonStyle = "bg-white/25 dark:bg-black/30 active:bg-white/40 dark:active:bg-black/50 border border-white/30 active:border-white/50 text-white w-7 h-7 flex items-center justify-center rounded-lg shadow-sm active:scale-95 transition-transform duration-150";
+        const buttonStyle = "bg-white/20 active:bg-white/40 border border-white/30 active:border-white/50 text-white w-7 h-7 flex items-center justify-center rounded-lg shadow-sm active:scale-95 transition-transform duration-150";
 
         const cardSizeClass = isFloating
             ? 'w-32 h-20'
@@ -493,7 +493,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     </div>
                 )}
                 {!isFloating && hasHero && !isDragMode && (
-                    <div className="absolute top-0 left-0 w-full flex justify-between p-2 animate-fade-in z-20">
+                    <div className="absolute top-0 left-0 w-full flex justify-between p-2 z-20">
                         <button onClick={(e) => handleBanClick(e, player)} className={buttonStyle}><Ban size={14} /></button>
                         <div className="flex gap-1">
                             {onManualSelect && (
@@ -506,7 +506,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                 {/* Rank & Debug Info Badge */}
                 {hasHero && !isDragMode && !isFloating && (
-                    <div className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-fade-in flex flex-col items-center gap-1">
+                    <div key={player.hero?.id || 'rank'} className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-hero-reveal flex flex-col items-center gap-1">
                         {heroRank && (
                             <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[10px] sm:text-[11px] font-bold tracking-widest text-white/90">{heroRank}</div>
                         )}
@@ -524,7 +524,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         <h2
                             className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-lg sm:text-2xl'}`}
                         >
-                            {hasHero ? heroName : <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>}
+                            {hasHero ? (
+                                <span
+                                    key={player.hero?.id || 'hero-name'}
+                                    className={`inline-block w-full ${!isDragMode && !isFloating ? 'animate-hero-reveal' : ''}`}
+                                >
+                                    {heroName}
+                                </span>
+                            ) : (
+                                <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>
+                            )}
                         </h2>
                     )}
 
