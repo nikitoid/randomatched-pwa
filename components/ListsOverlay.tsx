@@ -760,7 +760,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                     {!isReadOnly ? (
                                         <button 
                                             onClick={handleSaveEditor} 
-                                            className="h-10 min-h-[40px] px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-xs shadow-md shadow-primary-600/20 active:scale-95 transition-all"
+                                            className="h-10 min-h-[40px] w-10 sm:w-32 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-xs shadow-md shadow-primary-600/20 active:scale-95 transition-all shrink-0"
                                             aria-label="Сохранить изменения"
                                             title="Сохранить изменения"
                                         > 
@@ -771,7 +771,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                         !isPermanentlyReadOnly && (
                                             <button 
                                                 onClick={() => { setIsEditMode(true); triggerHaptic(10); }} 
-                                                className="h-10 min-h-[40px] px-3.5 flex items-center justify-center gap-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-600 dark:text-primary-300 font-bold text-xs active:scale-95 transition-all"
+                                                className="h-10 min-h-[40px] w-10 sm:w-32 flex items-center justify-center gap-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-600 dark:text-primary-300 font-bold text-xs active:scale-95 transition-all shrink-0"
                                                 aria-label="Редактировать список"
                                                 title="Редактировать список"
                                             > 
