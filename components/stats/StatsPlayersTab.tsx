@@ -1,8 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Star, Flame, Skull, Percent, HelpCircle, TrendingDown } from 'lucide-react';
+import { Star, Flame, Skull, Percent, HelpCircle, TrendingDown, Shield } from 'lucide-react';
 import { PlayerStat, MatchRecord } from '../../types';
 import { PlayerDetails } from '../PlayerDetails';
 import { Avatar } from '../common/Avatar';
+import { calculatePlayerLevel } from '../../utils/playerLevel';
+import { RanksInfoModal } from './RanksInfoModal';
 
 
 interface StatsPlayersTabProps {
@@ -68,6 +70,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
     onOpenEfficiencyBreakdown
 }) => {
     const [displayPlayer, setDisplayPlayer] = useState<PlayerStat | null>(selectedPlayer);
+    const [isRanksModalOpen, setIsRanksModalOpen] = useState(false);
 
     if (selectedPlayer && selectedPlayer !== displayPlayer) {
         setDisplayPlayer(selectedPlayer);
@@ -100,72 +103,86 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
             {/* Список игроков (Всегда смонтирован в DOM для мгновенного плавного возврата) */}
             <div className="px-4 pb-4 pt-3 space-y-2 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-semibold text-slate-600 dark:text-slate-400">
+                    <span className="font-semibold text-slate-600 dark:text-slate-400 truncate mr-2">
                         {getPlayerSortLabel(playerSort)}
                     </span>
-                    {playerSort === 'efficiency' && onOpenEfficiencyBreakdown && (
+                    <div className="flex items-center gap-2.5 shrink-0">
                         <button
-                            onClick={(e) => { e.stopPropagation(); onOpenEfficiencyBreakdown(); }}
-                            className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-bold hover:underline active:opacity-80 transition-opacity"
+                            onClick={(e) => { e.stopPropagation(); setIsRanksModalOpen(true); }}
+                            className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-bold hover:text-primary-600 dark:hover:text-primary-400 active:opacity-80 transition-colors"
                         >
-                            <HelpCircle size={13} />
-                            <span>Расшифровка расчёта</span>
+                            <Shield size={13} />
+                            <span>Ранги</span>
                         </button>
-                    )}
+                        {playerSort === 'efficiency' && onOpenEfficiencyBreakdown && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onOpenEfficiencyBreakdown(); }}
+                                className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-bold hover:underline active:opacity-80 transition-opacity"
+                            >
+                                <HelpCircle size={13} />
+                                <span>Расшифровка</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
-                {processedPlayers.map((player, idx) => (
-                    <div
-                        key={player.name}
-                        onClick={() => {
-                            openPlayerDetails(player);
-                        }}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
-                    >
-                        <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                            <div className="relative shrink-0">
-                                <Avatar entityType="player" entityId={player.name} name={player.name} size="md" />
-                                <div className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
-                                        idx === 1 ? 'bg-slate-300 text-slate-900' :
-                                            idx === 2 ? 'bg-amber-700 text-amber-100' :
-                                                'bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                                    }`}>
-                                    {idx + 1}
-                                </div>
-                            </div>
-
-                            <div className="min-w-0 flex-1" onClick={handleTitleClick}>
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-                                    <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0 max-w-[130px] xs:max-w-[170px] sm:max-w-none truncate">
-                                        {player.name}
-                                    </span>
-                                    <div className="flex flex-wrap items-center gap-1 min-w-0">
-                                        {streakStats[player.name]?.current >= 3 && (
-                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 rounded-md flex items-center gap-0.5" title={`Серия из ${streakStats[player.name].current} побед подряд`}>
-                                                <Flame size={10} fill="currentColor" /> В огне
-                                            </div>
-                                        )}
-                                        {mvp?.name === player.name && (
-                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-md flex items-center gap-0.5">
-                                                <Star size={10} fill="currentColor" /> MVP
-                                            </div>
-                                        )}
-                                        {topKillerName === player.name && (
-                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400 rounded-md flex items-center gap-0.5" title={`Больше всех убийств (${player.totalKills || 0} 💀)`}>
-                                                <Skull size={10} fill="currentColor" /> Ебака парень
-                                            </div>
-                                        )}
-                                        {underdog?.name === player.name && (
-                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 rounded-md flex items-center gap-0.5" title="Underdog — тяжёлые времена">
-                                                <TrendingDown size={10} /> Underdog
-                                            </div>
-                                        )}
-                                        {player.isInactive && (
-                                            <div className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-md flex items-center gap-0.5" title="Не играл(а) более 60 дней">
-                                                Неактивен
-                                            </div>
-                                        )}
+                {processedPlayers.map((player, idx) => {
+                    const pLevel = calculatePlayerLevel(player.wins, player.losses, player.totalKills || 0);
+                    return (
+                        <div
+                            key={player.name}
+                            onClick={() => {
+                                openPlayerDetails(player);
+                            }}
+                            className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
+                        >
+                            <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                                <div className="relative shrink-0">
+                                    <Avatar entityType="player" entityId={player.name} name={player.name} size="md" />
+                                    <div className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
+                                            idx === 1 ? 'bg-slate-300 text-slate-900' :
+                                                idx === 2 ? 'bg-amber-700 text-amber-100' :
+                                                    'bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                        }`}>
+                                        {idx + 1}
                                     </div>
                                 </div>
+
+                                <div className="min-w-0 flex-1" onClick={handleTitleClick}>
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0 max-w-[130px] xs:max-w-[170px] sm:max-w-none truncate">
+                                            {player.name}
+                                        </span>
+                                        <div className={`shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-md border flex items-center gap-0.5 ${pLevel.tier.bgClass} ${pLevel.tier.borderClass} ${pLevel.tier.textClass}`} title={`${pLevel.tier.name} (${pLevel.totalXP} XP)`}>
+                                            <span>LVL {pLevel.level}</span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-1 min-w-0">
+                                            {streakStats[player.name]?.current >= 3 && (
+                                                <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 rounded-md flex items-center gap-0.5" title={`Серия из ${streakStats[player.name].current} побед подряд`}>
+                                                    <Flame size={10} fill="currentColor" /> В огне
+                                                </div>
+                                            )}
+                                            {mvp?.name === player.name && (
+                                                <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-md flex items-center gap-0.5">
+                                                    <Star size={10} fill="currentColor" /> MVP
+                                                </div>
+                                            )}
+                                            {topKillerName === player.name && (
+                                                <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400 rounded-md flex items-center gap-0.5" title={`Больше всех убийств (${player.totalKills || 0} 💀)`}>
+                                                    <Skull size={10} fill="currentColor" /> Ебака парень
+                                                </div>
+                                            )}
+                                            {underdog?.name === player.name && (
+                                                <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 rounded-md flex items-center gap-0.5" title="Underdog — тяжёлые времена">
+                                                    <TrendingDown size={10} /> Underdog
+                                                </div>
+                                            )}
+                                            {player.isInactive && (
+                                                <div className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-md flex items-center gap-0.5" title="Не играл(а) более 60 дней">
+                                                    Неактивен
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 {(() => {
                                     const killPercent = player.matches > 0 ? Math.round((((player.totalKills || 0) * 100) / player.matches) / 2) : 0;
                                     return (
@@ -229,7 +246,8 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                             )}
                         </div>
                     </div>
-                ))}
+                );
+            })}
                 {processedPlayers.length === 0 && <div className="text-center text-slate-400 py-10">Нет данных об игроках</div>}
             </div>
 
@@ -254,6 +272,12 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                     />
                 )}
             </div>
+
+            {/* Ranks Info Modal */}
+            <RanksInfoModal
+                isOpen={isRanksModalOpen}
+                onClose={() => setIsRanksModalOpen(false)}
+            />
         </div>
     );
 };

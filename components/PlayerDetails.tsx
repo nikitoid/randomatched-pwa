@@ -1,9 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { PlayerStat, MatchRecord } from '../types';
-import { Trophy, ChevronLeft, Shield, Calendar, Skull, TrendingUp, ChevronDown, ChevronUp, User, Edit2, Check, X, Swords, Zap, Flame, Award } from 'lucide-react';
+import { Trophy, ChevronLeft, Shield, Calendar, Skull, TrendingUp, ChevronDown, ChevronUp, User, Edit2, Check, X, Swords, Zap, Flame, Award, Sparkles, Crown, HelpCircle } from 'lucide-react';
 import { calculateWilsonScore, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
 import { Avatar } from './common/Avatar';
 import { AvatarCropperModal } from './common/AvatarCropperModal';
+import { calculatePlayerLevel } from '../utils/playerLevel';
+import { RanksInfoModal } from './stats/RanksInfoModal';
 
 interface PlayerDetailsProps {
     player: PlayerStat;
@@ -16,6 +18,9 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
     // Avatar Cropper State
     const [isCropperOpen, setIsCropperOpen] = useState(false);
+
+    // Ranks Info Modal State
+    const [isRanksInfoOpen, setIsRanksInfoOpen] = useState(false);
 
     // Rename State
     const [isEditing, setIsEditing] = useState(false);
@@ -40,7 +45,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
     const [matchesState, setMatchesState] = useState<'partial' | 'expanded' | 'collapsed'>('partial');
 
     // Dynamic stats calculated directly from the passed history slice
-    const { recentMatches, topHeroes, partnerStats, bestStreak, totalKills, maxKills, matchesCount, winsCount, lossesCount, dynamicScore } = useMemo(() => {
+    const { recentMatches, topHeroes, partnerStats, bestStreak, totalKills, maxKills, matchesCount, winsCount, lossesCount, dynamicScore, levelInfo } = useMemo(() => {
         // Filter matches involving this player
         const playerMatches = history.filter(m =>
             m.team1.some(p => p.name === player.name) ||
@@ -168,6 +173,8 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
             .slice(0, 5);
 
+        const levelInfo = calculatePlayerLevel(winsCount, lossesCount, totalKills);
+
         return {
             recentMatches: playerMatches.slice(0, 10),
             topHeroes,
@@ -178,7 +185,8 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             matchesCount,
             winsCount,
             lossesCount,
-            dynamicScore
+            dynamicScore,
+            levelInfo
         };
     }, [player.name, history]);
 
@@ -246,14 +254,81 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                             </div>
                         </div>
 
-                        <div className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 text-[11px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 shadow-2xs">
-                            LVL {Math.floor(matchesCount / 5) + 1}
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setIsRanksInfoOpen(true)}
+                            className={`px-2.5 py-1 rounded-xl border flex items-center gap-1.5 shadow-2xs hover:opacity-90 active:scale-95 transition-all cursor-pointer ${levelInfo.tier.bgClass} ${levelInfo.tier.borderClass} ${levelInfo.tier.textClass}`}
+                            title="Нажмите для справки о рангах"
+                        >
+                            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black bg-gradient-to-r ${levelInfo.tier.badgeBg}`}>
+                                LVL {levelInfo.level}
+                            </span>
+                            <span className="text-[11px] font-bold tracking-wide">{levelInfo.tier.name}</span>
+                        </button>
                     </>
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+
+                {/* Level & XP Progress Card */}
+                <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${levelInfo.tier.badgeBg} flex items-center justify-center font-black text-sm shadow-sm shrink-0`}>
+                                {levelInfo.level}
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-sm font-black text-slate-900 dark:text-white">{levelInfo.tier.name}</span>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                        {levelInfo.totalXP} XP
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsRanksInfoOpen(true)}
+                                        className="p-1 text-slate-400 hover:text-primary-500 active:scale-95 transition-colors"
+                                        title="Справка по рангам"
+                                    >
+                                        <HelpCircle size={14} />
+                                    </button>
+                                </div>
+                                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
+                                    До LVL {levelInfo.level + 1}: <span className="font-bold text-slate-600 dark:text-slate-300">{levelInfo.xpForNextLevel - levelInfo.currentXP} XP</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                            <span className="text-xs font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/50 px-2 py-1 rounded-lg border border-primary-200/50 dark:border-primary-800/50">
+                                {levelInfo.progressPercent}%
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-slate-700/50">
+                        <div
+                            className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${levelInfo.tier.badgeBg}`}
+                            style={{ width: `${levelInfo.progressPercent}%` }}
+                        />
+                    </div>
+
+                    {/* XP Breakdown info */}
+                    <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/60 text-[10px]">
+                        <div className="text-center p-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                            <div className="text-slate-400 dark:text-slate-500 font-semibold">Победы (+100)</div>
+                            <div className="font-extrabold text-emerald-600 dark:text-emerald-400">+{levelInfo.xpFromWins} XP</div>
+                        </div>
+                        <div className="text-center p-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                            <div className="text-slate-400 dark:text-slate-500 font-semibold">Матчи (+40)</div>
+                            <div className="font-extrabold text-blue-600 dark:text-blue-400">+{levelInfo.xpFromLosses} XP</div>
+                        </div>
+                        <div className="text-center p-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                            <div className="text-slate-400 dark:text-slate-500 font-semibold">Фраги 💀 (+15)</div>
+                            <div className="font-extrabold text-rose-500 dark:text-rose-400">+{levelInfo.xpFromKills} XP</div>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Main Stats 2x2 Grid */}
                 <div className="grid grid-cols-2 gap-3">
@@ -742,6 +817,12 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 entityType="player"
                 entityId={player.name}
                 entityName={player.name}
+            />
+
+            {/* Ranks Info Modal */}
+            <RanksInfoModal
+                isOpen={isRanksInfoOpen}
+                onClose={() => setIsRanksInfoOpen(false)}
             />
         </div>
     );
