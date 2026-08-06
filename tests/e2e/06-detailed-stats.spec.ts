@@ -108,4 +108,44 @@ test.describe('Детальная статистика', () => {
         await app.page.locator('button:has-text("Игроки")').click();
         await expect(app.statsModal.getByText('Underdog', { exact: true })).toBeVisible();
     });
+
+    test('при малой статистике (2 матча) в модалке MVP отображаются претенденты', async ({ app, page }) => {
+        // Устанавливаем 2 сыгранных матча
+        await page.evaluate(() => {
+            const twoMatches = [
+                {
+                    id: 'match-1',
+                    timestamp: Date.now() - 15000,
+                    team1: [{ name: 'Алекс', heroName: 'Герой 1', kills: 5 }],
+                    team2: [{ name: 'Борис', heroName: 'Герой 2', kills: 1 }],
+                    winner: 'team1'
+                },
+                {
+                    id: 'match-2',
+                    timestamp: Date.now() - 10000,
+                    team1: [{ name: 'Алекс', heroName: 'Герой 1', kills: 3 }],
+                    team2: [{ name: 'Борис', heroName: 'Герой 2', kills: 1 }],
+                    winner: 'team1'
+                }
+            ];
+            localStorage.setItem('randomatched_match_history_v1', JSON.stringify(twoMatches));
+        });
+        await page.reload();
+        await waitForAppReady(page);
+
+        // Открываем статистику
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        // Кликаем по карточке MVP
+        await app.page.locator('text=MVP').first().click();
+
+        // Модалка номинации MVP должна быть открыта
+        await expect(app.page.locator('text=Самый ценный игрок (MVP)')).toBeVisible();
+
+        // Список претендентов не должен быть пустым ("Нет подходящих игроков" отсутствует)
+        await expect(app.page.locator('text=Нет подходящих игроков')).toBeHidden();
+        // Алекс как MVP отображается в списке претендентов
+        await expect(app.page.locator('text=Алекс').first()).toBeVisible();
+    });
 });

@@ -224,9 +224,14 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
         const mvp = qualifiedPlayers.length > 0 ? qualifiedPlayers[0] : (sortedPlayers.length > 0 ? sortedPlayers[0] : null);
         // Базовый underdog по винрейту (fallback) — минимум 3 матча для объективности
         const qualifiedForUnderdog = sortedPlayers.filter(p => isQualified(p) && (!mvp || p.name !== mvp.name));
+        const activeUnderdogFallback = sortedPlayers.filter(p => !p.isInactive && (!mvp || p.name !== mvp.name));
         const fallbackUnderdog = qualifiedForUnderdog.length > 0
             ? qualifiedForUnderdog[qualifiedForUnderdog.length - 1]
-            : (qualifiedPlayers.length > 1 ? qualifiedPlayers[qualifiedPlayers.length - 1] : null);
+            : (qualifiedPlayers.length > 1
+                ? qualifiedPlayers[qualifiedPlayers.length - 1]
+                : (activeUnderdogFallback.length > 0
+                    ? activeUnderdogFallback[activeUnderdogFallback.length - 1]
+                    : (sortedPlayers.length > 1 ? sortedPlayers.filter(p => !mvp || p.name !== mvp.name).pop() || null : null)));
 
         // Streak Calculation (победы и поражения)
         // lastStreakMatchIndex отслеживает индекс последнего матча в серии игрока
@@ -407,11 +412,23 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
 
         const avgKillsPerMatch = filteredHistory.length > 0 ? totalKillsAll / filteredHistory.length : 0;
 
-        // 1. Кандидаты на MVP (топ-5 по эффективности из активных игроков с >= 3 матчами)
-        const mvpCandidates = sortedPlayers.filter(p => !p.isInactive && p.matches >= 3).slice(0, 5);
+        // 1. Кандидаты на MVP (топ-5 по эффективности из активных игроков; fallback если < 3 матчей)
+        const qualifiedMvpCandidates = sortedPlayers.filter(p => !p.isInactive && p.matches >= 3);
+        const activeMvpCandidates = sortedPlayers.filter(p => !p.isInactive);
+        const mvpCandidates = qualifiedMvpCandidates.length > 0
+            ? qualifiedMvpCandidates.slice(0, 5)
+            : (activeMvpCandidates.length > 0
+                ? activeMvpCandidates.slice(0, 5)
+                : sortedPlayers.slice(0, 5));
 
-        // 2. Кандидаты на Underdog (топ-5 из активных игроков)
-        const playersWithStats = sortedPlayers.filter(p => !p.isInactive && p.matches >= 3 && (!mvp || p.name !== mvp.name));
+        // 2. Кандидаты на Underdog (топ-5 из игроков, кроме MVP; fallback если < 3 матчей)
+        const qualifiedUnderdogBase = sortedPlayers.filter(p => !p.isInactive && p.matches >= 3 && (!mvp || p.name !== mvp.name));
+        const activeUnderdogBase = sortedPlayers.filter(p => !p.isInactive && (!mvp || p.name !== mvp.name));
+        const allUnderdogBase = sortedPlayers.filter(p => !mvp || p.name !== mvp.name);
+        const playersWithStats = qualifiedUnderdogBase.length > 0
+            ? qualifiedUnderdogBase
+            : (activeUnderdogBase.length > 0 ? activeUnderdogBase : allUnderdogBase);
+
         const withLoseStreak = playersWithStats
             .filter(p => (streakStats[p.name]?.loseStreak || 0) >= 3)
             .sort((a, b) => {
