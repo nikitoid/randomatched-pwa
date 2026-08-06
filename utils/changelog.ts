@@ -12,9 +12,23 @@ export interface ChangelogRelease {
 }
 
 // IMPORTANT FOR AGENTS: При изменении версии всегда синхронно обновляйте версию в package.json!
-export const APP_VERSION = '2.10.0';
+export const APP_VERSION = '2.11.0';
 
 export const CHANGELOG: ChangelogRelease[] = [
+  {
+    version: '2.11.0',
+    date: '06.08.2026',
+    title: 'Отклик при нажатии через динамик',
+    sections: [
+      {
+        type: 'added',
+        title: 'Улучшения отклика интерфейса',
+        items: [
+          'Новая опция «Клик через динамик» в Настройках ⚙️ ➔ Раздел «Приложение»: воспроизведение приятных микро-щелчков через динамик при нажатиях (решение для iPhone и других устройств без поддержки стандартной вибрации).'
+        ]
+      }
+    ]
+  },
   {
     version: '2.10.0',
     date: '27.07.2026',

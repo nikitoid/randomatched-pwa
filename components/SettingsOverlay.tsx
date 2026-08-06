@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles, Sliders, Layers, ShieldCheck, Activity } from 'lucide-react';
+import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles, Sliders, Layers, ShieldCheck, Activity, Volume2 } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
@@ -31,6 +31,8 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onToggleDebug?: (val: boolean) => void;
     hapticsEnabled?: boolean;
     onToggleHaptics?: () => void;
+    forceAudioMode?: boolean;
+    onToggleForceAudioMode?: () => void;
     triggerHaptic: (pattern?: number | number[]) => void;
     onImportData?: (data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => boolean;
     addToast?: (message: string, type: 'info' | 'success' | 'error' | 'warning', duration?: number) => void;
@@ -60,6 +62,8 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     onToggleDebug,
     hapticsEnabled = true,
     onToggleHaptics,
+    forceAudioMode = false,
+    onToggleForceAudioMode,
     triggerHaptic,
     history = [],
     onImportData,
@@ -576,7 +580,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 <div className="w-full max-w-sm flex flex-col gap-3">
                                     <h3 className="text-left text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider px-1 mb-0.5">Системные параметры</h3>
 
-                                    {/* Haptics Setting Card */}
+                                    {/* Hardware Vibration Setting Card (Android) */}
                                     <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
                                         <div className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -584,8 +588,11 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                     <Vibrate size={20} />
                                                 </div>
                                                 <div className="text-left min-w-0 flex-1">
-                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm">Тактильный отклик</h4>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Вибрация при нажатии элементов</p>
+                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                                                        Вибрация при нажатии
+                                                        <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold px-1.5 py-0.5 rounded">Android</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Физический вибромотор (не поддерживается в iOS Safari)</p>
                                                 </div>
                                             </div>
                                             <button
@@ -593,6 +600,30 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                                 className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${hapticsEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                             >
                                                 <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${hapticsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Audio Micro-Clicks Setting Card (For iPhone & All Devices) */}
+                                    <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 transition-all">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <div className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${forceAudioMode ? 'bg-primary-500/15 text-primary-600 dark:text-primary-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                    <Volume2 size={20} />
+                                                </div>
+                                                <div className="text-left min-w-0 flex-1">
+                                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
+                                                        Клик через динамик
+                                                        <span className="text-[9px] bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold px-1.5 py-0.5 rounded">iPhone / Все</span>
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">Тактильные акустические микро-щелчки Taptic feel</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => { onToggleForceAudioMode && onToggleForceAudioMode(); triggerHaptic(10); }}
+                                                className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${forceAudioMode ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
+                                            >
+                                                <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${forceAudioMode ? 'translate-x-6' : 'translate-x-1'}`} />
                                             </button>
                                         </div>
                                     </div>

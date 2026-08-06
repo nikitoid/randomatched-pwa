@@ -45,7 +45,7 @@ const App: React.FC = () => {
         setBgGradient
     } = useTheme();
     const { toasts, addToast, removeToast } = useToast();
-    const { trigger: triggerHaptic, toggle: toggleHaptics, isEnabled: hapticsEnabled } = useHaptics();
+    const { trigger: triggerHaptic, toggle: toggleHaptics, isEnabled: hapticsEnabled, forceAudioMode, toggleForceAudioMode, setForceAudioMode } = useHaptics();
 
     const {
         lists, addList, updateList, deleteList, forkList, createTemporaryList,
@@ -471,6 +471,8 @@ const App: React.FC = () => {
                     onToggleDebug={setIsDebugMode}
                     hapticsEnabled={hapticsEnabled}
                     onToggleHaptics={toggleHaptics}
+                    forceAudioMode={forceAudioMode}
+                    onToggleForceAudioMode={toggleForceAudioMode}
                     triggerHaptic={triggerHaptic}
                     history={history}
                     onImportData={importData}

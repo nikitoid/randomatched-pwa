@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
-    <title>Randomatched</title>
-    <meta name="description" content="Unmatched Генератор команд 2 на 2" />
-    <meta name="theme-color" content="#059669" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Randomatched" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="format-detection" content="telephone=no" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Manifest will be generated/injected by Vite PWA plugin -->
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+  <title>Randomatched</title>
+  <meta name="description" content="Unmatched Генератор команд 2 на 2" />
+  <meta name="theme-color" content="#059669" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Randomatched" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <script type="importmap">
 {
   "imports": {
@@ -29,42 +32,45 @@
   }
 }
 </script>
-    <script>
-      (function() {
-        try {
-          var savedTheme = localStorage.getItem('theme');
-          var isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (isDark) {
-            document.documentElement.classList.add('dark');
-          } else {
-            document.documentElement.classList.remove('dark');
-          }
-          
-          var roundness = localStorage.getItem('themeRoundness') || 'medium';
-          document.documentElement.setAttribute('data-roundness', roundness);
-          
-          var bgPattern = localStorage.getItem('themeBgPattern');
-          document.documentElement.setAttribute('data-bg-pattern', bgPattern !== null ? bgPattern : 'false');
-          
-          var cachedVars = localStorage.getItem('themeVariables');
-          if (cachedVars) {
-            var vars = JSON.parse(cachedVars);
-            var root = document.documentElement;
-            for (var key in vars) {
-              if (vars.hasOwnProperty(key)) {
-                root.style.setProperty(key, vars[key]);
-              }
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem('theme');
+        var isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+
+        var roundness = localStorage.getItem('themeRoundness') || 'medium';
+        document.documentElement.setAttribute('data-roundness', roundness);
+
+        var bgPattern = localStorage.getItem('themeBgPattern');
+        document.documentElement.setAttribute('data-bg-pattern', bgPattern !== null ? bgPattern : 'false');
+
+        var cachedVars = localStorage.getItem('themeVariables');
+        if (cachedVars) {
+          var vars = JSON.parse(cachedVars);
+          var root = document.documentElement;
+          for (var key in vars) {
+            if (vars.hasOwnProperty(key)) {
+              root.style.setProperty(key, vars[key]);
             }
           }
-        } catch (e) {
-          console.error('Theme early initialization failed', e);
         }
-      })();
-    </script>
-    <link rel="stylesheet" href="/index.css">
-  </head>
-  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 antialiased overflow-hidden selection:bg-primary-500 selection:text-white select-none">
-    <div id="root" class="h-full w-full relative"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+      } catch (e) {
+        console.error('Theme early initialization failed', e);
+      }
+    })();
+  </script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body
+  class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 antialiased overflow-hidden selection:bg-primary-500 selection:text-white select-none">
+  <div id="root" class="h-full w-full relative"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
 </html>
