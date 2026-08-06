@@ -66,8 +66,13 @@ const playMicroPulse = (
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, startTime);
+    // 'triangle' waveform provides rich harmonics suitable for tiny smartphone speakers
+    osc.type = 'triangle';
+    
+    // Fast pitch sweep attack (pitch drop) to produce a crisp mechanical click sound on mobile speakers
+    const startFreq = Math.min(freq * 2.8, 650);
+    osc.frequency.setValueAtTime(startFreq, startTime);
+    osc.frequency.exponentialRampToValueAtTime(freq, startTime + Math.min(0.004, durationSec * 0.4));
 
     gain.gain.setValueAtTime(gainValue, startTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, startTime + durationSec);
@@ -91,8 +96,8 @@ const triggerWebAudioHaptic = (type: HapticFeedbackType = 'light') => {
   }
 
   if (typeof type === 'number') {
-    const freq = type < 15 ? 130 : type < 25 ? 110 : 90;
-    playMicroPulse(ctx, freq, type, 0.15);
+    const freq = type < 15 ? 150 : type < 25 ? 130 : 110;
+    playMicroPulse(ctx, freq, type, 0.5);
     return;
   }
 
@@ -100,7 +105,7 @@ const triggerWebAudioHaptic = (type: HapticFeedbackType = 'light') => {
     let currentDelay = 0;
     type.forEach((dur, index) => {
       if (index % 2 === 0 && dur > 0) {
-        playMicroPulse(ctx, 110, dur, 0.12, currentDelay);
+        playMicroPulse(ctx, 130, dur, 0.45, currentDelay);
       }
       currentDelay += dur;
     });
@@ -109,25 +114,25 @@ const triggerWebAudioHaptic = (type: HapticFeedbackType = 'light') => {
 
   switch (type) {
     case 'light':
-      playMicroPulse(ctx, 130, 8, 0.12);
+      playMicroPulse(ctx, 150, 10, 0.45);
       break;
     case 'medium':
-      playMicroPulse(ctx, 110, 12, 0.18);
+      playMicroPulse(ctx, 130, 14, 0.6);
       break;
     case 'heavy':
-      playMicroPulse(ctx, 90, 18, 0.25);
+      playMicroPulse(ctx, 100, 20, 0.75);
       break;
     case 'success':
-      playMicroPulse(ctx, 140, 10, 0.15, 0);
-      playMicroPulse(ctx, 140, 10, 0.15, 45);
+      playMicroPulse(ctx, 160, 12, 0.5, 0);
+      playMicroPulse(ctx, 160, 12, 0.5, 45);
       break;
     case 'warning':
-      playMicroPulse(ctx, 85, 12, 0.2, 0);
-      playMicroPulse(ctx, 85, 12, 0.2, 50);
-      playMicroPulse(ctx, 85, 12, 0.2, 100);
+      playMicroPulse(ctx, 95, 14, 0.6, 0);
+      playMicroPulse(ctx, 95, 14, 0.6, 50);
+      playMicroPulse(ctx, 95, 14, 0.6, 100);
       break;
     default:
-      playMicroPulse(ctx, 130, 8, 0.12);
+      playMicroPulse(ctx, 150, 10, 0.45);
   }
 };
 
