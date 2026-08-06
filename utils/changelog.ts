@@ -458,32 +458,8 @@ export const CHANGELOG: ChangelogRelease[] = [
  * существующих пользователей до '2.2.6', чтобы подсветить релизы от v2.3.0 и выше.
  */
 export function getInitialLastSeenVersion(): string | null {
-  if (typeof window === 'undefined') return '2.2.6';
-
-  const MIGRATION_KEY = 'randomatched_changelog_v230_migrated';
-  const isMigrated = localStorage.getItem(MIGRATION_KEY);
-
-  const hasExistingData = Boolean(
-    localStorage.getItem('randomatched_lists_v1') ||
-    localStorage.getItem('randomatched_history_v1') ||
-    localStorage.getItem('theme') ||
-    localStorage.getItem('colorScheme')
-  );
-
-  if (!isMigrated) {
-    localStorage.setItem(MIGRATION_KEY, 'true');
-    if (hasExistingData) {
-      localStorage.setItem('randomatched_last_seen_version', '2.2.6');
-      return '2.2.6';
-    }
-  }
-
-  const stored = localStorage.getItem('randomatched_last_seen_version');
-  if (stored) {
-    return stored;
-  }
-
-  return hasExistingData ? '2.2.6' : null;
+  if (typeof window === 'undefined') return APP_VERSION;
+  return localStorage.getItem('randomatched_last_seen_version');
 }
 
 /**

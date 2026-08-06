@@ -56,5 +56,17 @@ test.describe('Начальное состояние приложения', () =
 
         expect(await app.getLocalStorageItem('theme')).toBe('dark');
         expect(await app.getLocalStorageItem('colorScheme')).toBe('indigo');
+        expect(await app.getLocalStorageItem('randomatched_has_auto_synced')).toBe(true);
+    });
+
+    test('при первом запуске чистой сессии выставляет флаг одноразовой автосинхронизации', async ({ page }) => {
+        await page.evaluate(() => {
+            localStorage.removeItem('randomatched_has_auto_synced');
+        });
+        await page.reload();
+        await waitForAppReady(page);
+
+        const flag = await page.evaluate(() => localStorage.getItem('randomatched_has_auto_synced'));
+        expect(flag).toBe('true');
     });
 });

@@ -736,8 +736,9 @@ export const useMatchHistory = (
         isLoadingBackups,
         isRestoringBackup,
         deleteCloudBackup,
-        getCloudBackupDetails
+        getCloudBackupDetails,
 
+        isLoaded
     };
 };
 

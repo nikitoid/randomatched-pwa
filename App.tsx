@@ -53,7 +53,7 @@ const App: React.FC = () => {
         lists, addList, updateList, deleteList, forkList, createTemporaryList,
         resetTemporaryLists, uploadToCloud, syncWithCloud, reorderLists,
         sortLists, checkConnectivity, isOnline, isSyncing, updatedListIds,
-        markListAsSeen, updatedHeroIds, dismissHeroUpdates, isLoaded
+        markListAsSeen, updatedHeroIds, dismissHeroUpdates, isLoaded: isListsLoaded
     } = useHeroLists(addToast);
 
     const {
@@ -68,11 +68,12 @@ const App: React.FC = () => {
         // Облачный бэкап
         createCloudBackup, listCloudBackups, restoreFromCloudBackup,
         cloudBackups, isCreatingBackup, isLoadingBackups, isRestoringBackup,
-        deleteCloudBackup, getCloudBackupDetails
+        deleteCloudBackup, getCloudBackupDetails, isLoaded: isHistoryLoaded
     } = useMatchHistory(addToast);
 
     const {
-        seasons, latestSeason, addSeason, updateSeason, deleteSeason, syncSeasons, importSeasons
+        seasons, latestSeason, addSeason, updateSeason, deleteSeason, syncSeasons, importSeasons,
+        isLoaded: isSeasonsLoaded
     } = useSeasons(addToast);
 
     const { syncAvatarsToCloud, importAvatars } = useAvatars();
@@ -106,7 +107,7 @@ const App: React.FC = () => {
                 console.error("Failed to parse lists for selectedListId check", e);
             }
         }
-        
+
         try {
             const storedLists = localStorage.getItem('randomatched_lists_v1');
             if (storedLists) {
@@ -118,7 +119,7 @@ const App: React.FC = () => {
         } catch (e) {
             console.error("Failed to parse lists for default selectedListId", e);
         }
-        
+
         return '';
     });
     const [isListSelectorOpen, setIsListSelectorOpen] = useState(false);
@@ -209,17 +210,80 @@ const App: React.FC = () => {
         }
     });
 
+    const isAllLoaded = isListsLoaded && isHistoryLoaded && isSeasonsLoaded;
+    const [autoSyncAttempted, setAutoSyncAttempted] = useState(false);
+
+    // Одноразовая автосинхронизация списков и статистики при самом первом запуске НОВОГО пользователя из сети
+    useEffect(() => {
+        if (!isAllLoaded || !isOnline || autoSyncAttempted) return;
+
+        const hasSyncedBefore = localStorage.getItem('randomatched_has_auto_synced');
+        if (!hasSyncedBefore) {
+            // Безопасно проверяем, содержит ли хранилище реальные пользовательские данные (а не пустые инициализационные массивы [])
+            const hasExistingData = (() => {
+                try {
+                    const rawLists = localStorage.getItem('randomatched_lists_v1');
+                    if (rawLists) {
+                        const parsed = JSON.parse(rawLists);
+                        if (Array.isArray(parsed) && parsed.length > 0) return true;
+                    }
+                    const rawHistory = localStorage.getItem('randomatched_match_history_v1');
+                    if (rawHistory) {
+                        const parsed = JSON.parse(rawHistory);
+                        if (Array.isArray(parsed) && parsed.length > 0) return true;
+                    }
+                    const rawSeasons = localStorage.getItem('randomatched_seasons_v1');
+                    if (rawSeasons) {
+                        const parsed = JSON.parse(rawSeasons);
+                        if (Array.isArray(parsed) && parsed.length > 0) return true;
+                    }
+                    const rawNames = localStorage.getItem('randomatched_player_names_v1');
+                    if (rawNames) {
+                        const parsed = JSON.parse(rawNames);
+                        if (Array.isArray(parsed) && parsed.some((n: string) => typeof n === 'string' && n.trim() !== '')) return true;
+                    }
+                    return false;
+                } catch (e) {
+                    return false;
+                }
+            })();
+
+            // Помечаем, что флаг установлен, чтобы исключить повторные вызовы
+            localStorage.setItem('randomatched_has_auto_synced', 'true');
+            setAutoSyncAttempted(true);
+
+            // Автосинхронизация выполняется СТРОГО для новых пользователей без существующих локальных данных
+            if (!hasExistingData) {
+                localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
+                setLastSeenVersion(APP_VERSION);
+
+                const performInitialAutoSync = async () => {
+                    try {
+                        await syncWithCloud();
+                        await syncHistory({ silentIfNoChanges: true });
+                        await syncSeasons({ silentIfNoChanges: true });
+                        await syncAvatarsToCloud();
+                    } catch (e) {
+                        console.error("Error during initial auto-sync:", e);
+                    }
+                };
+
+                performInitialAutoSync();
+            }
+        }
+    }, [isAllLoaded, isOnline, autoSyncAttempted, syncWithCloud, syncHistory, syncSeasons, syncAvatarsToCloud]);
+
     // Effect: Select default list if none selected
     useEffect(() => {
-        if (isLoaded && lists.length > 0) {
+        if (isListsLoaded && lists.length > 0) {
             const exists = lists.find(l => l.id === selectedListId);
             if (!exists) {
                 setSelectedListId(lists[0].id);
             }
-        } else if (isLoaded && lists.length === 0) {
+        } else if (isListsLoaded && lists.length === 0) {
             setSelectedListId('');
         }
-    }, [lists, isLoaded, selectedListId]);
+    }, [lists, isListsLoaded, selectedListId]);
 
     // Save selected list ID to localStorage whenever it changes
     useEffect(() => {
@@ -230,19 +294,19 @@ const App: React.FC = () => {
         }
     }, [selectedListId]);
 
-    // Показ чейнджлога при первом входе после обновления и сброс возможного сдвига скролла PWA
+    // Показ чейнджлога при входе после обновления приложения
     useEffect(() => {
-        if (isLoaded) {
+        if (isListsLoaded) {
             window.scrollTo(0, 0);
             if (window.location.search.includes('updated=')) {
                 window.history.replaceState({}, '', window.location.pathname);
             }
 
-            if (!lastSeenVersion || lastSeenVersion !== APP_VERSION) {
+            if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
                 setIsChangelogOpen(true);
             }
         }
-    }, [isLoaded, lastSeenVersion]);
+    }, [isListsLoaded, lastSeenVersion]);
 
     const handleCloseChangelog = () => {
         setIsChangelogOpen(false);
@@ -300,14 +364,14 @@ const App: React.FC = () => {
     };
 
     const handleAppendHeroesToSelected = (selectedHeroes: Hero[]) => {
-        const baseLists = isGroupMode 
+        const baseLists = isGroupMode
             ? lists.filter(l => selectedGroupIds.has(l.id))
             : activeList ? [activeList] : [];
-        
+
         const baseHeroes = getUniqueHeroesFromLists(baseLists);
         const combinedHeroes = [...baseHeroes];
         const existingNames = new Set(baseHeroes.map(h => h.name.trim().toLowerCase()));
-        
+
         selectedHeroes.forEach(hero => {
             const normName = hero.name.trim().toLowerCase();
             if (!existingNames.has(normName)) {
@@ -315,11 +379,11 @@ const App: React.FC = () => {
                 existingNames.add(normName);
             }
         });
-        
+
         const newId = createTemporaryList(combinedHeroes, "Временный");
         setSelectedListId(newId);
         setIsGroupMode(false);
-        
+
         addToast(`Создан временный список, добавлено героев: ${selectedHeroes.length}`, 'success');
     };
 
