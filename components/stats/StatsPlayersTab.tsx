@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Star, Flame, Skull, Percent, HelpCircle, TrendingDown } from 'lucide-react';
 import { PlayerStat, MatchRecord } from '../../types';
 import { PlayerDetails } from '../PlayerDetails';
+import { Avatar } from '../common/Avatar';
+
 
 interface StatsPlayersTabProps {
     processedPlayers: PlayerStat[];
@@ -120,13 +122,15 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                         className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
                     >
                         <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                            <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400' :
+                            <div className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400' :
                                     idx === 1 ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
                                         idx === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400' :
                                             'bg-slate-100 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400'
                                 }`}>
                                 {idx + 1}
                             </div>
+                            <Avatar entityType="player" entityId={player.name} name={player.name} size="sm" />
+
                             <div className="min-w-0 flex-1" onClick={handleTitleClick}>
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
                                     <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0 max-w-[130px] xs:max-w-[170px] sm:max-w-none truncate">

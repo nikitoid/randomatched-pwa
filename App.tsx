@@ -28,7 +28,9 @@ import { getUniqueHeroesFromLists } from './utils/generator';
 import { NavigationProvider } from './context/NavigationContext';
 import { AddHeroesModal } from './components/AddHeroesModal';
 import { ChangelogOverlay } from './components/ChangelogOverlay';
+import { useAvatars } from './context/AvatarContext';
 import { APP_VERSION, getInitialLastSeenVersion } from './utils/changelog';
+
 import { Hero } from './types';
 
 const App: React.FC = () => {
@@ -73,13 +75,19 @@ const App: React.FC = () => {
         seasons, latestSeason, addSeason, updateSeason, deleteSeason, syncSeasons, importSeasons
     } = useSeasons(addToast);
 
+    const { syncAvatarsToCloud, importAvatars } = useAvatars();
+
     const handleImportDataCombined = (data: any) => {
         const success = importData(data);
         if (success && Array.isArray(data.seasons)) {
             importSeasons(data.seasons);
         }
+        if (success && data.avatars && typeof data.avatars === 'object') {
+            importAvatars(data.avatars);
+        }
         return success;
     };
+
 
     // UI State
     const [selectedListId, setSelectedListId] = useState<string>(() => {
@@ -494,8 +502,10 @@ const App: React.FC = () => {
                     onSync={async (options) => {
                         const historySuccess = await syncHistory(options);
                         await syncSeasons(options);
+                        await syncAvatarsToCloud();
                         return historySuccess;
                     }}
+
                     isSyncing={isSyncingHistory}
                     isOnline={isOnline}
                     isDebugMode={isDebugMode}

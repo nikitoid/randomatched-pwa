@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { PlayerStat, MatchRecord } from '../types';
 import { Trophy, ChevronLeft, Shield, Calendar, Skull, TrendingUp, ChevronDown, ChevronUp, User, Edit2, Check, X, Swords, Zap, Flame, Award } from 'lucide-react';
 import { calculateWilsonScore, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
+import { Avatar } from './common/Avatar';
+import { AvatarCropperModal } from './common/AvatarCropperModal';
 
 interface PlayerDetailsProps {
     player: PlayerStat;
@@ -11,6 +13,9 @@ interface PlayerDetailsProps {
 }
 
 export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, onBack, onRename }) => {
+
+    // Avatar Cropper State
+    const [isCropperOpen, setIsCropperOpen] = useState(false);
 
     // Rename State
     const [isEditing, setIsEditing] = useState(false);
@@ -26,6 +31,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
         }
         setIsEditing(false);
     };
+
 
     // Collapse States
     // 'partial' (3 items) | 'expanded' (all) | 'collapsed' (none)
@@ -216,11 +222,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                     </form>
                 ) : (
                     <>
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-500 to-emerald-700 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md shadow-primary-500/20">
-                            {playerInitial}
-                        </div>
+                        <Avatar
+                            entityType="player"
+                            entityId={player.name}
+                            name={player.name}
+                            size="lg"
+                            showEditButton
+                            onEditClick={() => setIsCropperOpen(true)}
+                        />
 
                         <div className="flex-1 min-w-0">
+
                             <div className="flex items-center gap-2">
                                 <h2 className="text-lg font-black text-slate-900 dark:text-white truncate">{player.name}</h2>
                                 <button
@@ -705,8 +717,18 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                         </div>
                     </div>
                 </div>
-
             </div>
+
+            {/* Avatar Cropper Modal */}
+            <AvatarCropperModal
+                isOpen={isCropperOpen}
+                onClose={() => setIsCropperOpen(false)}
+                entityType="player"
+                entityId={player.name}
+                entityName={player.name}
+            />
         </div>
     );
 };
+
+

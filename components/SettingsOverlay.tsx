@@ -5,6 +5,7 @@ import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
 import { APP_VERSION, CHANGELOG, getUnreadReleasesCount } from '../utils/changelog';
 import { useHaptics } from '../hooks/useHaptics';
+import { generateUUID } from '../utils/uuid';
 
 
 interface SettingsOverlayProps {
@@ -246,7 +247,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
             const winner: 'team1' | 'team2' = Math.random() > 0.5 ? 'team1' : 'team2';
 
             demoHistory.push({
-                id: crypto.randomUUID(),
+                id: generateUUID(),
                 timestamp: now - i * 3600 * 1000 * 12,
                 lastUpdated: now,
                 team1,

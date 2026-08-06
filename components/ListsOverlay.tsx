@@ -16,6 +16,7 @@ import { CustomScrollbar } from './CustomScrollbar';
 import { HeroEditorRow, HeroViewRow } from './HeroEditorRow';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
+import { generateUUID } from '../utils/uuid';
 
 interface ListsOverlayProps {
     isOpen: boolean;
@@ -319,7 +320,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                         return;
                     }
                     setPendingFileHeroes(json.heroes.map((h: any) => ({
-                        id: h.id || crypto.randomUUID(),
+                        id: h.id || generateUUID(),
                         name: h.name || '',
                         rank: h.rank || ''
                     })));
@@ -346,7 +347,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     }
                     const name = file.name.replace(/\.json$/i, '');
                     const cleanHeroes = json.heroes.map((h: any) => ({
-                        id: h.id || crypto.randomUUID(),
+                        id: h.id || generateUUID(),
                         name: h.name || '',
                         rank: h.rank || ''
                     }));
@@ -364,7 +365,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const confirmFileImport = () => {
         if (pendingFileHeroes) {
             const clean = getCleanHeroes(pendingFileHeroes);
-            const withEmpty = [...clean, { id: crypto.randomUUID(), name: '', rank: '' }];
+            const withEmpty = [...clean, { id: generateUUID(), name: '', rank: '' }];
             setEditorHeroes(withEmpty);
             if (addToast) addToast("Список импортирован", "success");
         }
@@ -390,10 +391,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             const parts = line.split('|');
             const name = parts[0].trim();
             const rank = parts.length > 1 ? parts[1].trim() : '';
-            return { id: crypto.randomUUID(), name, rank };
+            return { id: generateUUID(), name, rank };
         });
         if (!validateRanks(newHeroes)) { if (addToast) addToast("Ошибка: Найдены недопустимые ранги. Используйте формат S+, A-, и т.д.", "error"); return; }
-        newHeroes.push({ id: crypto.randomUUID(), name: '', rank: '' });
+        newHeroes.push({ id: generateUUID(), name: '', rank: '' });
         setEditorHeroes(newHeroes);
         setImportMode('none');
         if (addToast) addToast(`Импортировано ${lines.length} героев`, "success");
@@ -516,7 +517,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         if (nameModalMode === 'create') {
             const newId = onAddList(trimmedName);
             setNameModalOpen(false);
-            const newHeroes = [{ id: crypto.randomUUID(), name: '', rank: '' }];
+            const newHeroes = [{ id: generateUUID(), name: '', rank: '' }];
             setEditorHeroes(newHeroes);
             setEditorIsGroupable(false);
             setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(newHeroes), isGroupable: false }));
@@ -556,7 +557,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         const isReadOnlyLocal = !!(list.isCloud && !isOnline);
         if (!isReadOnlyLocal) {
             const last = heroes[heroes.length - 1];
-            if (!last || last.name.trim() !== '' || last.rank !== '') { heroes.push({ id: crypto.randomUUID(), name: '', rank: '' }); }
+            if (!last || last.name.trim() !== '' || last.rank !== '') { heroes.push({ id: generateUUID(), name: '', rank: '' }); }
         }
         setEditorHeroes(heroes);
         handleCloseMenu();
@@ -567,7 +568,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         setEditorHeroes(prev => {
             const newHeroes = prev.filter((_, i) => i !== index);
             const last = newHeroes[newHeroes.length - 1];
-            if (!last || last.name.trim() !== '' || last.rank !== '') { newHeroes.push({ id: crypto.randomUUID(), name: '', rank: '' }); }
+            if (!last || last.name.trim() !== '' || last.rank !== '') { newHeroes.push({ id: generateUUID(), name: '', rank: '' }); }
             return newHeroes;
         });
     }, [isReadOnly]);
@@ -580,7 +581,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             const lastIndex = newHeroes.length - 1;
             if (index === lastIndex) {
                 const current = newHeroes[index];
-                if (current.name.trim() !== '' || current.rank !== '') { newHeroes.push({ id: crypto.randomUUID(), name: '', rank: '' }); }
+                if (current.name.trim() !== '' || current.rank !== '') { newHeroes.push({ id: generateUUID(), name: '', rank: '' }); }
             }
             return newHeroes;
         });
@@ -607,7 +608,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 }
             });
             if (isReadOnly) return filled;
-            return [...filled, { id: crypto.randomUUID(), name: '', rank: '' }];
+            return [...filled, { id: generateUUID(), name: '', rank: '' }];
         });
     };
 
@@ -633,7 +634,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             isDirtyRef.current = false;
             setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(cleanHeroes), isGroupable: editorIsGroupable }));
             setIsEditMode(false);
-            const nextHeroes = [...cleanHeroes, { id: crypto.randomUUID(), name: '', rank: '' }];
+            const nextHeroes = [...cleanHeroes, { id: generateUUID(), name: '', rank: '' }];
             setEditorHeroes(nextHeroes);
         }
     };
@@ -665,7 +666,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             setEditorIsGroupable(originalData.isGroupable || false);
             const isReadOnlyLocal = !!(lists.find(l => l.id === editingListId)?.isCloud && !isOnline);
             if (!isReadOnlyLocal) {
-                originalHeroes.push({ id: crypto.randomUUID(), name: '', rank: '' });
+                originalHeroes.push({ id: generateUUID(), name: '', rank: '' });
             }
             setEditorHeroes(originalHeroes);
             setIsEditMode(false);

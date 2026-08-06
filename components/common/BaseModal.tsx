@@ -1,5 +1,7 @@
 import React, { useId, useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+
 import { useBackHandler } from '../../hooks/useBackHandler';
 import { useNavigation } from '../../context/NavigationContext';
 import { getModalZIndex } from '../../constants/zIndex';
@@ -406,7 +408,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     return 'opacity-100';
   };
 
-  return (
+  const modalContent = (
     <div
       className={`fixed inset-0 flex bg-slate-950/75 ${animateState === 'entered' && !isDragging ? 'backdrop-blur-md' : ''} transition-opacity duration-300 ${getContainerLayoutClass()} ${getBackdropOpacity()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
       style={{
@@ -521,4 +523,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };
+

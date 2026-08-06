@@ -5,6 +5,14 @@ export interface Hero {
   rank: string;
 }
 
+export interface AvatarRecord {
+  id: string; // Key format: `${entityType}_${entityId}`
+  entityType: 'player' | 'hero';
+  entityId: string;
+  dataUrl: string;
+  updatedAt: number;
+}
+
 export interface HeroList {
   id: string;
   name: string;
@@ -118,5 +126,7 @@ export interface CloudBackup {
   history: MatchRecord[];
   deletedHistory: MatchRecord[];
   seasons?: Season[];
+  avatars?: Record<string, string>;
 }
+
 

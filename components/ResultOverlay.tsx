@@ -7,6 +7,8 @@ import { getHeroHistoryWeights, getPlayerHeroHistoryWeights, getHeroWeight } fro
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
 import { useHaptics } from '../hooks/useHaptics';
+import { Avatar } from './common/Avatar';
+
 
 
 interface ResultOverlayProps {
@@ -532,15 +534,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 <div className={`flex flex-col items-center justify-center w-full transition-transform duration-300 ${isFloating ? 'scale-75' : ''}`}>
                     {!isFloating && (
                         <h2
-                            className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-lg sm:text-2xl'}`}
+                            className={`font-black text-center leading-tight drop-shadow-md px-1 w-full line-clamp-2 mt-1 min-h-[1.5em] z-10 flex items-center justify-center gap-1.5 ${heroName.length > 50 ? 'text-sm sm:text-base' : heroName.length > 35 ? 'text-sm sm:text-lg' : 'text-lg sm:text-2xl'}`}
                         >
                             {hasHero ? (
                                 <span
                                     key={player.hero?.id || 'hero-name'}
-                                    className={`inline-block w-full ${!isDragMode && !isFloating ? 'animate-hero-reveal' : ''}`}
+                                    className={`inline-flex items-center justify-center gap-1.5 w-full ${!isDragMode && !isFloating ? 'animate-hero-reveal' : ''}`}
                                 >
-                                    {heroName}
+                                    <span className="truncate">{heroName}</span>
                                 </span>
+
                             ) : (
                                 <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>
                             )}
@@ -552,13 +555,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     )}
 
                     <div className={`flex items-center gap-2 opacity-90 z-10 transition-[transform,opacity] duration-300 ${isFloating ? 'mt-0' : 'absolute bottom-3'}`}>
-                        {!isFloating && !showNumberBadge && <Users size={14} />}
+                        {!isFloating && !showNumberBadge && (
+                            <Avatar entityType="player" entityId={displayName} name={displayName} size="xs" />
+                        )}
                         {showNumberBadge && !isFloating && (
                             <div className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white/20 text-[10px] sm:text-xs font-black shadow-sm border border-white/10">{player.playerNumber}</div>
                         )}
                         <span className="font-bold text-[10px] sm:text-xs tracking-widest uppercase truncate max-w-[120px] drop-shadow-sm">{displayName}</span>
                     </div>
                 </div>
+
             </div>
         );
     };

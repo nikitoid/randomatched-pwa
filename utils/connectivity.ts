@@ -28,3 +28,25 @@ export const checkConnectivity = async (timeoutMs: number = 5000): Promise<boole
         return false;
     }
 };
+
+/**
+ * Wraps any promise with a hard timeout to prevent hanging UI on blocked networks or Lie-Fi
+ */
+export const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 4000): Promise<T> => {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error(`Operation timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+
+        promise
+            .then((res) => {
+                clearTimeout(timer);
+                resolve(res);
+            })
+            .catch((err) => {
+                clearTimeout(timer);
+                reject(err);
+            });
+    });
+};
+

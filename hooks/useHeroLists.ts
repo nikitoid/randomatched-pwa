@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useConnectivity } from './useConnectivity';
 import { HeroList, Hero, ToastType } from '../types';
 import { db } from '../firebase';
+import { generateUUID } from '../utils/uuid';
 
 const STORAGE_KEY = 'randomatched_lists_v1';
 
@@ -220,7 +221,7 @@ export const useHeroLists = (
 
   const addList = (name: string) => {
     const newList: HeroList = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name,
       heroes: [],
       isLocal: true,
@@ -343,7 +344,7 @@ export const useHeroLists = (
     const newHeroes = sourceList.heroes.filter(h => !excludeIds.has(h.id));
 
     const newList: HeroList = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name: sourceList.name,
       heroes: newHeroes,
       isLocal: true,
@@ -359,7 +360,7 @@ export const useHeroLists = (
 
   const createTemporaryList = (heroes: Hero[], name: string) => {
     const newList: HeroList = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       name,
       heroes,
       isLocal: true,

@@ -3,6 +3,9 @@ import { useConnectivity } from './useConnectivity';
 import { useState, useEffect, useCallback } from 'react';
 import { MatchRecord, AssignedPlayer, ToastType, MatchPlayer, CloudBackup } from '../types';
 import { db } from '../firebase';
+import { getAllAvatarsFromStorage, saveAllAvatarsToStorage } from '../utils/avatarStorage';
+import { generateUUID } from '../utils/uuid';
+
 
 const STORAGE_KEY_HISTORY = 'randomatched_match_history_v1';
 const STORAGE_KEY_DELETED = 'randomatched_deleted_matches_v1';
@@ -92,7 +95,7 @@ export const useMatchHistory = (
         const team2 = team2Raw.filter(p => p.name !== '');
 
         const newMatch: MatchRecord = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             timestamp: Date.now(),
             lastUpdated: Date.now(),
             team1,
@@ -111,7 +114,7 @@ export const useMatchHistory = (
         timestamp: number = Date.now()
     ) => {
         const newMatch: MatchRecord = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             timestamp,
             lastUpdated: Date.now(),
             team1,
@@ -550,20 +553,23 @@ export const useMatchHistory = (
 
         setIsCreatingBackup(true);
         try {
-            const backupId = crypto.randomUUID();
+            const backupId = generateUUID();
             const now = Date.now();
+            const avatarsMap = await getAllAvatarsFromStorage();
 
             const backupData: CloudBackup = {
                 id: backupId,
                 createdAt: now,
                 matchCount: history.length,
                 history: history,
-                deletedHistory: deletedHistory
+                deletedHistory: deletedHistory,
+                avatars: avatarsMap,
             };
 
             await db.collection('backups').doc(backupId).set(backupData);
 
             addToast("Бэкап успешно создан", "success", 2000);
+
 
             // Обновляем локальный список бэкапов
             setCloudBackups(prev => [{
@@ -649,7 +655,12 @@ export const useMatchHistory = (
             setDeletedHistory(restoredDeletedHistory);
             setDeletedIds(new Set());
 
-            addToast("История восстановлена из бэкапа", "success", 2500);
+            if (data.avatars && typeof data.avatars === 'object') {
+                await saveAllAvatarsToStorage(data.avatars);
+            }
+
+            addToast("Данные из бэкапа успешно восстановлены", "success", 2000);
+
             return true;
         } catch (e) {
             console.error("Restore backup failed", e);

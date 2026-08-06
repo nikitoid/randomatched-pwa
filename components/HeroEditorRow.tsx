@@ -2,6 +2,8 @@ import React, { memo, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { Hero } from '../types';
 import { RankSelect } from './RankSelect';
+import { Avatar } from './common/Avatar';
+
 
 // --- COMPONENT FOR EDITING HERO ---
 interface HeroEditorRowProps {
@@ -155,14 +157,16 @@ export const HeroViewRow: React.FC<HeroViewRowProps> = memo(({
             </div>
 
             {/* Name display */}
-            <div className={`flex-1 min-w-0 px-3.5 py-2 rounded-xl bg-white/70 dark:bg-slate-900/75 glass-card-gradient border text-sm text-slate-800 dark:text-slate-200 font-medium truncate relative shadow-2xs
+            <div className={`flex-1 min-w-0 px-3 py-2 rounded-xl bg-white/70 dark:bg-slate-900/75 glass-card-gradient border text-sm text-slate-800 dark:text-slate-200 font-medium truncate relative shadow-2xs flex items-center gap-2
                 ${hasLocalUpdate ? 'border-primary-400 dark:border-primary-600 ring-2 ring-primary-500/20' : 'border-slate-200/80 dark:border-slate-800/80'}
             `}>
-                {hero.name || <span className="text-slate-400 italic">Без имени</span>}
+                <Avatar entityType="hero" entityId={hero.id || hero.name} name={hero.name} size="xs" />
+                <span className="truncate">{hero.name || <span className="text-slate-400 italic">Без имени</span>}</span>
                 {hasNameUpdate && (
                     <div className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900 pointer-events-none z-10 animate-pulse" />
                 )}
             </div>
+
         </div>
     );
 });

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Season, ToastType } from '../types';
 import { db } from '../firebase';
 import { useConnectivity } from './useConnectivity';
+import { generateUUID } from '../utils/uuid';
 
 const STORAGE_KEY_SEASONS = 'randomatched_seasons_v1';
 const STORAGE_KEY_DELETED_SEASONS = 'randomatched_deleted_seasons_v1';
@@ -91,7 +92,7 @@ export const useSeasons = (
         }
 
         const newSeason: Season = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             name: trimmedName,
             startDate,
             ...(endDate && endDate.trim() !== '' ? { endDate: endDate.trim() } : {}),

@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { HeroStat, MatchRecord } from '../types';
 import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles } from 'lucide-react';
+import { Avatar } from './common/Avatar';
+import { AvatarCropperModal } from './common/AvatarCropperModal';
 
 interface HeroDetailsProps {
     hero: HeroStat;
@@ -11,9 +13,13 @@ interface HeroDetailsProps {
 
 export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack, onRename }) => {
 
+    // Avatar Cropper State
+    const [isCropperOpen, setIsCropperOpen] = useState(false);
+
     // Rename State
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(hero.name);
+
 
     useEffect(() => {
         setEditValue(hero.name);
@@ -152,11 +158,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                     </form>
                 ) : (
                     <>
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-lg flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
-                            {heroInitial}
-                        </div>
+                        <Avatar
+                            entityType="hero"
+                            entityId={hero.name}
+                            name={hero.name}
+                            size="lg"
+                            showEditButton
+                            onEditClick={() => setIsCropperOpen(true)}
+                        />
 
                         <div className="flex-1 min-w-0">
+
                             <div className="flex items-center gap-2">
                                 <h2 className="text-lg font-black text-slate-900 dark:text-white truncate">{hero.name}</h2>
                                 <button
@@ -639,8 +651,18 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                         </div>
                     </div>
                 </div>
-
             </div>
+
+            {/* Avatar Cropper Modal */}
+            <AvatarCropperModal
+                isOpen={isCropperOpen}
+                onClose={() => setIsCropperOpen(false)}
+                entityType="hero"
+                entityId={hero.name}
+                entityName={hero.name}
+            />
         </div>
     );
 };
+
+

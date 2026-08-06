@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { ConnectivityProvider } from './context/ConnectivityContext';
+import { AvatarProvider } from './context/AvatarContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -13,7 +14,9 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ConnectivityProvider>
-      <App />
+      <AvatarProvider>
+        <App />
+      </AvatarProvider>
     </ConnectivityProvider>
   </React.StrictMode>
 );
