@@ -271,20 +271,18 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   const { backdropZIndex, modalZIndex } = getModalZIndex(stackIndex, isAlert, priority);
 
   // Обработчики тач-свайпа
-  const handleTouchStart = (e: React.TouchEvent | React.PointerEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (!enableSwipeToClose) return;
-    if ('pointerType' in e && e.pointerType === 'touch') return; // Избегаем дублирования с touchstart
-    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.PointerEvent).clientY;
+    const clientY = e.touches[0].clientY;
     startYRef.current = clientY;
     currentDragYRef.current = 0;
     setIsDragging(true);
   };
 
-  const handleTouchMove = (e: React.TouchEvent | React.PointerEvent) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging || !enableSwipeToClose) return;
-    if ('pointerType' in e && e.pointerType === 'touch') return;
 
-    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.PointerEvent).clientY;
+    const clientY = e.touches[0].clientY;
     const deltaY = clientY - startYRef.current;
 
     if (deltaY > 0) {
@@ -297,9 +295,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     }
   };
 
-  const handleTouchEnd = (e?: React.TouchEvent | React.PointerEvent) => {
+  const handleTouchEnd = (e?: React.TouchEvent) => {
     if (!isDragging || !enableSwipeToClose) return;
-    if (e && 'pointerType' in e && e.pointerType === 'touch') return;
     setIsDragging(false);
 
     const threshold = 110;
@@ -310,7 +307,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
         closeTimerRef.current = setTimeout(() => {
           onClose();
-        }, 60);
+        }, 180);
       }
     } else {
       setDragY(0);
@@ -451,7 +448,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onPointerDown={handleTouchStart}
           >
             <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700/80 rounded-full" />
           </div>
@@ -464,7 +460,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onPointerDown={handleTouchStart}
           >
             <div className="flex items-center gap-3 min-w-0 pr-2">
               {icon && (

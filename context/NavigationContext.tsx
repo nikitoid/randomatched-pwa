@@ -100,6 +100,14 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 }
                 pendingBackTimeoutRef.current = setTimeout(() => {
                     if (pendingBackStepsRef.current > 0) {
+                        const currentState = window.history.state;
+                        // Защита: если история уже на 'exit-guard', предотвращаем лишний переход назад
+                        if (currentState && currentState.type === 'exit-guard') {
+                            pendingBackStepsRef.current = 0;
+                            pendingBackTimeoutRef.current = null;
+                            return;
+                        }
+
                         window.history.go(-pendingBackStepsRef.current);
                         pendingBackStepsRef.current = 0;
                     }
@@ -161,16 +169,24 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                         currentStack[i].onBack();
                     }
                 } else if (state.type === 'exit-guard') {
-                    // Пользователь нажал "Назад" на главном экране.
-                    const now = Date.now();
-                    if (now - lastBackPressTime.current < 3000) {
-                        // Повторное нажатие в течение 3 секунд - позволяем выйти из приложения
-                        window.history.go(-1);
-                    } else {
-                        lastBackPressTime.current = now;
-                        addToast('Нажмите еще раз, чтобы выйти', 'info');
-                        // Возвращаем пользователя обратно на состояние 'root'
+                    if (currentStack.length > 0) {
+                        // Если модали ещё в стеке, закрываем их и восстанавливаем состояние 'root' без показа тоста выхода
+                        for (let i = currentStack.length - 1; i >= 0; i--) {
+                            currentStack[i].onBack();
+                        }
                         window.history.forward();
+                    } else {
+                        // Пользователь действительно нажал "Назад" на главном экране.
+                        const now = Date.now();
+                        if (now - lastBackPressTime.current < 3000) {
+                            // Повторное нажатие в течение 3 секунд - позволяем выйти из приложения
+                            window.history.go(-1);
+                        } else {
+                            lastBackPressTime.current = now;
+                            addToast('Нажмите еще раз, чтобы выйти', 'info');
+                            // Возвращаем пользователя обратно на состояние 'root'
+                            window.history.forward();
+                        }
                     }
                 }
             } finally {
