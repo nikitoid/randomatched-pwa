@@ -283,11 +283,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   const handleTouchMove = (e: React.TouchEvent | React.PointerEvent) => {
     if (!isDragging || !enableSwipeToClose) return;
     if ('pointerType' in e && e.pointerType === 'touch') return;
-    
-    // Блокируем стандартный скролл страницы и призрачные клики во время свайпа шапки
-    if (e.cancelable) {
-      e.preventDefault();
-    }
 
     const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.PointerEvent).clientY;
     const deltaY = clientY - startYRef.current;
@@ -306,10 +301,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     if (!isDragging || !enableSwipeToClose) return;
     if (e && 'pointerType' in e && e.pointerType === 'touch') return;
     setIsDragging(false);
-
-    if (e && e.cancelable && Math.abs(currentDragYRef.current) > 10) {
-      e.preventDefault();
-    }
 
     const threshold = 110;
     if (currentDragYRef.current > threshold) {
@@ -399,23 +390,39 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     }
   };
 
-  const getBackdropOpacity = () => {
-    if (animateState === 'entering' || animateState === 'exiting') return 'opacity-0';
-    if (dragY > 0 && isBottomSheetScreen) {
-      const progress = Math.min(1, dragY / 300);
-      return `opacity-${Math.max(10, Math.round((1 - progress) * 100))}`;
+  const getBackdropStyle = (): React.CSSProperties => {
+    let opacity = 1;
+    let blurPx = 12;
+
+    if (animateState === 'entering' || animateState === 'exiting') {
+      opacity = 0;
+      blurPx = 0;
+    } else if (isBottomSheetScreen && dragY > 0) {
+      const progress = Math.min(1, dragY / 250);
+      opacity = Math.max(0, 1 - progress);
+      blurPx = (1 - progress) * 12;
     }
-    return 'opacity-100';
+
+    const transitionStyle = isDragging
+      ? 'none'
+      : 'opacity 300ms ease-out, backdrop-filter 300ms ease-out, -webkit-backdrop-filter 300ms ease-out';
+
+    return {
+      zIndex: backdropZIndex,
+      opacity,
+      backdropFilter: blurPx > 0 ? `blur(${blurPx}px)` : 'none',
+      WebkitBackdropFilter: blurPx > 0 ? `blur(${blurPx}px)` : 'none',
+      transition: transitionStyle,
+      willChange: isDragging ? 'opacity, backdrop-filter' : 'auto',
+      ...(viewportStyle.height ? { height: `${viewportStyle.height}px` } : {}),
+      ...(viewportStyle.top !== undefined ? { top: `${viewportStyle.top}px` } : {}),
+    };
   };
 
   const modalContent = (
     <div
-      className={`fixed inset-0 flex bg-slate-950/75 ${animateState === 'entered' && !isDragging ? 'backdrop-blur-md' : ''} transition-opacity duration-300 ${getContainerLayoutClass()} ${getBackdropOpacity()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
-      style={{
-        zIndex: backdropZIndex,
-        ...(viewportStyle.height ? { height: `${viewportStyle.height}px` } : {}),
-        ...(viewportStyle.top !== undefined ? { top: `${viewportStyle.top}px` } : {}),
-      }}
+      className={`fixed inset-0 flex bg-slate-950/75 ${getContainerLayoutClass()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
+      style={getBackdropStyle()}
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
