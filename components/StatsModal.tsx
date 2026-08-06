@@ -63,6 +63,7 @@ interface StatsModalProps {
     onDeleteCloudBackup: (id: string) => Promise<boolean>;
     onGetCloudBackupDetails: (id: string) => Promise<CloudBackup | null>;
     isDebugMode?: boolean;
+    onOpenInactiveModal?: () => void;
 }
 
 export const StatsModal: React.FC<StatsModalProps> = ({
@@ -105,7 +106,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     onRestoreFromCloudBackup = async () => false,
     onDeleteCloudBackup = async () => false,
     onGetCloudBackupDetails = async () => null,
-    isDebugMode = false
+    isDebugMode = false,
+    onOpenInactiveModal
 }) => {
     // Backup Menu State
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
@@ -1368,6 +1370,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 topWinrateHero={topWinrateHero}
                                 mostPopularHero={mostPopularHero}
                                 mostDeadlyHero={mostDeadlyHero}
+                                onOpenInactiveModal={onOpenInactiveModal}
                             />
                         )}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Star, Crown, Skull } from 'lucide-react';
+import { Shield, Star, Crown, Skull, Clock } from 'lucide-react';
 import { HeroStat, MatchRecord } from '../../types';
 import { HeroDetails } from '../HeroDetails';
 import { Avatar } from '../common/Avatar';
@@ -17,6 +17,7 @@ interface StatsHeroesTabProps {
     topWinrateHero?: HeroStat | null;
     mostPopularHero?: HeroStat | null;
     mostDeadlyHero?: HeroStat | null;
+    onOpenInactiveModal?: () => void;
 }
 
 const getWinsText = (count: number) => {
@@ -49,7 +50,8 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     closeDetails,
     topWinrateHero,
     mostPopularHero,
-    mostDeadlyHero
+    mostDeadlyHero,
+    onOpenInactiveModal
 }) => {
     const [displayHero, setDisplayHero] = useState<HeroStat | null>(selectedHero);
 
@@ -71,6 +73,15 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                     <span className="font-semibold text-slate-600 dark:text-slate-400">
                         {getHeroSortLabel(heroSort)}
                     </span>
+                    {onOpenInactiveModal && (
+                        <button
+                            onClick={onOpenInactiveModal}
+                            className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50 active:scale-95 transition-all"
+                        >
+                            <Clock size={12} />
+                            <span>Список забытых</span>
+                        </button>
+                    )}
                 </div>
                 {processedHeroes.map((hero, idx) => (
                     <div

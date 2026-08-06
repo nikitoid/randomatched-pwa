@@ -5,7 +5,7 @@ import {
     Wifi, WifiOff, Loader2, Files, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, 
     BarChart3, Dice5, Check, GripVertical, MoreVertical, FileJson, FileText, 
     ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, 
-    SquareStack, Info, SlidersHorizontal
+    SquareStack, Info, SlidersHorizontal, Clock
 } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, Hero, MatchRecord } from '../types';
@@ -39,6 +39,7 @@ interface ListsOverlayProps {
     onDismissHeroUpdates?: (listId: string) => void;
     triggerHaptic: (pattern?: number | number[]) => void;
     history?: MatchRecord[];
+    onOpenInactiveModal?: () => void;
 }
 
 type SortOrder = 'asc' | 'desc' | 'custom';
@@ -65,6 +66,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     onDismissHeroUpdates,
     triggerHaptic,
     history = [],
+    onOpenInactiveModal,
 }) => {
     const [editingListId, setEditingListId] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<SortOrder>('custom');
@@ -863,10 +865,20 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                 <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-2xs ${isOnline ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-slate-200/80 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
                                     {isSyncing ? <><Loader2 size={11} className="animate-spin text-amber-500" /> Sync</> : isOnline ? <><Wifi size={11} className="text-emerald-500" /> Online</> : <><WifiOff size={11} className="text-slate-400" /> Offline</>}
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5 xs:gap-2">
+                                    {onOpenInactiveModal && (
+                                        <button 
+                                            onClick={() => { triggerHaptic(10); onOpenInactiveModal(); }}
+                                            className="h-9 px-3 flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-full shadow-2xs active:scale-95 transition-all font-bold text-xs"
+                                            title="Сформировать список из давно не игравших героев"
+                                        >
+                                            <Clock size={15} />
+                                            <span className="hidden xs:inline">Забытые</span>
+                                        </button>
+                                    )}
                                     <button onClick={handleToggleReorderMode} className={`w-9 h-9 flex items-center justify-center rounded-full border shadow-2xs transition-all ${isReorderMode ? 'bg-primary-500/15 text-primary-600 border-primary-500/40 dark:bg-primary-900/40 dark:text-primary-300' : 'bg-white/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}> <GripVertical size={18} /> </button>
                                     <button onClick={handleToggleSort} className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"> {sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />} </button>
-                                    <button onClick={handleOpenCreate} className="h-9 px-4 flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-full shadow-md shadow-primary-600/25 active:scale-95 transition-all font-bold text-xs" data-testid="new-list-btn"> <Plus size={17} /> <span>Новый</span> </button>
+                                    <button onClick={handleOpenCreate} className="h-9 px-3.5 sm:px-4 flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-full shadow-md shadow-primary-600/25 active:scale-95 transition-all font-bold text-xs" data-testid="new-list-btn"> <Plus size={17} /> <span>Новый</span> </button>
                                 </div>
                             </div>
                             <div className="px-4 pt-4 pb-4">

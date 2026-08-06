@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, X, SquareStack, Layers, BarChart3, Database, Filter, Cloud, Check, Plus } from 'lucide-react';
+import { ChevronDown, X, SquareStack, Layers, BarChart3, Database, Filter, Cloud, Check, Plus, Clock } from 'lucide-react';
 import { HeroList } from '../types';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useHaptics } from '../hooks/useHaptics';
@@ -20,6 +20,7 @@ interface SourceSelectorProps {
     groupTotalHeroes: number;
     selectedGroupCount: number;
     onOpenAddHeroes: () => void;
+    onOpenInactiveModal?: () => void;
 }
 
 export const SourceSelector: React.FC<SourceSelectorProps> = ({
@@ -37,7 +38,8 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
     isOnline,
     groupTotalHeroes,
     selectedGroupCount,
-    onOpenAddHeroes
+    onOpenAddHeroes,
+    onOpenInactiveModal
 }) => {
     const { trigger } = useHaptics();
     useBackHandler(isListSelectorOpen, () => setIsListSelectorOpen(false), { id: 'source-selector', priority: 10 });
@@ -249,9 +251,9 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                         )}
                     </div>
 
-                    {/* Sticky Footer with Append Button */}
-                    {(isGroupMode ? selectedGroupCount > 0 : !!activeList) && (
-                        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20">
+                    {/* Sticky Footer with Action Buttons */}
+                    <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 flex gap-2">
+                        {(isGroupMode ? selectedGroupCount > 0 : !!activeList) && (
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -259,13 +261,27 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                                     setIsListSelectorOpen(false);
                                     onOpenAddHeroes();
                                 }}
-                                className="w-full flex items-center justify-center gap-2 py-3 px-4 min-h-[44px] rounded-2xl text-xs font-bold bg-primary-600 active:bg-primary-700 text-white shadow-lg shadow-primary-600/10 active:scale-[0.98] transition-all touch-manipulation"
+                                className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 min-h-[44px] rounded-2xl text-xs font-bold bg-primary-600 active:bg-primary-700 text-white shadow-md shadow-primary-600/10 active:scale-[0.98] transition-all touch-manipulation truncate"
                             >
                                 <Plus size={14} />
-                                <span>Докинуть героев точечно</span>
+                                <span className="truncate">Докинуть героев</span>
                             </button>
-                        </div>
-                    )}
+                        )}
+                        {onOpenInactiveModal && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    trigger('medium');
+                                    setIsListSelectorOpen(false);
+                                    onOpenInactiveModal();
+                                }}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-3 px-3 min-h-[44px] rounded-2xl text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 active:scale-[0.98] transition-all touch-manipulation truncate"
+                            >
+                                <Clock size={14} />
+                                <span className="truncate">Забытые герои</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

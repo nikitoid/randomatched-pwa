@@ -27,6 +27,7 @@ import { GenConfirmModal } from './components/GenConfirmModal';
 import { getUniqueHeroesFromLists } from './utils/generator';
 import { NavigationProvider } from './context/NavigationContext';
 import { AddHeroesModal } from './components/AddHeroesModal';
+import { InactiveHeroesModal } from './components/InactiveHeroesModal';
 import { ChangelogOverlay } from './components/ChangelogOverlay';
 import { useAvatars } from './context/AvatarContext';
 import { APP_VERSION, getInitialLastSeenVersion } from './utils/changelog';
@@ -129,6 +130,7 @@ const App: React.FC = () => {
     const [isHistoryStatsOpen, setIsHistoryStatsOpen] = useState(false);
     const [isGenConfirmOpen, setIsGenConfirmOpen] = useState(false);
     const [isAddHeroesOpen, setIsAddHeroesOpen] = useState(false);
+    const [isInactiveHeroesOpen, setIsInactiveHeroesOpen] = useState(false);
     const [isChangelogOpen, setIsChangelogOpen] = useState(false);
     const [lastSeenVersion, setLastSeenVersion] = useState<string | null>(() =>
         getInitialLastSeenVersion()
@@ -387,6 +389,11 @@ const App: React.FC = () => {
         addToast(`Создан временный список, добавлено героев: ${selectedHeroes.length}`, 'success');
     };
 
+    const handleOpenInactiveModal = () => {
+        setIsInactiveHeroesOpen(true);
+        triggerHaptic(10);
+    };
+
     return (
         <NavigationProvider>
             <div className="relative h-full w-full flex flex-col bg-transparent transition-colors duration-300 overflow-hidden">
@@ -427,6 +434,7 @@ const App: React.FC = () => {
                         groupTotalHeroes={groupTotalHeroes}
                         selectedGroupCount={selectedGroupCount}
                         onOpenAddHeroes={() => { setIsAddHeroesOpen(true); triggerHaptic(10); }}
+                        onOpenInactiveModal={handleOpenInactiveModal}
                     />
 
                     <PlayerNameInput
@@ -521,6 +529,7 @@ const App: React.FC = () => {
                     onDismissHeroUpdates={dismissHeroUpdates}
                     triggerHaptic={triggerHaptic}
                     history={history}
+                    onOpenInactiveModal={handleOpenInactiveModal}
                 />
 
                 <SettingsOverlay
@@ -607,6 +616,7 @@ const App: React.FC = () => {
                     }}
                     onDeleteCloudBackup={deleteCloudBackup}
                     onGetCloudBackupDetails={getCloudBackupDetails}
+                    onOpenInactiveModal={handleOpenInactiveModal}
                 />
 
                 <ResetConfirmModal
@@ -642,6 +652,17 @@ const App: React.FC = () => {
                     excludeListIds={isGroupMode ? selectedGroupIds : new Set(activeList ? [activeList.id] : [])}
                     onAddHeroes={handleAppendHeroesToSelected}
                     triggerHaptic={triggerHaptic}
+                />
+
+                <InactiveHeroesModal
+                    isOpen={isInactiveHeroesOpen}
+                    onClose={() => setIsInactiveHeroesOpen(false)}
+                    lists={lists}
+                    history={history}
+                    onCreateTemporaryList={createTemporaryList}
+                    onSelectList={setSelectedListId}
+                    triggerHaptic={triggerHaptic}
+                    addToast={addToast}
                 />
 
                 <UpdateBanner
