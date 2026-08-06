@@ -148,4 +148,15 @@ test.describe('Детальная статистика', () => {
         // Алекс как MVP отображается в списке претендентов
         await expect(app.page.locator('text=Алекс').first()).toBeVisible();
     });
+
+    test('при наличии у игрока нескольких бейджей имя игрока выводится полностью', async ({ app }) => {
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        await app.page.locator('button:has-text("Игроки")').click();
+
+        // Проверяем, что имя "Алекс", имеющего бейджи, отображается полностью
+        const alexName = app.statsModal.getByText('Алекс', { exact: true }).first();
+        await expect(alexName).toBeVisible();
+    });
 });

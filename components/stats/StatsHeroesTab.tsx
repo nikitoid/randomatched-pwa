@@ -87,23 +87,27 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                                 {idx + 1}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
-                                    <span className="truncate">{hero.name}</span>
-                                    {topWinrateHero?.name === hero.name && (
-                                        <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-md flex items-center gap-0.5">
-                                            <Star size={10} fill="currentColor" /> Мета
-                                        </div>
-                                    )}
-                                    {mostPopularHero?.name === hero.name && (
-                                        <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 rounded-md flex items-center gap-0.5">
-                                            <Crown size={10} fill="currentColor" /> Топ выбор
-                                        </div>
-                                    )}
-                                    {mostDeadlyHero?.name === hero.name && (
-                                        <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 rounded-md flex items-center gap-0.5">
-                                            <Skull size={10} fill="currentColor" /> Смертоносный
-                                        </div>
-                                    )}
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+                                    <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0 max-w-[130px] xs:max-w-[170px] sm:max-w-none truncate">
+                                        {hero.name}
+                                    </span>
+                                    <div className="flex flex-wrap items-center gap-1 min-w-0">
+                                        {topWinrateHero?.name === hero.name && (
+                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-md flex items-center gap-0.5">
+                                                <Star size={10} fill="currentColor" /> Мета
+                                            </div>
+                                        )}
+                                        {mostPopularHero?.name === hero.name && (
+                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400 rounded-md flex items-center gap-0.5">
+                                                <Crown size={10} fill="currentColor" /> Топ выбор
+                                            </div>
+                                        )}
+                                        {mostDeadlyHero?.name === hero.name && (
+                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 rounded-md flex items-center gap-0.5">
+                                                <Skull size={10} fill="currentColor" /> Смертоносный
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 truncate">
                                     <span>{getWinsText(hero.wins)}</span>

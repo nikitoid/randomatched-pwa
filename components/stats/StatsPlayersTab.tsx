@@ -128,33 +128,37 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                 {idx + 1}
                             </div>
                             <div className="min-w-0 flex-1" onClick={handleTitleClick}>
-                                <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
-                                    <span className="truncate">{player.name}</span>
-                                    {streakStats[player.name]?.current >= 3 && (
-                                        <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 rounded-md flex items-center gap-0.5" title={`Серия из ${streakStats[player.name].current} побед подряд`}>
-                                            <Flame size={10} fill="currentColor" /> В огне
-                                        </div>
-                                    )}
-                                    {mvp?.name === player.name && (
-                                        <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-md flex items-center gap-0.5">
-                                            <Star size={10} fill="currentColor" /> MVP
-                                        </div>
-                                    )}
-                                    {topKillerName === player.name && (
-                                        <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400 rounded-md flex items-center gap-0.5" title={`Больше всех убийств (${player.totalKills || 0} 💀)`}>
-                                            <Skull size={10} fill="currentColor" /> Ебака парень
-                                        </div>
-                                    )}
-                                    {underdog?.name === player.name && (
-                                        <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 rounded-md flex items-center gap-0.5" title="Underdog — тяжёлые времена">
-                                            <TrendingDown size={10} /> Underdog
-                                        </div>
-                                    )}
-                                    {player.isInactive && (
-                                        <div className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-md flex items-center gap-0.5" title="Не играл(а) более 60 дней">
-                                            Неактивен
-                                        </div>
-                                    )}
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+                                    <span className="text-sm font-bold text-slate-900 dark:text-white shrink-0 max-w-[130px] xs:max-w-[170px] sm:max-w-none truncate">
+                                        {player.name}
+                                    </span>
+                                    <div className="flex flex-wrap items-center gap-1 min-w-0">
+                                        {streakStats[player.name]?.current >= 3 && (
+                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 rounded-md flex items-center gap-0.5" title={`Серия из ${streakStats[player.name].current} побед подряд`}>
+                                                <Flame size={10} fill="currentColor" /> В огне
+                                            </div>
+                                        )}
+                                        {mvp?.name === player.name && (
+                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400 rounded-md flex items-center gap-0.5">
+                                                <Star size={10} fill="currentColor" /> MVP
+                                            </div>
+                                        )}
+                                        {topKillerName === player.name && (
+                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400 rounded-md flex items-center gap-0.5" title={`Больше всех убийств (${player.totalKills || 0} 💀)`}>
+                                                <Skull size={10} fill="currentColor" /> Ебака парень
+                                            </div>
+                                        )}
+                                        {underdog?.name === player.name && (
+                                            <div className="shrink-0 text-[10px] font-black px-1.5 py-0.5 bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 rounded-md flex items-center gap-0.5" title="Underdog — тяжёлые времена">
+                                                <TrendingDown size={10} /> Underdog
+                                            </div>
+                                        )}
+                                        {player.isInactive && (
+                                            <div className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 rounded-md flex items-center gap-0.5" title="Не играл(а) более 60 дней">
+                                                Неактивен
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                                 {(() => {
                                     const killPercent = player.matches > 0 ? Math.round((((player.totalKills || 0) * 100) / player.matches) / 2) : 0;
