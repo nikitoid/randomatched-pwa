@@ -201,10 +201,11 @@ export const CloudBackupManager: React.FC<CloudBackupManagerProps> = ({
                                             onClick={() => setRestoreConfirmId(b.id)}
                                             data-testid="backup-manager-restore-btn"
                                             disabled={isRestoringBackup || !isOnline}
-                                            className="px-3 py-2.5 rounded-xl bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/40 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 font-bold text-xs transition-all min-h-[44px] flex items-center gap-1.5"
+                                            className="p-2.5 rounded-xl bg-primary-50 hover:bg-primary-100 dark:bg-primary-950/40 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                            title="Восстановить"
+                                            aria-label="Восстановить"
                                         >
-                                            <RefreshCw size={14} />
-                                            <span>Восстановить</span>
+                                            <RefreshCw size={16} />
                                         </button>
 
                                         <button

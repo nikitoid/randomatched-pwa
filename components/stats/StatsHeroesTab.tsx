@@ -81,14 +81,16 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                         className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
                     >
                         <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                            <div className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${idx === 0 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400' :
-                                    idx === 1 ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300' :
-                                        idx === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400' :
-                                            'bg-slate-100 text-slate-500 dark:bg-slate-800/60 dark:text-slate-400'
-                                }`}>
-                                {idx + 1}
+                            <div className="relative shrink-0">
+                                <Avatar entityType="hero" entityId={hero.name} name={hero.name} size="md" />
+                                <div className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
+                                        idx === 1 ? 'bg-slate-300 text-slate-900' :
+                                            idx === 2 ? 'bg-amber-700 text-amber-100' :
+                                                'bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                    }`}>
+                                    {idx + 1}
+                                </div>
                             </div>
-                            <Avatar entityType="hero" entityId={hero.name} name={hero.name} size="sm" />
 
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
@@ -153,12 +155,11 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
             </div>
 
             {/* Выезжающий слайд-оверлей деталей героя (GPU Hardware Accelerated 60 FPS) */}
-            <div 
-                className={`absolute inset-0 z-30 bg-slate-50 dark:bg-slate-950 bg-grid-pattern overflow-y-auto transition-all duration-300 ease-out ${
-                    selectedHero 
-                        ? 'translate-x-0 opacity-100 pointer-events-auto' 
+            <div
+                className={`absolute inset-0 z-30 bg-slate-50 dark:bg-slate-950 bg-grid-pattern overflow-y-auto transition-all duration-300 ease-out ${selectedHero
+                        ? 'translate-x-0 opacity-100 pointer-events-auto'
                         : 'translate-x-full opacity-0 pointer-events-none'
-                }`}
+                    }`}
                 style={{ willChange: 'transform, opacity' }}
             >
                 {displayHero && (

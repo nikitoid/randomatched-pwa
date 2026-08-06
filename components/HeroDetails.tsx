@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { HeroStat, MatchRecord } from '../types';
 import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles } from 'lucide-react';
+import { calculateWilsonScore } from './stats/hooks/useStatsCalculations';
 import { Avatar } from './common/Avatar';
 import { AvatarCropperModal } from './common/AvatarCropperModal';
 
@@ -69,12 +70,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
 
         const topPlayers = Array.from(playersMap.entries())
             .map(([name, stats]) => {
-                const C = 3;
-                const m = 0.5;
-                const score = (stats.wins + C * m) / (stats.matches + C);
+                const score = calculateWilsonScore(stats.wins, stats.matches);
                 return { name, ...stats, score };
             })
-            .sort((a, b) => b.score - a.score || b.matches - a.matches)
+            .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
             .slice(0, 5);
 
         // Best Synergies (Heroes played WITH this hero on the same team)
@@ -107,12 +106,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
         const topSynergies = Array.from(synergyMap.entries())
             .filter(([_, stats]) => stats.matches >= 1)
             .map(([name, stats]) => {
-                const C = 3;
-                const m = 0.5;
-                const score = (stats.wins + C * m) / (stats.matches + C);
+                const score = calculateWilsonScore(stats.wins, stats.matches);
                 return { name, ...stats, score };
             })
-            .sort((a, b) => b.score - a.score || b.matches - a.matches)
+            .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
             .slice(0, 5);
 
         return {
@@ -128,7 +125,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
     return (
         <div className="h-full flex flex-col bg-transparent">
             {/* Sticky Header with Backdrop Blur */}
-            <div 
+            <div
                 className="py-3 px-4 bg-white/70 dark:bg-slate-900/75 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 flex items-center gap-3 shrink-0 sticky top-0 z-20 shadow-xs"
             >
                 {!isEditing && (
@@ -289,7 +286,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
 
                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${playersState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="pt-3 space-y-2">
+                            <div className="pt-3 px-1.5 space-y-2">
                                 {topPlayers.length > 0 ? (
                                     <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
                                         {topPlayers.slice(0, 3).map((p, idx) => {
@@ -297,8 +294,15 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                             return (
                                                 <div key={p.name} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                                                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                        <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
-                                                            {idx + 1}
+                                                        <div className="relative shrink-0">
+                                                            <Avatar entityType="player" entityId={p.name} name={p.name} size="md" />
+                                                            <div className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
+                                                                    idx === 1 ? 'bg-slate-300 text-slate-900' :
+                                                                        idx === 2 ? 'bg-amber-700 text-amber-100' :
+                                                                            'bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                }`}>
+                                                                {idx + 1}
+                                                            </div>
                                                         </div>
                                                         <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{p.name}</div>
                                                     </div>
@@ -324,14 +328,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
 
                                         {topPlayers.length > 3 && (
                                             <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${playersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                <div className="overflow-hidden -mx-1.5 px-1.5 divide-y divide-slate-100 dark:divide-slate-800/60">
                                                     {topPlayers.slice(3).map((p, idx) => {
                                                         const pWinrate = (p.wins / p.matches) * 100;
                                                         return (
                                                             <div key={p.name} className="py-2.5 flex items-center justify-between gap-3">
                                                                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
-                                                                        {idx + 4}
+                                                                    <div className="relative shrink-0">
+                                                                        <Avatar entityType="player" entityId={p.name} name={p.name} size="md" />
+                                                                        <div className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                                            {idx + 4}
+                                                                        </div>
                                                                     </div>
                                                                     <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{p.name}</div>
                                                                 </div>
@@ -401,7 +408,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
 
                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${synergiesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="pt-3 space-y-2">
+                            <div className="pt-3 px-1.5 space-y-2">
                                 {topSynergies.length > 0 ? (
                                     <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
                                         {topSynergies.slice(0, 3).map((s, idx) => {
@@ -409,8 +416,15 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                             return (
                                                 <div key={s.name} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                                                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                        <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
-                                                            {idx + 1}
+                                                        <div className="relative shrink-0">
+                                                            <Avatar entityType="hero" entityId={s.name} name={s.name} size="md" />
+                                                            <div className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
+                                                                    idx === 1 ? 'bg-slate-300 text-slate-900' :
+                                                                        idx === 2 ? 'bg-amber-700 text-amber-100' :
+                                                                            'bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                }`}>
+                                                                {idx + 1}
+                                                            </div>
                                                         </div>
                                                         <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{s.name}</div>
                                                     </div>
@@ -436,14 +450,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
 
                                         {topSynergies.length > 3 && (
                                             <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${synergiesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                <div className="overflow-hidden -mx-1.5 px-1.5 divide-y divide-slate-100 dark:divide-slate-800/60">
                                                     {topSynergies.slice(3).map((s, idx) => {
                                                         const sWinrate = (s.wins / s.matches) * 100;
                                                         return (
                                                             <div key={s.name} className="py-2.5 flex items-center justify-between gap-3">
                                                                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
-                                                                        {idx + 4}
+                                                                    <div className="relative shrink-0">
+                                                                        <Avatar entityType="hero" entityId={s.name} name={s.name} size="md" />
+                                                                        <div className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                                            {idx + 4}
+                                                                        </div>
                                                                     </div>
                                                                     <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{s.name}</div>
                                                                 </div>

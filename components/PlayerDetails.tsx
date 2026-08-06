@@ -111,12 +111,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
         const topHeroes = Array.from(heroesMap.entries())
             .map(([name, stats]) => {
-                const C = 3;
-                const m = 0.5;
-                const score = (stats.wins + C * m) / (stats.matches + C);
+                const score = calculateWilsonScore(stats.wins, stats.matches);
                 return { name, ...stats, score };
             })
-            .sort((a, b) => b.score - a.score || b.matches - a.matches)
+            .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
             .slice(0, 5);
 
         // Win streak
@@ -164,12 +162,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
         const partnerStats = Array.from(partnerMap.entries())
             .filter(([_, stats]) => stats.matches >= 1)
             .map(([name, stats]) => {
-                const C = 3;
-                const m = 0.5;
-                const score = (stats.wins + C * m) / (stats.matches + C);
+                const score = calculateWilsonScore(stats.wins, stats.matches);
                 return { name, ...stats, score };
             })
-            .sort((a, b) => b.score - a.score || b.matches - a.matches)
+            .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
             .slice(0, 5);
 
         return {
@@ -192,7 +188,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
     return (
         <div className="h-full flex flex-col bg-transparent">
             {/* Sticky Header with Backdrop Blur */}
-            <div 
+            <div
                 className="py-3 px-4 bg-white/70 dark:bg-slate-900/75 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 flex items-center gap-3 shrink-0 sticky top-0 z-20 shadow-xs"
             >
                 {!isEditing && (
@@ -356,7 +352,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${heroesState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="pt-3 space-y-2">
+                            <div className="pt-3 px-1.5 space-y-2">
                                 {topHeroes.length > 0 ? (
                                     <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
                                         {topHeroes.slice(0, 3).map((h, idx) => {
@@ -364,8 +360,15 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                             return (
                                                 <div key={h.name} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                                                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                        <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
-                                                            {idx + 1}
+                                                        <div className="relative shrink-0">
+                                                            <Avatar entityType="hero" entityId={h.name} name={h.name} size="md" />
+                                                            <div className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
+                                                                    idx === 1 ? 'bg-slate-300 text-slate-900' :
+                                                                        idx === 2 ? 'bg-amber-700 text-amber-100' :
+                                                                            'bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                }`}>
+                                                                {idx + 1}
+                                                            </div>
                                                         </div>
                                                         <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{h.name}</div>
                                                     </div>
@@ -392,14 +395,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
                                         {topHeroes.length > 3 && (
                                             <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${heroesState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                <div className="overflow-hidden -mx-1.5 px-1.5 divide-y divide-slate-100 dark:divide-slate-800/60">
                                                     {topHeroes.slice(3).map((h, idx) => {
                                                         const hWinrate = (h.wins / h.matches) * 100;
                                                         return (
                                                             <div key={h.name} className="py-2.5 flex items-center justify-between gap-3">
                                                                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
-                                                                        {idx + 4}
+                                                                    <div className="relative shrink-0">
+                                                                        <Avatar entityType="hero" entityId={h.name} name={h.name} size="md" />
+                                                                        <div className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                                            {idx + 4}
+                                                                        </div>
                                                                     </div>
                                                                     <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{h.name}</div>
                                                                 </div>
@@ -469,7 +475,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
                     <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${partnersState === 'collapsed' ? 'grid-rows-[0fr]' : 'grid-rows-[1fr]'}`}>
                         <div className="overflow-hidden">
-                            <div className="pt-3 space-y-2">
+                            <div className="pt-3 px-1.5 space-y-2">
                                 {partnerStats.length > 0 ? (
                                     <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
                                         {partnerStats.slice(0, 3).map((s, idx) => {
@@ -477,8 +483,15 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                             return (
                                                 <div key={s.name} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                                                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                        <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
-                                                            {idx + 1}
+                                                        <div className="relative shrink-0">
+                                                            <Avatar entityType="player" entityId={s.name} name={s.name} size="md" />
+                                                            <div className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
+                                                                    idx === 1 ? 'bg-slate-300 text-slate-900' :
+                                                                        idx === 2 ? 'bg-amber-700 text-amber-100' :
+                                                                            'bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                                                }`}>
+                                                                {idx + 1}
+                                                            </div>
                                                         </div>
                                                         <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{s.name}</div>
                                                     </div>
@@ -504,14 +517,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
 
                                         {partnerStats.length > 3 && (
                                             <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${partnersState === 'expanded' ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-                                                <div className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                <div className="overflow-hidden -mx-1.5 px-1.5 divide-y divide-slate-100 dark:divide-slate-800/60">
                                                     {partnerStats.slice(3).map((s, idx) => {
                                                         const pWinrate = (s.wins / s.matches) * 100;
                                                         return (
                                                             <div key={s.name} className="py-2.5 flex items-center justify-between gap-3">
                                                                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                                    <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black flex items-center justify-center shrink-0">
-                                                                        {idx + 4}
+                                                                    <div className="relative shrink-0">
+                                                                        <Avatar entityType="player" entityId={s.name} name={s.name} size="md" />
+                                                                        <div className="absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                                                                            {idx + 4}
+                                                                        </div>
                                                                     </div>
                                                                     <div className="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">{s.name}</div>
                                                                 </div>

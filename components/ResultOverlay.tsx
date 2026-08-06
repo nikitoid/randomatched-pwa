@@ -1063,13 +1063,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                     const playerName = playerNames[idx]?.trim() || `Игрок ${player.playerNumber}`;
                                     return (
                                         <div key={player.playerNumber} className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800/55 last:border-0">
-                                            <div className="flex flex-col text-left">
-                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
-                                                    {playerName}
-                                                </span>
-                                                <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                                                    {player.hero?.name || 'Без героя'}
-                                                </span>
+                                            <div className="flex items-center gap-2.5 text-left min-w-0">
+                                                <Avatar entityType="player" entityId={playerName} name={playerName} size="sm" />
+                                                <div className="flex flex-col text-left min-w-0">
+                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[140px] sm:max-w-[180px]">
+                                                        {playerName}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[140px] sm:max-w-[180px]">
+                                                        {player.hero?.name || 'Без героя'}
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <button

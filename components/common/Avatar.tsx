@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Camera, Shield, Swords, Wand2, Sparkles, User } from 'lucide-react';
+import { Camera, Shield, Swords, Wand2, Sparkles, Flame, Zap, Skull, Crown, Target, Gem, User } from 'lucide-react';
 import { useAvatars } from '../../context/AvatarContext';
 
 export interface AvatarProps {
@@ -90,16 +90,18 @@ export const Avatar: React.FC<AvatarProps> = ({
   const renderHeroIcon = () => {
     const hash = getHashString(entityId || name);
     const iconSize = ICON_SIZE_MAP[size];
-    const mod = hash % 4;
+    const mod = hash % 10;
     switch (mod) {
-      case 0:
-        return <Swords size={iconSize} />;
-      case 1:
-        return <Shield size={iconSize} />;
-      case 2:
-        return <Wand2 size={iconSize} />;
-      default:
-        return <Sparkles size={iconSize} />;
+      case 0: return <Swords size={iconSize} />;
+      case 1: return <Shield size={iconSize} />;
+      case 2: return <Wand2 size={iconSize} />;
+      case 3: return <Sparkles size={iconSize} />;
+      case 4: return <Flame size={iconSize} />;
+      case 5: return <Zap size={iconSize} />;
+      case 6: return <Skull size={iconSize} />;
+      case 7: return <Crown size={iconSize} />;
+      case 8: return <Target size={iconSize} />;
+      default: return <Gem size={iconSize} />;
     }
   };
 
