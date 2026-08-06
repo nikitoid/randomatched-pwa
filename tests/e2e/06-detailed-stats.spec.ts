@@ -68,8 +68,8 @@ test.describe('Детальная статистика', () => {
         // Переходим на вкладку "Игроки"
         await app.page.locator('button:has-text("Игроки")').click();
 
-        // Кликаем по кнопке "Расшифровка расчёта" над списком игроков
-        await app.page.locator('button:has-text("Расшифровка расчёта")').click();
+        // Кликаем по кнопке "Расшифровка" над списком игроков
+        await app.page.locator('button:has-text("Расшифровка")').click();
 
         // Модалка расшифровки должна быть видна
         const breakdownModal = app.page.locator('[data-testid="stats-efficiency-breakdown-modal"]');
