@@ -1,7 +1,7 @@
 import React from 'react';
 import { Shield, Trophy, Swords, Skull, Zap, HelpCircle } from 'lucide-react';
 import { BaseModal } from '../common/BaseModal';
-import { ALL_RANK_TIERS_INFO, XP_PER_WIN, XP_PER_LOSS, XP_PER_KILL, XP_PER_LEVEL } from '../../utils/playerLevel';
+import { ALL_RANK_TIERS_INFO, XP_PER_WIN, XP_PER_LOSS, XP_PER_KILL, BASE_XP_PER_LEVEL, XP_GROWTH_PER_LEVEL } from '../../utils/playerLevel';
 
 interface RanksInfoModalProps {
     isOpen: boolean;
@@ -53,7 +53,7 @@ export const RanksInfoModal: React.FC<RanksInfoModalProps> = ({ isOpen, onClose 
 
                     <div className="mt-2.5 text-[11px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-2">
                         <Zap size={14} className="text-amber-500 shrink-0" />
-                        <span>На каждый следующий уровень требуется ровно <strong className="text-slate-900 dark:text-white font-bold">{XP_PER_LEVEL} XP</strong>.</span>
+                        <span>С каждым уровнем требуемый опыт увеличивается на <strong className="text-slate-900 dark:text-white font-bold">+{XP_GROWTH_PER_LEVEL} XP</strong> (LVL 1 → {BASE_XP_PER_LEVEL} XP, LVL 2 → {BASE_XP_PER_LEVEL + XP_GROWTH_PER_LEVEL} XP, LVL 3 → {BASE_XP_PER_LEVEL + 2 * XP_GROWTH_PER_LEVEL} XP и т.д.).</span>
                     </div>
                 </div>
 

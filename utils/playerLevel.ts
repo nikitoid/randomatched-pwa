@@ -23,7 +23,29 @@ export interface PlayerLevelInfo {
 export const XP_PER_WIN = 100;
 export const XP_PER_LOSS = 40;
 export const XP_PER_KILL = 15;
-export const XP_PER_LEVEL = 200;
+export const BASE_XP_PER_LEVEL = 200;
+export const XP_GROWTH_PER_LEVEL = 100;
+export const XP_PER_LEVEL = BASE_XP_PER_LEVEL;
+
+/**
+ * Returns required XP to advance from `level` to `level + 1`.
+ * Formula: BASE_XP_PER_LEVEL + (level - 1) * XP_GROWTH_PER_LEVEL
+ * (LVL 1: 200 XP, LVL 2: 300 XP, LVL 3: 400 XP, ...)
+ */
+export function getXpForNextLevel(level: number): number {
+    const safeLevel = Math.max(1, Math.floor(level));
+    return BASE_XP_PER_LEVEL + (safeLevel - 1) * XP_GROWTH_PER_LEVEL;
+}
+
+/**
+ * Returns total cumulative XP required to reach a given level starting from level 1.
+ * Formula: sum_{k=1}^{level-1} (200 + (k-1)*100) = 50 * (level - 1) * (level + 2)
+ */
+export function getTotalXpForLevel(level: number): number {
+    const safeLevel = Math.max(1, Math.floor(level));
+    if (safeLevel <= 1) return 0;
+    return 50 * (safeLevel - 1) * (safeLevel + 2);
+}
 
 export function getRankTier(level: number): RankTier {
     if (level <= 3) {
@@ -97,25 +119,66 @@ export interface RankTierDetail extends RankTier {
     xpRange: string;
 }
 
+const formatXP = (num: number) => num.toLocaleString('ru-RU');
+
 export const ALL_RANK_TIERS_INFO: RankTierDetail[] = [
-    { ...getRankTier(1), levelRange: 'LVL 1 – 3', xpRange: '0 – 599 XP' },
-    { ...getRankTier(4), levelRange: 'LVL 4 – 6', xpRange: '600 – 1 199 XP' },
-    { ...getRankTier(7), levelRange: 'LVL 7 – 10', xpRange: '1 200 – 1 999 XP' },
-    { ...getRankTier(11), levelRange: 'LVL 11 – 15', xpRange: '2 000 – 2 999 XP' },
-    { ...getRankTier(16), levelRange: 'LVL 16 – 20', xpRange: '3 000 – 3 999 XP' },
-    { ...getRankTier(21), levelRange: 'LVL 21+', xpRange: '4 000+ XP' },
+    {
+        ...getRankTier(1),
+        levelRange: 'LVL 1 – 3',
+        xpRange: `0 – ${formatXP(getTotalXpForLevel(4) - 1)} XP`
+    },
+    {
+        ...getRankTier(4),
+        levelRange: 'LVL 4 – 6',
+        xpRange: `${formatXP(getTotalXpForLevel(4))} – ${formatXP(getTotalXpForLevel(7) - 1)} XP`
+    },
+    {
+        ...getRankTier(7),
+        levelRange: 'LVL 7 – 10',
+        xpRange: `${formatXP(getTotalXpForLevel(7))} – ${formatXP(getTotalXpForLevel(11) - 1)} XP`
+    },
+    {
+        ...getRankTier(11),
+        levelRange: 'LVL 11 – 15',
+        xpRange: `${formatXP(getTotalXpForLevel(11))} – ${formatXP(getTotalXpForLevel(16) - 1)} XP`
+    },
+    {
+        ...getRankTier(16),
+        levelRange: 'LVL 16 – 20',
+        xpRange: `${formatXP(getTotalXpForLevel(16))} – ${formatXP(getTotalXpForLevel(21) - 1)} XP`
+    },
+    {
+        ...getRankTier(21),
+        levelRange: 'LVL 21+',
+        xpRange: `${formatXP(getTotalXpForLevel(21))}+ XP`
+    },
 ];
 
 export function calculatePlayerLevel(wins: number, losses: number, totalKills: number = 0): PlayerLevelInfo {
-    const xpFromWins = wins * XP_PER_WIN;
-    const xpFromLosses = losses * XP_PER_LOSS;
-    const xpFromKills = totalKills * XP_PER_KILL;
+    const xpFromWins = Math.max(0, wins) * XP_PER_WIN;
+    const xpFromLosses = Math.max(0, losses) * XP_PER_LOSS;
+    const xpFromKills = Math.max(0, totalKills) * XP_PER_KILL;
 
     const totalXP = xpFromWins + xpFromLosses + xpFromKills;
-    const level = Math.floor(totalXP / XP_PER_LEVEL) + 1;
-    const currentXP = totalXP % XP_PER_LEVEL;
-    const xpForNextLevel = XP_PER_LEVEL;
-    const progressPercent = Math.min(100, Math.round((currentXP / XP_PER_LEVEL) * 100));
+
+    let level = 1;
+    let remainingXP = totalXP;
+
+    while (true) {
+        const needed = getXpForNextLevel(level);
+        if (remainingXP >= needed) {
+            remainingXP -= needed;
+            level++;
+        } else {
+            break;
+        }
+    }
+
+    const currentXP = remainingXP;
+    const xpForNextLevel = getXpForNextLevel(level);
+    const progressPercent = xpForNextLevel > 0
+        ? Math.min(100, Math.round((currentXP / xpForNextLevel) * 100))
+        : 100;
     const tier = getRankTier(level);
 
     return {

@@ -300,7 +300,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                                     </button>
                                 </div>
                                 <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
-                                    До LVL {levelInfo.level + 1}: <span className="font-bold text-slate-600 dark:text-slate-300">{levelInfo.xpForNextLevel - levelInfo.currentXP} XP</span>
+                                    До LVL {levelInfo.level + 1}: <span className="font-semibold text-slate-500 dark:text-slate-400">{levelInfo.xpForNextLevel - levelInfo.currentXP} XP</span>
                                 </div>
                             </div>
                         </div>
