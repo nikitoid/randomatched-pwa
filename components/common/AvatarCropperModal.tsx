@@ -481,7 +481,7 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
       onClose={onClose}
       title={imageSrc ? 'Кадрирование фото' : 'Выбор аватарки'}
       subtitle={entityName ? `Для ${entityType === 'player' ? 'игрока' : 'героя'} "${entityName}"` : undefined}
-      maxWidth="sm"
+      maxWidth="md"
       priority={30}
     >
       <div className="flex flex-col items-center space-y-4">
@@ -499,11 +499,10 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
             <button
               type="button"
               onClick={() => { setTab('preset'); trigger('light'); }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                tab === 'preset'
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${tab === 'preset'
                   ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
+                }`}
             >
               <SparklesHeaderIcon size={14} />
               Иконка пресет
@@ -511,11 +510,10 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
             <button
               type="button"
               onClick={() => { setTab('upload'); trigger('light'); }}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
-                tab === 'upload'
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${tab === 'upload'
                   ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
+                }`}
             >
               <ImageIcon size={14} />
               Своё фото
@@ -527,16 +525,16 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
         {!imageSrc && tab === 'preset' && (
           <div className="w-full flex flex-col items-center space-y-4 animate-in fade-in duration-200">
             {/* Live Interactive Avatar Preview */}
-            <div className="flex flex-col items-center space-y-1">
+            <div className="flex flex-col items-center space-y-1.5">
               <div
-                className={`w-32 h-32 rounded-full flex items-center justify-center text-white shadow-xl ring-4 ring-indigo-500/20 bg-gradient-to-br ${currentGradient.css} transition-all duration-300 transform active:scale-95`}
+                className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full flex items-center justify-center text-white shadow-xl ring-4 ring-indigo-500/20 bg-gradient-to-br ${currentGradient.css} transition-all duration-300 transform active:scale-95`}
               >
                 {selectedIconId === 'initials' ? (
-                  <span className="text-4xl font-bold tracking-tight drop-shadow-md select-none">
+                  <span className="text-5xl font-bold tracking-tight drop-shadow-md select-none">
                     {getInitials(entityName)}
                   </span>
                 ) : (
-                  <CurrentIcon size={64} className="drop-shadow-md" />
+                  <CurrentIcon size={76} className="drop-shadow-md" />
                 )}
               </div>
               <span className="text-[11px] font-semibold text-slate-400">Предпросмотр иконки</span>
@@ -559,11 +557,10 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
                         setSelectedIconId(item.id);
                         trigger('light');
                       }}
-                      className={`p-2.5 rounded-xl flex flex-col items-center justify-center transition-all ${
-                        isSelected
+                      className={`p-2.5 rounded-xl flex flex-col items-center justify-center transition-all ${isSelected
                           ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-400 scale-105'
                           : 'bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95'
-                      }`}
+                        }`}
                       title={item.label}
                     >
                       {item.id === 'initials' ? (
@@ -596,9 +593,8 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
                         setSelectedGradientId(g.id);
                         trigger('light');
                       }}
-                      className={`w-8 h-8 rounded-full shrink-0 bg-gradient-to-br ${g.css} transition-all flex items-center justify-center ${
-                        isSelected ? 'ring-4 ring-indigo-500 scale-110 shadow-md' : 'hover:scale-105 opacity-80 hover:opacity-100'
-                      }`}
+                      className={`w-8 h-8 rounded-full shrink-0 bg-gradient-to-br ${g.css} transition-all flex items-center justify-center ${isSelected ? 'ring-4 ring-indigo-500 scale-110 shadow-md' : 'hover:scale-105 opacity-80 hover:opacity-100'
+                        }`}
                       title={g.label}
                     >
                       {isSelected && <Check size={14} className="text-white drop-shadow-sm" />}
@@ -636,26 +632,34 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
 
         {/* TAB 2: PHOTO UPLOAD & CROP */}
         {!imageSrc && tab === 'upload' && (
-          <div className="w-full flex flex-col items-center py-4 px-2 space-y-4 animate-in fade-in duration-200">
+          <div className="w-full flex flex-col items-center py-2 px-2 space-y-4 animate-in fade-in duration-200">
             {isProcessing ? (
-              <div className="w-36 h-36 rounded-full border-2 border-indigo-500/40 flex flex-col items-center justify-center bg-indigo-50/50 dark:bg-indigo-950/30 animate-pulse shadow-inner">
-                <Loader2 className="w-10 h-10 text-indigo-600 dark:text-indigo-400 animate-spin mb-2" />
-                <span className="text-xs text-indigo-600 dark:text-indigo-300 font-bold text-center px-2">{loadingText}</span>
+              <div className="w-64 h-64 xs:w-72 xs:h-72 sm:w-80 sm:h-80 rounded-full border-2 border-indigo-500/40 flex flex-col items-center justify-center bg-indigo-50/50 dark:bg-indigo-950/30 animate-pulse shadow-inner">
+                <Loader2 className="w-14 h-14 text-indigo-600 dark:text-indigo-400 animate-spin mb-3" />
+                <span className="text-xs text-indigo-600 dark:text-indigo-300 font-bold text-center px-4">{loadingText}</span>
               </div>
             ) : currentAvatar ? (
               <div className="flex flex-col items-center space-y-2">
-                <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-indigo-500/60 shadow-xl ring-4 ring-indigo-500/20 bg-slate-900 group transition-transform active:scale-98">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative w-64 h-64 xs:w-72 xs:h-72 sm:w-80 sm:h-80 rounded-full overflow-hidden border-4 border-indigo-500/60 shadow-2xl ring-4 ring-indigo-500/20 bg-slate-900 cursor-pointer transition-transform active:scale-98"
+                  title="Нажмите, чтобы сменить фото"
+                >
                   <img
                     src={currentAvatar}
                     alt={entityName}
                     className="w-full h-full object-cover rounded-full"
                   />
                 </div>
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Установленная аватарка</span>
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Текущая аватарка</span>
               </div>
             ) : (
-              <div className="w-36 h-36 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/50">
-                <Upload className="w-10 h-10 text-slate-400 dark:text-slate-500 mb-2" />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="w-64 h-64 xs:w-72 xs:h-72 sm:w-80 sm:h-80 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500/60 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-all active:scale-98"
+                title="Нажмите, чтобы выбрать фото"
+              >
+                <Upload className="w-14 h-14 text-slate-400 dark:text-slate-500 mb-3" />
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Выберите фото</span>
               </div>
             )}
