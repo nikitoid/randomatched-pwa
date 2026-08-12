@@ -1,6 +1,6 @@
 
 import { useConnectivity } from './useConnectivity';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { MatchRecord, AssignedPlayer, ToastType, MatchPlayer, CloudBackup } from '../types';
 import { db } from '../firebase';
 import { getAllAvatarsFromStorage, saveAllAvatarsToStorage } from '../utils/avatarStorage';
@@ -22,21 +22,38 @@ export const useMatchHistory = (
     const [isSyncingHistory, setIsSyncingHistory] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
 
+    const historyRef = useRef<MatchRecord[]>([]);
+    const deletedHistoryRef = useRef<MatchRecord[]>([]);
+    const deletedIdsRef = useRef<Set<string>>(new Set());
+
+    // Keep refs in sync with state changes
+    useEffect(() => { historyRef.current = history; }, [history]);
+    useEffect(() => { deletedHistoryRef.current = deletedHistory; }, [deletedHistory]);
+    useEffect(() => { deletedIdsRef.current = deletedIds; }, [deletedIds]);
+
+
 
     useEffect(() => {
         try {
             const savedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
             if (savedHistory) {
-                setHistory(JSON.parse(savedHistory));
+                const parsed = JSON.parse(savedHistory);
+                setHistory(parsed);
+                historyRef.current = parsed;
             }
             const savedDeleted = localStorage.getItem(STORAGE_KEY_DELETED);
             if (savedDeleted) {
-                setDeletedIds(new Set(JSON.parse(savedDeleted)));
+                const parsed = new Set<string>(JSON.parse(savedDeleted));
+                setDeletedIds(parsed);
+                deletedIdsRef.current = parsed;
             }
             const savedDeletedHistory = localStorage.getItem(STORAGE_KEY_DELETED_HISTORY);
             if (savedDeletedHistory) {
-                setDeletedHistory(JSON.parse(savedDeletedHistory));
+                const parsed = JSON.parse(savedDeletedHistory);
+                setDeletedHistory(parsed);
+                deletedHistoryRef.current = parsed;
             }
+
 
 
         } catch (e) {
@@ -67,10 +84,15 @@ export const useMatchHistory = (
         playerNames: string[],
         playerKills?: Record<string, number>
     ) => {
-        const team1Raw = assignments.filter(a => a.team === 'Odd').map(a => {
+        const getEffectiveName = (a: AssignedPlayer) => {
             const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
-            const idx = positionToIndex[a.position];
-            const name = (playerNames[idx] || '').trim();
+            const idx = positionToIndex[a.position] ?? 0;
+            const customName = (playerNames[idx] || '').trim();
+            return customName || `Игрок ${a.playerNumber}`;
+        };
+
+        const team1Raw = assignments.filter(a => a.team === 'Odd').map(a => {
+            const name = getEffectiveName(a);
             return {
                 name,
                 heroId: a.hero?.id || 'unknown',
@@ -80,9 +102,7 @@ export const useMatchHistory = (
         });
 
         const team2Raw = assignments.filter(a => a.team === 'Even').map(a => {
-            const positionToIndex: Record<string, number> = { 'bottom': 0, 'top': 1, 'left': 2, 'right': 3 };
-            const idx = positionToIndex[a.position];
-            const name = (playerNames[idx] || '').trim();
+            const name = getEffectiveName(a);
             return {
                 name,
                 heroId: a.hero?.id || 'unknown',
@@ -91,9 +111,10 @@ export const useMatchHistory = (
             };
         });
 
-        // Filter out players with empty names
+        // Filter out players with empty names (should not happen with fallback)
         const team1 = team1Raw.filter(p => p.name !== '');
         const team2 = team2Raw.filter(p => p.name !== '');
+
 
         const newMatch: MatchRecord = {
             id: generateUUID(),
@@ -104,6 +125,7 @@ export const useMatchHistory = (
             winner
         };
 
+        historyRef.current = [newMatch, ...historyRef.current];
         setHistory(prev => [newMatch, ...prev]);
         return newMatch;
     };
@@ -122,56 +144,83 @@ export const useMatchHistory = (
             team2,
             winner
         };
+        historyRef.current = [newMatch, ...historyRef.current];
         setHistory(prev => [newMatch, ...prev]);
         addToast("Матч добавлен вручную", "success", 2000);
     };
 
     const updateMatch = (id: string, updates: Partial<MatchRecord>) => {
-        setHistory(prev => prev.map(m => m.id === id ? { ...m, ...updates, lastUpdated: Date.now() } : m));
+        const updated = historyRef.current.map(m => m.id === id ? { ...m, ...updates, lastUpdated: Date.now() } : m);
+        historyRef.current = updated;
+        setHistory(updated);
         addToast("Матч обновлен", "success", 2000);
     };
 
     const deleteMatch = (id: string) => {
-        const matchToDelete = history.find(m => m.id === id);
+        const matchToDelete = historyRef.current.find(m => m.id === id);
         if (matchToDelete) {
-            setDeletedHistory(prev => [matchToDelete, ...prev]);
-            setHistory(prev => prev.filter(m => m.id !== id));
-            setDeletedIds(prev => new Set(prev).add(id));
+            const nextHistory = historyRef.current.filter(m => m.id !== id);
+            const nextDeletedHistory = [matchToDelete, ...deletedHistoryRef.current];
+            const nextDeletedIds = new Set(deletedIdsRef.current).add(id);
+
+            historyRef.current = nextHistory;
+            deletedHistoryRef.current = nextDeletedHistory;
+            deletedIdsRef.current = nextDeletedIds;
+
+            setHistory(nextHistory);
+            setDeletedHistory(nextDeletedHistory);
+            setDeletedIds(nextDeletedIds);
             addToast("Матч перемещен в корзину", "info", 2000);
         }
     };
 
     const restoreMatch = (id: string) => {
-        const matchToRestore = deletedHistory.find(m => m.id === id);
+        const matchToRestore = deletedHistoryRef.current.find(m => m.id === id);
         if (matchToRestore) {
-            const restoredMatch = { ...matchToRestore, lastUpdated: Date.now() }; // Update timestamp for sync
+            const restoredMatch = { ...matchToRestore, lastUpdated: Date.now() };
             if ('deleted' in restoredMatch) delete (restoredMatch as any).deleted;
-            setHistory(prev => [restoredMatch, ...prev].sort((a, b) => b.timestamp - a.timestamp));
-            setDeletedHistory(prev => prev.filter(m => m.id !== id));
-            setDeletedIds(prev => {
-                const next = new Set(prev);
-                next.delete(id);
-                return next;
-            });
+            
+            const nextHistory = [restoredMatch, ...historyRef.current].sort((a, b) => b.timestamp - a.timestamp);
+            const nextDeletedHistory = deletedHistoryRef.current.filter(m => m.id !== id);
+            const nextDeletedIds = new Set(deletedIdsRef.current);
+            nextDeletedIds.delete(id);
+
+            historyRef.current = nextHistory;
+            deletedHistoryRef.current = nextDeletedHistory;
+            deletedIdsRef.current = nextDeletedIds;
+
+            setHistory(nextHistory);
+            setDeletedHistory(nextDeletedHistory);
+            setDeletedIds(nextDeletedIds);
             addToast("Матч восстановлен", "success", 2000);
         }
     };
 
     const permanentDeleteMatch = (id: string) => {
-        setDeletedHistory(prev => prev.filter(m => m.id !== id));
-        // Ensure it's in deletedIds for sync (should already be there)
-        setDeletedIds(prev => new Set(prev).add(id));
+        const nextHistory = historyRef.current.filter(m => m.id !== id);
+        const nextDeletedHistory = deletedHistoryRef.current.filter(m => m.id !== id);
+        const nextDeletedIds = new Set(deletedIdsRef.current).add(id);
+
+        historyRef.current = nextHistory;
+        deletedHistoryRef.current = nextDeletedHistory;
+        deletedIdsRef.current = nextDeletedIds;
+
+        setHistory(nextHistory);
+        setDeletedHistory(nextDeletedHistory);
+        setDeletedIds(nextDeletedIds);
         addToast("Матч удален навсегда", "info", 2000);
     };
 
     const clearTrash = () => {
-        if (deletedHistory.length === 0) return;
-        const ids = deletedHistory.map(m => m.id);
-        setDeletedIds(prev => {
-            const next = new Set(prev);
-            ids.forEach(id => next.add(id));
-            return next;
-        });
+        if (deletedHistoryRef.current.length === 0) return;
+        const ids = deletedHistoryRef.current.map(m => m.id);
+        const nextDeletedIds = new Set(deletedIdsRef.current);
+        ids.forEach(id => nextDeletedIds.add(id));
+
+        deletedIdsRef.current = nextDeletedIds;
+        deletedHistoryRef.current = [];
+
+        setDeletedIds(nextDeletedIds);
         setDeletedHistory([]);
         addToast("Корзина очищена", "info", 2000);
     };
@@ -179,7 +228,7 @@ export const useMatchHistory = (
     const renamePlayer = (oldName: string, newName: string) => {
         if (!oldName.trim() || !newName.trim() || oldName === newName) return;
 
-        setHistory(prev => prev.map(match => {
+        const nextHistory = historyRef.current.map(match => {
             let changed = false;
             const newTeam1 = match.team1.map(p => {
                 if (p.name === oldName) { changed = true; return { ...p, name: newName }; }
@@ -194,9 +243,13 @@ export const useMatchHistory = (
                 return { ...match, team1: newTeam1, team2: newTeam2, lastUpdated: Date.now() };
             }
             return match;
-        }));
+        });
+
+        historyRef.current = nextHistory;
+        setHistory(nextHistory);
         addToast(`Игрок "${oldName}" переименован`, 'success', 2000);
     };
+
 
     const renameHero = (oldName: string, newName: string) => {
         if (!oldName.trim() || !newName.trim() || oldName === newName) return;
@@ -273,12 +326,23 @@ export const useMatchHistory = (
             const batch = db.batch();
             let opsCount = 0;
 
-            // 1. Process Pending Deletions (Push Tombstones with Data)
-            if (deletedIds.size > 0) {
-                const currentDeletedMap = new Map(deletedHistory.map(m => [m.id, m]));
-                const currentActiveMap = new Map(history.map(m => [m.id, m]));
+            const currentDeletedIds = deletedIdsRef.current;
+            const currentDeletedHistory = deletedHistoryRef.current;
+            const currentHistory = historyRef.current;
 
-                for (const id of deletedIds) {
+            // Capture all IDs known at the start of sync to properly identify matches added *during* sync
+            const initialKnownIds = new Set([
+                ...currentHistory.map(m => m.id),
+                ...currentDeletedHistory.map(m => m.id),
+                ...Array.from(currentDeletedIds)
+            ]);
+
+            // 1. Process Pending Deletions (Push Tombstones with Data)
+            if (currentDeletedIds.size > 0) {
+                const currentDeletedMap = new Map(currentDeletedHistory.map(m => [m.id, m]));
+                const currentActiveMap = new Map(currentHistory.map(m => [m.id, m]));
+
+                for (const id of currentDeletedIds) {
                     const ref = db.collection('match_history').doc(id);
                     // Try to find data to preserve it in cloud trash
                     const trashData = currentDeletedMap.get(id);
@@ -314,15 +378,18 @@ export const useMatchHistory = (
 
             // Allow tracking of what we have processed to avoid duplication
             // Initialize with current deleted history
-            deletedHistory.forEach(m => newDeletedMap.set(m.id, m));
+            currentDeletedHistory.forEach(m => newDeletedMap.set(m.id, m));
 
             let newFromCloud = 0;
             let updatedFromCloud = 0;
             let pushedToCloud = 0;
             let deletedFromCloud = 0;
 
+            // Helper to get effective timestamp for conflict resolution
+            const getTimestamp = (item: any) => item?.lastUpdated || item?.timestamp || 0;
+
             // 3. Sync LOCAL ACTIVE -> CLOUD
-            const currentLocalHistory = history.filter(m => !deletedIds.has(m.id));
+            const currentLocalHistory = currentHistory.filter(m => !currentDeletedIds.has(m.id));
 
             for (const localMatch of currentLocalHistory) {
                 const cloudMatch = cloudMatchesMap.get(localMatch.id);
@@ -336,10 +403,13 @@ export const useMatchHistory = (
                     pushedToCloud++;
                 } else {
                     // Exists in cloud
+                    const localTime = getTimestamp(localMatch);
+                    const cloudTime = getTimestamp(cloudMatch);
+
                     if (cloudMatch.deleted) {
                         if (cloudMatch.permanent) {
                             // Cloud says PERMANENTLY deleted.
-                            if (localMatch.lastUpdated > cloudMatch.lastUpdated) {
+                            if (localTime > cloudTime) {
                                 // Local is newer (Re-created/Restored AFTER perm delete?) -> Undelete
                                 const ref = db.collection('match_history').doc(localMatch.id);
                                 const toWrite = { ...localMatch, deleted: false, permanent: false };
@@ -353,7 +423,7 @@ export const useMatchHistory = (
                             }
                         } else {
                             // Cloud is Soft Deleted.
-                            if (localMatch.lastUpdated > cloudMatch.lastUpdated) {
+                            if (localTime > cloudTime) {
                                 // Local is newer (Restored?) -> Push to cloud (Undelete)
                                 const ref = db.collection('match_history').doc(localMatch.id);
                                 const toWrite = { ...localMatch, deleted: false, permanent: false };
@@ -369,14 +439,14 @@ export const useMatchHistory = (
                         }
                     } else {
                         // Cloud is Active
-                        if (localMatch.lastUpdated > cloudMatch.lastUpdated) {
+                        if (localTime > cloudTime) {
                             // Local newer -> Push
                             const ref = db.collection('match_history').doc(localMatch.id);
                             batch.set(ref, localMatch);
                             mergedMap.set(localMatch.id, localMatch);
                             opsCount++;
                             pushedToCloud++;
-                        } else if (cloudMatch.lastUpdated > localMatch.lastUpdated) {
+                        } else if (cloudTime > localTime) {
                             // Cloud newer -> Update local
                             mergedMap.set(localMatch.id, cloudMatch as MatchRecord);
                             updatedFromCloud++;
@@ -389,8 +459,8 @@ export const useMatchHistory = (
             }
 
             // 4. Sync LOCAL TRASH -> CLOUD (Protect Trash)
-            for (const trashMatch of deletedHistory) {
-                if (deletedIds.has(trashMatch.id)) continue; // Already pushed in step 1
+            for (const trashMatch of currentDeletedHistory) {
+                if (currentDeletedIds.has(trashMatch.id)) continue; // Already pushed in step 1
 
                 const cloudMatch = cloudMatchesMap.get(trashMatch.id);
                 if (!cloudMatch) {
@@ -400,11 +470,14 @@ export const useMatchHistory = (
                     opsCount++;
                     pushedToCloud++;
                 } else {
+                    const trashTime = getTimestamp(trashMatch);
+                    const cloudTime = getTimestamp(cloudMatch);
+
                     // Exists in cloud
                     if (cloudMatch.deleted) {
                         if (cloudMatch.permanent) {
                             // Cloud is PERMANENTLY deleted.
-                            if (trashMatch.lastUpdated > cloudMatch.lastUpdated) {
+                            if (trashTime > cloudTime) {
                                 // Local trash update is newer?
                                 newDeletedMap.delete(trashMatch.id);
                                 deletedFromCloud++;
@@ -415,17 +488,17 @@ export const useMatchHistory = (
                             }
                         } else {
                             // Both Soft Deleted. Update if local newer.
-                            if (trashMatch.lastUpdated > cloudMatch.lastUpdated) {
+                            if (trashTime > cloudTime) {
                                 const ref = db.collection('match_history').doc(trashMatch.id);
                                 batch.set(ref, { ...trashMatch, deleted: true, permanent: false });
                                 opsCount++;
-                            } else if (cloudMatch.lastUpdated > trashMatch.lastUpdated) {
+                            } else if (cloudTime > trashTime) {
                                 newDeletedMap.set(trashMatch.id, cloudMatch as MatchRecord);
                             }
                         }
                     } else {
                         // Cloud is Active.
-                        if (trashMatch.lastUpdated > cloudMatch.lastUpdated) {
+                        if (trashTime > cloudTime) {
                             // Local Trash newer -> Push Soft Delete
                             const ref = db.collection('match_history').doc(trashMatch.id);
                             batch.set(ref, { ...trashMatch, deleted: true, permanent: false });
@@ -443,7 +516,7 @@ export const useMatchHistory = (
             // 5. Sync CLOUD -> LOCAL (New items from cloud)
             for (const [id, cloudMatch] of cloudMatchesMap.entries()) {
                 // If we are currently deleting this ID locally, IGNORE cloud version (even if soft deleted)
-                if (deletedIds.has(id)) continue;
+                if (currentDeletedIds.has(id)) continue;
 
                 const inActive = mergedMap.has(id);
                 const inTrash = newDeletedMap.has(id);
@@ -475,13 +548,20 @@ export const useMatchHistory = (
                 await withTimeout(batch.commit(), 6000);
             }
 
+            // Preserve ONLY matches TRULY newly created locally while sync was running in background
+            const newlyAddedLocalMatches = historyRef.current.filter(m => !initialKnownIds.has(m.id));
+            newlyAddedLocalMatches.forEach(m => mergedMap.set(m.id, m));
+
             // Update Local
             const finalHistory = Array.from(mergedMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+            historyRef.current = finalHistory;
             setHistory(finalHistory);
 
             const finalDeletedHistory = Array.from(newDeletedMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+            deletedHistoryRef.current = finalDeletedHistory;
             setDeletedHistory(finalDeletedHistory);
 
+            deletedIdsRef.current = new Set();
             setDeletedIds(new Set());
 
             const msg = [];
@@ -518,9 +598,12 @@ export const useMatchHistory = (
             if (!Array.isArray(data.history) || !Array.isArray(data.deletedHistory)) {
                 throw new Error("Invalid data format");
             }
+            historyRef.current = data.history;
+            deletedHistoryRef.current = data.deletedHistory;
+            deletedIdsRef.current = new Set();
+
             setHistory(data.history);
             setDeletedHistory(data.deletedHistory);
-            // Optionally clear pending deletions since we just did a full state replace
             setDeletedIds(new Set());
             addToast("Данные успешно импортированы", "success", 2000);
             return true;
@@ -530,6 +613,7 @@ export const useMatchHistory = (
             return false;
         }
     };
+
 
     // === Облачный бэкап ===
     const [isCreatingBackup, setIsCreatingBackup] = useState(false);
