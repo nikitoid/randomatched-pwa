@@ -24,6 +24,7 @@ interface UseTeamGenerationProps {
     addMatch: (assignments: AssignedPlayer[], winner: 'team1' | 'team2', playerNames: string[], playerKills?: Record<string, number>) => void;
     onSwapNames: (idx1: number, idx2: number) => void;
     history: MatchRecord[];
+    onAfterRecordResult?: () => void;
 }
 
 export const useTeamGeneration = ({
@@ -43,7 +44,8 @@ export const useTeamGeneration = ({
     setIsGroupMode,
     addMatch,
     onSwapNames,
-    history
+    history,
+    onAfterRecordResult
 }: UseTeamGenerationProps) => {
 
     const [assignments, setAssignments] = useState<AssignedPlayer[]>(() => {
@@ -256,7 +258,10 @@ export const useTeamGeneration = ({
         addMatch(assignments, winner, playerNames, playerKills);
         addToast("Результат матча сохранен", "success");
         triggerHaptic(50);
-    }
+        if (onAfterRecordResult) {
+            onAfterRecordResult();
+        }
+    };
 
     // --- RE-ROLL LOGIC ---
     const getAvailableHeroesPool = () => {

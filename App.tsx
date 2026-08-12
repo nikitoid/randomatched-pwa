@@ -242,6 +242,17 @@ const App: React.FC = () => {
                 return prev;
             });
             setPlayerNames(newNames);
+        },
+        onAfterRecordResult: () => {
+            if (isDebugMode) return;
+            // Quiet background auto-sync with Lie-Fi verification
+            (async () => {
+                const hasNet = await checkConnectivity(2500);
+                if (hasNet) {
+                    await syncHistory({ silentIfNoChanges: true, silentErrors: true });
+                    await syncAvatarsToCloud();
+                }
+            })().catch(e => console.warn('Background match sync skipped/failed:', e));
         }
     });
 

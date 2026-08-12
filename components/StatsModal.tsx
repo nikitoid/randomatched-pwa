@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Trophy, Swords, Edit2, Trash2, Save, RefreshCw, Loader2, Plus, User, Shield, ChevronLeft, ChevronRight, Calendar, Check, Search, TrendingUp, TrendingDown, Star, Skull, AlertCircle, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowDownAZ, ArrowUpAZ, Percent, BarChart3, Eye, HelpCircle, Crown, Flame, Sparkles, Calculator, Info } from 'lucide-react';
 import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBackup, Season, ToastType } from '../types';
@@ -29,7 +29,7 @@ interface StatsModalProps {
     onAddMatch: (t1: MatchPlayer[], t2: MatchPlayer[], winner: 'team1' | 'team2', timestamp: number) => void;
     onRenamePlayer: (oldName: string, newName: string) => void;
     onRenameHero: (oldName: string, newName: string) => void;
-    onSync: (options?: { silentIfNoChanges?: boolean }) => Promise<boolean>;
+    onSync: (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }) => Promise<boolean>;
     isSyncing: boolean;
     isOnline: boolean;
     lists: HeroList[]; // For autocomplete
@@ -41,7 +41,7 @@ interface StatsModalProps {
     onClearTrash: () => void;
 
     onImportData: (data: { history: MatchRecord[], deletedHistory: MatchRecord[], seasons?: Season[] }) => boolean;
-    checkConnectivity?: () => Promise<boolean>;
+    checkConnectivity?: (timeoutMs?: number) => Promise<boolean>;
     addToast?: (message: string, type: ToastType, duration?: number) => void;
 
     // Seasons management
@@ -166,6 +166,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         }, 500);
     };
 
+    const hasLocalMutationsRef = useRef(false);
+
     // Export/Import Handlers
     const handleExport = () => {
         const data = {
@@ -195,6 +197,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 const json = JSON.parse(event.target?.result as string);
                 const success = onImportData(json);
                 if (success) {
+                    hasLocalMutationsRef.current = true;
                     setIsDataMenuOpen(false);
                 }
             } catch (err) {
@@ -208,24 +211,38 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     // Visual Sync State Logic
     const [visualSyncState, setVisualSyncState] = useState<'idle' | 'syncing' | 'success'>('idle');
 
-    const syncWithAnimation = async (options?: any) => {
-        // Allow auto-sync to trigger animation even if not idle, but prefer idle state management
-        // If we are already syncing, we might just let it loop?
-        // Actually, we want to visually show it.
+    const syncWithAnimation = useCallback(async (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean; force?: boolean }) => {
         if (visualSyncState !== 'idle' && !options?.force) return;
         if (!isOnline) return;
+
+        // Perform active Lie-Fi connectivity check
+        if (checkConnectivityRef.current) {
+            const hasNet = await checkConnectivityRef.current(2500);
+            if (!hasNet) {
+                if (!options?.silentIfNoChanges && !options?.silentErrors && addToast) {
+                    addToast("Нет подключения к интернету", "error", 2000);
+                }
+                return;
+            }
+        }
 
         setVisualSyncState('syncing');
         const startTime = Date.now();
         let success = false;
 
         try {
-            success = await onSync(options);
+            if (onSyncRef.current) {
+                success = await onSyncRef.current(options);
+                if (success) {
+                    hasLocalMutationsRef.current = false;
+                }
+            }
         } catch (e) {
+            console.error('Sync with animation failed', e);
             success = false;
         } finally {
             const elapsed = Date.now() - startTime;
-            const minDuration = 1000; // Spinner animation duration (approx)
+            const minDuration = 800; // Spinner animation duration
             const remaining = Math.max(0, minDuration - elapsed);
 
             setTimeout(() => {
@@ -239,7 +256,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 }
             }, remaining);
         }
-    };
+    }, [visualSyncState, isOnline, addToast]);
     const [activeTab, setActiveTab] = useState<'overview' | 'players' | 'heroes' | 'matches'>('overview');
     const [editMode, setEditMode] = useState(false);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -323,23 +340,42 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const gestureDirection = useRef<'none' | 'horizontal' | 'vertical'>('none');
     const isIgnoredSwipe = useRef(false);
 
-    // Auto-sync Logic
-    // We need a stable reference to syncWithAnimation to use in useEffect
-    // But syncWithAnimation depends on state/props, so better to just use the logic or ref it?
-    // Actually, syncWithAnimation uses `onSync` and `setVisualSyncState`.
-    // Let's rely on standard useEffect deps or a fresh ref.
-
-    // We need to keep a ref to checkConnectivity as well to use in cleanup
-    // We need to keep a ref to checkConnectivity as well to use in cleanup
+    // Auto-sync Logic with Lie-Fi protection
     const checkConnectivityRef = useRef(checkConnectivity);
     const syncWithAnimationRef = useRef(syncWithAnimation);
     const onSyncRef = useRef(onSync);
+    const prevIsOpenRef = useRef(isOpen);
 
     useEffect(() => {
         checkConnectivityRef.current = checkConnectivity;
         syncWithAnimationRef.current = syncWithAnimation;
         onSyncRef.current = onSync;
     }, [checkConnectivity, syncWithAnimation, onSync]);
+
+    // Trigger auto-sync on modal open, and quiet sync on modal close if mutations occurred
+    useEffect(() => {
+        const wasOpen = prevIsOpenRef.current;
+        prevIsOpenRef.current = isOpen;
+
+        if (!wasOpen && isOpen) {
+            // Modal just opened -> trigger auto-sync if not in debug mode
+            if (!isDebugMode && isOnline) {
+                syncWithAnimation({ silentIfNoChanges: true, silentErrors: true });
+            }
+        } else if (wasOpen && !isOpen) {
+            // Modal just closed -> if there were mutations, trigger quiet background sync
+            if (hasLocalMutationsRef.current && !isDebugMode) {
+                hasLocalMutationsRef.current = false;
+                (async () => {
+                    const checkFn = checkConnectivityRef.current;
+                    const hasNet = checkFn ? await checkFn(2500) : isOnline;
+                    if (hasNet && onSyncRef.current) {
+                        await onSyncRef.current({ silentIfNoChanges: true, silentErrors: true });
+                    }
+                })().catch(e => console.warn('Background auto-sync on close failed:', e));
+            }
+        }
+    }, [isOpen, isDebugMode, isOnline, syncWithAnimation]);
 
 
 
@@ -705,6 +741,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
 
     const confirmDeleteMatch = () => {
+        hasLocalMutationsRef.current = true;
         if (deleteConfirmAction === 'clear-trash') {
             onClearTrash();
             triggerHaptic([20, 50]);
@@ -887,8 +924,14 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             closeMatchForm={closeMatchForm}
             allHeroesList={allHeroesList}
             uniquePlayerNames={uniquePlayerNames}
-            onAddMatch={onAddMatch}
-            onUpdateMatch={onUpdateMatch}
+            onAddMatch={(t1, t2, winner, timestamp) => {
+                hasLocalMutationsRef.current = true;
+                onAddMatch(t1, t2, winner, timestamp);
+            }}
+            onUpdateMatch={(id, data) => {
+                hasLocalMutationsRef.current = true;
+                onUpdateMatch(id, data);
+            }}
             triggerHaptic={triggerHaptic}
         />
     ) : null;
@@ -1361,7 +1404,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 selectedPlayer={selectedPlayer}
                                 setSelectedPlayer={setSelectedPlayer}
                                 filteredHistory={filteredHistory}
-                                onRenamePlayer={onRenamePlayer}
+                                onRenamePlayer={(oldName, newName) => {
+                                    hasLocalMutationsRef.current = true;
+                                    onRenamePlayer(oldName, newName);
+                                }}
                                 streakStats={streakStats}
                                 mvp={mvp}
                                 underdog={underdog}
@@ -1383,7 +1429,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 selectedHero={selectedHero}
                                 setSelectedHero={setSelectedHero}
                                 filteredHistory={filteredHistory}
-                                onRenameHero={onRenameHero}
+                                onRenameHero={(oldName, newName) => {
+                                    hasLocalMutationsRef.current = true;
+                                    onRenameHero(oldName, newName);
+                                }}
                                 heroSort={heroSort}
                                 openHeroDetails={openHeroDetails}
                                 closeDetails={() => setSelectedHero(null)}
@@ -1412,7 +1461,10 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 openEditMatch={openEditMatch}
                                 setDeleteConfirmId={setDeleteConfirmId}
                                 setDeleteConfirmAction={setDeleteConfirmAction}
-                                onRestoreMatch={onRestoreMatch}
+                                onRestoreMatch={(id) => {
+                                    hasLocalMutationsRef.current = true;
+                                    onRestoreMatch(id);
+                                }}
                                 triggerHaptic={triggerHaptic}
                             />
                         )}
@@ -2038,9 +2090,25 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 latestSeasonId={latestSeasonId}
                 userDefaultSeasonId={userDefaultSeasonId}
                 onSetUserDefaultSeason={onSetUserDefaultSeason}
-                onAddSeason={(name, start, end) => onAddSeason ? onAddSeason(name, start, end) : null}
-                onUpdateSeason={(id, patch) => onUpdateSeason && onUpdateSeason(id, patch)}
-                onDeleteSeason={(id) => onDeleteSeason && onDeleteSeason(id)}
+                onAddSeason={(name, start, end) => {
+                    if (onAddSeason) {
+                        hasLocalMutationsRef.current = true;
+                        return onAddSeason(name, start, end);
+                    }
+                    return null;
+                }}
+                onUpdateSeason={(id, patch) => {
+                    if (onUpdateSeason) {
+                        hasLocalMutationsRef.current = true;
+                        onUpdateSeason(id, patch);
+                    }
+                }}
+                onDeleteSeason={(id) => {
+                    if (onDeleteSeason) {
+                        hasLocalMutationsRef.current = true;
+                        onDeleteSeason(id);
+                    }
+                }}
                 triggerHaptic={triggerHaptic}
             />
 

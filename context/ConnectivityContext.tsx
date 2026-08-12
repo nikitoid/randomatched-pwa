@@ -3,8 +3,8 @@ import { checkConnectivity as checkConnectivityUtil } from '../utils/connectivit
 
 interface ConnectivityContextType {
     isOnline: boolean;
-    checkConnectivity: () => Promise<boolean>;
-    verifyNow: () => Promise<boolean>;
+    checkConnectivity: (timeoutMs?: number) => Promise<boolean>;
+    verifyNow: (timeoutMs?: number) => Promise<boolean>;
 }
 
 const ConnectivityContext = createContext<ConnectivityContextType | null>(null);
@@ -13,13 +13,13 @@ export const ConnectivityProvider: React.FC<{ children: ReactNode }> = ({ childr
     // Initialize with false to assume offline until proven otherwise
     const [isOnline, setIsOnline] = useState(false);
 
-    const checkStatus = useCallback(async () => {
+    const checkStatus = useCallback(async (timeoutMs?: number) => {
         if (!navigator.onLine) {
             setIsOnline(false);
             return false;
         }
 
-        const status = await checkConnectivityUtil();
+        const status = await checkConnectivityUtil(timeoutMs);
         setIsOnline(status);
         return status;
     }, []);

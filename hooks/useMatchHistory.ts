@@ -5,6 +5,7 @@ import { MatchRecord, AssignedPlayer, ToastType, MatchPlayer, CloudBackup } from
 import { db } from '../firebase';
 import { getAllAvatarsFromStorage, saveAllAvatarsToStorage } from '../utils/avatarStorage';
 import { generateUUID } from '../utils/uuid';
+import { withTimeout } from '../utils/connectivity';
 
 
 const STORAGE_KEY_HISTORY = 'randomatched_match_history_v1';
@@ -257,11 +258,11 @@ export const useMatchHistory = (
         }
     };
 
-    const syncHistory = async (options?: { silentIfNoChanges?: boolean }): Promise<boolean> => {
-        const { silentIfNoChanges = false } = options || {};
+    const syncHistory = async (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }): Promise<boolean> => {
+        const { silentIfNoChanges = false, silentErrors = false } = options || {};
 
         if (!isOnline && !(await checkConnectivity())) {
-            if (!silentIfNoChanges) {
+            if (!silentIfNoChanges && !silentErrors) {
                 addToast("Нет подключения к интернету", "error", 2000);
             }
             return false;
@@ -301,8 +302,8 @@ export const useMatchHistory = (
                 }
             }
 
-            // 2. Fetch all matches from Cloud
-            const snapshot = await db.collection('match_history').get();
+            // 2. Fetch all matches from Cloud (with timeout protection against Lie-Fi)
+            const snapshot = await withTimeout<any>(db.collection('match_history').get(), 6000);
             const cloudMatchesMap = new Map<string, any>();
             snapshot.forEach((doc: any) => {
                 cloudMatchesMap.set(doc.id, doc.data());
@@ -404,13 +405,7 @@ export const useMatchHistory = (
                         if (cloudMatch.permanent) {
                             // Cloud is PERMANENTLY deleted.
                             if (trashMatch.lastUpdated > cloudMatch.lastUpdated) {
-                                // Local trash update is newer? (Maybe just renamed in trash?)
-                                // If it was restored, it would be in Active loop.
-                                // If it's still in trash locally but newer than permanent delete...
-                                // Maybe force push soft delete? Or respect permanent?
-                                // Let's respect permanent unless local is significantly newer?
-                                // Actually, if we are here, we are in TRASH.
-                                // If cloud says "Hard Delete", we should probably drop it from trash.
+                                // Local trash update is newer?
                                 newDeletedMap.delete(trashMatch.id);
                                 deletedFromCloud++;
                             } else {
@@ -475,9 +470,9 @@ export const useMatchHistory = (
                 }
             }
 
-            // Commit
+            // Commit (with timeout protection)
             if (opsCount > 0) {
-                await batch.commit();
+                await withTimeout(batch.commit(), 6000);
             }
 
             // Update Local
@@ -503,13 +498,13 @@ export const useMatchHistory = (
                 }
             }
 
-            // Cleanup permanently deleted docs
-            await cleanupPermanentDeletes();
+            // Cleanup permanently deleted docs in background
+            cleanupPermanentDeletes().catch(e => console.warn("Cleanup permanent deletes failed", e));
 
             return true;
         } catch (e) {
             console.error("Sync history failed", e);
-            if (!silentIfNoChanges) {
+            if (!silentIfNoChanges && !silentErrors) {
                 addToast("Ошибка синхронизации истории", "error", 2000);
             }
             return false;

@@ -3,6 +3,7 @@ import { Season, ToastType } from '../types';
 import { db } from '../firebase';
 import { useConnectivity } from './useConnectivity';
 import { generateUUID } from '../utils/uuid';
+import { withTimeout } from '../utils/connectivity';
 
 const STORAGE_KEY_SEASONS = 'randomatched_seasons_v1';
 const STORAGE_KEY_DELETED_SEASONS = 'randomatched_deleted_seasons_v1';
@@ -25,7 +26,7 @@ const cleanSeasonForFirestore = (season: Season) => {
 export const useSeasons = (
     addToast?: (message: string, type: ToastType, duration?: number) => void
 ) => {
-    const { isOnline } = useConnectivity();
+    const { isOnline, checkConnectivity } = useConnectivity();
     const [seasons, setSeasons] = useState<Season[]>([]);
     const [deletedSeasonIds, setDeletedSeasonIds] = useState<Set<string>>(new Set());
     const [userDefaultSeasonId, setUserDefaultSeasonIdState] = useState<string | null>(null);
@@ -180,9 +181,11 @@ export const useSeasons = (
     }, []);
 
     // Cloud Sync method for Firebase Firestore
-    const syncSeasons = useCallback(async (options?: { silentIfNoChanges?: boolean }): Promise<boolean> => {
-        if (!isOnline) {
-            if (!options?.silentIfNoChanges && addToast) {
+    const syncSeasons = useCallback(async (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }): Promise<boolean> => {
+        const { silentIfNoChanges = false, silentErrors = false } = options || {};
+
+        if (!isOnline && !(await checkConnectivity())) {
+            if (!silentIfNoChanges && !silentErrors && addToast) {
                 addToast('Синхронизация недоступна в оффлайн-режиме', 'warning');
             }
             return false;
@@ -193,16 +196,16 @@ export const useSeasons = (
             // 1. Push local tombstones (deleted items) to Firestore
             if (deletedSeasonIds.size > 0) {
                 for (const deletedId of deletedSeasonIds) {
-                    await db.collection('seasons').doc(deletedId).set({
+                    await withTimeout(db.collection('seasons').doc(deletedId).set({
                         id: deletedId,
                         deleted: true,
                         lastUpdated: Date.now()
-                    }, { merge: true });
+                    }, { merge: true }), 6000);
                 }
             }
 
             // 2. Fetch remote seasons from cloud
-            const snapshot = await db.collection('seasons').get();
+            const snapshot = await withTimeout<any>(db.collection('seasons').get(), 6000);
             const remoteSeasonsMap = new Map<string, Season & { deleted?: boolean }>();
             const remoteByNameMap = new Map<string, Season>();
 
@@ -263,7 +266,7 @@ export const useSeasons = (
                         if (localTime > remoteTime) {
                             // Local updated after remote delete -> resurrect
                             mergedSeasonsMap.set(id, local);
-                            await db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local));
+                            await withTimeout(db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local)), 6000);
                             nextDeletedIds.delete(id);
                             hasChanges = true;
                         } else {
@@ -282,7 +285,7 @@ export const useSeasons = (
                     const remoteTime = remote.lastUpdated || 0;
                     if (localTime > remoteTime) {
                         mergedSeasonsMap.set(id, local);
-                        await db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local));
+                        await withTimeout(db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local)), 6000);
                         hasChanges = true;
                     } else {
                         mergedSeasonsMap.set(id, remote);
@@ -291,17 +294,17 @@ export const useSeasons = (
                 } else if (local) {
                     // Local only -> push to cloud
                     mergedSeasonsMap.set(id, local);
-                    await db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local));
+                    await withTimeout(db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local)), 6000);
                     hasChanges = true;
                 } else if (remote) {
                     // Remote only
                     if (nextDeletedIds.has(id)) {
                         // We locally deleted this season, but remote wasn't marked deleted yet -> mark deleted in cloud
-                        await db.collection('seasons').doc(id).set({
+                        await withTimeout(db.collection('seasons').doc(id).set({
                             id,
                             deleted: true,
                             lastUpdated: Date.now()
-                        }, { merge: true });
+                        }, { merge: true }), 6000);
                         hasChanges = true;
                     } else {
                         mergedSeasonsMap.set(id, remote);
@@ -314,7 +317,7 @@ export const useSeasons = (
             const mergedList = Array.from(mergedSeasonsMap.values());
             setSeasons(mergedList);
 
-            if (!options?.silentIfNoChanges && addToast) {
+            if (!silentIfNoChanges && addToast) {
                 if (duplicateReplacedName) {
                     addToast(`Обнаружен дубликат сезона "${duplicateReplacedName}". Использована облачная версия`, 'info');
                 } else if (hasChanges) {
@@ -324,14 +327,14 @@ export const useSeasons = (
             return true;
         } catch (e) {
             console.error('Error syncing seasons with Firebase:', e);
-            if (!options?.silentIfNoChanges && addToast) {
+            if (!silentIfNoChanges && !silentErrors && addToast) {
                 addToast('Ошибка при синхронизации сезонов', 'error');
             }
             return false;
         } finally {
             setIsSyncingSeasons(false);
         }
-    }, [isOnline, seasons, deletedSeasonIds, addToast]);
+    }, [isOnline, checkConnectivity, seasons, deletedSeasonIds, addToast]);
 
     return {
         seasons: sortedSeasons,
