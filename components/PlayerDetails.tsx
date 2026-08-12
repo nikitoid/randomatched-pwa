@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { PlayerStat, MatchRecord } from '../types';
-import { Trophy, ChevronLeft, Shield, Calendar, Skull, TrendingUp, ChevronDown, ChevronUp, User, Edit2, Check, X, Swords, Zap, Flame, Award, Sparkles, Crown, HelpCircle } from 'lucide-react';
+import { Trophy, ChevronLeft, Shield, Calendar, Skull, TrendingUp, TrendingDown, ChevronDown, ChevronUp, User, Edit2, Check, X, Swords, Zap, Flame, Award, Sparkles, Crown, HelpCircle } from 'lucide-react';
 import { calculateWilsonScore, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
 import { Avatar } from './common/Avatar';
 import { AvatarCropperModal } from './common/AvatarCropperModal';
@@ -45,7 +45,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
     const [matchesState, setMatchesState] = useState<'partial' | 'expanded' | 'collapsed'>('partial');
 
     // Dynamic stats calculated directly from the passed history slice
-    const { recentMatches, topHeroes, partnerStats, bestStreak, totalKills, maxKills, matchesCount, winsCount, lossesCount, dynamicScore, levelInfo } = useMemo(() => {
+    const { recentMatches, topHeroes, partnerStats, bestStreak, worstStreak, totalKills, maxKills, matchesCount, winsCount, lossesCount, dynamicScore, levelInfo } = useMemo(() => {
         // Filter matches involving this player
         const playerMatches = history.filter(m =>
             m.team1.some(p => p.name === player.name) ||
@@ -122,9 +122,11 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
             .slice(0, 5);
 
-        // Win streak
+        // Win and Lose streaks
         let currentStreak = 0;
         let bestStreak = 0;
+        let currentLoseStreak = 0;
+        let worstStreak = 0;
         // Iterate backwards (oldest to newest) for streak
         [...playerMatches].reverse().forEach(m => {
             const isTeam1 = m.team1.some(p => p.name === player.name);
@@ -132,7 +134,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             if (won) {
                 currentStreak++;
                 if (currentStreak > bestStreak) bestStreak = currentStreak;
+                currentLoseStreak = 0;
             } else {
+                currentLoseStreak++;
+                if (currentLoseStreak > worstStreak) worstStreak = currentLoseStreak;
                 currentStreak = 0;
             }
         });
@@ -180,6 +185,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
             topHeroes,
             partnerStats,
             bestStreak,
+            worstStreak,
             totalKills,
             maxKills,
             matchesCount,
@@ -334,69 +340,76 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player, history, o
                 <div className="grid grid-cols-2 gap-3">
                     {/* Matches Card */}
                     <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Матчи</span>
-                            <div className="w-7 h-7 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-blue-600/80 dark:text-blue-400/80 uppercase tracking-wider">Матчи</span>
+                            <div className="w-7 h-7 rounded-xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
                                 <Swords size={15} />
                             </div>
                         </div>
-                        <div>
-                            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{matchesCount}</div>
-                            <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 mt-1">
-                                <TrendingUp size={11} /> Серия: {bestStreak}
-                            </div>
+                        <div className="my-1">
+                            <div className="text-2xl font-black text-blue-600 dark:text-blue-400 tracking-tight">{matchesCount}</div>
+                        </div>
+                        <div className="text-[10px] font-bold flex items-center gap-1 whitespace-nowrap overflow-hidden">
+                            <span className="text-blue-600/75 dark:text-blue-400/75 font-bold shrink-0">Рекорд серии:</span>
+                            <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-black shrink-0" title="Максимальная серия побед">
+                                <TrendingUp size={10} className="stroke-[2.5]" />{bestStreak}
+                            </span>
+                            <span className="text-blue-400/40 dark:text-blue-500/40 font-normal shrink-0">/</span>
+                            <span className="inline-flex items-center gap-0.5 text-rose-500 dark:text-rose-400 font-black shrink-0" title="Максимальная серия поражений">
+                                <TrendingDown size={10} className="stroke-[2.5]" />{worstStreak}
+                            </span>
                         </div>
                     </div>
 
                     {/* Winrate Card */}
                     <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Винрейт</span>
+                        <div className="flex items-center justify-between">
+                            <span className={`text-[11px] font-bold ${winRate >= 50 ? 'text-emerald-600/80 dark:text-emerald-400/80' : 'text-amber-500/80 dark:text-amber-400/80'} uppercase tracking-wider`}>Винрейт</span>
                             <div className="w-7 h-7 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                                 <Trophy size={15} />
                             </div>
                         </div>
-                        <div>
+                        <div className="my-1">
                             <div className={`text-2xl font-black tracking-tight ${winRate >= 50 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500 dark:text-amber-400'}`}>
                                 {winRate.toFixed(1)}%
                             </div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1">
-                                {winsCount} побед / {lossesCount} поражений
-                            </div>
+                        </div>
+                        <div className={`text-[10px] font-bold ${winRate >= 50 ? 'text-emerald-600/75 dark:text-emerald-400/75' : 'text-amber-500/75 dark:text-amber-400/75'}`}>
+                            {winsCount} побед / {lossesCount} поражений
                         </div>
                     </div>
 
                     {/* Kills Card */}
                     <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Убийства</span>
-                            <div className="w-7 h-7 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 flex items-center justify-center">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-rose-500/80 dark:text-rose-400/80 uppercase tracking-wider">Убийства</span>
+                            <div className="w-7 h-7 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-500 dark:text-rose-400 flex items-center justify-center">
                                 <Skull size={15} />
                             </div>
                         </div>
-                        <div>
-                            <div className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{totalKills}</div>
-                            <div className="text-[10px] text-rose-500 font-bold flex items-center gap-1 mt-1">
-                                <Flame size={11} /> Рекорд серии: {maxKills}
-                            </div>
+                        <div className="my-1">
+                            <div className="text-2xl font-black text-rose-500 dark:text-rose-400 tracking-tight">{totalKills}</div>
+                        </div>
+                        <div className="text-[10px] text-rose-500/75 dark:text-rose-400/75 font-bold flex items-center gap-1">
+                            <Flame size={11} className="opacity-80" /> Рекорд серии: {maxKills}
                         </div>
                     </div>
 
                     {/* Wilson Rating Card */}
                     <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex flex-col justify-between">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">Эффективность</span>
-                            <div className="w-7 h-7 rounded-xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-purple-600/80 dark:text-purple-400/80 uppercase tracking-wider">Эффективность</span>
+                            <div className="w-7 h-7 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400 flex items-center justify-center">
                                 <Zap size={15} />
                             </div>
                         </div>
-                        <div>
-                            <div className="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+                        <div className="my-1">
+                            <div className="text-2xl font-black text-purple-600 dark:text-purple-400 tracking-tight">
                                 {(dynamicScore * 100).toFixed(1)}%
                             </div>
-                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mt-1">
-                                Рейтинг Уилсона (80%)
-                            </div>
+                        </div>
+                        <div className="text-[10px] text-purple-600/75 dark:text-purple-400/75 font-bold">
+                            Рейтинг Уилсона (80%)
                         </div>
                     </div>
                 </div>
