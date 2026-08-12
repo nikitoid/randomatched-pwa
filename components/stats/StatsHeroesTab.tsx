@@ -89,12 +89,12 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                         onClick={() => {
                             openHeroDetails(hero);
                         }}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
+                        className="flex items-center justify-between py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
                     >
                         <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                            <div className="relative shrink-0">
-                                <Avatar entityType="hero" entityId={hero.name} name={hero.name} size="md" />
-                                <div className={`absolute -top-1.5 -left-1.5 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
+                            <div className="relative shrink-0 flex items-center justify-center">
+                                <Avatar entityType="hero" entityId={hero.name} name={hero.name} size="lg" />
+                                <div className={`absolute -top-1 -left-1 min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center text-[9px] font-black border-2 border-white dark:border-slate-900 shadow-xs z-10 ${idx === 0 ? 'bg-amber-400 text-amber-950 shadow-amber-400/20' :
                                         idx === 1 ? 'bg-slate-300 text-slate-900' :
                                             idx === 2 ? 'bg-amber-700 text-amber-100' :
                                                 'bg-slate-200/90 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
