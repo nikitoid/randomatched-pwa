@@ -192,10 +192,6 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
             .reduce((sum, a) => sum + getHeroWeight(a.hero), 0);
     }, [assignments]);
 
-    const powerDiff = useMemo(() => {
-        return Math.abs(oddPower - evenPower);
-    }, [oddPower, evenPower]);
-
     // Custom DND State
     const [isDragMode, setIsDragMode] = useState(false);
     const [activeDrag, setActiveDrag] = useState<{
@@ -497,17 +493,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     </div>
                 )}
 
-                {/* Rank & Debug Info Badge */}
-                {hasHero && !isDragMode && !isFloating && (
-                    <div key={player.hero?.id || 'rank'} className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-hero-reveal flex flex-col items-center gap-1">
-                        {heroRank && (
-                            <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[10px] sm:text-[11px] font-bold tracking-widest text-white/90">{heroRank}</div>
-                        )}
-                        {isDebugMode && (
-                            <div className="px-1.5 py-0.5 rounded bg-black/40 border border-white/10 text-[9px] font-mono text-white/90 whitespace-nowrap">
-                                W: {weight.toFixed(2)} | P: {power}
-                            </div>
-                        )}
+                {/* Rank Badge */}
+                {hasHero && heroRank && !isDragMode && !isFloating && (
+                    <div key={player.hero?.id || 'rank'} className="absolute top-2 right-1/2 translate-x-1/2 z-10 animate-hero-reveal">
+                        <div className="px-1.5 py-0.5 rounded bg-black/20 border border-white/10 text-[10px] sm:text-[11px] font-bold tracking-widest text-white/90">{heroRank}</div>
                     </div>
                 )}
 
@@ -529,6 +518,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                 <span className="opacity-50 text-2xl sm:text-3xl font-bold animate-pulse-soft">?</span>
                             )}
                         </h2>
+                    )}
+
+                    {isDebugMode && hasHero && !isFloating && !isDragMode && (
+                        <div className="mt-1 px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-sm border border-amber-400/40 text-[9px] font-mono font-bold text-amber-300 shadow-sm z-10">
+                            W: {weight.toFixed(2)} | P: {power}
+                        </div>
                     )}
 
                     {isFloating && (
@@ -882,27 +877,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     </div>
                 )}
 
-                {/* Debug Power Balance Panel */}
-                {isDebugMode && heroesRevealed && (
-                    <div 
-                        className="absolute left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 dark:bg-slate-900/95 border border-slate-700/50 text-white px-4 py-2 rounded-2xl flex items-center gap-3 text-xs font-bold shadow-lg animate-menu-in pointer-events-auto whitespace-nowrap"
-                        style={{ top: 'calc(9.0rem + env(safe-area-inset-top))' }}
-                    >
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />
-                            <span>Сила Т1: {oddPower}</span>
-                        </div>
-                        <div className="w-px h-4 bg-slate-700" />
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 rounded-full bg-secondary-500" />
-                            <span>Сила Т2: {evenPower}</span>
-                        </div>
-                        <div className="w-px h-4 bg-slate-700" />
-                        <div className="text-orange-400">
-                            Diff: {powerDiff}
-                        </div>
-                    </div>
-                )}
+
 
                 {/* Board Container */}
                 <div className="absolute inset-0 w-full h-full pointer-events-none overflow-hidden touch-none flex items-center justify-center [transform:translateZ(0)]">
