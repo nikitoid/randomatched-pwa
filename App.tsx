@@ -29,7 +29,11 @@ import { NavigationProvider } from './context/NavigationContext';
 import { AddHeroesModal } from './components/AddHeroesModal';
 import { InactiveHeroesModal } from './components/InactiveHeroesModal';
 import { ChangelogOverlay } from './components/ChangelogOverlay';
+import { AdminModal } from './components/AdminModal';
+import { PrankOverlay } from './components/PrankOverlay';
 import { useAvatars } from './context/AvatarContext';
+import { useClientSync } from './hooks/useClientSync';
+import { usePranks } from './hooks/usePranks';
 import { APP_VERSION, getInitialLastSeenVersion } from './utils/changelog';
 
 import { Hero } from './types';
@@ -136,6 +140,34 @@ const App: React.FC = () => {
     const [lastSeenVersion, setLastSeenVersion] = useState<string | null>(() =>
         getInitialLastSeenVersion()
     );
+
+    // Client Sync & Admin / Pranks
+    const {
+        clientId,
+        clientData,
+        isAdmin,
+        activePrank,
+        allClients,
+        isLoadingAllClients,
+        subscribeToAllClients,
+        updateClientName,
+        setClientPrank,
+        clearClientPrank,
+        deleteClient
+    } = useClientSync();
+
+    const {
+        isUpsideDown,
+        isMirror,
+        secretMessage,
+        remainingSeconds,
+        dismissSecretMessage
+    } = usePranks({
+        activePrank,
+        onClearPrank: () => clearClientPrank(clientId)
+    });
+
+    const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
     // Custom Hooks
     // const { consoleLogs, isDebugMode, setIsDebugMode } = useDebugLogs(); // REMOVED
@@ -406,6 +438,11 @@ const App: React.FC = () => {
                     handleOpenUpdateBanner={handleOpenUpdateBanner}
                     theme={theme}
                     toggleTheme={handleToggleTheme}
+                    isAdmin={isAdmin}
+                    onOpenAdmin={() => {
+                        triggerHaptic(30);
+                        setIsAdminModalOpen(true);
+                    }}
                 />
 
                 <main className="flex-1 flex flex-col items-center main-content-layout px-6 pt-6 pb-28 w-full max-w-lg mx-auto relative z-1">
@@ -562,6 +599,8 @@ const App: React.FC = () => {
                     onOpenChangelog={() => setIsChangelogOpen(true)}
                     lastSeenVersion={lastSeenVersion}
                     onSetLastSeenVersion={handleSetLastSeenVersion}
+                    clientId={clientId}
+                    isAdmin={isAdmin}
                 />
 
                 <StatsModal
@@ -679,6 +718,29 @@ const App: React.FC = () => {
                     onClose={handleCloseChangelog}
                     lastSeenVersion={lastSeenVersion}
                     triggerHaptic={triggerHaptic}
+                />
+
+                <AdminModal
+                    isOpen={isAdminModalOpen}
+                    onClose={() => setIsAdminModalOpen(false)}
+                    currentClientId={clientId}
+                    allClients={allClients}
+                    isLoadingClients={isLoadingAllClients}
+                    onSubscribeToClients={subscribeToAllClients}
+                    onUpdateClientName={updateClientName}
+                    onSetClientPrank={setClientPrank}
+                    onClearClientPrank={clearClientPrank}
+                    onDeleteClient={deleteClient}
+                    isOnline={isOnline}
+                    addToast={addToast}
+                />
+
+                <PrankOverlay
+                    isUpsideDown={isUpsideDown}
+                    isMirror={isMirror}
+                    secretMessage={secretMessage}
+                    remainingSeconds={remainingSeconds}
+                    onDismissMessage={dismissSecretMessage}
                 />
 
                 <ToastContainer toasts={toasts} removeToast={removeToast} />

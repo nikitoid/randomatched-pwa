@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Dice5, Check, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles, Sliders, Layers, ShieldCheck, Activity, Volume2 } from 'lucide-react';
+import { ChevronLeft, Dice5, Check, Copy, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles, Sliders, Layers, ShieldCheck, Activity, Volume2 } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
 import { APP_VERSION, CHANGELOG, getUnreadReleasesCount } from '../utils/changelog';
 import { useHaptics } from '../hooks/useHaptics';
 import { generateUUID } from '../utils/uuid';
+import { copyToClipboard } from '../utils/clipboard';
 
 
 interface SettingsOverlayProps {
@@ -40,6 +41,8 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onOpenChangelog: () => void;
     lastSeenVersion?: string | null;
     onSetLastSeenVersion?: (version: string | null) => void;
+    clientId?: string;
+    isAdmin?: boolean;
 }
 
 type TabType = 'appearance' | 'app_settings' | 'info' | 'debug';
@@ -72,10 +75,13 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     onOpenChangelog,
     lastSeenVersion,
     onSetLastSeenVersion,
+    clientId,
+    isAdmin = false,
 }) => {
     const unreadChangelogCount = getUnreadReleasesCount(lastSeenVersion ?? null);
     const [activeTab, setActiveTab] = useState<TabType>('appearance');
     const [appearanceSubTab, setAppearanceSubTab] = useState<'colors' | 'effects'>('colors');
+    const [copiedClientId, setCopiedClientId] = useState(false);
 
     // Drag/Scroll refs for tabs
     const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -688,7 +694,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                 </button>
 
                                 {/* App Info Description Card */}
-                                <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-5 shadow-xs border border-slate-200/80 dark:border-slate-800/80 w-full max-w-xs text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-5 text-center">
+                                <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-5 shadow-xs border border-slate-200/80 dark:border-slate-800/80 w-full max-w-xs text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4 text-center">
                                     <p className="mb-2.5">
                                         Генератор команд 2x2 для настольной игры <strong>Unmatched</strong>.
                                     </p>
@@ -696,6 +702,44 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                         Создавайте свои списки героев, синхронизируйте их между устройствами и используйте умные алгоритмы для создания идеально сбалансированных матчей.
                                     </p>
                                 </div>
+
+                                {/* Client ID Card */}
+                                {clientId && (
+                                    <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-3.5 shadow-xs border border-slate-200/80 dark:border-slate-800/80 w-full max-w-xs flex flex-col gap-2 mb-5">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                                ID Устройства
+                                            </span>
+                                            {isAdmin && (
+                                                <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                                    ADMIN
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center justify-between gap-2 bg-slate-100 dark:bg-slate-800 p-2 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                            <span className="font-mono text-[11px] text-slate-700 dark:text-slate-300 truncate select-all">
+                                                {clientId}
+                                            </span>
+                                            <button
+                                                onClick={async () => {
+                                                    const success = await copyToClipboard(clientId);
+                                                    if (success) {
+                                                        setCopiedClientId(true);
+                                                        triggerHaptic(10);
+                                                        if (addToast) addToast('Client ID скопирован', 'success');
+                                                        setTimeout(() => setCopiedClientId(false), 2000);
+                                                    } else {
+                                                        if (addToast) addToast('Не удалось скопировать Client ID', 'error');
+                                                    }
+                                                }}
+                                                className="p-1.5 rounded-lg bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-primary-600 active:scale-95 transition-all shrink-0 shadow-xs"
+                                                title="Скопировать Client ID"
+                                            >
+                                                {copiedClientId ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Update PWA Button */}
                                 {isUpdateAvailable && onUpdateApp && (

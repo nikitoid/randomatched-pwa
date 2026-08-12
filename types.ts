@@ -129,4 +129,31 @@ export interface CloudBackup {
   avatars?: Record<string, string>;
 }
 
+// Client Identification & Prank System Types
+export type PrankType = 'upside_down' | 'mirror' | 'secret_message';
 
+export interface ClientPrank {
+  type: PrankType;
+  duration?: number; // in seconds
+  expiresAt?: number; // timestamp in ms
+  text?: string; // message text for 'secret_message'
+  createdAt: number;
+}
+
+export interface ClientDeviceInfo {
+  os: string;
+  browser: string;
+  screen: string;
+  isPWA: boolean;
+}
+
+export interface ClientData {
+  clientId: string;
+  customName: string;
+  device: ClientDeviceInfo;
+  firstSeen: number;
+  lastSeen: number;
+  isAdmin?: boolean;
+  appVersion: string;
+  activePrank?: ClientPrank | null;
+}

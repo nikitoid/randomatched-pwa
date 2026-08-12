@@ -69,9 +69,52 @@ const getMockDB = () => {
             const current = getCollectionData();
             setCollectionData(current.filter((d: any) => d.id !== docId));
             return Promise.resolve();
+          },
+          onSnapshot: (callback: any, errCallback?: any) => {
+            const doc = getCollectionData().find((d: any) => d.id === docId);
+            try {
+              callback({
+                exists: !!doc,
+                data: () => doc
+              });
+            } catch (e) {
+              if (errCallback) errCallback(e);
+            }
+            return () => {};
           }
         }),
+        onSnapshot: (callback: any, errCallback?: any) => {
+          try {
+            callback({
+              docs: getCollectionData().map((doc: any) => ({
+                id: doc.id,
+                data: () => doc
+              }))
+            });
+          } catch (e) {
+            if (errCallback) errCallback(e);
+          }
+          return () => {};
+        },
         orderBy: (field: string, direction: 'asc' | 'desc') => ({
+          onSnapshot: (callback: any, errCallback?: any) => {
+            const sorted = [...getCollectionData()].sort((a: any, b: any) => {
+              if (a[field] < b[field]) return direction === 'asc' ? -1 : 1;
+              if (a[field] > b[field]) return direction === 'asc' ? 1 : -1;
+              return 0;
+            });
+            try {
+              callback({
+                docs: sorted.map(doc => ({
+                  id: doc.id,
+                  data: () => doc
+                }))
+              });
+            } catch (e) {
+              if (errCallback) errCallback(e);
+            }
+            return () => {};
+          },
           get: async () => {
             console.log(`[MOCK DB] QUERY ${collectionName} ORDER BY ${field} ${direction}`);
             const sorted = [...getCollectionData()].sort((a: any, b: any) => {
@@ -102,8 +145,16 @@ const getMockDB = () => {
   return mockDB as any;
 };
 
-// Check if running in Playwright (injected via addInitScript)
-// Since this file is loaded in the browser, valid window check is enough
-const isTestMode = typeof window !== 'undefined' && (window as any).__PLAYWRIGHT_TEST__;
+// Check if running in Playwright (via port 5177, webdriver, or injected __PLAYWRIGHT_TEST__)
+export const isTestEnvironment = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return Boolean(
+    (window as any).__PLAYWRIGHT_TEST__ ||
+    (window.location && window.location.port === '5177') ||
+    (typeof navigator !== 'undefined' && navigator.webdriver)
+  );
+};
+
+const isTestMode = isTestEnvironment();
 
 export const db = isTestMode ? getMockDB() : realDB;
