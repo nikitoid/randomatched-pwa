@@ -297,7 +297,16 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         setPlayerSearch('');
         setHeroSearch('');
         setMatchSearch('');
+        if (contentContainerRef.current) {
+            contentContainerRef.current.scrollTop = 0;
+        }
     }, [activeTab]);
+
+    useEffect(() => {
+        if (isOpen && contentContainerRef.current) {
+            contentContainerRef.current.scrollTop = 0;
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (isSearchExpanded && searchInputRef.current) {
@@ -305,19 +314,13 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         }
     }, [isSearchExpanded]);
 
-
-    // Overview Card State
-    const [activeOverviewCard, setActiveOverviewCard] = useState(0); // 0 = Streak, 1 = Underdog
-    const [swipeOffset, setSwipeOffset] = useState(0);
-    const [isSwiping, setIsSwiping] = useState(false);
-    const cardRef = useRef<HTMLDivElement>(null);
     const contentContainerRef = useRef<HTMLDivElement>(null);
 
     // Swipe Logic
     const touchStartX = useRef(0);
-    const touchEndX = useRef(0);
     const touchStartY = useRef(0);
-    const touchEndY = useRef(0);
+    const touchStartTime = useRef(0);
+    const gestureDirection = useRef<'none' | 'horizontal' | 'vertical'>('none');
     const isIgnoredSwipe = useRef(false);
 
     // Auto-sync Logic
@@ -734,32 +737,68 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         // Reset touch state on tab switch to prevent leaks
         touchStartX.current = 0;
         touchStartY.current = 0;
+        touchStartTime.current = 0;
+        gestureDirection.current = 'none';
         isIgnoredSwipe.current = false;
 
         const handleTouchStartRaw = (e: TouchEvent) => {
-            if (!e.targetTouches || e.targetTouches.length === 0) return;
-            const target = e.target as HTMLElement | null;
-            if (target?.closest('[data-no-tab-swipe="true"]')) {
+            if (!e.touches || e.touches.length !== 1) {
                 isIgnoredSwipe.current = true;
+                gestureDirection.current = 'none';
+                return;
+            }
+            const target = e.target as HTMLElement | null;
+            if (target?.closest('[data-no-tab-swipe="true"]') || selectedPlayer || selectedHero || matchForm) {
+                isIgnoredSwipe.current = true;
+                gestureDirection.current = 'none';
                 touchStartX.current = 0;
                 touchStartY.current = 0;
                 return;
             }
             isIgnoredSwipe.current = false;
-            touchStartX.current = e.targetTouches[0].clientX;
-            touchStartY.current = e.targetTouches[0].clientY;
+            gestureDirection.current = 'none';
+            touchStartX.current = e.touches[0].clientX;
+            touchStartY.current = e.touches[0].clientY;
+            touchStartTime.current = Date.now();
         };
 
         const handleTouchMoveRaw = (e: TouchEvent) => {
             if (isIgnoredSwipe.current) return;
-            if (!touchStartX.current || !touchStartY.current || !e.touches || e.touches.length === 0) return;
+            if (!touchStartX.current || !touchStartY.current || !e.touches || e.touches.length !== 1) return;
+
             const currentX = e.touches[0].clientX;
             const currentY = e.touches[0].clientY;
             const diffX = touchStartX.current - currentX;
             const diffY = touchStartY.current - currentY;
+            const absX = Math.abs(diffX);
+            const absY = Math.abs(diffY);
 
-            // Если жест преимущественно горизонтальный, блокируем стандартный скролл браузера
-            if (Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+            // Determine gesture direction once movement exceeds deadzone threshold
+            if (gestureDirection.current === 'none') {
+                const DEADZONE = 10;
+                if (absX < DEADZONE && absY < DEADZONE) {
+                    return;
+                }
+                // If vertical movement dominates or is equal, lock to vertical scrolling immediately
+                if (absY >= absX) {
+                    gestureDirection.current = 'vertical';
+                    isIgnoredSwipe.current = true;
+                    return;
+                }
+                // If horizontal movement clearly dominates, lock to horizontal swipe
+                if (absX > absY * 1.5) {
+                    gestureDirection.current = 'horizontal';
+                    if (e.cancelable) {
+                        e.preventDefault();
+                    }
+                } else {
+                    // Diagonal movement - treat as scroll to avoid accidental tab changes
+                    gestureDirection.current = 'vertical';
+                    isIgnoredSwipe.current = true;
+                    return;
+                }
+            } else if (gestureDirection.current === 'horizontal') {
+                // Keep preventing vertical scroll while swiping tabs horizontally
                 if (e.cancelable) {
                     e.preventDefault();
                 }
@@ -767,8 +806,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         };
 
         const handleTouchEndRaw = (e: TouchEvent) => {
-            if (isIgnoredSwipe.current) {
+            if (isIgnoredSwipe.current || gestureDirection.current !== 'horizontal') {
                 isIgnoredSwipe.current = false;
+                gestureDirection.current = 'none';
                 touchStartX.current = 0;
                 touchStartY.current = 0;
                 return;
@@ -776,21 +816,24 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             if (!touchStartX.current || !touchStartY.current) return;
             if (!e.changedTouches || e.changedTouches.length === 0) return;
 
-            touchEndX.current = e.changedTouches[0].clientX;
-            touchEndY.current = e.changedTouches[0].clientY;
-            const diffX = touchStartX.current - touchEndX.current;
-            const diffY = touchStartY.current - touchEndY.current;
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const diffX = touchStartX.current - endX;
+            const diffY = touchStartY.current - endY;
+            const elapsed = Date.now() - touchStartTime.current;
 
-            // Reset start coordinates so past touch start doesn't leak into subsequent taps
+            // Reset touch coordinates
             touchStartX.current = 0;
             touchStartY.current = 0;
+            gestureDirection.current = 'none';
+            isIgnoredSwipe.current = false;
 
             const SWIPE_THRESHOLD = 50;
 
-            if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > SWIPE_THRESHOLD) {
-                const tabs = ['overview', 'players', 'heroes', 'matches'];
+            if (elapsed < 600 && Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > SWIPE_THRESHOLD) {
+                const tabs: ('overview' | 'players' | 'heroes' | 'matches')[] = ['overview', 'players', 'heroes', 'matches'];
                 const idx = tabs.indexOf(activeTab);
-                let nextTab = null;
+                let nextTab: ('overview' | 'players' | 'heroes' | 'matches') | null = null;
                 if (diffX > 0 && idx < tabs.length - 1) nextTab = tabs[idx + 1];
                 if (diffX < 0 && idx > 0) nextTab = tabs[idx - 1];
 
@@ -798,66 +841,36 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     if (e.cancelable) {
                         e.preventDefault();
                     }
-                    setActiveTab(nextTab as any);
+                    setActiveTab(nextTab);
+                    setSelectedPlayer(null);
+                    setSelectedHero(null);
+                    if (contentContainerRef.current) {
+                        contentContainerRef.current.scrollTop = 0;
+                    }
+                    triggerHaptic(10);
                 }
             }
+        };
+
+        const handleTouchCancelRaw = () => {
+            touchStartX.current = 0;
+            touchStartY.current = 0;
+            gestureDirection.current = 'none';
+            isIgnoredSwipe.current = false;
         };
 
         container.addEventListener('touchstart', handleTouchStartRaw, { passive: true });
         container.addEventListener('touchmove', handleTouchMoveRaw, { passive: false });
         container.addEventListener('touchend', handleTouchEndRaw, { passive: false });
+        container.addEventListener('touchcancel', handleTouchCancelRaw);
 
         return () => {
             container.removeEventListener('touchstart', handleTouchStartRaw);
             container.removeEventListener('touchmove', handleTouchMoveRaw);
             container.removeEventListener('touchend', handleTouchEndRaw);
+            container.removeEventListener('touchcancel', handleTouchCancelRaw);
         };
-    }, [activeTab]);
-
-    // Swipe Handling - Overview Card
-    const handleCardTouchStart = (e: React.TouchEvent) => {
-        e.stopPropagation();
-        touchStartX.current = e.touches[0].clientX;
-        setIsSwiping(true);
-        setSwipeOffset(0);
-    };
-
-    const handleCardTouchMove = (e: React.TouchEvent) => {
-        e.stopPropagation();
-        if (!isSwiping) return;
-
-        const currentX = e.touches[0].clientX;
-        const diff = currentX - touchStartX.current;
-
-        // Resistance/Limits
-        if (activeOverviewCard === 0 && diff > 0) {
-            // Trying to swipe right from start (rubber band?) -> Limit
-            setSwipeOffset(diff * 0.3);
-        } else if (activeOverviewCard === 1 && diff < 0) {
-            // Trying to swipe left from end -> Limit
-            setSwipeOffset(diff * 0.3);
-        } else {
-            setSwipeOffset(diff);
-        }
-    };
-
-    const handleCardTouchEnd = (e: React.TouchEvent) => {
-        e.stopPropagation();
-        setIsSwiping(false);
-
-        const threshold = 50; // px
-
-        if (activeOverviewCard === 0) {
-            if (swipeOffset < -threshold) {
-                setActiveOverviewCard(1);
-            }
-        } else {
-            if (swipeOffset > threshold) {
-                setActiveOverviewCard(0);
-            }
-        }
-        setSwipeOffset(0);
-    };
+    }, [activeTab, selectedPlayer, selectedHero, matchForm, triggerHaptic]);
 
 
 
