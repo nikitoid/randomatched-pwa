@@ -6,6 +6,7 @@ import { generateUUID } from '../utils/uuid';
 
 const STORAGE_KEY_SEASONS = 'randomatched_seasons_v1';
 const STORAGE_KEY_DELETED_SEASONS = 'randomatched_deleted_seasons_v1';
+const STORAGE_KEY_USER_DEFAULT_SEASON = 'randomatched_user_default_season_v1';
 
 // Helper to remove any undefined fields before sending data to Firebase Firestore
 const cleanSeasonForFirestore = (season: Season) => {
@@ -27,6 +28,7 @@ export const useSeasons = (
     const { isOnline } = useConnectivity();
     const [seasons, setSeasons] = useState<Season[]>([]);
     const [deletedSeasonIds, setDeletedSeasonIds] = useState<Set<string>>(new Set());
+    const [userDefaultSeasonId, setUserDefaultSeasonIdState] = useState<string | null>(null);
     const [isLoaded, setIsLoaded] = useState(false);
     const [isSyncingSeasons, setIsSyncingSeasons] = useState(false);
 
@@ -46,6 +48,10 @@ export const useSeasons = (
                 if (Array.isArray(parsedDeleted)) {
                     setDeletedSeasonIds(new Set(parsedDeleted));
                 }
+            }
+            const savedUserDefault = localStorage.getItem(STORAGE_KEY_USER_DEFAULT_SEASON);
+            if (savedUserDefault) {
+                setUserDefaultSeasonIdState(savedUserDefault);
             }
         } catch (e) {
             console.error('Failed to load seasons from local storage', e);
@@ -129,9 +135,42 @@ export const useSeasons = (
         if (addToast) addToast('Сезон обновлен', 'success');
     }, [addToast]);
 
+    const setUserDefaultSeasonId = useCallback((id: string | null) => {
+        setUserDefaultSeasonIdState(id);
+        try {
+            if (id) {
+                localStorage.setItem(STORAGE_KEY_USER_DEFAULT_SEASON, id);
+            } else {
+                localStorage.removeItem(STORAGE_KEY_USER_DEFAULT_SEASON);
+            }
+        } catch (e) {
+            console.error('Failed to save default season to local storage', e);
+        }
+    }, []);
+
+    // Validate that userDefaultSeasonId actually exists in seasons list
+    useEffect(() => {
+        if (!isLoaded || !userDefaultSeasonId) return;
+        const exists = seasons.some(s => s.id === userDefaultSeasonId);
+        if (!exists) {
+            setUserDefaultSeasonId(null);
+        }
+    }, [seasons, isLoaded, userDefaultSeasonId, setUserDefaultSeasonId]);
+
     const deleteSeason = useCallback((id: string) => {
         setSeasons(prev => prev.filter(s => s.id !== id));
         setDeletedSeasonIds(prev => new Set(prev).add(id));
+        setUserDefaultSeasonIdState(prev => {
+            if (prev === id) {
+                try {
+                    localStorage.removeItem(STORAGE_KEY_USER_DEFAULT_SEASON);
+                } catch (e) {
+                    console.error('Failed to remove default season from local storage', e);
+                }
+                return null;
+            }
+            return prev;
+        });
         if (addToast) addToast('Сезон удален', 'info');
     }, [addToast]);
 
@@ -297,6 +336,8 @@ export const useSeasons = (
     return {
         seasons: sortedSeasons,
         latestSeason,
+        userDefaultSeasonId,
+        setUserDefaultSeasonId,
         isLoaded,
         isSyncingSeasons,
         addSeason,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, Edit2, Trash2, Check, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, Edit2, Trash2, Check, AlertCircle, Star, RotateCcw } from 'lucide-react';
 import { Season } from '../../types';
 import { BaseModal } from '../common/BaseModal';
 import { ConfirmModal } from '../common/ConfirmModal';
@@ -10,6 +10,8 @@ interface SeasonsManagerModalProps {
     onClose: () => void;
     seasons: Season[];
     latestSeasonId?: string | null;
+    userDefaultSeasonId?: string | null;
+    onSetUserDefaultSeason?: (id: string | null) => void;
     onAddSeason: (name: string, startDate: string, endDate?: string) => void;
     onUpdateSeason: (id: string, updatedData: Partial<Omit<Season, 'id'>>) => void;
     onDeleteSeason: (id: string) => void;
@@ -21,6 +23,8 @@ export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
     onClose,
     seasons,
     latestSeasonId,
+    userDefaultSeasonId,
+    onSetUserDefaultSeason,
     onAddSeason,
     onUpdateSeason,
     onDeleteSeason,
@@ -147,11 +151,42 @@ export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
                 <button
                     type="button"
                     onClick={handleOpenAddForm}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md shadow-primary-500/20 active:scale-[0.98] min-h-[48px] mb-2"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md shadow-primary-500/20 active:scale-[0.98] min-h-[48px] mb-3"
                 >
                     <Plus size={18} />
                     <span>Создать новый сезон</span>
                 </button>
+
+                {/* Manual Default Season Bar (if active) */}
+                {userDefaultSeasonId && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 dark:bg-amber-950/20 dark:border-amber-500/30 rounded-2xl flex items-center justify-between gap-2.5 mb-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <Star size={16} className="text-amber-500 fill-amber-500 shrink-0" />
+                            <div className="min-w-0">
+                                <div className="text-xs font-bold text-amber-700 dark:text-amber-400 truncate">
+                                    По умолчанию: {seasons.find(s => s.id === userDefaultSeasonId)?.name || 'Сезон'}
+                                </div>
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                                    Установлен вручную
+                                </div>
+                            </div>
+                        </div>
+                        {onSetUserDefaultSeason && (
+                            <button
+                                type="button"
+                                data-testid="reset-user-default-season-btn"
+                                onClick={() => {
+                                    triggerHaptic(10);
+                                    onSetUserDefaultSeason(null);
+                                }}
+                                className="px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold border border-slate-200 dark:border-slate-700 shrink-0 flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
+                            >
+                                <RotateCcw size={12} />
+                                <span>Авто-выбор</span>
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* List of Seasons */}
                 <div className="space-y-2">
@@ -164,51 +199,74 @@ export const SeasonsManagerModal: React.FC<SeasonsManagerModalProps> = ({
                         </div>
                     ) : (
                         sortedSeasonsDescending.map(season => {
-                            const isLatest = season.id === latestSeasonId;
+                            const isUserDefault = season.id === userDefaultSeasonId;
+                            const isAutoActive = !userDefaultSeasonId && season.id === latestSeasonId;
                             const isEditing = season.id === editingSeasonId;
 
                             return (
                                 <div
                                     key={season.id}
                                     className={`
-                                        p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 min-h-[56px]
+                                        p-3 rounded-2xl border transition-all flex items-center justify-between gap-2.5 min-h-[56px]
                                         ${isEditing
                                             ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-950/20'
-                                            : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}
+                                            : isUserDefault
+                                                ? 'border-amber-500/50 bg-amber-500/5 dark:bg-amber-950/15'
+                                                : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30'}
                                     `}
                                 >
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5">
                                             <span className="font-bold text-slate-900 dark:text-white text-sm truncate">
                                                 {season.name}
                                             </span>
-                                            {isLatest && (
-                                                <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-md shrink-0">
-                                                    Активный
+                                            {isAutoActive && (
+                                                <span className="inline-flex items-center px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-tight bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 rounded-md border border-emerald-500/30 shrink-0 leading-none">
+                                                    Авто
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs text-slate-400 mt-0.5">
+                                        <p className="text-[11px] text-slate-400 mt-0.5">
                                             {formatDateStr(season.startDate)} — {formatDateStr(season.endDate)}
                                         </p>
                                     </div>
 
-                                    <div className="flex items-center gap-1 shrink-0">
+                                    <div className="flex items-center gap-0.5 shrink-0">
+                                        {onSetUserDefaultSeason && (
+                                            <button
+                                                type="button"
+                                                data-testid={`toggle-default-season-${season.id}`}
+                                                onClick={() => {
+                                                    triggerHaptic(isUserDefault ? 10 : [10, 30]);
+                                                    onSetUserDefaultSeason(isUserDefault ? null : season.id);
+                                                }}
+                                                className={`w-9 h-9 rounded-xl transition-all flex items-center justify-center ${
+                                                    isUserDefault
+                                                        ? 'text-amber-500 bg-amber-500/15 hover:bg-amber-500/25'
+                                                        : 'text-slate-400 hover:text-amber-500 hover:bg-amber-500/10 dark:hover:bg-amber-500/10'
+                                                }`}
+                                                title={isUserDefault ? 'Снять выбор по умолчанию (вернуть авто)' : 'Сделать сезоном по умолчанию'}
+                                            >
+                                                <Star size={15} className={isUserDefault ? 'fill-amber-500' : ''} />
+                                            </button>
+                                        )}
                                         <button
                                             type="button"
+                                            data-testid={`edit-season-${season.id}`}
                                             onClick={() => handleOpenEditForm(season)}
-                                            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+                                            className="w-9 h-9 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-all flex items-center justify-center"
                                             title="Редактировать сезон"
                                         >
-                                            <Edit2 size={16} />
+                                            <Edit2 size={15} />
                                         </button>
                                         <button
                                             type="button"
+                                            data-testid={`delete-season-${season.id}`}
                                             onClick={() => setDeletingSeasonId(season.id)}
-                                            className="p-2 rounded-xl text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+                                            className="w-9 h-9 rounded-xl text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all flex items-center justify-center"
                                             title="Удалить сезон"
                                         >
-                                            <Trash2 size={16} />
+                                            <Trash2 size={15} />
                                         </button>
                                     </div>
                                 </div>

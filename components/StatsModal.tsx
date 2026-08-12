@@ -47,6 +47,8 @@ interface StatsModalProps {
     // Seasons management
     seasons?: Season[];
     latestSeasonId?: string | null;
+    userDefaultSeasonId?: string | null;
+    onSetUserDefaultSeason?: (id: string | null) => void;
     onAddSeason?: (name: string, startDate: string, endDate?: string) => Season | null;
     onUpdateSeason?: (id: string, updatedData: Partial<Omit<Season, 'id'>>) => void;
     onDeleteSeason?: (id: string) => void;
@@ -92,6 +94,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     // Seasons management
     seasons = [],
     latestSeasonId = null,
+    userDefaultSeasonId = null,
+    onSetUserDefaultSeason,
     onAddSeason,
     onUpdateSeason,
     onDeleteSeason,
@@ -128,8 +132,9 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         todayStr, yesterdayStr, lastEveningDateStr,
         handlePresetToday, handlePresetYesterday, handlePresetLastEvening, handleResetDateFilter,
         isDefaultFilterState, formatPeriodLabel,
-        filteredHistory
-    } = useMatchFilters(history, triggerHaptic, seasons, isOpen, addToast);
+        filteredHistory,
+        defaultSeasonId, isManualDefault
+    } = useMatchFilters(history, triggerHaptic, seasons, isOpen, addToast, userDefaultSeasonId);
 
 
 
@@ -1312,6 +1317,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         triggerHaptic={triggerHaptic}
                         seasons={seasons}
                         selectedSeasonId={selectedSeasonId}
+                        defaultSeasonId={defaultSeasonId}
+                        isManualDefault={isManualDefault}
                         onSelectSeason={handleSelectSeason}
                         onOpenSeasonsManager={() => setIsSeasonsManagerOpen(true)}
                     />
@@ -2016,6 +2023,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 onClose={() => setIsSeasonsManagerOpen(false)}
                 seasons={seasons}
                 latestSeasonId={latestSeasonId}
+                userDefaultSeasonId={userDefaultSeasonId}
+                onSetUserDefaultSeason={onSetUserDefaultSeason}
                 onAddSeason={(name, start, end) => onAddSeason ? onAddSeason(name, start, end) : null}
                 onUpdateSeason={(id, patch) => onUpdateSeason && onUpdateSeason(id, patch)}
                 onDeleteSeason={(id) => onDeleteSeason && onDeleteSeason(id)}

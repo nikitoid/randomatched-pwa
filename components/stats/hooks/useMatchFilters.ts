@@ -6,7 +6,8 @@ export const useMatchFilters = (
     triggerHaptic: (pattern?: number | number[]) => void,
     seasons: Season[] = [],
     isOpen: boolean = false,
-    addToast?: (message: string, type: ToastType, duration?: number) => void
+    addToast?: (message: string, type: ToastType, duration?: number) => void,
+    userDefaultSeasonId?: string | null
 ) => {
     const [isDateFilterOpen, setIsDateFilterOpen] = useState(false);
 
@@ -16,9 +17,32 @@ export const useMatchFilters = (
     // Calculate effective default season
     const defaultSeasonInfo = useMemo(() => {
         if (!seasons || seasons.length === 0) {
-            return { defaultSeasonId: 'all', defaultSeason: null, isSeasonEnded: false };
+            return { defaultSeasonId: 'all', defaultSeason: null, isSeasonEnded: false, isManual: false };
         }
 
+        // 1. Check for custom user-selected default season
+        if (userDefaultSeasonId) {
+            if (userDefaultSeasonId === 'all') {
+                return {
+                    defaultSeasonId: 'all',
+                    defaultSeason: null,
+                    isSeasonEnded: false,
+                    isManual: true
+                };
+            }
+
+            const manualSeason = seasons.find(s => s.id === userDefaultSeasonId);
+            if (manualSeason) {
+                return {
+                    defaultSeasonId: manualSeason.id,
+                    defaultSeason: manualSeason,
+                    isSeasonEnded: false,
+                    isManual: true
+                };
+            }
+        }
+
+        // 2. Standard automatic fallback algorithm
         const sorted = [...seasons].sort((a, b) => a.startDate.localeCompare(b.startDate));
         const latest = sorted[sorted.length - 1];
         const todayStr = new Date().toLocaleDateString('en-CA');
@@ -28,16 +52,18 @@ export const useMatchFilters = (
                 defaultSeasonId: 'all',
                 defaultSeason: latest,
                 isSeasonEnded: true,
-                endedSeasonName: latest.name
+                endedSeasonName: latest.name,
+                isManual: false
             };
         }
 
         return {
             defaultSeasonId: latest.id,
             defaultSeason: latest,
-            isSeasonEnded: false
+            isSeasonEnded: false,
+            isManual: false
         };
-    }, [seasons]);
+    }, [seasons, userDefaultSeasonId]);
 
     // Initial state setup from defaultSeasonInfo
     const [selectedSeasonId, setSelectedSeasonId] = useState<string>(() => defaultSeasonInfo.defaultSeasonId);
@@ -252,6 +278,8 @@ export const useMatchFilters = (
         handleResetDateFilter,
         isDefaultFilterState,
         formatPeriodLabel,
-        filteredHistory
+        filteredHistory,
+        defaultSeasonId: defaultSeasonInfo.defaultSeasonId,
+        isManualDefault: defaultSeasonInfo.isManual
     };
 };

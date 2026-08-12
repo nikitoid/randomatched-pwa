@@ -73,7 +73,8 @@ const App: React.FC = () => {
     } = useMatchHistory(addToast);
 
     const {
-        seasons, latestSeason, addSeason, updateSeason, deleteSeason, syncSeasons, importSeasons,
+        seasons, latestSeason, userDefaultSeasonId, setUserDefaultSeasonId,
+        addSeason, updateSeason, deleteSeason, syncSeasons, importSeasons,
         isLoaded: isSeasonsLoaded
     } = useSeasons(addToast);
 
@@ -586,6 +587,8 @@ const App: React.FC = () => {
 
                     seasons={seasons}
                     latestSeasonId={latestSeason?.id}
+                    userDefaultSeasonId={userDefaultSeasonId}
+                    onSetUserDefaultSeason={setUserDefaultSeasonId}
                     onAddSeason={addSeason}
                     onUpdateSeason={updateSeason}
                     onDeleteSeason={deleteSeason}

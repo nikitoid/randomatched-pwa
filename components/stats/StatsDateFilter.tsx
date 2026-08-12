@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, ChevronDown, ChevronUp, Settings, AlertCircle } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp, Settings, AlertCircle, Star } from 'lucide-react';
 import { Season } from '../../types';
 
 interface StatsDateFilterProps {
@@ -24,6 +24,8 @@ interface StatsDateFilterProps {
     // Seasons props
     seasons?: Season[];
     selectedSeasonId?: string;
+    defaultSeasonId?: string;
+    isManualDefault?: boolean;
     onSelectSeason?: (seasonId: string) => void;
     onOpenSeasonsManager?: () => void;
 }
@@ -49,6 +51,8 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
 
     seasons = [],
     selectedSeasonId = 'all',
+    defaultSeasonId,
+    isManualDefault = false,
     onSelectSeason,
     onOpenSeasonsManager
 }) => {
@@ -88,13 +92,25 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                 <button
                                     type="button"
                                     onClick={() => onSelectSeason && onSelectSeason('all')}
-                                    className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${
+                                    className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
                                         selectedSeasonId === 'all'
                                             ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                                             : 'bg-white/70 dark:bg-slate-900/75 border border-slate-200/80 dark:border-slate-700/60 text-slate-700 dark:text-slate-200'
                                     }`}
                                 >
-                                    Все время
+                                    <span>Все время</span>
+                                    {defaultSeasonId === 'all' && (
+                                        <Star
+                                            size={11}
+                                            className={`shrink-0 ${
+                                                selectedSeasonId === 'all'
+                                                    ? 'text-amber-300 fill-amber-300'
+                                                    : isManualDefault
+                                                        ? 'text-amber-500 fill-amber-500'
+                                                        : 'text-slate-400 fill-slate-400'
+                                            }`}
+                                        />
+                                    )}
                                 </button>
 
                                 {seasons.map(season => (
@@ -104,13 +120,25 @@ export const StatsDateFilter: React.FC<StatsDateFilterProps> = ({
                                         data-testid={`season-chip-${season.id}`}
                                         data-season-name={season.name}
                                         onClick={() => onSelectSeason && onSelectSeason(season.id)}
-                                        className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center ${
+                                        className={`min-h-[40px] px-3.5 py-2 text-xs font-bold rounded-xl transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
                                             selectedSeasonId === season.id
                                                 ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
                                                 : 'bg-white/70 dark:bg-slate-900/75 border border-slate-200/80 dark:border-slate-700/60 text-slate-700 dark:text-slate-200'
                                         }`}
                                     >
-                                        {season.name}
+                                        <span>{season.name}</span>
+                                        {defaultSeasonId === season.id && (
+                                            <Star
+                                                size={11}
+                                                className={`shrink-0 ${
+                                                    selectedSeasonId === season.id
+                                                        ? 'text-amber-300 fill-amber-300'
+                                                        : isManualDefault
+                                                            ? 'text-amber-500 fill-amber-500'
+                                                            : 'text-slate-400 fill-slate-400'
+                                                }`}
+                                            />
+                                        )}
                                     </button>
                                 ))}
                             </div>

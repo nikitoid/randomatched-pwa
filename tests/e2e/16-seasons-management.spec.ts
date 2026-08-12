@@ -417,4 +417,127 @@ test.describe('Управление сезонами и статистика', (
         // Форма не должна закрываться
         await expect(page.getByTestId('season-name-input')).toBeVisible();
     });
+
+    test('ручная установка сезона по умолчанию переопределяет авто-алгоритм и сохраняется в localStorage', async ({ app, page }) => {
+        await page.context().addInitScript(() => {
+            const twoSeasons = [
+                { id: 's1', name: 'Весенний 2026', startDate: '2026-03-01' },
+                { id: 's2', name: 'Летний 2026', startDate: '2026-06-01' }
+            ];
+            localStorage.setItem('randomatched_seasons_v1', JSON.stringify(twoSeasons));
+            localStorage.removeItem('randomatched_user_default_season_v1');
+        });
+
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        // Открываем статистику - по авто-алгоритму выбран "Летний 2026"
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+        await expect(page.locator('text=Период: Летний 2026')).toBeVisible();
+
+        // Открываем менеджер сезонов
+        await page.click('text=Период: Летний 2026');
+        await page.click('button:has-text("Настройка сезонов")');
+        await expect(page.locator('h3:has-text("Управление сезонами")')).toBeVisible();
+
+        // Устанавливаем "Весенний 2026" по умолчанию (кнопка-звезда)
+        await page.getByTestId('toggle-default-season-s1').click();
+
+        // Проверяем сохранение в localStorage
+        const savedDefault = await page.evaluate(() => localStorage.getItem('randomatched_user_default_season_v1'));
+        expect(savedDefault).toBe('s1');
+
+        // Проверяем отображение плашки и бейджа
+        await expect(page.getByTestId('reset-user-default-season-btn')).toBeVisible();
+        await expect(page.getByTestId('seasons-manager-modal').getByText('По умолчанию: Весенний 2026')).toBeVisible();
+
+        // Закрываем менеджер сезонов
+        await page.getByTestId('close-seasons-manager-btn').click();
+
+        // Закрываем модалку статистики и открываем заново
+        await app.statsCloseButton.click();
+        await expect(app.statsModal).toBeHidden();
+
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        // Теперь по умолчанию открывается ручной выбор "Весенний 2026"
+        await expect(page.locator('text=Период: Весенний 2026')).toBeVisible();
+    });
+
+    test('сброс ручного выбора сезона возвращает авто-алгоритм', async ({ app, page }) => {
+        await page.context().addInitScript(() => {
+            const twoSeasons = [
+                { id: 's1', name: 'Весенний 2026', startDate: '2026-03-01' },
+                { id: 's2', name: 'Летний 2026', startDate: '2026-06-01' }
+            ];
+            localStorage.setItem('randomatched_seasons_v1', JSON.stringify(twoSeasons));
+            localStorage.setItem('randomatched_user_default_season_v1', 's1');
+        });
+
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        // Открылся Весенний 2026 из localStorage
+        await expect(page.locator('text=Период: Весенний 2026')).toBeVisible();
+
+        // Открываем менеджер сезонов
+        await page.click('text=Период: Весенний 2026');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        // Нажимаем сброс на авто-выбор
+        await page.getByTestId('reset-user-default-season-btn').click();
+
+        // Проверяем, что в localStorage ключ удален
+        const savedDefault = await page.evaluate(() => localStorage.getItem('randomatched_user_default_season_v1'));
+        expect(savedDefault).toBeNull();
+
+        // Плашка сброса скрылась
+        await expect(page.getByTestId('reset-user-default-season-btn')).toBeHidden();
+
+        // Закрываем менеджер сезонов
+        await page.getByTestId('close-seasons-manager-btn').click();
+
+        // Закрываем и открываем статистику
+        await app.statsCloseButton.click();
+        await expect(app.statsModal).toBeHidden();
+
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        // Снова применился стандартный авто-алгоритм (Летний 2026)
+        await expect(page.locator('text=Период: Летний 2026')).toBeVisible();
+    });
+
+    test('удаление сезона, выбранного по умолчанию, сбрасывает ручной выбор в localStorage', async ({ app, page }) => {
+        await page.context().addInitScript(() => {
+            const seasons = [
+                { id: 's-to-delete', name: 'Дефолтный Сезон', startDate: '2026-01-01' },
+                { id: 's-other', name: 'Другой Сезон', startDate: '2026-05-01' }
+            ];
+            localStorage.setItem('randomatched_seasons_v1', JSON.stringify(seasons));
+            localStorage.setItem('randomatched_user_default_season_v1', 's-to-delete');
+        });
+
+        await page.goto('/');
+        await waitForAppReady(page);
+
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        await page.click('text=Период: Дефолтный Сезон');
+        await page.click('button:has-text("Настройка сезонов")');
+
+        // Удаляем именно 's-to-delete'
+        await page.getByTestId('delete-season-s-to-delete').click();
+        await page.getByTestId('confirm-delete-season-btn').click();
+
+        // Проверяем, что localStorage очистился
+        const savedDefault = await page.evaluate(() => localStorage.getItem('randomatched_user_default_season_v1'));
+        expect(savedDefault).toBeNull();
+    });
 });
