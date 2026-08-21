@@ -37,21 +37,13 @@ interface AdminModalProps {
   isLoadingClients: boolean;
   onSubscribeToClients: () => () => void;
   onUpdateClientName: (targetClientId: string, name: string) => Promise<boolean>;
+  onSetClientAdmin?: (targetClientId: string, isAdmin: boolean) => Promise<boolean>;
   onSetClientPrank: (targetClientId: string, prank: ClientPrank | null) => Promise<boolean>;
   onClearClientPrank: (targetClientId: string) => Promise<boolean>;
   onDeleteClient?: (targetClientId: string) => Promise<boolean>;
   isOnline: boolean;
   addToast: (message: string, type: ToastType) => void;
 }
-
-const PRESET_MESSAGES = [
-  'Хватит пикать Медузу! 🐍',
-  'Твой рандом подкручен 😈',
-  'Создатель следит за тобой 👀',
-  'Пора затащить эту игру! 🔥',
-  'Внимание: обнаружен читер! 🚨',
-  'Твой MMR стремится к нулю 📉'
-];
 
 const DURATION_OPTIONS = [
   { label: '15 сек', value: 15 },
@@ -69,6 +61,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   isLoadingClients,
   onSubscribeToClients,
   onUpdateClientName,
+  onSetClientAdmin,
   onSetClientPrank,
   onClearClientPrank,
   onDeleteClient,
@@ -85,6 +78,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [editingClientId, setEditingClientId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState('');
 
+  // Состояние изменения прав администратора
+  const [adminTargetClient, setAdminTargetClient] = useState<{ client: ClientData; makeAdmin: boolean } | null>(null);
+  const [isUpdatingAdmin, setIsUpdatingAdmin] = useState<boolean>(false);
+
   // Состояние удаления клиента
   const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
@@ -93,6 +90,29 @@ export const AdminModal: React.FC<AdminModalProps> = ({
   const [durationSeconds, setDurationSeconds] = useState<number>(30);
   const [customMessage, setCustomMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
+
+  // Подтверждение и изменение роли администратора
+  const handleConfirmAdminToggle = async () => {
+    if (!adminTargetClient || !onSetClientAdmin) return;
+    setIsUpdatingAdmin(true);
+    triggerHaptic(50);
+
+    const { client, makeAdmin } = adminTargetClient;
+    const success = await onSetClientAdmin(client.clientId, makeAdmin);
+    setIsUpdatingAdmin(false);
+    setAdminTargetClient(null);
+
+    if (success) {
+      addToast(
+        makeAdmin
+          ? `Устройству "${client.customName}" выданы права администратора 👑`
+          : `Права администратора у "${client.customName}" отозваны`,
+        'success'
+      );
+    } else {
+      addToast('Не удалось изменить права администратора', 'error');
+    }
+  };
 
   // Подтверждение и удаление клиента
   const handleConfirmDelete = async () => {
@@ -525,22 +545,6 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 </h4>
               </div>
 
-              {/* Пресеты быстрых сообщений */}
-              <div className="flex flex-wrap gap-1.5">
-                {PRESET_MESSAGES.map((msg, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setCustomMessage(msg);
-                      triggerHaptic(20);
-                    }}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-200/70 dark:bg-slate-700/60 hover:bg-primary-500/20 hover:text-primary-600 text-slate-700 dark:text-slate-300 font-medium transition-all active:scale-95"
-                  >
-                    {msg}
-                  </button>
-                ))}
-              </div>
-
               {/* Поле ввода своего текста */}
               <textarea
                 value={customMessage}
@@ -560,15 +564,46 @@ export const AdminModal: React.FC<AdminModalProps> = ({
               </button>
             </div>
 
-            {/* Кнопка удаления устройства */}
-            {onDeleteClient && !selectedClient.isAdmin && (
+            {/* Кнопка назначения / снятия прав администратора */}
+            {onSetClientAdmin && selectedClient.clientId !== currentClientId && (
               <div className="pt-2">
+                {selectedClient.isAdmin ? (
+                  <button
+                    onClick={() => {
+                      setAdminTargetClient({ client: selectedClient, makeAdmin: false });
+                      triggerHaptic(20);
+                    }}
+                    disabled={isSending || isUpdatingAdmin}
+                    className="w-full py-2.5 px-4 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.98] text-amber-700 dark:text-amber-300 font-semibold text-xs border border-amber-500/20 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Crown size={14} className="text-amber-500" />
+                    <span>Отозвать права администратора</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setAdminTargetClient({ client: selectedClient, makeAdmin: true });
+                      triggerHaptic(20);
+                    }}
+                    disabled={isSending || isUpdatingAdmin}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500/15 via-primary-500/15 to-indigo-500/15 hover:from-amber-500/25 hover:to-indigo-500/25 active:scale-[0.98] text-amber-800 dark:text-amber-200 font-semibold text-xs border border-amber-500/30 transition-all flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <Crown size={14} className="text-amber-500 animate-pulse" />
+                    <span>Назначить администратором</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Кнопка удаления устройства */}
+            {onDeleteClient && !selectedClient.isAdmin && selectedClient.clientId !== currentClientId && (
+              <div className="pt-1">
                 <button
                   onClick={() => {
                     setClientToDelete(selectedClient);
                     triggerHaptic(20);
                   }}
-                  disabled={isSending || isDeleting}
+                  disabled={isSending || isDeleting || isUpdatingAdmin}
                   className="w-full py-2.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-[0.98] text-rose-600 dark:text-rose-400 font-semibold text-xs border border-rose-500/20 transition-all flex items-center justify-center gap-2"
                 >
                   <Trash2 size={14} />
@@ -674,6 +709,23 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                                 >
                                   <Edit3 size={12} />
                                 </button>
+                                {!isSelf && onSetClientAdmin && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAdminTargetClient({ client, makeAdmin: !client.isAdmin });
+                                      triggerHaptic(20);
+                                    }}
+                                    className={`p-1 transition-colors ${
+                                      client.isAdmin
+                                        ? 'text-amber-500 hover:text-amber-600 dark:hover:text-amber-400'
+                                        : 'text-slate-400 hover:text-amber-500'
+                                    }`}
+                                    title={client.isAdmin ? 'Отозвать права администратора' : 'Назначить администратором'}
+                                  >
+                                    <Crown size={12} />
+                                  </button>
+                                )}
                                 {!isSelf && onDeleteClient && !client.isAdmin && (
                                   <button
                                     onClick={(e) => {
@@ -690,11 +742,16 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                               </>
                             )}
 
-                            {isSelf && (
+                            {isSelf ? (
                               <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold shrink-0">
                                 ВЫ
                               </span>
-                            )}
+                            ) : client.isAdmin ? (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold shrink-0 flex items-center gap-0.5 border border-amber-500/30">
+                                <Crown size={9} />
+                                ADMIN
+                              </span>
+                            ) : null}
                           </div>
 
                           {/* Подробности и статус */}
@@ -731,6 +788,41 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* Модальное окно подтверждения назначения/снятия прав администратора */}
+      <ConfirmModal
+        isOpen={Boolean(adminTargetClient)}
+        onCancel={() => setAdminTargetClient(null)}
+        onConfirm={handleConfirmAdminToggle}
+        title={
+          adminTargetClient?.makeAdmin
+            ? 'Назначить администратором?'
+            : 'Отозвать права администратора?'
+        }
+        description={
+          adminTargetClient?.makeAdmin ? (
+            <span>
+              Вы действительно хотите предоставить права администратора устройству{' '}
+              <strong className="text-slate-900 dark:text-white">
+                {adminTargetClient?.client?.customName || 'клиента'}
+              </strong>
+              ? Это устройство получит полный доступ к панели администратора, списку всех подключенных устройств и управлению приколами.
+            </span>
+          ) : (
+            <span>
+              Вы действительно хотите отозвать права администратора у устройства{' '}
+              <strong className="text-slate-900 dark:text-white">
+                {adminTargetClient?.client?.customName || 'клиента'}
+              </strong>
+              ? Устройство потеряет доступ к панели администратора.
+            </span>
+          )
+        }
+        confirmText={adminTargetClient?.makeAdmin ? 'Назначить' : 'Отозвать'}
+        cancelText="Отмена"
+        confirmVariant={adminTargetClient?.makeAdmin ? 'primary' : 'danger'}
+        priority={35}
+      />
 
       {/* Модальное окно подтверждения удаления клиента */}
       <ConfirmModal

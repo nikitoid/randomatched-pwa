@@ -14,6 +14,7 @@ export interface UseClientSyncReturn {
   isLoadingAllClients: boolean;
   subscribeToAllClients: () => () => void;
   updateClientName: (targetClientId: string, newName: string) => Promise<boolean>;
+  setClientAdmin: (targetClientId: string, isAdmin: boolean) => Promise<boolean>;
   setClientPrank: (targetClientId: string, prank: ClientPrank | null) => Promise<boolean>;
   clearClientPrank: (targetClientId: string) => Promise<boolean>;
   deleteClient: (targetClientId: string) => Promise<boolean>;
@@ -174,6 +175,21 @@ export const useClientSync = (): UseClientSyncReturn => {
     }
   }, []);
 
+  const setClientAdmin = useCallback(async (targetClientId: string, newIsAdmin: boolean): Promise<boolean> => {
+    if (!targetClientId) return false;
+    try {
+      if (!db || typeof db.collection !== 'function') return false;
+      await db.collection('clients').doc(targetClientId).set(
+        { isAdmin: newIsAdmin },
+        { merge: true }
+      );
+      return true;
+    } catch (e) {
+      console.error('[useClientSync] Failed to set client admin status:', e);
+      return false;
+    }
+  }, []);
+
   const setClientPrank = useCallback(async (targetClientId: string, prank: ClientPrank | null): Promise<boolean> => {
     if (!targetClientId) return false;
     try {
@@ -217,6 +233,7 @@ export const useClientSync = (): UseClientSyncReturn => {
     isLoadingAllClients,
     subscribeToAllClients,
     updateClientName,
+    setClientAdmin,
     setClientPrank,
     clearClientPrank,
     deleteClient

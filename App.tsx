@@ -151,6 +151,7 @@ const App: React.FC = () => {
         isLoadingAllClients,
         subscribeToAllClients,
         updateClientName,
+        setClientAdmin,
         setClientPrank,
         clearClientPrank,
         deleteClient
@@ -739,6 +740,7 @@ const App: React.FC = () => {
                     isLoadingClients={isLoadingAllClients}
                     onSubscribeToClients={subscribeToAllClients}
                     onUpdateClientName={updateClientName}
+                    onSetClientAdmin={setClientAdmin}
                     onSetClientPrank={setClientPrank}
                     onClearClientPrank={clearClientPrank}
                     onDeleteClient={deleteClient}
