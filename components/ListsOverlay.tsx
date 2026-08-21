@@ -192,6 +192,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
 
     const manualGoBack = () => {
         if (editingListId) {
+            if (onDismissHeroUpdates) {
+                onDismissHeroUpdates(editingListId);
+            }
+            setLocalHeroUpdates(new Set());
             setEditingListId(null);
             setEditorHeroes([]);
             setEditorIsGroupable(false);
@@ -244,7 +248,15 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         return 'E-';
     };
 
-    useEffect(() => { if (!isOpen) handleCloseMenu(); }, [isOpen]);
+    useEffect(() => {
+        if (!isOpen) {
+            handleCloseMenu();
+            if (editingListId && onDismissHeroUpdates) {
+                onDismissHeroUpdates(editingListId);
+            }
+            setLocalHeroUpdates(new Set());
+        }
+    }, [isOpen, editingListId, onDismissHeroUpdates]);
 
     useEffect(() => {
         if (contextMenuTargetId) document.body.style.overflow = 'hidden';
@@ -550,6 +562,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
 
     const handleOpenEditor = (list: HeroList) => {
         triggerHaptic(10);
+        if (editingListId && editingListId !== list.id && onDismissHeroUpdates) {
+            onDismissHeroUpdates(editingListId);
+        }
+        setLocalHeroUpdates(new Set());
         setEditingListId(list.id);
         setIsEditMode(false);
         const heroes = JSON.parse(JSON.stringify(list.heroes));
@@ -633,6 +649,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             }
             const cleanHeroes = activeHeroes.map(h => ({ ...h, name: h.name.trim() }));
             onUpdateList(editingListId, { heroes: cleanHeroes, isGroupable: editorIsGroupable });
+            if (onDismissHeroUpdates) {
+                onDismissHeroUpdates(editingListId);
+            }
+            setLocalHeroUpdates(new Set());
             isDirtyRef.current = false;
             setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(cleanHeroes), isGroupable: editorIsGroupable }));
             setIsEditMode(false);
@@ -727,13 +747,19 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                         >
                                             {lists.find(l => l.id === editingListId)?.name}
                                         </h2>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Героев: {getCleanHeroes(editorHeroes).length}</span>
-                                            {updatedListIds?.has(editingListId) && (
-                                                <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold border border-emerald-500/20">
-                                                    Обновлен
-                                                </span>
-                                            )}
+                                        <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 min-w-0">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">Героев: {getCleanHeroes(editorHeroes).length}</span>
+                                            <span 
+                                                className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg font-bold border shrink-0 whitespace-nowrap ${
+                                                    editorIsGroupable 
+                                                        ? 'bg-violet-500/10 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-500/20' 
+                                                        : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 border-slate-200/70 dark:border-slate-700/70'
+                                                }`}
+                                                title={editorIsGroupable ? "Список включен в групповой режим" : "Список не включен в групповой режим"}
+                                            >
+                                                <SquareStack size={11} className={editorIsGroupable ? "text-violet-600 dark:text-violet-400" : "opacity-60"} /> 
+                                                <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -810,6 +836,46 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 >
                     <div ref={editorContainerRef} className="absolute inset-0 overflow-y-auto no-scrollbar">
                         <div className="pb-safe-area-bottom px-4 pt-4">
+                            {!isReadOnly && (
+                                <div className="mb-3.5 p-3 rounded-2xl bg-white/75 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-800/70 flex items-center justify-between shadow-2xs">
+                                    <div className="flex items-center gap-3 min-w-0 mr-2">
+                                        <div className={`w-10 h-10 min-w-[40px] rounded-xl flex items-center justify-center transition-colors shrink-0 ${
+                                            editorIsGroupable 
+                                                ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/30' 
+                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200/60 dark:border-slate-700/60'
+                                        }`}>
+                                            <SquareStack size={20} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                                Групповой режим
+                                            </div>
+                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                                {editorIsGroupable ? 'Список участвует в подборе' : 'Список скрыт из подбора'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditorIsGroupable(!editorIsGroupable);
+                                            triggerHaptic(10);
+                                        }}
+                                        className={`h-10 min-h-[40px] px-3.5 flex items-center gap-2 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0 ${
+                                            editorIsGroupable
+                                                ? 'bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white shadow-md shadow-violet-600/20'
+                                                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80'
+                                        }`}
+                                        aria-label={editorIsGroupable ? 'Список в группе' : 'Список не в группе'}
+                                        title="Переключить участие списка в групповом режиме"
+                                    >
+                                        <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
+                                        <span className={`w-2 h-2 rounded-full ${editorIsGroupable ? 'bg-white shadow-xs' : 'bg-slate-400 dark:bg-slate-500'}`} />
+                                    </button>
+                                </div>
+                            )}
+
                             {editorHeroes.map((hero, index) => {
                                 if (isReadOnly && index === editorHeroes.length - 1 && hero.name.trim() === '' && hero.rank === '') {
                                     return null;
