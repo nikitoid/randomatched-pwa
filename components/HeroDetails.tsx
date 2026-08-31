@@ -1,18 +1,20 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { HeroStat, MatchRecord } from '../types';
-import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles } from 'lucide-react';
+import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles, Merge } from 'lucide-react';
 import { calculateWilsonScore } from './stats/hooks/useStatsCalculations';
 import { Avatar } from './common/Avatar';
 import { AvatarCropperModal } from './common/AvatarCropperModal';
+import { normalizeHeroKey } from '../utils/heroNormalization';
 
 interface HeroDetailsProps {
     hero: HeroStat;
     history: MatchRecord[];
     onBack: () => void;
     onRename: (newName: string) => void;
+    onOpenMerge?: (heroName: string) => void;
 }
 
-export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack, onRename }) => {
+export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack, onRename, onOpenMerge }) => {
 
     // Avatar Cropper State
     const [isCropperOpen, setIsCropperOpen] = useState(false);
@@ -38,17 +40,19 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
     const [matchesState, setMatchesState] = useState<'partial' | 'expanded' | 'collapsed'>('partial');
 
     const { recentMatches, topPlayers, topSynergies } = useMemo(() => {
+        const targetHeroKey = normalizeHeroKey(hero.name);
+
         // Filter matches involving this hero
         const heroMatches = history.filter(m =>
-            m.team1.some(p => p.heroName === hero.name) ||
-            m.team2.some(p => p.heroName === hero.name)
+            m.team1.some(p => normalizeHeroKey(p.heroName) === targetHeroKey) ||
+            m.team2.some(p => normalizeHeroKey(p.heroName) === targetHeroKey)
         ).sort((a, b) => b.timestamp - a.timestamp);
 
         // Top Players on this Hero
         const playersMap = new Map<string, { matches: number, wins: number }>();
         heroMatches.forEach(m => {
-            const t1Idx = m.team1.findIndex(p => p.heroName === hero.name);
-            const t2Idx = m.team2.findIndex(p => p.heroName === hero.name);
+            const t1Idx = m.team1.findIndex(p => normalizeHeroKey(p.heroName) === targetHeroKey);
+            const t2Idx = m.team2.findIndex(p => normalizeHeroKey(p.heroName) === targetHeroKey);
 
             if (t1Idx !== -1) {
                 const pName = m.team1[t1Idx].name;
@@ -79,10 +83,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
         // Best Synergies (Heroes played WITH this hero on the same team)
         const synergyMap = new Map<string, { matches: number, wins: number }>();
         heroMatches.forEach(m => {
-            if (m.team1.some(p => p.heroName === hero.name)) {
+            if (m.team1.some(p => normalizeHeroKey(p.heroName) === targetHeroKey)) {
                 const won = m.winner === 'team1';
                 m.team1.forEach(p => {
-                    if (p.heroName !== hero.name && p.heroName) {
+                    if (normalizeHeroKey(p.heroName) !== targetHeroKey && p.heroName) {
                         const s = synergyMap.get(p.heroName) || { matches: 0, wins: 0 };
                         s.matches++;
                         if (won) s.wins++;
@@ -90,10 +94,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                     }
                 });
             }
-            if (m.team2.some(p => p.heroName === hero.name)) {
+            if (m.team2.some(p => normalizeHeroKey(p.heroName) === targetHeroKey)) {
                 const won = m.winner === 'team2';
                 m.team2.forEach(p => {
-                    if (p.heroName !== hero.name && p.heroName) {
+                    if (normalizeHeroKey(p.heroName) !== targetHeroKey && p.heroName) {
                         const s = synergyMap.get(p.heroName) || { matches: 0, wins: 0 };
                         s.matches++;
                         if (won) s.wins++;
@@ -172,9 +176,20 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({ hero, history, onBack,
                                     onClick={() => setIsEditing(true)}
                                     className="p-1 text-slate-400 hover:text-primary-500 active:scale-95 transition-colors"
                                     aria-label="Редактировать имя"
+                                    title="Редактировать имя"
                                 >
                                     <Edit2 size={15} />
                                 </button>
+                                {onOpenMerge && (
+                                    <button
+                                        onClick={() => onOpenMerge(hero.name)}
+                                        className="p-1 text-slate-400 hover:text-primary-500 active:scale-95 transition-colors"
+                                        aria-label="Слияние героя"
+                                        title="Объединить матчи с другим героем"
+                                    >
+                                        <Merge size={15} />
+                                    </button>
+                                )}
                             </div>
                             <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-2">
                                 <span>{hero.matches} {hero.matches === 1 ? 'игра' : [2, 3, 4].includes(hero.matches % 10) && ![12, 13, 14].includes(hero.matches % 100) ? 'игры' : 'игр'}</span>

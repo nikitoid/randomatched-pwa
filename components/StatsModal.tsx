@@ -17,6 +17,7 @@ import { StatsHeroesTab } from './stats/StatsHeroesTab';
 import { StatsMatchesTab } from './stats/StatsMatchesTab';
 import { StatsDateFilter } from './stats/StatsDateFilter';
 import { SeasonsManagerModal } from './stats/SeasonsManagerModal';
+import { MergeHeroesModal } from './stats/MergeHeroesModal';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
 
@@ -29,6 +30,7 @@ interface StatsModalProps {
     onAddMatch: (t1: MatchPlayer[], t2: MatchPlayer[], winner: 'team1' | 'team2', timestamp: number) => void;
     onRenamePlayer: (oldName: string, newName: string) => void;
     onRenameHero: (oldName: string, newName: string) => void;
+    onMergeHeroes?: (targetName: string, sourceNames: string[]) => void;
     onSync: (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }) => Promise<boolean>;
     isSyncing: boolean;
     isOnline: boolean;
@@ -77,6 +79,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     onAddMatch,
     onRenamePlayer,
     onRenameHero,
+    onMergeHeroes,
     onSync,
     isSyncing,
     isOnline,
@@ -271,6 +274,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [heroSearch, setHeroSearch] = useState('');
     const [heroSort, setHeroSort] = useState<'winrate' | 'matches' | 'az' | 'za' | 'pop'>('winrate');
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+    const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
 
     // Player Tab State
     const [playerSearch, setPlayerSearch] = useState('');
@@ -1440,6 +1444,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 mostPopularHero={mostPopularHero}
                                 mostDeadlyHero={mostDeadlyHero}
                                 onOpenInactiveModal={onOpenInactiveModal}
+                                onOpenMergeModal={() => { triggerHaptic(10); setIsMergeModalOpen(true); }}
                             />
                         )}
 
@@ -2111,6 +2116,21 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 }}
                 triggerHaptic={triggerHaptic}
             />
+
+            {isMergeModalOpen && (
+                <MergeHeroesModal
+                    isOpen={isMergeModalOpen}
+                    onClose={() => setIsMergeModalOpen(false)}
+                    history={history}
+                    onMergeHeroes={(target, sources) => {
+                        hasLocalMutationsRef.current = true;
+                        if (onMergeHeroes) {
+                            onMergeHeroes(target, sources);
+                        }
+                    }}
+                    triggerHaptic={triggerHaptic}
+                />
+            )}
 
             {matchFormOverlay}
         </>

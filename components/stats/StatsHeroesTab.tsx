@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Star, Crown, Skull, Clock } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Shield, Star, Crown, Skull, Clock, Merge } from 'lucide-react';
 import { HeroStat, MatchRecord } from '../../types';
 import { HeroDetails } from '../HeroDetails';
 import { Avatar } from '../common/Avatar';
+import { findDuplicateOrSimilarHeroGroups } from '../../utils/heroNormalization';
 
 
 interface StatsHeroesTabProps {
@@ -18,6 +19,7 @@ interface StatsHeroesTabProps {
     mostPopularHero?: HeroStat | null;
     mostDeadlyHero?: HeroStat | null;
     onOpenInactiveModal?: () => void;
+    onOpenMergeModal?: () => void;
 }
 
 const getWinsText = (count: number) => {
@@ -51,7 +53,8 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     topWinrateHero,
     mostPopularHero,
     mostDeadlyHero,
-    onOpenInactiveModal
+    onOpenInactiveModal,
+    onOpenMergeModal
 }) => {
     const [displayHero, setDisplayHero] = useState<HeroStat | null>(selectedHero);
 
@@ -65,23 +68,54 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
         }
     }, [selectedHero]);
 
+    const duplicateCount = useMemo(() => {
+        const names = new Set<string>();
+        filteredHistory.forEach(m => {
+            [...m.team1, ...m.team2].forEach(p => {
+                const n = (p.heroName || '').trim();
+                if (n) names.add(n);
+            });
+        });
+        return findDuplicateOrSimilarHeroGroups(Array.from(names)).length;
+    }, [filteredHistory]);
+
     return (
         <div className="relative w-full h-full min-h-[400px]">
             {/* Список героев (Всегда смонтирован в DOM для мгновенного возврата без тормозов) */}
             <div className="px-4 pb-4 pt-3 space-y-2 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-semibold text-slate-600 dark:text-slate-400">
+                <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400 gap-2 flex-wrap">
+                    <span className="font-semibold text-slate-600 dark:text-slate-400 truncate">
                         {getHeroSortLabel(heroSort)}
                     </span>
-                    {onOpenInactiveModal && (
-                        <button
-                            onClick={onOpenInactiveModal}
-                            className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50 active:scale-95 transition-all"
-                        >
-                            <Clock size={12} />
-                            <span>Список забытых</span>
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0">
+                        {onOpenMergeModal && (
+                            <button
+                                onClick={onOpenMergeModal}
+                                className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border active:scale-95 transition-all ${
+                                    duplicateCount > 0
+                                        ? 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 bg-primary-50 dark:bg-primary-950/40 border-primary-300 dark:border-primary-800 shadow-xs'
+                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                                }`}
+                            >
+                                <Merge size={12} />
+                                <span>Слияние</span>
+                                {duplicateCount > 0 && (
+                                    <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-primary-500 text-white font-black ml-0.5">
+                                        {duplicateCount}
+                                    </span>
+                                )}
+                            </button>
+                        )}
+                        {onOpenInactiveModal && (
+                            <button
+                                onClick={onOpenInactiveModal}
+                                className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50 active:scale-95 transition-all"
+                            >
+                                <Clock size={12} />
+                                <span>Список забытых</span>
+                            </button>
+                        )}
+                    </div>
                 </div>
                 {processedHeroes.map((hero, idx) => (
                     <div
@@ -182,6 +216,9 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                         onRename={(newName) => {
                             onRenameHero(displayHero.name, newName);
                             setSelectedHero(prev => prev ? { ...prev, name: newName } : null);
+                        }}
+                        onOpenMerge={() => {
+                            onOpenMergeModal?.();
                         }}
                     />
                 )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTheme } from './hooks/useTheme';
 import { useHeroLists } from './hooks/useHeroLists';
 import { useToast } from './hooks/useToast';
@@ -58,7 +58,8 @@ const App: React.FC = () => {
         lists, addList, updateList, deleteList, forkList, createTemporaryList,
         resetTemporaryLists, uploadToCloud, syncWithCloud, reorderLists,
         sortLists, checkConnectivity, isOnline, isSyncing, updatedListIds,
-        markListAsSeen, updatedHeroIds, dismissHeroUpdates, isLoaded: isListsLoaded
+        markListAsSeen, updatedHeroIds, dismissHeroUpdates, isLoaded: isListsLoaded,
+        batchMergeHeroesInLists, renameHeroInLists
     } = useHeroLists(addToast);
 
     const {
@@ -68,13 +69,26 @@ const App: React.FC = () => {
 
     const {
         history, addMatch, addManualMatch, updateMatch, deleteMatch,
-        renamePlayer, renameHero, syncHistory, isSyncingHistory,
+        renamePlayer, renameHero, batchMergeHeroes, syncHistory, isSyncingHistory,
         deletedHistory, restoreMatch, permanentDeleteMatch, clearTrash, importData,
         // Облачный бэкап
         createCloudBackup, listCloudBackups, restoreFromCloudBackup,
         cloudBackups, isCreatingBackup, isLoadingBackups, isRestoringBackup,
         deleteCloudBackup, getCloudBackupDetails, isLoaded: isHistoryLoaded
     } = useMatchHistory(addToast);
+
+    const handleMergeHeroes = useCallback(async (targetHeroName: string, sourceHeroNames: string[]) => {
+        await batchMergeHeroes(targetHeroName, sourceHeroNames);
+        const affectedLists = await batchMergeHeroesInLists(targetHeroName, sourceHeroNames);
+        if (affectedLists > 0) {
+            addToast(`Герой «${targetHeroName}» обновлен в ${affectedLists} списк(ах)`, 'info', 2500);
+        }
+    }, [batchMergeHeroes, batchMergeHeroesInLists, addToast]);
+
+    const handleRenameHero = useCallback(async (oldName: string, newName: string) => {
+        renameHero(oldName, newName);
+        await renameHeroInLists(oldName, newName);
+    }, [renameHero, renameHeroInLists]);
 
     const {
         seasons, latestSeason, userDefaultSeasonId, setUserDefaultSeasonId,
@@ -623,7 +637,8 @@ const App: React.FC = () => {
                     onUpdateMatch={updateMatch}
                     onAddMatch={addManualMatch}
                     onRenamePlayer={renamePlayer}
-                    onRenameHero={renameHero}
+                    onRenameHero={handleRenameHero}
+                    onMergeHeroes={handleMergeHeroes}
                     onSync={async (options) => {
                         const historySuccess = await syncHistory(options);
                         await syncSeasons(options);

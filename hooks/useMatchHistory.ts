@@ -3,7 +3,7 @@ import { useConnectivity } from './useConnectivity';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { MatchRecord, AssignedPlayer, ToastType, MatchPlayer, CloudBackup } from '../types';
 import { db } from '../firebase';
-import { getAllAvatarsFromStorage, saveAllAvatarsToStorage } from '../utils/avatarStorage';
+import { getAllAvatarsFromStorage, saveAllAvatarsToStorage, getAvatarFromStorage, saveAvatarToStorage } from '../utils/avatarStorage';
 import { generateUUID } from '../utils/uuid';
 import { withTimeout } from '../utils/connectivity';
 
@@ -273,6 +273,53 @@ export const useMatchHistory = (
             return match;
         }));
         addToast(`Герой "${oldName}" переименован`, 'success', 2000);
+    };
+
+    const batchMergeHeroes = async (targetHeroName: string, sourceHeroNames: string[]) => {
+        const cleanTarget = targetHeroName.trim();
+        const cleanSources = sourceHeroNames.map(s => s.trim()).filter(s => s && s !== cleanTarget);
+        if (!cleanTarget || cleanSources.length === 0) return;
+
+        const sourceKeys = new Set(cleanSources.map(s => s.toLowerCase()));
+
+        let affectedMatches = 0;
+        setHistory(prev => prev.map(match => {
+            let changed = false;
+            const updateHero = (p: MatchPlayer) => {
+                if (p.heroName && sourceKeys.has(p.heroName.trim().toLowerCase())) {
+                    changed = true;
+                    return { ...p, heroName: cleanTarget };
+                }
+                return p;
+            };
+
+            const newTeam1 = match.team1.map(updateHero);
+            const newTeam2 = match.team2.map(updateHero);
+
+            if (changed) {
+                affectedMatches++;
+                return { ...match, team1: newTeam1, team2: newTeam2, lastUpdated: Date.now() };
+            }
+            return match;
+        }));
+
+        // Check and copy avatar if target doesn't have one
+        try {
+            const targetAvatar = await getAvatarFromStorage('hero', cleanTarget);
+            if (!targetAvatar) {
+                for (const src of cleanSources) {
+                    const srcAvatar = await getAvatarFromStorage('hero', src);
+                    if (srcAvatar) {
+                        await saveAvatarToStorage('hero', cleanTarget, srcAvatar);
+                        break;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[useMatchHistory] Error migrating avatars during hero merge', e);
+        }
+
+        addToast(`Объединено ${cleanSources.length} дубликат(ов) в «${cleanTarget}» (${affectedMatches} матчей)`, 'success', 3000);
     };
 
     const cleanupPermanentDeletes = async () => {
@@ -802,6 +849,7 @@ export const useMatchHistory = (
         clearTrash,
         renamePlayer,
         renameHero,
+        batchMergeHeroes,
         syncHistory,
         isSyncingHistory,
 

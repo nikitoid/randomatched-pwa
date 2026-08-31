@@ -3,6 +3,8 @@ import { useConnectivity } from './useConnectivity';
 import { HeroList, Hero, ToastType } from '../types';
 import { db } from '../firebase';
 import { generateUUID } from '../utils/uuid';
+import { normalizeHeroKey, mergeHeroInList } from '../utils/heroNormalization';
+import { RANK_VALUES } from '../constants';
 
 const STORAGE_KEY = 'randomatched_lists_v1';
 
@@ -281,21 +283,24 @@ export const useHeroLists = (
       }
     }
 
+    const now = Date.now();
+
     setLists(prev => prev.map(list =>
       list.id === id
-        ? { ...list, ...updates, lastModified: Date.now() }
+        ? { ...list, ...updates, lastModified: now }
         : list
     ));
 
     const currentList = lists.find(l => l.id === id);
-    const updatedData = { ...currentList, ...updates };
+    const updatedData = { ...currentList, ...updates, lastModified: now };
 
     if (updatedData.isCloud) {
       try {
         await db.collection("lists").doc(id).set({
           name: updatedData.name,
           heroes: updatedData.heroes,
-          isGroupable: updatedData.isGroupable || false
+          isGroupable: updatedData.isGroupable || false,
+          lastModified: now
         }, { merge: true });
       } catch (e) {
         console.error("Failed to update cloud list", e);
@@ -385,6 +390,69 @@ export const useHeroLists = (
     }));
   };
 
+  const batchMergeHeroesInLists = useCallback(async (targetHeroName: string, sourceHeroNames: string[]) => {
+    const cleanTarget = targetHeroName.trim();
+    const cleanSources = sourceHeroNames.map(s => s.trim()).filter(s => s && s !== cleanTarget);
+    if (!cleanTarget || cleanSources.length === 0) return 0;
+
+    const sourceNormKeys = new Set(cleanSources.map(s => normalizeHeroKey(s)));
+    const targetNormKey = normalizeHeroKey(cleanTarget);
+    let affectedLists = 0;
+    const now = Date.now();
+    const listsToUpdateInCloud: HeroList[] = [];
+
+    setLists(prevLists => {
+      let listsChanged = false;
+
+      const updatedLists = prevLists.map(list => {
+        const { heroes: mergedHeroes, changed } = mergeHeroInList(list.heroes, cleanTarget, cleanSources);
+
+        if (changed) {
+          affectedLists++;
+          listsChanged = true;
+          const updatedListObj: HeroList = {
+            ...list,
+            heroes: mergedHeroes,
+            lastModified: now
+          };
+          if (list.isCloud) {
+            listsToUpdateInCloud.push(updatedListObj);
+          }
+          return updatedListObj;
+        }
+        return list;
+      });
+
+      return listsChanged ? updatedLists : prevLists;
+    });
+
+    // LieFi aware: sync directly to Firestore if internet is available
+    if (listsToUpdateInCloud.length > 0) {
+      try {
+        const hasNet = await checkConnectivity();
+        if (hasNet) {
+          const batchPromises = listsToUpdateInCloud.map(cloudList =>
+            db.collection("lists").doc(cloudList.id).set({
+              name: cloudList.name,
+              heroes: cloudList.heroes,
+              isGroupable: cloudList.isGroupable || false,
+              lastModified: now
+            }, { merge: true })
+          );
+          await Promise.all(batchPromises);
+        }
+      } catch (e) {
+        console.warn('[useHeroLists] Error saving updated cloud lists during hero merge', e);
+      }
+    }
+
+    return affectedLists;
+  }, [checkConnectivity]);
+
+  const renameHeroInLists = useCallback(async (oldName: string, newName: string) => {
+    return batchMergeHeroesInLists(newName, [oldName]);
+  }, [batchMergeHeroesInLists]);
+
   return {
     lists,
     addList,
@@ -397,6 +465,8 @@ export const useHeroLists = (
     syncWithCloud,
     reorderLists,
     sortLists,
+    batchMergeHeroesInLists,
+    renameHeroInLists,
     checkConnectivity,
     isLoaded,
     isOnline,

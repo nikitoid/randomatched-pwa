@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { MatchRecord, PlayerStat, HeroStat, MatchPlayer } from '../../../types';
+import { normalizeHeroKey, getBestCanonicalDisplayName } from '../../../utils/heroNormalization';
 
 export const calculateWilsonScore = (wins: number, total: number, z = 1.28): number => {
     if (total <= 0) return 0;
@@ -108,7 +109,15 @@ export const getPlayerWeightedBreakdown = (
 export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
     return useMemo(() => {
         const playerStats: Record<string, PlayerStat> = {};
-        const heroStats: Record<string, HeroStat> = {};
+        const heroStatsMap: Record<string, {
+            key: string;
+            variants: string[];
+            matches: number;
+            wins: number;
+            losses: number;
+            totalKills: number;
+        }> = {};
+        const playerHeroRawMap: Record<string, Record<string, number>> = {};
         let totalMatches = 0;
 
         const playerWeightedStats: Record<string, { weightedWins: number; weightedMatches: number }> = {};
@@ -128,6 +137,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             const processPlayer = (name: string, won: boolean, heroName: string, kills?: number) => {
                 const cleanName = name.trim();
                 const cleanHero = heroName.trim() || 'Unknown';
+                const heroKey = normalizeHeroKey(cleanHero);
                 if (!cleanName) return;
 
                 if (!playerStats[cleanName]) {
@@ -144,6 +154,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
                         isInactive: false
                     };
                     playerWeightedStats[cleanName] = { weightedWins: 0, weightedMatches: 0 };
+                    playerHeroRawMap[cleanName] = {};
                 }
                 playerStats[cleanName].matches++;
                 if (won) playerStats[cleanName].wins++;
@@ -162,18 +173,29 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
                     playerStats[cleanName].totalKills = (playerStats[cleanName].totalKills || 0) + kills;
                 }
 
-                playerStats[cleanName].heroesPlayed[cleanHero] = (playerStats[cleanName].heroesPlayed[cleanHero] || 0) + 1;
+                // Collect hero raw counts for player
+                if (heroKey) {
+                    playerHeroRawMap[cleanName][heroKey] = (playerHeroRawMap[cleanName][heroKey] || 0) + 1;
+                }
 
-                // Hero Stats
-                if (cleanHero !== 'Unknown') {
-                    if (!heroStats[cleanHero]) {
-                        heroStats[cleanHero] = { name: cleanHero, matches: 0, wins: 0, losses: 0, totalKills: 0, avgKills: 0 };
+                // Hero Stats Map
+                if (cleanHero !== 'Unknown' && heroKey) {
+                    if (!heroStatsMap[heroKey]) {
+                        heroStatsMap[heroKey] = {
+                            key: heroKey,
+                            variants: [],
+                            matches: 0,
+                            wins: 0,
+                            losses: 0,
+                            totalKills: 0
+                        };
                     }
-                    heroStats[cleanHero].matches++;
-                    if (won) heroStats[cleanHero].wins++;
-                    else heroStats[cleanHero].losses++;
+                    heroStatsMap[heroKey].variants.push(cleanHero);
+                    heroStatsMap[heroKey].matches++;
+                    if (won) heroStatsMap[heroKey].wins++;
+                    else heroStatsMap[heroKey].losses++;
                     if (kills !== undefined && kills !== null) {
-                        heroStats[cleanHero].totalKills = (heroStats[cleanHero].totalKills || 0) + kills;
+                        heroStatsMap[heroKey].totalKills += kills;
                     }
                 }
             };
@@ -182,9 +204,30 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
             match.team2.forEach(p => processPlayer(p.name, winner === 'team2', p.heroName, p.kills));
         });
 
-        // Calculate avgKills for Heroes
-        Object.values(heroStats).forEach(h => {
-            h.avgKills = h.matches > 0 ? (h.totalKills || 0) / h.matches : 0;
+        // Convert heroStatsMap to canonical heroStats
+        const heroStats: Record<string, HeroStat> = {};
+        const heroKeyToCanonicalName = new Map<string, string>();
+
+        Object.entries(heroStatsMap).forEach(([key, data]) => {
+            const canonicalName = getBestCanonicalDisplayName(data.variants);
+            heroKeyToCanonicalName.set(key, canonicalName);
+            heroStats[canonicalName] = {
+                name: canonicalName,
+                matches: data.matches,
+                wins: data.wins,
+                losses: data.losses,
+                totalKills: data.totalKills,
+                avgKills: data.matches > 0 ? (data.totalKills || 0) / data.matches : 0
+            };
+        });
+
+        // Populate canonical heroesPlayed for each player
+        Object.keys(playerStats).forEach(pName => {
+            const rawHeroMap = playerHeroRawMap[pName] || {};
+            Object.entries(rawHeroMap).forEach(([hKey, count]) => {
+                const canonicalName = heroKeyToCanonicalName.get(hKey) || hKey;
+                playerStats[pName].heroesPlayed[canonicalName] = (playerStats[pName].heroesPlayed[canonicalName] || 0) + count;
+            });
         });
 
         // Calculate Weighted Score for Players (Wilson Score Interval with Time-Decay)

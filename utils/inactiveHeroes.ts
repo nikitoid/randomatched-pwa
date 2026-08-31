@@ -1,4 +1,5 @@
 import { Hero, HeroList, MatchRecord } from '../types';
+import { normalizeHeroKey } from './heroNormalization';
 
 export type InactivityCriterion = 'matches' | 'days' | 'top_inactive';
 
@@ -40,7 +41,7 @@ export const calculateHeroesInactivity = (
   sortedHistory.forEach((match, matchIndex) => {
     const matchTimestamp = match.timestamp || now;
     const processHeroName = (name: string) => {
-      const norm = name.trim().toLowerCase();
+      const norm = normalizeHeroKey(name);
       if (!norm) return;
       const existing = heroStatsMap.get(norm);
       if (existing) {
@@ -63,7 +64,7 @@ export const calculateHeroesInactivity = (
   const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
   return heroes.map(hero => {
-    const norm = hero.name.trim().toLowerCase();
+    const norm = normalizeHeroKey(hero.name);
     const stats = heroStatsMap.get(norm);
 
     if (!stats) {
@@ -152,7 +153,7 @@ export const getSourceHeroesForInactiveFilter = (
   const heroMap = new Map<string, Hero>();
   lists.forEach(list => {
     list.heroes.forEach(hero => {
-      const norm = hero.name.trim().toLowerCase();
+      const norm = normalizeHeroKey(hero.name);
       if (norm && !heroMap.has(norm)) {
         heroMap.set(norm, hero);
       }

@@ -1,11 +1,19 @@
-import React, { memo, useCallback } from 'react';
-import { X } from 'lucide-react';
+import React, { memo, useCallback, useState, useMemo } from 'react';
+import { X, Shield } from 'lucide-react';
 import { Hero } from '../types';
 import { RankSelect } from './RankSelect';
 import { Avatar } from './common/Avatar';
+import { normalizeHeroKey } from '../utils/heroNormalization';
 
 
 // --- COMPONENT FOR EDITING HERO ---
+interface HeroSuggestionItem {
+    name: string;
+    norm?: string;
+    lower?: string;
+    rank?: string;
+}
+
 interface HeroEditorRowProps {
     hero: Hero;
     index: number;
@@ -19,6 +27,7 @@ interface HeroEditorRowProps {
     onChange: (index: number, field: 'name' | 'rank', value: string) => void;
     onRemove: (index: number) => void;
     setFocusedRowIndex: (index: number | null) => void;
+    allHeroSuggestions?: HeroSuggestionItem[];
 }
 
 export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
@@ -33,8 +42,11 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
     hasLocalUpdate,
     onChange,
     onRemove,
-    setFocusedRowIndex
+    setFocusedRowIndex,
+    allHeroSuggestions
 }) => {
+    const [isInputFocused, setIsInputFocused] = useState(false);
+
     const handleRankChange = useCallback((val: string) => {
         onChange(index, 'rank', val);
     }, [index, onChange]);
@@ -55,10 +67,44 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
         setFocusedRowIndex(null);
     }, [setFocusedRowIndex]);
 
+    const activeSuggestions = useMemo(() => {
+        if (!isInputFocused || !allHeroSuggestions || allHeroSuggestions.length === 0) {
+            return [];
+        }
+        const rawVal = (hero.name || '').trim();
+        if (rawVal.length < 2) {
+            return [];
+        }
+        const queryNorm = normalizeHeroKey(rawVal);
+        if (!queryNorm) return [];
+        const queryLower = rawVal.toLowerCase();
+
+        const results: HeroSuggestionItem[] = [];
+        for (let i = 0; i < allHeroSuggestions.length; i++) {
+            const item = allHeroSuggestions[i];
+            if (item.name === hero.name) continue;
+            const norm = item.norm || normalizeHeroKey(item.name);
+            const lower = item.lower || item.name.toLowerCase();
+            if (norm.includes(queryNorm) || lower.includes(queryLower)) {
+                results.push(item);
+                if (results.length >= 4) break;
+            }
+        }
+        return results;
+    }, [isInputFocused, hero.name, allHeroSuggestions]);
+
+    const handleSelectSuggestion = (item: { name: string; rank?: string }) => {
+        onChange(index, 'name', item.name);
+        if (item.rank && !hero.rank) {
+            onChange(index, 'rank', item.rank);
+        }
+        setIsInputFocused(false);
+    };
+
     return (
         <div
             className={`flex items-center gap-2 mb-1.5 transition-opacity duration-200
-                ${isFocused ? 'relative z-50 scale-[1.02]' : 'relative z-0'}
+                ${isFocused || (isInputFocused && activeSuggestions.length > 0) ? 'relative z-50 scale-[1.01]' : 'relative z-0'}
                 ${isDimmed ? 'opacity-30 pointer-events-none' : ''}
             `}
         >
@@ -82,6 +128,11 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
                 <input
                     type="text"
                     value={hero.name}
+                    onFocus={() => setIsInputFocused(true)}
+                    onBlur={() => {
+                        // Small delay to allow click on suggestion
+                        setTimeout(() => setIsInputFocused(false), 250);
+                    }}
                     onChange={handleNameChange}
                     placeholder={isPlaceholderRow ? "Добавить героя..." : "Имя героя"}
                     readOnly={isReadOnly || isFocused}
@@ -101,6 +152,43 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
                     >
                         <X size={15} />
                     </button>
+                )}
+
+                {/* Suggestions Dropdown */}
+                {isInputFocused && activeSuggestions.length > 0 && (
+                    <div className="suggestions-dropdown absolute top-[100%] left-0 right-0 mt-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                        <div className="p-1 flex flex-col gap-0.5 max-h-none overflow-hidden">
+                            {activeSuggestions.map((item) => (
+                                <button
+                                    key={item.name}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        handleSelectSuggestion(item);
+                                    }}
+                                    onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        handleSelectSuggestion(item);
+                                    }}
+                                    onTouchStart={(e) => {
+                                        e.preventDefault();
+                                        handleSelectSuggestion(item);
+                                    }}
+                                    className="w-full text-left px-2.5 py-2 min-h-[36px] text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 hover:text-primary-600 active:bg-primary-100 dark:hover:bg-primary-950/50 dark:hover:text-primary-400 dark:active:bg-primary-900/60 rounded-lg transition-all flex items-center justify-between gap-2 touch-manipulation select-none"
+                                >
+                                    <div className="flex items-center gap-2 truncate">
+                                        <Shield size={12} className="text-primary-500 shrink-0" />
+                                        <span className="truncate">{item.name}</span>
+                                    </div>
+                                    {item.rank && (
+                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold shrink-0">
+                                            {item.rank}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

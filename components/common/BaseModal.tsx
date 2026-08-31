@@ -467,11 +467,17 @@ export const BaseModal: React.FC<BaseModalProps> = ({
                   {icon}
                 </div>
               )}
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 {title && (
-                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight truncate">
-                    {title}
-                  </h3>
+                  typeof title === 'string' ? (
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight truncate">
+                      {title}
+                    </h3>
+                  ) : (
+                    <div className="leading-tight text-slate-900 dark:text-white">
+                      {title}
+                    </div>
+                  )
                 )}
                 {subtitle && (
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug break-words">

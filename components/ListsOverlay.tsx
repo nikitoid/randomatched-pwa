@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
     X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, 
@@ -16,7 +16,9 @@ import { CustomScrollbar } from './CustomScrollbar';
 import { HeroEditorRow, HeroViewRow } from './HeroEditorRow';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
+import { DuplicateResolutionModal } from './DuplicateResolutionModal';
 import { generateUUID } from '../utils/uuid';
+import { normalizeHeroKey, findDuplicateOrSimilarHeroGroups, DuplicateGroup, KNOWN_HERO_ALIASES } from '../utils/heroNormalization';
 
 interface ListsOverlayProps {
     isOpen: boolean;
@@ -118,6 +120,70 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const [heroSortType, setHeroSortType] = useState<'name' | 'rank'>('name');
 
+    // Duplicate resolution state
+    const [pendingDuplicatesData, setPendingDuplicatesData] = useState<{
+        groups: DuplicateGroup[];
+        originalHeroes: Hero[];
+        onApply: (resolved: Hero[]) => void;
+    } | null>(null);
+
+    // Global hero suggestions for autocomplete (pre-normalized for instantaneous filtering)
+    const allHeroSuggestions = useMemo(() => {
+        const map = new Map<string, { name: string; norm: string; lower: string; rank?: string }>();
+
+        // 1. From all lists
+        lists.forEach(l => {
+            l.heroes.forEach(h => {
+                const name = (h.name || '').trim();
+                const norm = normalizeHeroKey(name);
+                if (name && norm && !map.has(norm)) {
+                    map.set(norm, { name, norm, lower: name.toLowerCase(), rank: h.rank });
+                }
+            });
+        });
+
+        // 2. From match history
+        if (history && history.length > 0) {
+            history.forEach(m => {
+                [...m.team1, ...m.team2].forEach(p => {
+                    const name = (p.heroName || '').trim();
+                    const norm = normalizeHeroKey(name);
+                    if (name && norm && !map.has(norm)) {
+                        map.set(norm, { name, norm, lower: name.toLowerCase(), rank: '' });
+                    }
+                });
+            });
+        }
+
+        // 3. From known canonical hero aliases
+        Object.keys(KNOWN_HERO_ALIASES).forEach(aliasKey => {
+            const norm = normalizeHeroKey(aliasKey);
+            if (norm && !map.has(norm)) {
+                const titleCased = aliasKey.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                map.set(norm, { name: titleCased, norm, lower: titleCased.toLowerCase(), rank: '' });
+            }
+        });
+
+        return Array.from(map.values());
+    }, [lists, history]);
+
+    // Duplicates in the active list editor (debounced to ensure zero latency during typing)
+    const [currentEditorDuplicateGroups, setCurrentEditorDuplicateGroups] = useState<DuplicateGroup[]>([]);
+
+    useEffect(() => {
+        if (!editingListId) {
+            setCurrentEditorDuplicateGroups([]);
+            return;
+        }
+        const timer = setTimeout(() => {
+            const activeHeroes = editorHeroes.filter(h => h.name.trim() !== '');
+            const groups = findDuplicateOrSimilarHeroGroups(activeHeroes.map(h => h.name));
+            setCurrentEditorDuplicateGroups(groups);
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [editingListId, editorHeroes]);
+
     // Drag/Scroll refs
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
@@ -217,9 +283,11 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const getHeroStats = (heroName: string) => {
         let wins = 0;
         let matches = 0;
+        const normTarget = normalizeHeroKey(heroName);
+        if (!normTarget) return { wins: 0, matches: 0 };
         history.forEach(m => {
-            const inTeam1 = m.team1.some(p => p.heroName === heroName);
-            const inTeam2 = m.team2.some(p => p.heroName === heroName);
+            const inTeam1 = m.team1.some(p => normalizeHeroKey(p.heroName) === normTarget);
+            const inTeam2 = m.team2.some(p => normalizeHeroKey(p.heroName) === normTarget);
             if (inTeam1 || inTeam2) {
                 matches++;
                 const isTeam1Winner = m.winner === 'team1';
@@ -379,6 +447,21 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const confirmFileImport = () => {
         if (pendingFileHeroes) {
             const clean = getCleanHeroes(pendingFileHeroes);
+            const duplicateGroups = findDuplicateOrSimilarHeroGroups(clean.map(h => h.name));
+            if (duplicateGroups.length > 0) {
+                setPendingDuplicatesData({
+                    groups: duplicateGroups,
+                    originalHeroes: clean,
+                    onApply: (resolvedHeroes) => {
+                        setEditorHeroes(resolvedHeroes);
+                        setPendingFileHeroes(null);
+                        setImportMode('none');
+                        setPendingDuplicatesData(null);
+                        if (addToast) addToast("Список импортирован", "success");
+                    }
+                });
+                return;
+            }
             const withEmpty = [...clean, { id: generateUUID(), name: '', rank: '' }];
             setEditorHeroes(withEmpty);
             if (addToast) addToast("Список импортирован", "success");
@@ -408,6 +491,22 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             return { id: generateUUID(), name, rank };
         });
         if (!validateRanks(newHeroes)) { if (addToast) addToast("Ошибка: Найдены недопустимые ранги. Используйте формат S+, A-, и т.д.", "error"); return; }
+
+        const duplicateGroups = findDuplicateOrSimilarHeroGroups(newHeroes.map(h => h.name));
+        if (duplicateGroups.length > 0) {
+            setPendingDuplicatesData({
+                groups: duplicateGroups,
+                originalHeroes: newHeroes,
+                onApply: (resolvedHeroes) => {
+                    setEditorHeroes(resolvedHeroes);
+                    setImportMode('none');
+                    setPendingDuplicatesData(null);
+                    if (addToast) addToast(`Импортировано ${resolvedHeroes.filter(h => h.name.trim()).length} героев`, "success");
+                }
+            });
+            return;
+        }
+
         newHeroes.push({ id: generateUUID(), name: '', rank: '' });
         setEditorHeroes(newHeroes);
         setImportMode('none');
@@ -630,6 +729,21 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         });
     };
 
+    const executeSave = (heroesToSave: Hero[]) => {
+        if (!editingListId) return;
+        const cleanHeroes = getCleanHeroes(heroesToSave);
+        onUpdateList(editingListId, { heroes: cleanHeroes, isGroupable: editorIsGroupable });
+        if (onDismissHeroUpdates) {
+            onDismissHeroUpdates(editingListId);
+        }
+        setLocalHeroUpdates(new Set());
+        isDirtyRef.current = false;
+        setOriginalHeroesJson(JSON.stringify({ heroes: cleanHeroes, isGroupable: editorIsGroupable }));
+        setIsEditMode(false);
+        const nextHeroes = [...cleanHeroes, { id: generateUUID(), name: '', rank: '' }];
+        setEditorHeroes(nextHeroes);
+    };
+
     const handleSaveEditor = async () => {
         if (isReadOnly) return;
         triggerHaptic(20);
@@ -640,24 +754,21 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             if (activeHeroes.length > 0) {
                 const hasEmptyNames = activeHeroes.some(h => !h.name.trim());
                 if (hasEmptyNames) { if (addToast) addToast("У всех героев должны быть имена", "warning"); return; }
-                const seenNames = new Set<string>();
-                for (const hero of activeHeroes) {
-                    const normalized = hero.name.trim().toLowerCase();
-                    if (seenNames.has(normalized)) { if (addToast) addToast(`Герой "${hero.name.trim()}" уже есть в списке`, "error"); return; }
-                    seenNames.add(normalized);
+
+                const duplicateGroups = findDuplicateOrSimilarHeroGroups(activeHeroes.map(h => h.name));
+                if (duplicateGroups.length > 0) {
+                    setPendingDuplicatesData({
+                        groups: duplicateGroups,
+                        originalHeroes: activeHeroes,
+                        onApply: (resolvedHeroes) => {
+                            executeSave(resolvedHeroes);
+                            setPendingDuplicatesData(null);
+                        }
+                    });
+                    return;
                 }
             }
-            const cleanHeroes = activeHeroes.map(h => ({ ...h, name: h.name.trim() }));
-            onUpdateList(editingListId, { heroes: cleanHeroes, isGroupable: editorIsGroupable });
-            if (onDismissHeroUpdates) {
-                onDismissHeroUpdates(editingListId);
-            }
-            setLocalHeroUpdates(new Set());
-            isDirtyRef.current = false;
-            setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(cleanHeroes), isGroupable: editorIsGroupable }));
-            setIsEditMode(false);
-            const nextHeroes = [...cleanHeroes, { id: generateUUID(), name: '', rank: '' }];
-            setEditorHeroes(nextHeroes);
+            executeSave(activeHeroes);
         }
     };
 
@@ -876,6 +987,43 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                 </div>
                             )}
 
+                            {!isReadOnly && currentEditorDuplicateGroups.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        triggerHaptic(20);
+                                        setPendingDuplicatesData({
+                                            groups: currentEditorDuplicateGroups,
+                                            originalHeroes: editorHeroes.filter(h => h.name.trim() !== ''),
+                                            onApply: (resolvedHeroes) => {
+                                                setEditorHeroes(resolvedHeroes);
+                                                setPendingDuplicatesData(null);
+                                                if (addToast) addToast("Дубликаты в списке объединены", "success");
+                                            }
+                                        });
+                                    }}
+                                    className="w-full mb-3.5 p-3 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-300/80 dark:border-amber-700/80 flex items-center justify-between gap-3 text-amber-900 dark:text-amber-200 active:scale-[0.99] transition-all shadow-2xs"
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+                                            <AlertTriangle size={18} />
+                                        </div>
+                                        <div className="text-left min-w-0">
+                                            <div className="text-xs sm:text-sm font-bold truncate">
+                                                Найдено дубликатов: {currentEditorDuplicateGroups.length}
+                                            </div>
+                                            <div className="text-[11px] text-amber-700 dark:text-amber-400/90 font-medium truncate">
+                                                Нажмите для объединения похожих героев
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span className="px-3 py-1.5 text-xs font-extrabold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shrink-0 shadow-xs flex items-center gap-1">
+                                        <Check size={14} />
+                                        <span>Объединить</span>
+                                    </span>
+                                </button>
+                            )}
+
                             {editorHeroes.map((hero, index) => {
                                 if (isReadOnly && index === editorHeroes.length - 1 && hero.name.trim() === '' && hero.rank === '') {
                                     return null;
@@ -912,6 +1060,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                                         onChange={handleHeroChange}
                                         onRemove={handleRemoveHero}
                                         setFocusedRowIndex={setFocusedRowIndex}
+                                        allHeroSuggestions={allHeroSuggestions}
                                     />
                                 );
                             })}
@@ -1051,6 +1200,36 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                         style={{ top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right }}
                     > 
                         <button onClick={() => handleEditorMenuAction(() => setIsStatsModalOpen(true))} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <BarChart3 size={16} className="text-violet-500" /> <span>Баланс героев</span> </button>
+                        <button
+                            onClick={() => handleEditorMenuAction(() => {
+                                const activeHeroes = editorHeroes.filter(h => h.name.trim() !== '');
+                                const groups = findDuplicateOrSimilarHeroGroups(activeHeroes.map(h => h.name));
+                                if (groups.length === 0) {
+                                    if (addToast) addToast("В списке нет дубликатов", "info");
+                                    return;
+                                }
+                                setPendingDuplicatesData({
+                                    groups,
+                                    originalHeroes: activeHeroes,
+                                    onApply: (resolved) => {
+                                        setEditorHeroes(resolved);
+                                        setPendingDuplicatesData(null);
+                                        if (addToast) addToast("Дубликаты объединены", "success");
+                                    }
+                                });
+                            })}
+                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
+                        >
+                            <AlertTriangle size={16} className="text-amber-500" />
+                            <div className="flex items-center justify-between flex-1">
+                                <span>Слияние дубликатов</span>
+                                {currentEditorDuplicateGroups.length > 0 && (
+                                    <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500 text-white font-extrabold">
+                                        {currentEditorDuplicateGroups.length}
+                                    </span>
+                                )}
+                            </div>
+                        </button>
                         <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" />
                         <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <FileJson size={16} className="text-slate-500" /> <span>Экспорт в файл</span> </button> 
                         {!isReadOnly && !currentList?.isTemporary && (
@@ -1094,6 +1273,33 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     <div className={`fixed z-[62] w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 p-1.5 ${menuPosition.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-right' : 'animate-menu-in origin-top-right'}`} style={{ top: menuPosition.top, bottom: menuPosition.bottom, right: menuPosition.right }}> 
                         {!activeListForMenu.isCloud && !activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleUpload(activeListForMenu.id); }} disabled={!isOnline} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors border-b border-slate-100 dark:border-slate-800/60 mb-1 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'hover:bg-sky-50 dark:hover:bg-sky-950/30 text-sky-600 dark:text-sky-400'}`}> <UploadCloud size={16} /> Выгрузить в облако </button>)} 
                         {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleOpenRename(activeListForMenu); }} disabled={(!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors ${(!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200'}`}> <Edit2 size={16} className="text-slate-500" /> Переименовать </button>)} 
+                        {!activeListForMenu.isTemporary && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCloseMenu();
+                                    const groups = findDuplicateOrSimilarHeroGroups(activeListForMenu.heroes.map(h => h.name));
+                                    if (groups.length === 0) {
+                                        if (addToast) addToast("В этом списке нет дубликатов", "info");
+                                        return;
+                                    }
+                                    setPendingDuplicatesData({
+                                        groups,
+                                        originalHeroes: activeListForMenu.heroes,
+                                        onApply: (resolved) => {
+                                            const clean = getCleanHeroes(resolved);
+                                            onUpdateList(activeListForMenu.id, { heroes: clean });
+                                            setPendingDuplicatesData(null);
+                                            if (addToast) addToast("Дубликаты в списке объединены", "success");
+                                        }
+                                    });
+                                }}
+                                className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
+                            >
+                                <AlertTriangle size={16} className="text-amber-500" />
+                                <span>Слияние дубликатов</span>
+                            </button>
+                        )}
                         <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <Copy size={16} className="text-slate-500" /> Экспорт (Текст) </button> 
                         {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <FileJson size={16} className="text-slate-500" /> Экспорт в файл </button>)} 
                         <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" /> 
@@ -1400,6 +1606,18 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 modalId="discard-list-confirm-modal"
                 priority={45}
             />
+
+            {/* Duplicate Resolution Modal */}
+            {pendingDuplicatesData && (
+                <DuplicateResolutionModal
+                    isOpen={!!pendingDuplicatesData}
+                    onClose={() => setPendingDuplicatesData(null)}
+                    duplicateGroups={pendingDuplicatesData.groups}
+                    originalHeroes={pendingDuplicatesData.originalHeroes}
+                    onResolve={pendingDuplicatesData.onApply}
+                    triggerHaptic={triggerHaptic}
+                />
+            )}
         </div>
     );
 };
