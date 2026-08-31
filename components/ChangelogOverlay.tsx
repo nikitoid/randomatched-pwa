@@ -154,10 +154,15 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                                 <div className="ml-10 space-y-3.5 relative z-10">
                                     {release.sections.map((section, sIdx) => (
                                         <div key={sIdx} className="space-y-2">
-                                            <div className="flex">
-                                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${getBadgeStyle(section.type)}`}>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0 ${getBadgeStyle(section.type)}`}>
                                                     {getBadgeLabel(section.type)}
                                                 </span>
+                                                {section.title && (
+                                                    <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                                                        {section.title}
+                                                    </span>
+                                                )}
                                             </div>
                                             <ul className="space-y-1.5 pl-0.5">
                                                 {section.items.map((item, iIdx) => (
