@@ -73,25 +73,25 @@ export const DuplicateResolutionModal: React.FC<DuplicateResolutionModalProps> =
             case 'exact_normalized':
                 return {
                     icon: <Type size={11} className="shrink-0" aria-hidden="true" />,
-                    text: 'Регистр / Ё / Пробелы',
+                    text: 'Регистр / Союзы',
                     classes: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20'
                 };
             case 'typo':
                 return {
                     icon: <SpellCheck size={11} className="shrink-0" aria-hidden="true" />,
-                    text: 'Похоже на опечатку',
+                    text: 'Опечатка',
                     classes: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20'
                 };
             case 'alias':
                 return {
                     icon: <Link2 size={11} className="shrink-0" aria-hidden="true" />,
-                    text: 'Известный синоним',
+                    text: 'Синоним',
                     classes: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20'
                 };
             default:
                 return {
                     icon: <Sparkles size={11} className="shrink-0" aria-hidden="true" />,
-                    text: 'Похожие имена',
+                    text: 'Дубликат',
                     classes: 'bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20'
                 };
         }
@@ -158,17 +158,17 @@ export const DuplicateResolutionModal: React.FC<DuplicateResolutionModalProps> =
                                 key={group.primaryName + idx}
                                 className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 shadow-xs space-y-2.5 transition-all"
                             >
-                                {/* Card Header */}
-                                <div className="flex items-center justify-between gap-2 flex-wrap pb-0.5 border-b border-slate-100 dark:border-slate-800/60">
-                                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md ${reasonBadge.classes}`}>
+                                {/* Card Header - Strictly single line */}
+                                <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800/60 min-h-[28px]">
+                                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md ${reasonBadge.classes} shrink-0`}>
                                         {reasonBadge.icon}
                                         <span>{reasonBadge.text}</span>
                                     </span>
-                                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                        <span>Итог:</span>
-                                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary-500/10 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 font-extrabold">
+                                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 min-w-0 shrink">
+                                        <span className="shrink-0">Итог:</span>
+                                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary-500/10 dark:bg-primary-500/20 text-primary-700 dark:text-primary-300 font-extrabold min-w-0">
                                             <Avatar entityType="hero" entityId={currentTarget} name={currentTarget} size="xs" />
-                                            <span className="truncate max-w-[120px]">{currentTarget}</span>
+                                            <span className="truncate max-w-[120px] sm:max-w-[170px]">{currentTarget}</span>
                                         </div>
                                     </div>
                                 </div>

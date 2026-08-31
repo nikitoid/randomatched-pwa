@@ -3,7 +3,7 @@ import { Shield, Star, Crown, Skull, Clock, Merge } from 'lucide-react';
 import { HeroStat, MatchRecord } from '../../types';
 import { HeroDetails } from '../HeroDetails';
 import { Avatar } from '../common/Avatar';
-import { findDuplicateOrSimilarHeroGroups } from '../../utils/heroNormalization';
+import { findDuplicateOrSimilarHeroGroups, formatPlural } from '../../utils/heroNormalization';
 
 
 interface StatsHeroesTabProps {
@@ -20,6 +20,7 @@ interface StatsHeroesTabProps {
     mostDeadlyHero?: HeroStat | null;
     onOpenInactiveModal?: () => void;
     onOpenMergeModal?: () => void;
+    duplicateCount?: number;
 }
 
 const getWinsText = (count: number) => {
@@ -54,7 +55,8 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     mostPopularHero,
     mostDeadlyHero,
     onOpenInactiveModal,
-    onOpenMergeModal
+    onOpenMergeModal,
+    duplicateCount: propDuplicateCount
 }) => {
     const [displayHero, setDisplayHero] = useState<HeroStat | null>(selectedHero);
 
@@ -68,7 +70,8 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
         }
     }, [selectedHero]);
 
-    const duplicateCount = useMemo(() => {
+    const fallbackDuplicateCount = useMemo(() => {
+        if (propDuplicateCount !== undefined) return propDuplicateCount;
         const names = new Set<string>();
         filteredHistory.forEach(m => {
             [...m.team1, ...m.team2].forEach(p => {
@@ -77,7 +80,9 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
             });
         });
         return findDuplicateOrSimilarHeroGroups(Array.from(names)).length;
-    }, [filteredHistory]);
+    }, [filteredHistory, propDuplicateCount]);
+
+    const duplicateCount = propDuplicateCount !== undefined ? propDuplicateCount : fallbackDuplicateCount;
 
     return (
         <div className="relative w-full h-full min-h-[400px]">
@@ -177,7 +182,7 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                             {heroSort === 'matches' || heroSort === 'pop' ? (
                                 <>
                                     <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                                        {hero.matches} {hero.matches === 1 ? 'игра' : hero.matches < 5 ? 'игры' : 'игр'}
+                                        {formatPlural(hero.matches, 'игра', 'игры', 'игр')}
                                     </div>
                                     <div className="text-[10px] text-slate-400 dark:text-slate-500">
                                         {Math.round((hero.wins / (hero.matches || 1)) * 100)}% побед
@@ -189,7 +194,7 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                                         {Math.round((hero.wins / (hero.matches || 1)) * 100)}%
                                     </div>
                                     <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {hero.matches} {hero.matches === 1 ? 'игра' : hero.matches < 5 ? 'игры' : 'игр'}
+                                        {formatPlural(hero.matches, 'игра', 'игры', 'игр')}
                                     </div>
                                 </>
                             )}

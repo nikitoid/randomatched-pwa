@@ -4,6 +4,7 @@ import { PlayerStat, MatchRecord } from '../../types';
 import { PlayerDetails } from '../PlayerDetails';
 import { Avatar } from '../common/Avatar';
 import { calculatePlayerLevel } from '../../utils/playerLevel';
+import { formatPlural } from '../../utils/heroNormalization';
 import { RanksInfoModal } from './RanksInfoModal';
 
 
@@ -201,7 +202,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                             {playerSort === 'matches' ? (
                                 <>
                                     <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                                        {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}
+                                        {formatPlural(player.matches, 'игра', 'игры', 'игр')}
                                     </div>
                                     <div className="text-[10px] text-slate-400 dark:text-slate-500">
                                         {((player.wins / (player.matches || 1)) * 100).toFixed(1)}% побед
@@ -222,7 +223,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                         <Percent size={14} /> {player.matches > 0 ? Math.round((((player.totalKills || 0) * 100) / player.matches) / 2) : 0}%
                                     </div>
                                     <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}
+                                        {formatPlural(player.matches, 'игра', 'игры', 'игр')}
                                     </div>
                                 </>
                             ) : playerSort === 'efficiency' ? (
@@ -231,7 +232,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                         {(player.score * 100).toFixed(1)}%
                                     </div>
                                     <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}
+                                        {formatPlural(player.matches, 'игра', 'игры', 'игр')}
                                     </div>
                                 </>
                             ) : (
@@ -240,7 +241,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                         {((player.wins / (player.matches || 1)) * 100).toFixed(1)}%
                                     </div>
                                     <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {player.matches} {player.matches === 1 ? 'игра' : player.matches < 5 ? 'игры' : 'игр'}
+                                        {formatPlural(player.matches, 'игра', 'игры', 'игр')}
                                     </div>
                                 </>
                             )}

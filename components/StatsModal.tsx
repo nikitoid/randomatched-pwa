@@ -20,6 +20,7 @@ import { SeasonsManagerModal } from './stats/SeasonsManagerModal';
 import { MergeHeroesModal } from './stats/MergeHeroesModal';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
+import { findDuplicateOrSimilarHeroGroups } from '../utils/heroNormalization';
 
 interface StatsModalProps {
     isOpen: boolean;
@@ -120,6 +121,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [isDataMenuOpen, setIsDataMenuOpen] = useState(false);
     const [isBackupManagerOpen, setIsBackupManagerOpen] = useState(false);
     const [isSeasonsManagerOpen, setIsSeasonsManagerOpen] = useState(false);
+    const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
     const [showEfficiencyInfo, setShowEfficiencyInfo] = useState(false);
     const [showEfficiencyBreakdown, setShowEfficiencyBreakdown] = useState(false);
     const [activeNominationModal, setActiveNominationModal] = useState<'mvp' | 'underdog' | 'streak' | 'seriesKills' | 'totalKills' | null>(null);
@@ -170,6 +172,26 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     };
 
     const hasLocalMutationsRef = useRef(false);
+
+    // Global count of duplicate groups across all heroes in history + lists
+    const heroDuplicateCount = useMemo(() => {
+        const names = new Set<string>();
+        history.forEach(m => {
+            [...m.team1, ...m.team2].forEach(p => {
+                const n = (p.heroName || '').trim();
+                if (n) names.add(n);
+            });
+        });
+        if (lists && lists.length > 0) {
+            lists.forEach(l => {
+                l.heroes.forEach(h => {
+                    const n = (h.name || '').trim();
+                    if (n) names.add(n);
+                });
+            });
+        }
+        return findDuplicateOrSimilarHeroGroups(Array.from(names)).length;
+    }, [history, lists, isMergeModalOpen]);
 
     // Export/Import Handlers
     const handleExport = () => {
@@ -274,7 +296,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const [heroSearch, setHeroSearch] = useState('');
     const [heroSort, setHeroSort] = useState<'winrate' | 'matches' | 'az' | 'za' | 'pop'>('winrate');
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-    const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
 
     // Player Tab State
     const [playerSearch, setPlayerSearch] = useState('');
@@ -1445,6 +1466,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 mostDeadlyHero={mostDeadlyHero}
                                 onOpenInactiveModal={onOpenInactiveModal}
                                 onOpenMergeModal={() => { triggerHaptic(10); setIsMergeModalOpen(true); }}
+                                duplicateCount={heroDuplicateCount}
                             />
                         )}
 
@@ -2122,6 +2144,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     isOpen={isMergeModalOpen}
                     onClose={() => setIsMergeModalOpen(false)}
                     history={history}
+                    lists={lists}
                     onMergeHeroes={(target, sources) => {
                         hasLocalMutationsRef.current = true;
                         if (onMergeHeroes) {

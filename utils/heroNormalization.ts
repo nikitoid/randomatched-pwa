@@ -1,6 +1,27 @@
 import { Hero } from '../types';
 import { RANK_VALUES } from '../constants';
 
+/**
+ * Корректное склонение русских существительных по числу:
+ * getPlural(0, 'матч', 'матча', 'матчей') => 'матчей'
+ * getPlural(1, 'матч', 'матча', 'матчей') => 'матч'
+ * getPlural(2, 'матч', 'матча', 'матчей') => 'матча'
+ * getPlural(5, 'матч', 'матча', 'матчей') => 'матчей'
+ * getPlural(21, 'матч', 'матча', 'матчей') => 'матч'
+ */
+export function getPlural(count: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(Math.floor(count)) % 100;
+  const num = abs % 10;
+  if (abs >= 11 && abs <= 19) return many;
+  if (num >= 2 && num <= 4) return few;
+  if (num === 1) return one;
+  return many;
+}
+
+export function formatPlural(count: number, one: string, few: string, many: string): string {
+  return `${count} ${getPlural(count, one, few, many)}`;
+}
+
 // Popular hero aliases / synonyms for tabletop games (e.g., Unmatched / Marvel / Fantasy)
 export const KNOWN_HERO_ALIASES: Record<string, string[]> = {
   'геральт': ['геральт из ривии', 'ведьмак', 'geralt', 'geralt of rivia'],
@@ -20,7 +41,7 @@ export const KNOWN_HERO_ALIASES: Record<string, string[]> = {
   'ахиллес': ['ахилл', 'achilles'],
   'синдбад': ['синдбад-мореход', 'синдбад мореход', 'sinbad'],
   'никола тесла': ['тесла', 'nikola tesla'],
-  'гарри гудини': ['гудини', 'houdini', 'harry houdini'],
+  'гарри гудини': ['гудини', 'houdini', 'harry houdini', 'гуддини', 'гарри гуддини'],
   'ти-рекс': ['тирекс', 't-rex', 'тираннозавр', 't rex'],
   'двуликий': ['двуликий (харви дент)', 'two-face', 'two face'],
   'супермен': ['супермэн', 'superman'],
@@ -29,14 +50,27 @@ export const KNOWN_HERO_ALIASES: Record<string, string[]> = {
   'лунный рыцарь': ['moon knight'],
   'люк скайуокер': ['люк скайвокер', 'luke skywalker'],
   'дарт вейдер': ['дарт вэйдер', 'darth vader'],
+  'трисс и йеннифер': ['трисс&йеннифер', 'трисс & йеннифер', 'трисс + йеннифер', 'трисс/йеннифер', 'йеннифер и трисс', 'йеннифер & трисс', 'йеннифер&трисс', 'трисс и йен', 'йен и трисс'],
+  'плащ и кинжал': ['плащ & кинжал', 'плащ&кинжал', 'плащ+кинжал', 'кинжал и плащ', 'cloak and dagger', 'cloak & dagger'],
+  'розан и джилл': ['розан & джилл', 'розан&джилл', 'джилл и розан', 'джилл & розан'],
+  'росомаха': ['wolverine', 'логан'],
+  'сорвиголова': ['daredevil'],
+  'каратель': ['punisher'],
+  'дэдпул': ['дедпул', 'deadpool'],
+  'соколиный глаз': ['хоукай', 'hawkeye'],
+  'черная вдова': ['чёрная вдова', 'black widow', 'наташа романофф']
 };
+
+// Pre-compute normalized alias lookup map at module load time for O(1) alias checking
+const ALIAS_LOOKUP_MAP = new Map<string, number>();
 
 /**
  * Creates a normalized search key for hero matching:
  * - Trims whitespace
  * - Converts to lower case
  * - Replaces 'ё' with 'е'
- * - Normalizes various dashes (—, –, -) to a single hyphen and removes surrounding spaces ('Человек - Паук' -> 'человек-паук')
+ * - Normalizes conjunctions and connectors (&, +, /, 'and') to standard ' и '
+ * - Normalizes various dashes (—, –, -) to a single hyphen and removes surrounding spaces
  * - Removes extra punctuation (quotes, brackets)
  * - Collapses multiple spaces into one
  */
@@ -49,51 +83,83 @@ export const normalizeHeroKey = (name: string): string => {
     .replace(/ё/g, 'е')
     .replace(/[«»""'']/g, '') // remove quotes
     .replace(/\s*[\u2010\u2011\u2012\u2013\u2014\u2015-]\s*/g, '-') // unify dashes with or without spaces
-    .replace(/[.,/#!$%^&*;:{}=\_`~()]/g, ' ') // remove other special chars
+    .replace(/\s*&\s*/g, ' и ') // standardize ampersand & to ' и '
+    .replace(/\s*\+\s*/g, ' и ') // standardize plus + to ' и '
+    .replace(/\s*\/\s*/g, ' и ') // standardize slash / to ' и '
+    .replace(/\band\b/gi, ' и ') // standardize English 'and' to ' и '
+    .replace(/[.,#!$%^*;:{}=\_`~()\[\]]/g, ' ') // remove other special chars
     .replace(/\s+/g, ' ') // collapse spaces
     .trim();
+};
+
+// Initialize alias lookup map once
+(() => {
+  let clusterId = 1;
+  for (const [canonical, aliases] of Object.entries(KNOWN_HERO_ALIASES)) {
+    const normCanonical = normalizeHeroKey(canonical);
+    if (normCanonical) {
+      ALIAS_LOOKUP_MAP.set(normCanonical, clusterId);
+    }
+    for (const alias of aliases) {
+      const normAlias = normalizeHeroKey(alias);
+      if (normAlias) {
+        ALIAS_LOOKUP_MAP.set(normAlias, clusterId);
+      }
+    }
+    clusterId++;
+  }
+})();
+
+/**
+ * Calculates the Levenshtein Distance between two normalized strings.
+ * Uses 2 flat Int32 arrays to prevent heap churn.
+ */
+export const getLevenshteinDistanceNormalized = (normA: string, normB: string): number => {
+  if (normA === normB) return 0;
+  const lenA = normA.length;
+  const lenB = normB.length;
+  if (lenA === 0) return lenB;
+  if (lenB === 0) return lenA;
+
+  const lenDiff = Math.abs(lenA - lenB);
+  if (lenDiff > 2) return lenDiff;
+
+  let prevRow = new Int32Array(lenA + 1);
+  let currRow = new Int32Array(lenA + 1);
+
+  for (let j = 0; j <= lenA; j++) {
+    prevRow[j] = j;
+  }
+
+  for (let i = 1; i <= lenB; i++) {
+    currRow[0] = i;
+    const charB = normB.charCodeAt(i - 1);
+    for (let j = 1; j <= lenA; j++) {
+      const cost = normA.charCodeAt(j - 1) === charB ? 0 : 1;
+      currRow[j] = Math.min(
+        prevRow[j] + 1,       // deletion
+        currRow[j - 1] + 1,   // insertion
+        prevRow[j - 1] + cost // substitution
+      );
+    }
+    const temp = prevRow;
+    prevRow = currRow;
+    currRow = temp;
+  }
+
+  return prevRow[lenA];
 };
 
 /**
  * Calculates the Levenshtein Distance between two strings.
  */
 export const getLevenshteinDistance = (a: string, b: string): number => {
-  const normA = normalizeHeroKey(a);
-  const normB = normalizeHeroKey(b);
-
-  if (normA === normB) return 0;
-  if (normA.length === 0) return normB.length;
-  if (normB.length === 0) return normA.length;
-
-  const matrix: number[][] = [];
-
-  for (let i = 0; i <= normB.length; i++) {
-    matrix[i] = [i];
-  }
-
-  for (let j = 0; j <= normA.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= normB.length; i++) {
-    for (let j = 1; j <= normA.length; j++) {
-      if (normB.charAt(i - 1) === normA.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // substitution
-          matrix[i][j - 1] + 1,     // insertion
-          matrix[i - 1][j] + 1      // deletion
-        );
-      }
-    }
-  }
-
-  return matrix[normB.length][normA.length];
+  return getLevenshteinDistanceNormalized(normalizeHeroKey(a), normalizeHeroKey(b));
 };
 
 /**
  * Checks if two hero names are aliases according to KNOWN_HERO_ALIASES.
+ * Uses O(1) Map lookup.
  */
 export const areAliases = (nameA: string, nameB: string): boolean => {
   const normA = normalizeHeroKey(nameA);
@@ -102,14 +168,9 @@ export const areAliases = (nameA: string, nameB: string): boolean => {
   if (!normA || !normB) return false;
   if (normA === normB) return true;
 
-  for (const [canonical, aliases] of Object.entries(KNOWN_HERO_ALIASES)) {
-    const allGroup = [canonical, ...aliases].map(normalizeHeroKey);
-    if (allGroup.includes(normA) && allGroup.includes(normB)) {
-      return true;
-    }
-  }
-
-  return false;
+  const idA = ALIAS_LOOKUP_MAP.get(normA);
+  const idB = ALIAS_LOOKUP_MAP.get(normB);
+  return idA !== undefined && idA === idB;
 };
 
 /**
@@ -124,17 +185,30 @@ export const areHeroNamesSimilar = (
 
   if (!normA || !normB) return { isSimilar: false };
 
-  // 1. Exact normalized match (e.g., case differences, 'ё' vs 'е', spaces)
+  // 1. Exact normalized match
   if (normA === normB) {
     return { isSimilar: true, reason: 'exact_normalized' };
   }
 
-  // 2. Known aliases
-  if (areAliases(nameA, nameB)) {
+  // 2. Known aliases O(1)
+  const idA = ALIAS_LOOKUP_MAP.get(normA);
+  const idB = ALIAS_LOOKUP_MAP.get(normB);
+  if (idA !== undefined && idA === idB) {
     return { isSimilar: true, reason: 'alias' };
   }
 
-  // 3. Check for distinct numbered or rank-suffixed variants (e.g. "Герой S+" vs "Герой S-", "Бот 1" vs "Бот 2")
+  // 3. Word permutation check for duo / multi-hero names
+  const meaningfulWordsA = normA.split(/\s+/).filter(w => w !== 'и' && w !== '-');
+  const meaningfulWordsB = normB.split(/\s+/).filter(w => w !== 'и' && w !== '-');
+  if (
+    meaningfulWordsA.length > 1 &&
+    meaningfulWordsA.length === meaningfulWordsB.length &&
+    meaningfulWordsA.slice().sort().join(' ') === meaningfulWordsB.slice().sort().join(' ')
+  ) {
+    return { isSimilar: true, reason: 'alias' };
+  }
+
+  // 4. Check for distinct numbered or rank-suffixed variants
   const wordsA = normA.split(/\s+/).filter(Boolean);
   const wordsB = normB.split(/\s+/).filter(Boolean);
 
@@ -146,7 +220,6 @@ export const areHeroNamesSimilar = (
       const lastA = wordsA[wordsA.length - 1];
       const lastB = wordsB[wordsB.length - 1];
 
-      // If trailing tokens are different single chars, digits, or rank markers, they are distinct entities
       const isDigitA = /^\d+$/.test(lastA);
       const isDigitB = /^\d+$/.test(lastB);
       const isShortSuffix = (lastA.length <= 2 && lastB.length <= 2);
@@ -158,7 +231,7 @@ export const areHeroNamesSimilar = (
     }
   }
 
-  // Check if one name is a prefix with sequel/part number (e.g. "Герой" vs "Герой 2")
+  // Check if one name is a prefix with sequel/part number
   const longer = normA.length > normB.length ? normA : normB;
   const shorter = normA.length > normB.length ? normB : normA;
   if (longer.startsWith(shorter)) {
@@ -168,15 +241,12 @@ export const areHeroNamesSimilar = (
     }
   }
 
-  // 4. Typo check via Levenshtein
-  // For short strings (< 4 chars), require exact match.
-  // For medium strings (4-6 chars), max 1 distance.
-  // For long strings (> 6 chars), max 2 distance with at least 80% similarity.
+  // 5. Typo check via fast Levenshtein
   const minLen = Math.min(normA.length, normB.length);
   const maxLen = Math.max(normA.length, normB.length);
 
-  if (minLen >= 4) {
-    const dist = getLevenshteinDistance(normA, normB);
+  if (minLen >= 4 && Math.abs(normA.length - normB.length) <= 2) {
+    const dist = getLevenshteinDistanceNormalized(normA, normB);
     if (minLen <= 6 && dist <= 1) {
       return { isSimilar: true, reason: 'typo' };
     }
@@ -246,38 +316,142 @@ export interface DuplicateGroup {
   reason: 'exact_normalized' | 'typo' | 'alias';
 }
 
+export const MERGE_IGNORED_GROUPS_KEY = 'randomatched_merge_ignored_groups';
+
+export interface IgnoredMergeGroup {
+  id: string;
+  names: string[];
+  createdAt: number;
+}
+
+export const getIgnoredMergeGroups = (): IgnoredMergeGroup[] => {
+  try {
+    const raw = localStorage.getItem(MERGE_IGNORED_GROUPS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    return [];
+  } catch {
+    return [];
+  }
+};
+
+export const addIgnoredMergeGroup = (names: string[]): IgnoredMergeGroup[] => {
+  const current = getIgnoredMergeGroups();
+  const cleanNames = Array.from(new Set(names.map(n => n.trim()).filter(Boolean)));
+  if (cleanNames.length < 2) return current;
+
+  // Check if identical set of names is already ignored
+  const normalizedKey = cleanNames.map(normalizeHeroKey).sort().join(':::');
+  const exists = current.some(g => g.names.map(normalizeHeroKey).sort().join(':::') === normalizedKey);
+  if (exists) return current;
+
+  const newItem: IgnoredMergeGroup = {
+    id: 'ign_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    names: cleanNames,
+    createdAt: Date.now()
+  };
+
+  const updated = [newItem, ...current];
+  try {
+    localStorage.setItem(MERGE_IGNORED_GROUPS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to save ignored merge groups to localStorage', e);
+  }
+  return updated;
+};
+
+export const removeIgnoredMergeGroup = (id: string): IgnoredMergeGroup[] => {
+  const current = getIgnoredMergeGroups();
+  const updated = current.filter(g => g.id !== id);
+  try {
+    localStorage.setItem(MERGE_IGNORED_GROUPS_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.error('Failed to remove ignored merge group from localStorage', e);
+  }
+  return updated;
+};
+
+export const clearAllIgnoredMergeGroups = (): void => {
+  try {
+    localStorage.removeItem(MERGE_IGNORED_GROUPS_KEY);
+  } catch (e) {
+    console.error('Failed to clear ignored merge groups from localStorage', e);
+  }
+};
+
 /**
  * Finds all groups of duplicate or suspicious similar names in a list of hero names.
+ * Highly optimized with pre-normalization and early exit filters.
+ * Excludes user-ignored groups.
  */
 export const findDuplicateOrSimilarHeroGroups = (
-  heroNames: string[]
+  heroNames: string[],
+  ignoredGroups?: IgnoredMergeGroup[]
 ): DuplicateGroup[] => {
   const uniqueNames = Array.from(new Set(heroNames.map(n => n.trim()).filter(Boolean)));
-  const visited = new Set<string>();
+  if (uniqueNames.length < 2) return [];
+
+  const ignoredList = ignoredGroups !== undefined ? ignoredGroups : getIgnoredMergeGroups();
+  const ignoredPairSet = new Set<string>();
+  for (const group of ignoredList) {
+    const normNames = group.names.map(normalizeHeroKey).filter(Boolean);
+    for (let i = 0; i < normNames.length; i++) {
+      for (let j = i + 1; j < normNames.length; j++) {
+        ignoredPairSet.add([normNames[i], normNames[j]].sort().join(':::'));
+      }
+    }
+  }
+
+  // Pre-normalize all names once
+  const items = uniqueNames.map(raw => {
+    const norm = normalizeHeroKey(raw);
+    return {
+      raw,
+      norm,
+      len: norm.length
+    };
+  });
+
+  const visited = new Set<number>();
   const groups: DuplicateGroup[] = [];
 
-  for (let i = 0; i < uniqueNames.length; i++) {
-    const nameA = uniqueNames[i];
-    if (visited.has(nameA)) continue;
+  for (let i = 0; i < items.length; i++) {
+    if (visited.has(i)) continue;
 
-    const cluster: string[] = [nameA];
+    const itemA = items[i];
+    const cluster: string[] = [itemA.raw];
     let dominantReason: 'exact_normalized' | 'typo' | 'alias' = 'exact_normalized';
 
-    for (let j = i + 1; j < uniqueNames.length; j++) {
-      const nameB = uniqueNames[j];
-      if (visited.has(nameB)) continue;
+    for (let j = i + 1; j < items.length; j++) {
+      if (visited.has(j)) continue;
 
-      const check = areHeroNamesSimilar(nameA, nameB);
+      const itemB = items[j];
+
+      // Check if this pair is in the user's ignored exceptions list
+      const pairKey = [itemA.norm, itemB.norm].sort().join(':::');
+      if (ignoredPairSet.has(pairKey)) {
+        continue;
+      }
+
+      // Fast check on already pre-normalized strings
+      if (itemA.norm === itemB.norm) {
+        cluster.push(itemB.raw);
+        visited.add(j);
+        continue;
+      }
+
+      const check = areHeroNamesSimilar(itemA.raw, itemB.raw);
       if (check.isSimilar && check.reason) {
-        cluster.push(nameB);
-        visited.add(nameB);
+        cluster.push(itemB.raw);
+        visited.add(j);
         if (check.reason === 'alias') dominantReason = 'alias';
         else if (check.reason === 'typo' && dominantReason !== 'alias') dominantReason = 'typo';
       }
     }
 
     if (cluster.length > 1) {
-      visited.add(nameA);
+      visited.add(i);
       const primary = getBestCanonicalDisplayName(cluster);
       const duplicates = cluster.filter(n => n !== primary);
       groups.push({

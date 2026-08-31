@@ -14,6 +14,7 @@ import {
     InactivityCriterion, 
     InactiveHeroesFilterOptions 
 } from '../utils/inactiveHeroes';
+import { formatPlural, getPlural } from '../utils/heroNormalization';
 
 interface InactiveHeroesModalProps {
     isOpen: boolean;
@@ -295,7 +296,7 @@ export const InactiveHeroesModal: React.FC<InactiveHeroesModalProps> = ({
                             Предпросмотр героев
                         </span>
                         <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-600 dark:text-primary-300">
-                            {qualifiedItems.length} {qualifiedItems.length === 1 ? 'герой' : qualifiedItems.length < 5 ? 'героя' : 'героев'}
+                            {formatPlural(qualifiedItems.length, 'герой', 'героя', 'героев')}
                         </span>
                     </div>
 
@@ -327,10 +328,10 @@ export const InactiveHeroesModal: React.FC<InactiveHeroesModalProps> = ({
                                             ) : (
                                                 <div className="space-y-0.5">
                                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                                                        <History size={10} /> {matchesAgo} {matchesAgo === 1 ? 'матч' : matchesAgo < 5 ? 'матча' : 'матчей'} назад
+                                                        <History size={10} /> {matchesAgo} {getPlural(matchesAgo, 'матч', 'матча', 'матчей')} назад
                                                     </span>
                                                     <div className="text-[9px] text-slate-400 dark:text-slate-500">
-                                                        {daysAgo} дн. назад ({totalMatchesPlayed} игр всего)
+                                                        {daysAgo} дн. назад ({formatPlural(totalMatchesPlayed, 'игра', 'игры', 'игр')} всего)
                                                     </div>
                                                 </div>
                                             )}
