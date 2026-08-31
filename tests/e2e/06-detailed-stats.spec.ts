@@ -159,4 +159,50 @@ test.describe('Детальная статистика', () => {
         const alexName = app.statsModal.getByText('Алекс', { exact: true }).first();
         await expect(alexName).toBeVisible();
     });
+
+    test('открытие и закрытие модалки деталей игрока в шторке BaseModal', async ({ app }) => {
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        await app.page.locator('button:has-text("Игроки")').click();
+
+        // Кликаем по строке игрока "Алекс"
+        await app.page.locator('text=Алекс').first().click();
+
+        // Проверяем, что открылась модалка деталей игрока
+        const playerModal = app.page.locator('[data-testid="player-details-modal"]');
+        await expect(playerModal).toBeVisible();
+        await expect(playerModal.locator('text=Алекс').first()).toBeVisible();
+        await expect(playerModal.locator('text=Лучшие герои')).toBeVisible();
+
+        // Закрываем модалку деталей игрока
+        await playerModal.locator('[data-testid="player-details-modal-close-btn"]').click();
+        await expect(playerModal).toBeHidden();
+    });
+
+    test('открытие модалки деталей героя и кросс-переход из деталей игрока', async ({ app }) => {
+        await app.statsButton.click();
+        await expect(app.statsModal).toBeVisible();
+
+        await app.page.locator('button:has-text("Игроки")').click();
+
+        // Открываем детали игрока "Алекс"
+        await app.page.locator('text=Алекс').first().click();
+        const playerModal = app.page.locator('[data-testid="player-details-modal"]');
+        await expect(playerModal).toBeVisible();
+
+        // В деталях игрока кликаем по герою "Герой S+"
+        await playerModal.locator('text=Герой S+').first().click();
+
+        // Проверяем, что открылась модалка деталей героя
+        const heroModal = app.page.locator('[data-testid="hero-details-modal"]');
+        await expect(heroModal).toBeVisible();
+        await expect(heroModal.locator('text=Герой S+').first()).toBeVisible();
+        await expect(heroModal.locator('text=Лучшие исполнители')).toBeVisible();
+
+        // Закрываем модалку деталей героя
+        await heroModal.locator('[data-testid="hero-details-modal-close-btn"]').click();
+        await expect(heroModal).toBeHidden();
+    });
 });
+

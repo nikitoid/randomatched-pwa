@@ -1,17 +1,13 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Star, Flame, Skull, Percent, HelpCircle, TrendingDown, Shield } from 'lucide-react';
 import { PlayerStat, MatchRecord } from '../../types';
-import { PlayerDetails } from '../PlayerDetails';
 import { Avatar } from '../common/Avatar';
 import { calculatePlayerLevel } from '../../utils/playerLevel';
 import { formatPlural } from '../../utils/heroNormalization';
 import { RanksInfoModal } from './RanksInfoModal';
 
-
 interface StatsPlayersTabProps {
     processedPlayers: PlayerStat[];
-    selectedPlayer: PlayerStat | null;
-    setSelectedPlayer: React.Dispatch<React.SetStateAction<PlayerStat | null>>;
     filteredHistory: MatchRecord[];
     onRenamePlayer: (oldName: string, newName: string) => void;
     streakStats: Record<string, { current: number }>;
@@ -20,25 +16,16 @@ interface StatsPlayersTabProps {
     topTotalKillers?: { name: string; total: number }[];
     playerSort: 'efficiency' | 'winrate' | 'matches' | 'kills' | 'killPercent' | 'az' | 'za';
     openPlayerDetails: (player: PlayerStat) => void;
-    closeDetails: () => void;
     handleTitleClick?: (e: React.MouseEvent) => void;
     onOpenEfficiencyBreakdown?: () => void;
+    // Опциональные пропсы для обратной совместимости
+    selectedPlayer?: PlayerStat | null;
+    setSelectedPlayer?: React.Dispatch<React.SetStateAction<PlayerStat | null>>;
+    closeDetails?: () => void;
 }
 
 const getWinsText = (count: number) => {
-    const mod10 = count % 10;
-    const mod100 = count % 100;
-    if (mod10 === 1 && mod100 !== 11) return `${count} победа`;
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} победы`;
-    return `${count} побед`;
-};
-
-const getLossesText = (count: number) => {
-    const mod10 = count % 10;
-    const mod100 = count % 100;
-    if (mod10 === 1 && mod100 !== 11) return `${count} поражение`;
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} поражения`;
-    return `${count} поражений`;
+    return formatPlural(count, 'победа', 'победы', 'побед');
 };
 
 const getPlayerSortLabel = (sort: StatsPlayersTabProps['playerSort']) => {
@@ -56,8 +43,6 @@ const getPlayerSortLabel = (sort: StatsPlayersTabProps['playerSort']) => {
 
 export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
     processedPlayers,
-    selectedPlayer,
-    setSelectedPlayer,
     filteredHistory,
     onRenamePlayer,
     streakStats,
@@ -66,22 +51,10 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
     topTotalKillers,
     playerSort,
     openPlayerDetails,
-    closeDetails,
     handleTitleClick,
     onOpenEfficiencyBreakdown
 }) => {
-    const [displayPlayer, setDisplayPlayer] = useState<PlayerStat | null>(selectedPlayer);
     const [isRanksModalOpen, setIsRanksModalOpen] = useState(false);
-
-    if (selectedPlayer && selectedPlayer !== displayPlayer) {
-        setDisplayPlayer(selectedPlayer);
-    }
-
-    useEffect(() => {
-        if (selectedPlayer) {
-            setDisplayPlayer(selectedPlayer);
-        }
-    }, [selectedPlayer]);
 
     const topKillerName = useMemo(() => {
         if (topTotalKillers && topTotalKillers.length > 0 && topTotalKillers[0].total > 0) {
@@ -100,8 +73,8 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
     }, [topTotalKillers, processedPlayers]);
 
     return (
-        <div className="relative w-full h-full min-h-[400px]">
-            {/* Список игроков (Всегда смонтирован в DOM для мгновенного плавного возврата) */}
+        <div className="w-full">
+            {/* Список игроков */}
             <div className="px-4 pb-4 pt-3 space-y-2 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400">
                     <span className="font-semibold text-slate-600 dark:text-slate-400 truncate mr-2">
@@ -110,7 +83,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                     <div className="flex items-center gap-2.5 shrink-0">
                         <button
                             onClick={(e) => { e.stopPropagation(); setIsRanksModalOpen(true); }}
-                            className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-bold hover:text-primary-600 dark:hover:text-primary-400 active:opacity-80 transition-colors"
+                            className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-bold hover:text-primary-600 dark:hover:text-primary-400 active:opacity-80 transition-colors cursor-pointer"
                         >
                             <Shield size={13} />
                             <span>Ранги</span>
@@ -118,7 +91,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                         {playerSort === 'efficiency' && onOpenEfficiencyBreakdown && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onOpenEfficiencyBreakdown(); }}
-                                className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-bold hover:underline active:opacity-80 transition-opacity"
+                                className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-bold hover:underline active:opacity-80 transition-opacity cursor-pointer"
                             >
                                 <HelpCircle size={13} />
                                 <span>Расшифровка</span>
@@ -134,7 +107,7 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                             onClick={() => {
                                 openPlayerDetails(player);
                             }}
-                            className="flex items-center justify-between py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
+                            className="flex items-center justify-between py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation active:scale-[0.99]"
                         >
                             <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                                 <div className="relative shrink-0 flex items-center justify-center">
@@ -184,94 +157,72 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                                             )}
                                         </div>
                                     </div>
-                                {(() => {
-                                    const killPercent = player.matches > 0 ? Math.round((((player.totalKills || 0) * 100) / player.matches) / 2) : 0;
-                                    return (
-                                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 truncate">
-                                            <span>{getWinsText(player.wins)}</span>
-                                            <span className="opacity-40">•</span>
-                                            <span className="flex items-center gap-0.5 text-red-500 font-medium">
-                                                <Skull size={11} /> {player.totalKills || 0} <span className="text-[11px] opacity-80">({killPercent}%)</span>
-                                            </span>
+                                    {(() => {
+                                        const killPercent = player.matches > 0 ? Math.round((((player.totalKills || 0) * 100) / player.matches) / 2) : 0;
+                                        return (
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 truncate">
+                                                <span>{getWinsText(player.wins)}</span>
+                                                <span className="opacity-40">•</span>
+                                                <span className="flex items-center gap-0.5 text-red-500 font-medium">
+                                                    <Skull size={11} /> {player.totalKills || 0} <span className="text-[11px] opacity-80">({killPercent}%)</span>
+                                                </span>
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                                {playerSort === 'matches' ? (
+                                    <>
+                                        <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                            {formatPlural(player.matches, 'игра', 'игры', 'игр')}
                                         </div>
-                                    );
-                                })()}
+                                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                            {((player.wins / (player.matches || 1)) * 100).toFixed(1)}% побед
+                                        </div>
+                                    </>
+                                ) : playerSort === 'kills' ? (
+                                    <>
+                                        <div className="text-sm font-bold text-red-500 flex items-center justify-end gap-1">
+                                            <Skull size={14} /> {player.totalKills || 0}
+                                        </div>
+                                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                            {(player.avgKills || 0).toFixed(1)} / матч
+                                        </div>
+                                    </>
+                                ) : playerSort === 'killPercent' ? (
+                                    <>
+                                        <div className="text-sm font-bold text-red-500 flex items-center justify-end gap-1">
+                                            <Percent size={14} /> {player.matches > 0 ? Math.round((((player.totalKills || 0) * 100) / player.matches) / 2) : 0}%
+                                        </div>
+                                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                            {formatPlural(player.matches, 'игра', 'игры', 'игр')}
+                                        </div>
+                                    </>
+                                ) : playerSort === 'efficiency' ? (
+                                    <>
+                                        <div className={`text-sm font-bold ${player.score >= 0.5 ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                            {(player.score * 100).toFixed(1)}%
+                                        </div>
+                                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                            {formatPlural(player.matches, 'игра', 'игры', 'игр')}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className={`text-sm font-bold ${player.wins / (player.matches || 1) >= 0.5 ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                            {((player.wins / (player.matches || 1)) * 100).toFixed(1)}%
+                                        </div>
+                                        <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                            {formatPlural(player.matches, 'игра', 'игры', 'игр')}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
-                        <div className="text-right shrink-0">
-                            {playerSort === 'matches' ? (
-                                <>
-                                    <div className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                                        {formatPlural(player.matches, 'игра', 'игры', 'игр')}
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {((player.wins / (player.matches || 1)) * 100).toFixed(1)}% побед
-                                    </div>
-                                </>
-                            ) : playerSort === 'kills' ? (
-                                <>
-                                    <div className="text-sm font-bold text-red-500 flex items-center justify-end gap-1">
-                                        <Skull size={14} /> {player.totalKills || 0}
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {(player.avgKills || 0).toFixed(1)} / матч
-                                    </div>
-                                </>
-                            ) : playerSort === 'killPercent' ? (
-                                <>
-                                    <div className="text-sm font-bold text-red-500 flex items-center justify-end gap-1">
-                                        <Percent size={14} /> {player.matches > 0 ? Math.round((((player.totalKills || 0) * 100) / player.matches) / 2) : 0}%
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {formatPlural(player.matches, 'игра', 'игры', 'игр')}
-                                    </div>
-                                </>
-                            ) : playerSort === 'efficiency' ? (
-                                <>
-                                    <div className={`text-sm font-bold ${player.score >= 0.5 ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                                        {(player.score * 100).toFixed(1)}%
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {formatPlural(player.matches, 'игра', 'игры', 'игр')}
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className={`text-sm font-bold ${player.wins / (player.matches || 1) >= 0.5 ? 'text-green-600 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
-                                        {((player.wins / (player.matches || 1)) * 100).toFixed(1)}%
-                                    </div>
-                                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                                        {formatPlural(player.matches, 'игра', 'игры', 'игр')}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                );
-            })}
+                    );
+                })}
                 {processedPlayers.length === 0 && <div className="text-center text-slate-400 py-10">Нет данных об игроках</div>}
-            </div>
-
-            {/* Выезжающий слайд-оверлей деталей игрока (GPU Hardware Accelerated 60 FPS) */}
-            <div
-                className={`absolute inset-0 z-30 bg-slate-50 dark:bg-slate-950 bg-grid-pattern overflow-y-auto transition-all duration-300 ease-out ${selectedPlayer
-                        ? 'translate-x-0 opacity-100 pointer-events-auto'
-                        : 'translate-x-full opacity-0 pointer-events-none'
-                    }`}
-                style={{ willChange: 'transform, opacity' }}
-            >
-                {displayPlayer && (
-                    <PlayerDetails
-                        key={displayPlayer.name}
-                        player={displayPlayer}
-                        history={filteredHistory}
-                        onBack={closeDetails}
-                        onRename={(newName) => {
-                            onRenamePlayer(displayPlayer.name, newName);
-                            setSelectedPlayer(prev => prev ? { ...prev, name: newName } : null);
-                        }}
-                    />
-                )}
             </div>
 
             {/* Ranks Info Modal */}

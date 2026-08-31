@@ -122,11 +122,51 @@ export const StatsMatchesTab: React.FC<StatsMatchesTabProps> = ({
                                                                 return (
                                                                     <div key={p.name} className="flex items-center justify-between text-xs gap-1.5">
                                                                         <div className="flex items-center gap-1 min-w-0 flex-1">
-                                                                            <span className={`truncate shrink-0 max-w-[45%] text-left ${isWinner ? 'font-bold text-slate-800 dark:text-slate-200' : 'font-semibold text-slate-600 dark:text-slate-400'}`}>
+                                                                            <span
+                                                                                onClick={() => {
+                                                                                    triggerHaptic(10);
+                                                                                    const found = sortedPlayers.find(sp => sp.name.toLowerCase() === p.name.toLowerCase());
+                                                                                    if (found) {
+                                                                                        openPlayerDetails(found);
+                                                                                    } else {
+                                                                                        openPlayerDetails({
+                                                                                            name: p.name,
+                                                                                            matches: 1,
+                                                                                            wins: isWinner ? 1 : 0,
+                                                                                            losses: isWinner ? 0 : 1,
+                                                                                            score: 0.5,
+                                                                                            heroesPlayed: p.heroName ? { [p.heroName]: 1 } : {},
+                                                                                            totalKills: p.kills || 0,
+                                                                                            avgKills: p.kills || 0
+                                                                                        });
+                                                                                    }
+                                                                                }}
+                                                                                className={`truncate shrink-0 max-w-[45%] text-left cursor-pointer hover:underline active:opacity-70 transition-opacity ${isWinner ? 'font-bold text-slate-800 dark:text-slate-200' : 'font-semibold text-slate-600 dark:text-slate-400'}`}
+                                                                                title={`Открыть статистику игрока ${p.name}`}
+                                                                            >
                                                                                 {p.name}
                                                                             </span>
                                                                             <span className="text-slate-400 text-[10px] shrink-0">на</span>
-                                                                            <span className={`font-semibold inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] min-w-0 max-w-full truncate ${isWinner ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' : 'bg-slate-100/70 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800/60'}`}>
+                                                                            <span
+                                                                                onClick={() => {
+                                                                                    if (!p.heroName) return;
+                                                                                    triggerHaptic(10);
+                                                                                    const targetKey = p.heroName.toLowerCase().trim();
+                                                                                    const found = sortedHeroes.find(sh => sh.name.toLowerCase().trim() === targetKey);
+                                                                                    if (found) {
+                                                                                        openHeroDetails(found);
+                                                                                    } else {
+                                                                                        openHeroDetails({
+                                                                                            name: p.heroName,
+                                                                                            matches: 1,
+                                                                                            wins: isWinner ? 1 : 0,
+                                                                                            losses: isWinner ? 0 : 1
+                                                                                        });
+                                                                                    }
+                                                                                }}
+                                                                                className={`font-semibold inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] min-w-0 max-w-full truncate cursor-pointer hover:opacity-80 active:scale-95 transition-all ${isWinner ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' : 'bg-slate-100/70 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800/60'}`}
+                                                                                title={`Открыть статистику героя ${p.heroName}`}
+                                                                            >
                                                                                 <Shield size={9} className={`shrink-0 ${isWinner ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'}`} />
                                                                                 <span className="truncate">{p.heroName}</span>
                                                                             </span>
@@ -171,11 +211,51 @@ export const StatsMatchesTab: React.FC<StatsMatchesTabProps> = ({
                                                                 return (
                                                                     <div key={p.name} className="flex items-center justify-between text-xs gap-1.5">
                                                                         <div className="flex items-center gap-1 min-w-0 flex-1">
-                                                                            <span className={`truncate shrink-0 max-w-[45%] text-left ${isWinner ? 'font-bold text-slate-800 dark:text-slate-200' : 'font-semibold text-slate-600 dark:text-slate-400'}`}>
+                                                                            <span
+                                                                                onClick={() => {
+                                                                                    triggerHaptic(10);
+                                                                                    const found = sortedPlayers.find(sp => sp.name.toLowerCase() === p.name.toLowerCase());
+                                                                                    if (found) {
+                                                                                        openPlayerDetails(found);
+                                                                                    } else {
+                                                                                        openPlayerDetails({
+                                                                                            name: p.name,
+                                                                                            matches: 1,
+                                                                                            wins: isWinner ? 1 : 0,
+                                                                                            losses: isWinner ? 0 : 1,
+                                                                                            score: 0.5,
+                                                                                            heroesPlayed: p.heroName ? { [p.heroName]: 1 } : {},
+                                                                                            totalKills: p.kills || 0,
+                                                                                            avgKills: p.kills || 0
+                                                                                        });
+                                                                                    }
+                                                                                }}
+                                                                                className={`truncate shrink-0 max-w-[45%] text-left cursor-pointer hover:underline active:opacity-70 transition-opacity ${isWinner ? 'font-bold text-slate-800 dark:text-slate-200' : 'font-semibold text-slate-600 dark:text-slate-400'}`}
+                                                                                title={`Открыть статистику игрока ${p.name}`}
+                                                                            >
                                                                                 {p.name}
                                                                             </span>
                                                                             <span className="text-slate-400 text-[10px] shrink-0">на</span>
-                                                                            <span className={`font-semibold inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] min-w-0 max-w-full truncate ${isWinner ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' : 'bg-slate-100/70 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800/60'}`}>
+                                                                            <span
+                                                                                onClick={() => {
+                                                                                    if (!p.heroName) return;
+                                                                                    triggerHaptic(10);
+                                                                                    const targetKey = p.heroName.toLowerCase().trim();
+                                                                                    const found = sortedHeroes.find(sh => sh.name.toLowerCase().trim() === targetKey);
+                                                                                    if (found) {
+                                                                                        openHeroDetails(found);
+                                                                                    } else {
+                                                                                        openHeroDetails({
+                                                                                            name: p.heroName,
+                                                                                            matches: 1,
+                                                                                            wins: isWinner ? 1 : 0,
+                                                                                            losses: isWinner ? 0 : 1
+                                                                                        });
+                                                                                    }
+                                                                                }}
+                                                                                className={`font-semibold inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] min-w-0 max-w-full truncate cursor-pointer hover:opacity-80 active:scale-95 transition-all ${isWinner ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700' : 'bg-slate-100/70 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800/60'}`}
+                                                                                title={`Открыть статистику героя ${p.heroName}`}
+                                                                            >
                                                                                 <Shield size={9} className={`shrink-0 ${isWinner ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'}`} />
                                                                                 <span className="truncate">{p.heroName}</span>
                                                                             </span>

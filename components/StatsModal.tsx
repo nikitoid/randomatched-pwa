@@ -20,7 +20,7 @@ import { SeasonsManagerModal } from './stats/SeasonsManagerModal';
 import { MergeHeroesModal } from './stats/MergeHeroesModal';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
-import { findDuplicateOrSimilarHeroGroups } from '../utils/heroNormalization';
+import { findDuplicateOrSimilarHeroGroups, normalizeHeroKey } from '../utils/heroNormalization';
 
 interface StatsModalProps {
     isOpen: boolean;
@@ -460,52 +460,16 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         };
     }, [activeTab]);
 
-    // Сбрасываем скролл контейнера при смене вкладки или переходе в детали
+    // Сбрасываем скролл контейнера при смене вкладки
     useLayoutEffect(() => {
         if (contentContainerRef.current) {
             contentContainerRef.current.scrollTop = 0;
         }
-    }, [activeTab, selectedPlayer, selectedHero]);
-
-
-    // Back Button Logic with useBackHandler
-    useBackHandler(!!selectedPlayer, () => {
-        setSelectedPlayer(null);
-    }, { id: 'player-details-modal', priority: 20 });
-
-    useBackHandler(!!selectedHero, () => {
-        setSelectedHero(null);
-    }, { id: 'hero-details-modal', priority: 20 });
+    }, [activeTab]);
 
     useBackHandler(isOpen, () => {
         onClose();
     }, { id: 'stats-modal', priority: 10 });
-
-    // We still need to handle "forward" navigation or state consistency if we rely on history.state.view
-    // But since we are moving away from relying on history for logic, we just manage internal state.
-    // However, for "Deep Linking" or keeping browser forward button working, we might need more.
-    // For now, mirroring old logic's intent: Close details first, then modal.
-
-    // Old effect for synchronizing history state when details open/close?
-    // The old logic pushed 'stats-details'.
-    // If we use useBackHandler, we intercept the hardware back.
-    // So we don't need to listen to popstate manually.
-
-    /* 
-    DEPRECATED: Old popstate listener removed.
-    */
-
-    const openHeroDetails = (hero: HeroStat) => {
-        triggerHaptic(10);
-        // window.history.pushState({ view: 'stats-details' }, ''); // Optional: if we want to support browser forward
-        setSelectedHero(hero);
-    };
-
-    const openPlayerDetails = (player: PlayerStat) => {
-        triggerHaptic(10);
-        // window.history.pushState({ view: 'stats-details' }, '');
-        setSelectedPlayer(player);
-    };
 
     const closeDetails = () => {
         triggerHaptic(10);
@@ -637,6 +601,75 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
         return result;
     }, [sortedHeroes, heroSearch, heroSort]);
+
+    const openHeroDetails = useCallback((hero: HeroStat) => {
+        triggerHaptic(10);
+        setSelectedHero(hero);
+    }, [triggerHaptic]);
+
+    const openPlayerDetails = useCallback((player: PlayerStat) => {
+        triggerHaptic(10);
+        setSelectedPlayer(player);
+    }, [triggerHaptic]);
+
+    const handleSelectPlayerByName = useCallback((playerName: string) => {
+        triggerHaptic(10);
+        const targetName = playerName.trim();
+        const found = processedPlayers.find(p => p.name.toLowerCase() === targetName.toLowerCase());
+        if (found) {
+            setSelectedPlayer(found);
+        } else {
+            const playerMatches = filteredHistory.filter(m =>
+                m.team1.some(p => p.name.toLowerCase() === targetName.toLowerCase()) ||
+                m.team2.some(p => p.name.toLowerCase() === targetName.toLowerCase())
+            );
+            const wins = playerMatches.filter(m =>
+                (m.team1.some(p => p.name.toLowerCase() === targetName.toLowerCase()) && m.winner === 'team1') ||
+                (m.team2.some(p => p.name.toLowerCase() === targetName.toLowerCase()) && m.winner === 'team2')
+            ).length;
+            const totalKills = playerMatches.reduce((acc, m) => {
+                const p = [...m.team1, ...m.team2].find(pl => pl.name.toLowerCase() === targetName.toLowerCase());
+                return acc + (p?.kills || 0);
+            }, 0);
+            setSelectedPlayer({
+                name: targetName,
+                matches: playerMatches.length,
+                wins,
+                losses: playerMatches.length - wins,
+                score: 0.5,
+                heroesPlayed: {},
+                totalKills,
+                avgKills: playerMatches.length > 0 ? totalKills / playerMatches.length : 0
+            });
+        }
+        setSelectedHero(null);
+    }, [processedPlayers, filteredHistory, triggerHaptic]);
+
+    const handleSelectHeroByName = useCallback((heroName: string) => {
+        triggerHaptic(10);
+        const targetName = heroName.trim();
+        const targetKey = normalizeHeroKey(targetName);
+        const found = processedHeroes.find(h => normalizeHeroKey(h.name) === targetKey);
+        if (found) {
+            setSelectedHero(found);
+        } else {
+            const heroMatches = filteredHistory.filter(m =>
+                m.team1.some(p => normalizeHeroKey(p.heroName) === targetKey) ||
+                m.team2.some(p => normalizeHeroKey(p.heroName) === targetKey)
+            );
+            const wins = heroMatches.filter(m =>
+                (m.team1.some(p => normalizeHeroKey(p.heroName) === targetKey) && m.winner === 'team1') ||
+                (m.team2.some(p => normalizeHeroKey(p.heroName) === targetKey) && m.winner === 'team2')
+            ).length;
+            setSelectedHero({
+                name: targetName,
+                matches: heroMatches.length,
+                wins,
+                losses: heroMatches.length - wins
+            });
+        }
+        setSelectedPlayer(null);
+    }, [processedHeroes, filteredHistory, triggerHaptic]);
 
     // Filtered Matches
     const processedMatches = useMemo(() => {
@@ -1217,7 +1250,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </>
                                     )}
 
-                                    {activeTab === 'heroes' && !selectedHero && (
+                                    {activeTab === 'heroes' && (
                                         <div className="relative shrink-0">
                                             <button
                                                 ref={(el) => {
@@ -1288,7 +1321,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                         </div>
                                     )}
 
-                                    {activeTab === 'players' && !selectedPlayer && (
+                                    {activeTab === 'players' && (
                                         <div className="relative shrink-0">
                                             <button
                                                 ref={(el) => {
@@ -1426,8 +1459,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {activeTab === 'players' && (
                             <StatsPlayersTab
                                 processedPlayers={processedPlayers}
-                                selectedPlayer={selectedPlayer}
-                                setSelectedPlayer={setSelectedPlayer}
                                 filteredHistory={filteredHistory}
                                 onRenamePlayer={(oldName, newName) => {
                                     hasLocalMutationsRef.current = true;
@@ -1438,11 +1469,7 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 underdog={underdog}
                                 topTotalKillers={topTotalKillers}
                                 playerSort={playerSort}
-                                openPlayerDetails={(player) => {
-                                    triggerHaptic(10);
-                                    setSelectedPlayer(player);
-                                }}
-                                closeDetails={() => setSelectedPlayer(null)}
+                                openPlayerDetails={openPlayerDetails}
                                 handleTitleClick={handleTitleClick}
                                 onOpenEfficiencyBreakdown={() => { setShowEfficiencyBreakdown(true); triggerHaptic(10); }}
                             />
@@ -1451,8 +1478,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                         {activeTab === 'heroes' && (
                             <StatsHeroesTab
                                 processedHeroes={processedHeroes}
-                                selectedHero={selectedHero}
-                                setSelectedHero={setSelectedHero}
                                 filteredHistory={filteredHistory}
                                 onRenameHero={(oldName, newName) => {
                                     hasLocalMutationsRef.current = true;
@@ -1460,7 +1485,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 }}
                                 heroSort={heroSort}
                                 openHeroDetails={openHeroDetails}
-                                closeDetails={() => setSelectedHero(null)}
                                 topWinrateHero={topWinrateHero}
                                 mostPopularHero={mostPopularHero}
                                 mostDeadlyHero={mostDeadlyHero}
@@ -2154,6 +2178,47 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                     triggerHaptic={triggerHaptic}
                 />
             )}
+
+            {/* Player Details Modal */}
+            <PlayerDetails
+                isOpen={!!selectedPlayer}
+                player={selectedPlayer}
+                history={filteredHistory}
+                onClose={() => setSelectedPlayer(null)}
+                onRename={(newName) => {
+                    if (selectedPlayer) {
+                        hasLocalMutationsRef.current = true;
+                        onRenamePlayer(selectedPlayer.name, newName);
+                        setSelectedPlayer(prev => prev ? { ...prev, name: newName } : null);
+                    }
+                }}
+                onSelectHero={handleSelectHeroByName}
+                onSelectPlayer={handleSelectPlayerByName}
+                triggerHaptic={triggerHaptic}
+            />
+
+            {/* Hero Details Modal */}
+            <HeroDetails
+                isOpen={!!selectedHero}
+                hero={selectedHero}
+                history={filteredHistory}
+                onClose={() => setSelectedHero(null)}
+                onRename={(newName) => {
+                    if (selectedHero) {
+                        hasLocalMutationsRef.current = true;
+                        onRenameHero(selectedHero.name, newName);
+                        setSelectedHero(prev => prev ? { ...prev, name: newName } : null);
+                    }
+                }}
+                onOpenMerge={(heroName) => {
+                    triggerHaptic(10);
+                    setSelectedHero(null);
+                    setIsMergeModalOpen(true);
+                }}
+                onSelectHero={handleSelectHeroByName}
+                onSelectPlayer={handleSelectPlayerByName}
+                triggerHaptic={triggerHaptic}
+            />
 
             {matchFormOverlay}
         </>

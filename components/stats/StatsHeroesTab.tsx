@@ -1,34 +1,29 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Shield, Star, Crown, Skull, Clock, Merge } from 'lucide-react';
 import { HeroStat, MatchRecord } from '../../types';
-import { HeroDetails } from '../HeroDetails';
 import { Avatar } from '../common/Avatar';
 import { findDuplicateOrSimilarHeroGroups, formatPlural } from '../../utils/heroNormalization';
 
-
 interface StatsHeroesTabProps {
     processedHeroes: HeroStat[];
-    selectedHero: HeroStat | null;
-    setSelectedHero: React.Dispatch<React.SetStateAction<HeroStat | null>>;
     filteredHistory: MatchRecord[];
     onRenameHero: (oldName: string, newName: string) => void;
     heroSort?: 'winrate' | 'matches' | 'az' | 'za' | 'pop';
     openHeroDetails: (hero: HeroStat) => void;
-    closeDetails: () => void;
     topWinrateHero?: HeroStat | null;
     mostPopularHero?: HeroStat | null;
     mostDeadlyHero?: HeroStat | null;
     onOpenInactiveModal?: () => void;
     onOpenMergeModal?: () => void;
     duplicateCount?: number;
+    // Опциональные пропсы для обратной совместимости
+    selectedHero?: HeroStat | null;
+    setSelectedHero?: React.Dispatch<React.SetStateAction<HeroStat | null>>;
+    closeDetails?: () => void;
 }
 
 const getWinsText = (count: number) => {
-    const mod10 = count % 10;
-    const mod100 = count % 100;
-    if (mod10 === 1 && mod100 !== 11) return `${count} победа`;
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} победы`;
-    return `${count} побед`;
+    return formatPlural(count, 'победа', 'победы', 'побед');
 };
 
 const getHeroSortLabel = (sort?: 'winrate' | 'matches' | 'az' | 'za' | 'pop') => {
@@ -44,13 +39,10 @@ const getHeroSortLabel = (sort?: 'winrate' | 'matches' | 'az' | 'za' | 'pop') =>
 
 export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     processedHeroes,
-    selectedHero,
-    setSelectedHero,
     filteredHistory,
     onRenameHero,
     heroSort,
     openHeroDetails,
-    closeDetails,
     topWinrateHero,
     mostPopularHero,
     mostDeadlyHero,
@@ -58,18 +50,6 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     onOpenMergeModal,
     duplicateCount: propDuplicateCount
 }) => {
-    const [displayHero, setDisplayHero] = useState<HeroStat | null>(selectedHero);
-
-    if (selectedHero && selectedHero !== displayHero) {
-        setDisplayHero(selectedHero);
-    }
-
-    useEffect(() => {
-        if (selectedHero) {
-            setDisplayHero(selectedHero);
-        }
-    }, [selectedHero]);
-
     const fallbackDuplicateCount = useMemo(() => {
         if (propDuplicateCount !== undefined) return propDuplicateCount;
         const names = new Set<string>();
@@ -85,8 +65,8 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     const duplicateCount = propDuplicateCount !== undefined ? propDuplicateCount : fallbackDuplicateCount;
 
     return (
-        <div className="relative w-full h-full min-h-[400px]">
-            {/* Список героев (Всегда смонтирован в DOM для мгновенного возврата без тормозов) */}
+        <div className="w-full">
+            {/* Список героев */}
             <div className="px-4 pb-4 pt-3 space-y-2 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between px-1 pb-1 mb-1 text-xs text-slate-500 dark:text-slate-400 gap-2 flex-wrap">
                     <span className="font-semibold text-slate-600 dark:text-slate-400 truncate">
@@ -96,7 +76,7 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                         {onOpenMergeModal && (
                             <button
                                 onClick={onOpenMergeModal}
-                                className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border active:scale-95 transition-all ${
+                                className={`flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border active:scale-95 transition-all cursor-pointer ${
                                     duplicateCount > 0
                                         ? 'text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 bg-primary-50 dark:bg-primary-950/40 border-primary-300 dark:border-primary-800 shadow-xs'
                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
@@ -114,7 +94,7 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                         {onOpenInactiveModal && (
                             <button
                                 onClick={onOpenInactiveModal}
-                                className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50 active:scale-95 transition-all"
+                                className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50 active:scale-95 transition-all cursor-pointer"
                             >
                                 <Clock size={12} />
                                 <span>Список забытых</span>
@@ -128,7 +108,7 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                         onClick={() => {
                             openHeroDetails(hero);
                         }}
-                        className="flex items-center justify-between py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
+                        className="flex items-center justify-between py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation active:scale-[0.99]"
                     >
                         <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                             <div className="relative shrink-0 flex items-center justify-center">
@@ -203,32 +183,6 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
                 ))}
                 {processedHeroes.length === 0 && <div className="text-center text-slate-400 py-10">Нет данных о героях</div>}
             </div>
-
-            {/* Выезжающий слайд-оверлей деталей героя (GPU Hardware Accelerated 60 FPS) */}
-            <div
-                className={`absolute inset-0 z-30 bg-slate-50 dark:bg-slate-950 bg-grid-pattern overflow-y-auto transition-all duration-300 ease-out ${selectedHero
-                        ? 'translate-x-0 opacity-100 pointer-events-auto'
-                        : 'translate-x-full opacity-0 pointer-events-none'
-                    }`}
-                style={{ willChange: 'transform, opacity' }}
-            >
-                {displayHero && (
-                    <HeroDetails
-                        key={displayHero.name}
-                        hero={displayHero}
-                        history={filteredHistory}
-                        onBack={closeDetails}
-                        onRename={(newName) => {
-                            onRenameHero(displayHero.name, newName);
-                            setSelectedHero(prev => prev ? { ...prev, name: newName } : null);
-                        }}
-                        onOpenMerge={() => {
-                            onOpenMergeModal?.();
-                        }}
-                    />
-                )}
-            </div>
         </div>
     );
 };
-

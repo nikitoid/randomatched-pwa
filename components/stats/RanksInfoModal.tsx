@@ -17,6 +17,7 @@ export const RanksInfoModal: React.FC<RanksInfoModalProps> = ({ isOpen, onClose 
             subtitle="Информация об уровнях, званиях и формуле начисления XP"
             icon={<Shield className="text-amber-500" size={22} />}
             maxWidth="md"
+            priority={35}
             modalId="ranks-info-modal"
         >
             <div className="space-y-5">

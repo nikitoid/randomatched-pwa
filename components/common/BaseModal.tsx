@@ -56,13 +56,14 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   footer,
   headerActions,
   subHeader,
-  closeButtonTestId,
+  closeButtonTestId: propCloseButtonTestId,
   className = '',
   contentClassName = '',
   contentRef,
 }) => {
   const generatedId = useId();
   const resolvedId = modalId || generatedId;
+  const finalCloseButtonTestId = propCloseButtonTestId || (resolvedId ? `${resolvedId}-close-btn` : 'modal-close-button');
   const { getStackIndex } = useNavigation();
 
   // Состояние монтирования и анимации появление / закрытие
@@ -499,7 +500,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
                 <button
                   type="button"
                   onClick={handleRequestClose}
-                  data-testid={closeButtonTestId}
+                  data-testid={finalCloseButtonTestId}
                   className="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white active:bg-slate-200 dark:active:bg-slate-700 active:scale-95 transition-all flex items-center justify-center cursor-pointer select-none"
                   aria-label="Закрыть"
                 >
@@ -518,7 +519,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         )}
 
         {/* Scrollable Content Body with min-h-0 flex-1 */}
-        <div ref={setMergedContentRef} className={`flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar ${contentClassName}`}>
+        <div ref={setMergedContentRef} className={`flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-4 no-scrollbar ${contentClassName}`}>
           {children}
         </div>
 

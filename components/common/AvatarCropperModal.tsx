@@ -482,7 +482,7 @@ export const AvatarCropperModal: React.FC<AvatarCropperModalProps> = ({
       title={imageSrc ? 'Кадрирование фото' : 'Выбор аватарки'}
       subtitle={entityName ? `Для ${entityType === 'player' ? 'игрока' : 'героя'} "${entityName}"` : undefined}
       maxWidth="md"
-      priority={30}
+      priority={35}
     >
       <div className="flex flex-col items-center space-y-4">
         <input
