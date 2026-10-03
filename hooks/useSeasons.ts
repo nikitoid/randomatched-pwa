@@ -313,9 +313,11 @@ export const useSeasons = (
                 }
             }
 
-            setDeletedSeasonIds(nextDeletedIds);
-            const mergedList = Array.from(mergedSeasonsMap.values());
-            setSeasons(mergedList);
+            if (hasChanges || mergedSeasonsMap.size !== seasons.length) {
+                setDeletedSeasonIds(nextDeletedIds);
+                const mergedList = Array.from(mergedSeasonsMap.values());
+                setSeasons(mergedList);
+            }
 
             if (!silentIfNoChanges && addToast) {
                 if (duplicateReplacedName) {

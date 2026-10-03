@@ -75,9 +75,9 @@ export const useMatchFilters = (
         const { defaultSeasonId, defaultSeason, isSeasonEnded, endedSeasonName } = defaultSeasonInfo;
 
         if (defaultSeasonId === 'all') {
-            setSelectedSeasonId('all');
-            setFilterStartDate('');
-            setFilterEndDate('');
+            setSelectedSeasonId(prev => prev === 'all' ? prev : 'all');
+            setFilterStartDate(prev => prev === '' ? prev : '');
+            setFilterEndDate(prev => prev === '' ? prev : '');
             if (isSeasonEnded && notifyEnded && !hasNotifiedSeasonEnded.current && addToast) {
                 addToast(
                     `Срок сезона "${endedSeasonName || ''}" истек. Отображается статистика за все время.`,
@@ -87,9 +87,11 @@ export const useMatchFilters = (
                 hasNotifiedSeasonEnded.current = true;
             }
         } else if (defaultSeason) {
-            setSelectedSeasonId(defaultSeason.id);
-            setFilterStartDate(defaultSeason.startDate);
-            setFilterEndDate(defaultSeason.endDate || '');
+            const nextStart = defaultSeason.startDate;
+            const nextEnd = defaultSeason.endDate || '';
+            setSelectedSeasonId(prev => prev === defaultSeason.id ? prev : defaultSeason.id);
+            setFilterStartDate(prev => prev === nextStart ? prev : nextStart);
+            setFilterEndDate(prev => prev === nextEnd ? prev : nextEnd);
         }
     }, [defaultSeasonInfo, addToast]);
 

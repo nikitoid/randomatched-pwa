@@ -599,17 +599,30 @@ export const useMatchHistory = (
             const newlyAddedLocalMatches = historyRef.current.filter(m => !initialKnownIds.has(m.id));
             newlyAddedLocalMatches.forEach(m => mergedMap.set(m.id, m));
 
-            // Update Local
+            // Update Local only if actual changes occurred to prevent unnecessary re-renders of the whole app
             const finalHistory = Array.from(mergedMap.values()).sort((a, b) => b.timestamp - a.timestamp);
-            historyRef.current = finalHistory;
-            setHistory(finalHistory);
+            const hasHistoryChanged = newFromCloud > 0 || updatedFromCloud > 0 || deletedFromCloud > 0 ||
+                finalHistory.length !== historyRef.current.length ||
+                finalHistory.some((m, idx) => m.id !== historyRef.current[idx]?.id || (m.lastUpdated || m.timestamp) !== (historyRef.current[idx]?.lastUpdated || historyRef.current[idx]?.timestamp));
+
+            if (hasHistoryChanged) {
+                historyRef.current = finalHistory;
+                setHistory(finalHistory);
+            }
 
             const finalDeletedHistory = Array.from(newDeletedMap.values()).sort((a, b) => b.timestamp - a.timestamp);
-            deletedHistoryRef.current = finalDeletedHistory;
-            setDeletedHistory(finalDeletedHistory);
+            const hasDeletedChanged = finalDeletedHistory.length !== deletedHistoryRef.current.length ||
+                finalDeletedHistory.some((m, idx) => m.id !== deletedHistoryRef.current[idx]?.id);
 
-            deletedIdsRef.current = new Set();
-            setDeletedIds(new Set());
+            if (hasDeletedChanged) {
+                deletedHistoryRef.current = finalDeletedHistory;
+                setDeletedHistory(finalDeletedHistory);
+            }
+
+            if (deletedIdsRef.current.size > 0) {
+                deletedIdsRef.current = new Set();
+                setDeletedIds(new Set());
+            }
 
             const msg = [];
             if (newFromCloud > 0) msg.push(`Скачано: ${newFromCloud}`);
