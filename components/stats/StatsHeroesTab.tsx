@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Shield, Star, Crown, Skull, Clock, Merge } from 'lucide-react';
 import { HeroStat, MatchRecord } from '../../types';
 import { Avatar } from '../common/Avatar';
-import { findDuplicateOrSimilarHeroGroups, formatPlural } from '../../utils/heroNormalization';
+import { formatPlural } from '../../utils/heroNormalization';
 
 interface StatsHeroesTabProps {
     processedHeroes: HeroStat[];
@@ -50,19 +50,7 @@ export const StatsHeroesTab: React.FC<StatsHeroesTabProps> = ({
     onOpenMergeModal,
     duplicateCount: propDuplicateCount
 }) => {
-    const fallbackDuplicateCount = useMemo(() => {
-        if (propDuplicateCount !== undefined) return propDuplicateCount;
-        const names = new Set<string>();
-        filteredHistory.forEach(m => {
-            [...m.team1, ...m.team2].forEach(p => {
-                const n = (p.heroName || '').trim();
-                if (n) names.add(n);
-            });
-        });
-        return findDuplicateOrSimilarHeroGroups(Array.from(names)).length;
-    }, [filteredHistory, propDuplicateCount]);
-
-    const duplicateCount = propDuplicateCount !== undefined ? propDuplicateCount : fallbackDuplicateCount;
+    const duplicateCount = propDuplicateCount ?? 0;
 
     return (
         <div className="w-full">

@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "baseline-browser-mapping": "^2.11.27",
+    "caniuse-lite": "^1.0.30001814",
     "firebase": "^10.8.0",
     "heic2any": "^0.0.4",
     "lucide-react": "^0.344.0",

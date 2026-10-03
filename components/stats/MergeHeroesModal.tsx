@@ -435,51 +435,54 @@ export const MergeHeroesModal: React.FC<MergeHeroesModalProps> = ({
                                                         const isPrimary = variant === currentTarget;
 
                                                         return (
-                                                            <button
-                                                                key={variant}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    triggerHaptic(15);
-                                                                    setSelectedTargets(prev => ({ ...prev, [idx]: variant }));
-                                                                    if (customInputGroup === idx) setCustomInputGroup(null);
-                                                                }}
-                                                                className={`w-full h-[62px] text-left px-3 py-1.5 rounded-xl border flex items-center justify-between gap-3 transition-all active:scale-[0.99] cursor-pointer shrink-0 ${isPrimary
-                                                                    ? 'bg-gradient-to-r from-primary-500/15 via-primary-500/10 to-transparent dark:from-primary-500/25 dark:via-primary-500/15 dark:to-transparent border-primary-500 ring-1 ring-primary-500/20 text-slate-900 dark:text-white font-bold shadow-xs'
-                                                                    : 'bg-slate-50/80 hover:bg-slate-100/90 dark:bg-slate-800/40 dark:hover:bg-slate-800/70 border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300'
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${isPrimary
-                                                                        ? 'border-primary-600 bg-primary-600 text-white'
-                                                                        : 'border-slate-400 dark:border-slate-600'
-                                                                        }`}>
-                                                                        {isPrimary && <Check size={11} strokeWidth={3} />}
-                                                                    </div>
-                                                                    <Avatar entityType="hero" entityId={variant} name={variant} size="xs" />
-                                                                    <div className="flex flex-col min-w-0 flex-1 justify-center">
-                                                                        <div className="flex items-center gap-1.5 min-w-0 h-[18px]">
-                                                                            <span className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">{variant}</span>
-                                                                            {isPrimary && (
-                                                                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-primary-500 text-white uppercase tracking-wider shrink-0 shadow-xs leading-none">
-                                                                                    Останется
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium line-clamp-2 leading-tight h-[26px] flex items-center">
-                                                                            {inLists.length > 0
-                                                                                ? `Список: ${inLists.join(', ')}`
-                                                                                : 'Только в истории матчей'
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0 font-medium whitespace-nowrap self-center">
-                                                                    {formatPlural(matchCount, 'матч', 'матча', 'матчей')}
-                                                                </span>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
+                                                             <button
+                                                                 key={variant}
+                                                                 type="button"
+                                                                 onClick={() => {
+                                                                     triggerHaptic(15);
+                                                                     setSelectedTargets(prev => ({ ...prev, [idx]: variant }));
+                                                                     if (customInputGroup === idx) setCustomInputGroup(null);
+                                                                 }}
+                                                                 className={`w-full min-h-[62px] text-left px-3 py-2 rounded-xl border flex items-center justify-between gap-3 transition-all active:scale-[0.99] cursor-pointer shrink-0 ${isPrimary
+                                                                     ? 'bg-gradient-to-r from-primary-500/15 via-primary-500/10 to-transparent dark:from-primary-500/25 dark:via-primary-500/15 dark:to-transparent border-primary-500 ring-1 ring-primary-500/20 text-slate-900 dark:text-white font-bold shadow-xs'
+                                                                     : 'bg-slate-50/80 hover:bg-slate-100/90 dark:bg-slate-800/40 dark:hover:bg-slate-800/70 border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300'
+                                                                     }`}
+                                                             >
+                                                                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors ${isPrimary
+                                                                         ? 'border-primary-600 bg-primary-600 text-white'
+                                                                         : 'border-slate-400 dark:border-slate-600'
+                                                                         }`}>
+                                                                         {isPrimary && <Check size={11} strokeWidth={3} />}
+                                                                     </div>
+                                                                     <Avatar entityType="hero" entityId={variant} name={variant} size="xs" />
+                                                                     <div className="flex flex-col min-w-0 flex-1 justify-center gap-0.5">
+                                                                         <div className="flex items-center gap-1.5 min-w-0">
+                                                                             <span className="truncate text-xs font-bold text-slate-900 dark:text-slate-100">{variant}</span>
+                                                                             {isPrimary && (
+                                                                                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-primary-500 text-white uppercase tracking-wider shrink-0 shadow-xs leading-none">
+                                                                                     Останется
+                                                                                 </span>
+                                                                             )}
+                                                                         </div>
+                                                                         <p
+                                                                             title={inLists.length > 0 ? inLists.join(', ') : undefined}
+                                                                             className="text-[10px] text-slate-400 dark:text-slate-500 font-medium line-clamp-2 leading-[13px] break-words"
+                                                                         >
+                                                                             {inLists.length > 0
+                                                                                 ? `${inLists.length > 1 ? 'Списки' : 'Список'}: ${inLists.join(', ')}`
+                                                                                 : 'Только в истории матчей'
+                                                                             }
+                                                                         </p>
+                                                                     </div>
+                                                                 </div>
+                                                                 <span className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0 font-medium whitespace-nowrap self-center">
+                                                                     {formatPlural(matchCount, 'матч', 'матча', 'матчей')}
+                                                                 </span>
+                                                             </button>
+                                                         );
+                                                     })}
+                                                 </div>
 
                                                 {/* Custom Name Editor or Action Row */}
                                                 {isCustomActive ? (

@@ -110,9 +110,13 @@ export const normalizeHeroKey = (name: string): string => {
   }
 })();
 
+// Static reusable buffers to eliminate GC allocations during Levenshtein calculations
+let sharedBufferA = new Int32Array(128);
+let sharedBufferB = new Int32Array(128);
+
 /**
  * Calculates the Levenshtein Distance between two normalized strings.
- * Uses 2 flat Int32 arrays to prevent heap churn.
+ * Uses reusable Int32 buffers to prevent heap churn.
  */
 export const getLevenshteinDistanceNormalized = (normA: string, normB: string): number => {
   if (normA === normB) return 0;
@@ -124,8 +128,14 @@ export const getLevenshteinDistanceNormalized = (normA: string, normB: string): 
   const lenDiff = Math.abs(lenA - lenB);
   if (lenDiff > 2) return lenDiff;
 
-  let prevRow = new Int32Array(lenA + 1);
-  let currRow = new Int32Array(lenA + 1);
+  const needed = lenA + 1;
+  if (sharedBufferA.length < needed) {
+    sharedBufferA = new Int32Array(Math.max(needed, sharedBufferA.length * 2));
+    sharedBufferB = new Int32Array(Math.max(needed, sharedBufferB.length * 2));
+  }
+
+  let prevRow = sharedBufferA;
+  let currRow = sharedBufferB;
 
   for (let j = 0; j <= lenA; j++) {
     prevRow[j] = j;
@@ -173,80 +183,93 @@ export const areAliases = (nameA: string, nameB: string): boolean => {
   return idA !== undefined && idA === idB;
 };
 
-/**
- * Compares two hero names and determines if they represent the same hero.
- */
-export const areHeroNamesSimilar = (
-  nameA: string,
-  nameB: string
-): { isSimilar: boolean; reason?: 'exact_normalized' | 'typo' | 'alias' } => {
-  const normA = normalizeHeroKey(nameA);
-  const normB = normalizeHeroKey(nameB);
+export interface PreNormalizedHero {
+  raw: string;
+  norm: string;
+  len: number;
+  aliasId: number | undefined;
+  words: string[];
+  meaningfulWordsSortedStr: string;
+  prefixWithoutLast: string;
+  lastWord: string;
+}
 
-  if (!normA || !normB) return { isSimilar: false };
+export const createPreNormalizedHero = (raw: string): PreNormalizedHero => {
+  const norm = normalizeHeroKey(raw);
+  const words = norm.split(/\s+/).filter(Boolean);
+  const meaningfulWords = words.filter(w => w !== 'и' && w !== '-');
+  const meaningfulWordsSortedStr = meaningfulWords.length > 1 ? meaningfulWords.slice().sort().join(' ') : '';
+  const prefixWithoutLast = words.length > 1 ? words.slice(0, -1).join(' ') : '';
+  const lastWord = words.length > 0 ? words[words.length - 1] : '';
+
+  return {
+    raw,
+    norm,
+    len: norm.length,
+    aliasId: norm ? ALIAS_LOOKUP_MAP.get(norm) : undefined,
+    words,
+    meaningfulWordsSortedStr,
+    prefixWithoutLast,
+    lastWord
+  };
+};
+
+export const arePreNormalizedHeroesSimilar = (
+  itemA: PreNormalizedHero,
+  itemB: PreNormalizedHero
+): { isSimilar: boolean; reason?: 'exact_normalized' | 'typo' | 'alias' } => {
+  if (!itemA.norm || !itemB.norm) return { isSimilar: false };
 
   // 1. Exact normalized match
-  if (normA === normB) {
+  if (itemA.norm === itemB.norm) {
     return { isSimilar: true, reason: 'exact_normalized' };
   }
 
   // 2. Known aliases O(1)
-  const idA = ALIAS_LOOKUP_MAP.get(normA);
-  const idB = ALIAS_LOOKUP_MAP.get(normB);
-  if (idA !== undefined && idA === idB) {
+  if (itemA.aliasId !== undefined && itemA.aliasId === itemB.aliasId) {
     return { isSimilar: true, reason: 'alias' };
   }
 
   // 3. Word permutation check for duo / multi-hero names
-  const meaningfulWordsA = normA.split(/\s+/).filter(w => w !== 'и' && w !== '-');
-  const meaningfulWordsB = normB.split(/\s+/).filter(w => w !== 'и' && w !== '-');
   if (
-    meaningfulWordsA.length > 1 &&
-    meaningfulWordsA.length === meaningfulWordsB.length &&
-    meaningfulWordsA.slice().sort().join(' ') === meaningfulWordsB.slice().sort().join(' ')
+    itemA.meaningfulWordsSortedStr &&
+    itemA.meaningfulWordsSortedStr === itemB.meaningfulWordsSortedStr
   ) {
     return { isSimilar: true, reason: 'alias' };
   }
 
   // 4. Check for distinct numbered or rank-suffixed variants
-  const wordsA = normA.split(/\s+/).filter(Boolean);
-  const wordsB = normB.split(/\s+/).filter(Boolean);
+  if (
+    itemA.words.length > 1 &&
+    itemA.words.length === itemB.words.length &&
+    itemA.prefixWithoutLast === itemB.prefixWithoutLast
+  ) {
+    const isDigitA = /^\d+$/.test(itemA.lastWord);
+    const isDigitB = /^\d+$/.test(itemB.lastWord);
+    const isShortSuffix = (itemA.lastWord.length <= 2 && itemB.lastWord.length <= 2);
+    const isRankLike = /^[sabcdef][+-]?$/i.test(itemA.lastWord) || /^[sabcdef][+-]?$/i.test(itemB.lastWord);
 
-  if (wordsA.length > 1 && wordsB.length > 1 && wordsA.length === wordsB.length) {
-    const prefixA = wordsA.slice(0, -1).join(' ');
-    const prefixB = wordsB.slice(0, -1).join(' ');
-
-    if (prefixA === prefixB) {
-      const lastA = wordsA[wordsA.length - 1];
-      const lastB = wordsB[wordsB.length - 1];
-
-      const isDigitA = /^\d+$/.test(lastA);
-      const isDigitB = /^\d+$/.test(lastB);
-      const isShortSuffix = (lastA.length <= 2 && lastB.length <= 2);
-      const isRankLike = /^[sabcdef][+-]?$/i.test(lastA) || /^[sabcdef][+-]?$/i.test(lastB);
-
-      if (isDigitA || isDigitB || isShortSuffix || isRankLike) {
-        return { isSimilar: false };
-      }
+    if (isDigitA || isDigitB || isShortSuffix || isRankLike) {
+      return { isSimilar: false };
     }
   }
 
   // Check if one name is a prefix with sequel/part number
-  const longer = normA.length > normB.length ? normA : normB;
-  const shorter = normA.length > normB.length ? normB : normA;
-  if (longer.startsWith(shorter)) {
-    const remainder = longer.slice(shorter.length).trim();
+  const longerNorm = itemA.len > itemB.len ? itemA.norm : itemB.norm;
+  const shorterNorm = itemA.len > itemB.len ? itemB.norm : itemA.norm;
+  if (longerNorm.startsWith(shorterNorm)) {
+    const remainder = longerNorm.slice(shorterNorm.length).trim();
     if (/^\d+$/.test(remainder) || /^[ivx]+$/i.test(remainder) || remainder === 'младший' || remainder === 'старший') {
       return { isSimilar: false };
     }
   }
 
   // 5. Typo check via fast Levenshtein
-  const minLen = Math.min(normA.length, normB.length);
-  const maxLen = Math.max(normA.length, normB.length);
+  const minLen = Math.min(itemA.len, itemB.len);
+  const maxLen = Math.max(itemA.len, itemB.len);
 
-  if (minLen >= 4 && Math.abs(normA.length - normB.length) <= 2) {
-    const dist = getLevenshteinDistanceNormalized(normA, normB);
+  if (minLen >= 4 && Math.abs(itemA.len - itemB.len) <= 2) {
+    const dist = getLevenshteinDistanceNormalized(itemA.norm, itemB.norm);
     if (minLen <= 6 && dist <= 1) {
       return { isSimilar: true, reason: 'typo' };
     }
@@ -259,6 +282,16 @@ export const areHeroNamesSimilar = (
   }
 
   return { isSimilar: false };
+};
+
+/**
+ * Compares two hero names and determines if they represent the same hero.
+ */
+export const areHeroNamesSimilar = (
+  nameA: string,
+  nameB: string
+): { isSimilar: boolean; reason?: 'exact_normalized' | 'typo' | 'alias' } => {
+  return arePreNormalizedHeroesSimilar(createPreNormalizedHero(nameA), createPreNormalizedHero(nameB));
 };
 
 /**
@@ -403,15 +436,8 @@ export const findDuplicateOrSimilarHeroGroups = (
     }
   }
 
-  // Pre-normalize all names once
-  const items = uniqueNames.map(raw => {
-    const norm = normalizeHeroKey(raw);
-    return {
-      raw,
-      norm,
-      len: norm.length
-    };
-  });
+  // Pre-normalize and pre-analyze all names once
+  const items = uniqueNames.map(createPreNormalizedHero);
 
   const visited = new Set<number>();
   const groups: DuplicateGroup[] = [];
@@ -441,7 +467,7 @@ export const findDuplicateOrSimilarHeroGroups = (
         continue;
       }
 
-      const check = areHeroNamesSimilar(itemA.raw, itemB.raw);
+      const check = arePreNormalizedHeroesSimilar(itemA, itemB);
       if (check.isSimilar && check.reason) {
         cluster.push(itemB.raw);
         visited.add(j);

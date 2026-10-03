@@ -175,28 +175,70 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const hasLocalMutationsRef = useRef(false);
 
     // Global count of duplicate groups across all heroes in history + lists
-    // Only computed when heroes tab is active or merge modal is open to avoid Levenshtein distance O(N^2) overhead on initial modal open
-    const heroDuplicateCount = useMemo(() => {
-        if (activeTab !== 'heroes' && !isMergeModalOpen) {
-            return 0;
+    // Computed in the background when StatsModal opens, so opening the "Heroes" tab is instant
+    const [heroDuplicateCount, setHeroDuplicateCount] = useState<number>(0);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
         }
-        const names = new Set<string>();
-        history.forEach(m => {
-            [...m.team1, ...m.team2].forEach(p => {
-                const n = (p.heroName || '').trim();
-                if (n) names.add(n);
-            });
-        });
-        if (lists && lists.length > 0) {
-            lists.forEach(l => {
-                l.heroes.forEach(h => {
-                    const n = (h.name || '').trim();
+
+        let isCancelled = false;
+
+        const runBackgroundDuplicateCheck = () => {
+            const names = new Set<string>();
+            for (let i = 0; i < history.length; i++) {
+                const m = history[i];
+                for (let j = 0; j < m.team1.length; j++) {
+                    const n = (m.team1[j].heroName || '').trim();
                     if (n) names.add(n);
-                });
-            });
+                }
+                for (let j = 0; j < m.team2.length; j++) {
+                    const n = (m.team2[j].heroName || '').trim();
+                    if (n) names.add(n);
+                }
+            }
+            if (lists && lists.length > 0) {
+                for (let i = 0; i < lists.length; i++) {
+                    const heroes = lists[i].heroes;
+                    for (let j = 0; j < heroes.length; j++) {
+                        const n = (heroes[j].name || '').trim();
+                        if (n) names.add(n);
+                    }
+                }
+            }
+
+            if (names.size < 2) {
+                if (!isCancelled) setHeroDuplicateCount(0);
+                return;
+            }
+
+            const count = findDuplicateOrSimilarHeroGroups(Array.from(names)).length;
+            if (!isCancelled) {
+                setHeroDuplicateCount(count);
+            }
+        };
+
+        // Defer computation via requestIdleCallback / setTimeout so it never blocks UI rendering or tab switching
+        let idleId: number | null = null;
+        let timerId: NodeJS.Timeout | null = null;
+
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            idleId = (window as any).requestIdleCallback(runBackgroundDuplicateCheck, { timeout: 1000 });
+        } else {
+            timerId = setTimeout(runBackgroundDuplicateCheck, 50);
         }
-        return findDuplicateOrSimilarHeroGroups(Array.from(names)).length;
-    }, [history, lists, isMergeModalOpen, activeTab]);
+
+        return () => {
+            isCancelled = true;
+            if (idleId !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
+                (window as any).cancelIdleCallback(idleId);
+            }
+            if (timerId !== null) {
+                clearTimeout(timerId);
+            }
+        };
+    }, [isOpen, history, lists, isMergeModalOpen]);
 
     // Export/Import Handlers
     const handleExport = () => {
