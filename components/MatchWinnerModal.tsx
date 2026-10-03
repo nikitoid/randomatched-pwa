@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Trophy, Swords, Minus, Plus, Skull, RotateCcw, X } from 'lucide-react';
 import { BaseModal } from './common/BaseModal';
 import { Avatar } from './common/Avatar';
@@ -21,6 +21,87 @@ const POSITION_TO_INDEX: Record<string, number> = {
     left: 2,
     right: 3
 };
+
+interface PlayerKillRowProps {
+    playerNumber: number;
+    playerName: string;
+    heroName: string;
+    kills: number;
+    accentColor: 'primary' | 'secondary';
+    onKillsChange: (playerNumber: number, delta: number) => void;
+    onInputChange: (playerNumber: number, valueStr: string) => void;
+}
+
+const PlayerKillRow = React.memo<PlayerKillRowProps>(({
+    playerNumber,
+    playerName,
+    heroName,
+    kills,
+    accentColor,
+    onKillsChange,
+    onInputChange
+}) => {
+    return (
+        <div
+            className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-white/60 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/60 shadow-2xs gap-2"
+        >
+            {/* Left: Avatar + Player Name + Hero Name */}
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <Avatar entityType="player" entityId={playerName} name={playerName} size="md" />
+                <div className="flex flex-col text-left min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                            {playerName}
+                        </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 truncate">
+                        {heroName}
+                    </span>
+                </div>
+            </div>
+
+            {/* Right: Stepper controls (- [ N ] +) */}
+            <div className="flex items-center gap-1 shrink-0">
+                <button
+                    type="button"
+                    aria-label={`Уменьшить фраги ${playerName}`}
+                    onClick={() => onKillsChange(playerNumber, -1)}
+                    className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold flex items-center justify-center active:scale-90 transition-[transform,background-color] duration-150 hover:bg-slate-200 dark:hover:bg-slate-700 min-w-[32px] min-h-[32px] select-none cursor-pointer"
+                >
+                    <Minus size={14} />
+                </button>
+
+                <input
+                    type="number"
+                    min="0"
+                    aria-label={`Количество убийств ${playerName}`}
+                    value={kills}
+                    onChange={e => onInputChange(playerNumber, e.target.value)}
+                    className={`w-9 py-1 text-center bg-white dark:bg-slate-950 border rounded-lg text-xs font-black text-slate-900 dark:text-white outline-none focus:ring-1 transition-colors duration-150 ${
+                        accentColor === 'primary'
+                            ? 'border-primary-200 dark:border-primary-800 focus:ring-primary-500/40'
+                            : 'border-secondary-200 dark:border-secondary-800 focus:ring-secondary-500/40'
+                    }`}
+                />
+
+                <button
+                    type="button"
+                    aria-label={`Увеличить фраги ${playerName}`}
+                    onClick={() => onKillsChange(playerNumber, 1)}
+                    className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center active:scale-90 transition-[transform,background-color] duration-150 select-none min-w-[32px] min-h-[32px] cursor-pointer ${
+                        accentColor === 'primary'
+                            ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/70'
+                            : 'bg-secondary-100 dark:bg-secondary-900/50 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-900/70'
+                    }`}
+                >
+                    <Plus size={14} />
+                </button>
+            </div>
+        </div>
+    );
+});
+
+PlayerKillRow.displayName = 'PlayerKillRow';
 
 export const MatchWinnerModal: React.FC<MatchWinnerModalProps> = ({
     isOpen,
@@ -67,21 +148,21 @@ export const MatchWinnerModal: React.FC<MatchWinnerModalProps> = ({
         return team2Players.reduce((sum, p) => sum + (playerKills[p.playerNumber] || 0), 0);
     }, [team2Players, playerKills]);
 
-    const handleKillsChange = (playerNumber: number, delta: number) => {
+    const handleKillsChange = useCallback((playerNumber: number, delta: number) => {
         haptics.trigger('light');
         setPlayerKills(prev => ({
             ...prev,
             [playerNumber]: Math.max(0, (prev[playerNumber] || 0) + delta)
         }));
-    };
+    }, [haptics]);
 
-    const handleInputChange = (playerNumber: number, valueStr: string) => {
+    const handleInputChange = useCallback((playerNumber: number, valueStr: string) => {
         const val = parseInt(valueStr, 10);
         setPlayerKills(prev => ({
             ...prev,
             [playerNumber]: isNaN(val) ? 0 : Math.max(0, val)
         }));
-    };
+    }, []);
 
     const handleConfirmWin = (winner: 'team1' | 'team2') => {
         haptics.trigger('success');
@@ -93,74 +174,6 @@ export const MatchWinnerModal: React.FC<MatchWinnerModalProps> = ({
             }
         });
         onRecordWin(winner, killsByPlayerName);
-    };
-
-
-    const renderPlayerRow = (player: AssignedPlayer, accentColor: 'primary' | 'secondary') => {
-        const playerName = getPlayerName(player);
-        const heroName = player.hero?.name || 'Без героя';
-        const kills = playerKills[player.playerNumber] ?? 0;
-
-        return (
-            <div
-                key={player.playerNumber}
-                className="flex items-center justify-between py-1.5 px-2.5 rounded-xl bg-white/60 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800/60 shadow-2xs gap-2"
-            >
-                {/* Left: Avatar + Player Name + Hero Name (FULL WIDTH, NO TRUNCATION ISSUES) */}
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <Avatar entityType="player" entityId={playerName} name={playerName} size="md" />
-                    <div className="flex flex-col text-left min-w-0">
-
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 truncate">
-                                {playerName}
-                            </span>
-                        </div>
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 truncate">
-                            {heroName}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Right: Stepper controls (- [ N ] +) */}
-                <div className="flex items-center gap-1 shrink-0">
-                    <button
-                        type="button"
-                        aria-label={`Уменьшить фраги ${playerName}`}
-                        onClick={() => handleKillsChange(player.playerNumber, -1)}
-                        className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold flex items-center justify-center active:scale-90 transition-all hover:bg-slate-200 dark:hover:bg-slate-700 min-w-[32px] min-h-[32px] select-none"
-                    >
-                        <Minus size={14} />
-                    </button>
-
-                    <input
-                        type="number"
-                        min="0"
-                        aria-label={`Количество убийств ${playerName}`}
-                        value={kills}
-                        onChange={e => handleInputChange(player.playerNumber, e.target.value)}
-                        className={`w-9 py-1 text-center bg-white dark:bg-slate-950 border rounded-lg text-xs font-black text-slate-900 dark:text-white outline-none focus:ring-1 transition-all ${
-                            accentColor === 'primary'
-                                ? 'border-primary-200 dark:border-primary-800 focus:ring-primary-500/40'
-                                : 'border-secondary-200 dark:border-secondary-800 focus:ring-secondary-500/40'
-                        }`}
-                    />
-
-                    <button
-                        type="button"
-                        aria-label={`Увеличить фраги ${playerName}`}
-                        onClick={() => handleKillsChange(player.playerNumber, 1)}
-                        className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center active:scale-90 transition-all select-none min-w-[32px] min-h-[32px] ${
-                            accentColor === 'primary'
-                                ? 'bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-900/70'
-                                : 'bg-secondary-100 dark:bg-secondary-900/50 text-secondary-700 dark:text-secondary-300 hover:bg-secondary-200 dark:hover:bg-secondary-900/70'
-                        }`}
-                    >
-                        <Plus size={14} />
-                    </button>
-                </div>
-            </div>
-        );
     };
 
     return (
@@ -193,7 +206,18 @@ export const MatchWinnerModal: React.FC<MatchWinnerModalProps> = ({
                                 </span>
                             </div>
                             <div className="flex flex-col gap-1">
-                                {team1Players.map(p => renderPlayerRow(p, 'primary'))}
+                                {team1Players.map(p => (
+                                    <PlayerKillRow
+                                        key={p.playerNumber}
+                                        playerNumber={p.playerNumber}
+                                        playerName={getPlayerName(p)}
+                                        heroName={p.hero?.name || 'Без героя'}
+                                        kills={playerKills[p.playerNumber] ?? 0}
+                                        accentColor="primary"
+                                        onKillsChange={handleKillsChange}
+                                        onInputChange={handleInputChange}
+                                    />
+                                ))}
                             </div>
                         </div>
 
@@ -211,7 +235,18 @@ export const MatchWinnerModal: React.FC<MatchWinnerModalProps> = ({
                                 </span>
                             </div>
                             <div className="flex flex-col gap-1">
-                                {team2Players.map(p => renderPlayerRow(p, 'secondary'))}
+                                {team2Players.map(p => (
+                                    <PlayerKillRow
+                                        key={p.playerNumber}
+                                        playerNumber={p.playerNumber}
+                                        playerName={getPlayerName(p)}
+                                        heroName={p.hero?.name || 'Без героя'}
+                                        kills={playerKills[p.playerNumber] ?? 0}
+                                        accentColor="secondary"
+                                        onKillsChange={handleKillsChange}
+                                        onInputChange={handleInputChange}
+                                    />
+                                ))}
                             </div>
                         </div>
                     </div>

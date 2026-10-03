@@ -93,7 +93,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                 </div>
             </button>
 
-            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 glass-dropdown-gradient border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl transition-all duration-300 origin-top ${isNamesOpen ? 'opacity-100 scale-y-100 pointer-events-auto overflow-visible' : 'opacity-0 scale-y-0 pointer-events-none overflow-hidden'}`}>
+            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 glass-dropdown-gradient border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl transition-all duration-300 origin-top ${isNamesOpen ? 'opacity-100 scale-y-100 pointer-events-auto visible overflow-visible' : 'opacity-0 scale-y-0 pointer-events-none invisible overflow-hidden'}`}>
                 <div className="p-4 pt-5">
 
                     {savedTeams.length > 0 && (

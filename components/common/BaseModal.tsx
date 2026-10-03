@@ -238,7 +238,12 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
     const handleFocusIn = (e: FocusEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      if (
+        target &&
+        dialogCardRef.current &&
+        dialogCardRef.current.contains(target) &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
         setIsInputFocused(true);
         if (window.scrollY !== 0) {
           window.scrollTo(0, 0);
@@ -253,7 +258,12 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
     const handleFocusOut = (e: FocusEvent) => {
       const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      if (
+        target &&
+        dialogCardRef.current &&
+        dialogCardRef.current.contains(target) &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
         setIsInputFocused(false);
       }
     };
@@ -403,32 +413,43 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 
     const transitionStyle = isDragging
       ? 'none'
-      : 'opacity 300ms ease-out, backdrop-filter 300ms ease-out, -webkit-backdrop-filter 300ms ease-out';
+      : animateState === 'entered'
+        ? 'none'
+        : 'opacity 300ms ease-out, backdrop-filter 300ms ease-out, -webkit-backdrop-filter 300ms ease-out';
 
     return {
-      zIndex: backdropZIndex,
       opacity,
       backdropFilter: blurPx > 0 ? `blur(${blurPx}px)` : 'none',
       WebkitBackdropFilter: blurPx > 0 ? `blur(${blurPx}px)` : 'none',
       transition: transitionStyle,
       willChange: isDragging ? 'opacity, backdrop-filter' : 'auto',
-      ...(viewportStyle.height ? { height: `${viewportStyle.height}px` } : {}),
-      ...(viewportStyle.top !== undefined ? { top: `${viewportStyle.top}px` } : {}),
     };
   };
 
   const modalContent = (
     <div
-      className={`fixed inset-0 flex bg-slate-950/75 ${getContainerLayoutClass()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
-      style={getBackdropStyle()}
-      onClick={handleBackdropClick}
+      className={`fixed inset-0 flex ${getContainerLayoutClass()} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
+      style={{
+        zIndex: backdropZIndex,
+        ...(viewportStyle.height ? { height: `${viewportStyle.height}px` } : {}),
+        ...(viewportStyle.top !== undefined ? { top: `${viewportStyle.top}px` } : {}),
+      }}
       role="dialog"
       aria-modal="true"
       data-testid={resolvedId}
     >
+      {/* Изолированный слой бэкдропа с размытием */}
+      <div
+        className="fixed inset-0 bg-slate-950/75 pointer-events-auto"
+        style={getBackdropStyle()}
+        onClick={handleBackdropClick}
+        aria-hidden="true"
+      />
+
+      {/* Карточка модалки в изолированном контексте наложения */}
       <div
         ref={dialogCardRef}
-        className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
+        className={`relative z-10 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full pointer-events-auto [isolation:isolate] ${getMaxWidthClass()} ${
           isBottomSheetScreen
             ? viewportStyle.isFullHeightNeeded
               ? 'rounded-t-2xl sm:rounded-3xl h-full'

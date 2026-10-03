@@ -103,6 +103,9 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     const [weightsSearchTerm, setWeightsSearchTerm] = useState('');
     const [selectedDebugPlayerTab, setSelectedDebugPlayerTab] = useState<'global' | number>('global');
 
+    // Pause ambient card glow animations when any modal/sheet is open over the board
+    const isAnyModalOpen = Boolean(activeModal || showInfo || isWeightsModalOpen || isHeroSelectionOpen || isRerollConfirm);
+
     // Режим отображения оверлея: facing (лицом к пользователю) или cross (по кругу / крест)
     const [viewMode, setViewMode] = useState<'facing' | 'cross'>(() => {
         try {
@@ -472,11 +475,11 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         }}
                     >
                         <div
-                            className="w-full h-full rounded-full blur-[20px] sm:blur-[25px] opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] animate-pulse-soft"
+                            className={`w-full h-full rounded-full blur-[12px] sm:blur-[16px] opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] animate-pulse-glow ${isAnyModalOpen ? '[animation-play-state:paused]' : ''}`}
                             style={{
                                 background: isTeamOdd
-                                    ? 'radial-gradient(circle, rgba(var(--primary-500)/0.65) 0%, rgba(var(--primary-500)/0.2) 40%, transparent 70%)'
-                                    : 'radial-gradient(circle, rgba(var(--secondary-500)/0.65) 0%, rgba(var(--secondary-500)/0.2) 40%, transparent 70%)',
+                                    ? 'radial-gradient(circle, rgba(var(--primary-500)/0.65) 0%, rgba(var(--primary-500)/0.32) 35%, rgba(var(--primary-500)/0.1) 58%, transparent 75%)'
+                                    : 'radial-gradient(circle, rgba(var(--secondary-500)/0.65) 0%, rgba(var(--secondary-500)/0.32) 35%, rgba(var(--secondary-500)/0.1) 58%, transparent 75%)',
                             }}
                         />
                     </div>
