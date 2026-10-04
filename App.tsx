@@ -453,6 +453,15 @@ const App: React.FC = () => {
         triggerHaptic(10);
     };
 
+    const handleOpenLists = useCallback(() => {
+        setIsListsOpen(true);
+        triggerHaptic(10);
+    }, [triggerHaptic]);
+
+    const handleCloseLists = useCallback(() => {
+        setIsListsOpen(false);
+    }, []);
+
     return (
         <NavigationProvider>
             <div className="relative h-full w-full flex flex-col bg-transparent transition-colors duration-300 overflow-hidden">
@@ -540,7 +549,7 @@ const App: React.FC = () => {
 
                 <AppNavigation
                     onOpenStats={() => { setIsHistoryStatsOpen(true); triggerHaptic(10); }}
-                    onOpenLists={() => { setIsListsOpen(true); triggerHaptic(10); }}
+                    onOpenLists={handleOpenLists}
                     onOpenSettings={() => { setIsSettingsOpen(true); triggerHaptic(10); }}
                 />
 
@@ -574,7 +583,7 @@ const App: React.FC = () => {
 
                 <ListsOverlay
                     isOpen={isListsOpen}
-                    onClose={() => setIsListsOpen(false)}
+                    onClose={handleCloseLists}
                     lists={lists}
                     onAddList={addList}
                     onUpdateList={updateList}

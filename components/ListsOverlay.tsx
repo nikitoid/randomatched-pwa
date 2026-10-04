@@ -10,6 +10,7 @@ import {
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, Hero, MatchRecord } from '../types';
 import { RANKS, RANK_VALUES } from '../constants';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 import { RankSelect } from './RankSelect';
 import { ListItem } from './ListItem';
 import { CustomScrollbar } from './CustomScrollbar';
@@ -47,7 +48,7 @@ interface ListsOverlayProps {
 type SortOrder = 'asc' | 'desc' | 'custom';
 type ImportMode = 'none' | 'text_import' | 'text_export' | 'rank_import' | 'file_import_confirm' | 'rank_import_confirm';
 
-export const ListsOverlay: React.FC<ListsOverlayProps> = ({
+export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     isOpen,
     onClose,
     lists,
@@ -127,8 +128,12 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         onApply: (resolved: Hero[]) => void;
     } | null>(null);
 
-    // Global hero suggestions for autocomplete (pre-normalized for instantaneous filtering)
+    // Global hero suggestions for autocomplete (computed only when active in editor mode)
     const allHeroSuggestions = useMemo(() => {
+        if (!editingListId || !isEditMode) {
+            return [];
+        }
+
         const map = new Map<string, { name: string; norm: string; lower: string; rank?: string }>();
 
         // 1. From all lists
@@ -165,7 +170,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         });
 
         return Array.from(map.values());
-    }, [lists, history]);
+    }, [editingListId, isEditMode, lists, history]);
 
     // Duplicates in the active list editor (debounced to ensure zero latency during typing)
     const [currentEditorDuplicateGroups, setCurrentEditorDuplicateGroups] = useState<DuplicateGroup[]>([]);
@@ -223,8 +228,22 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
     const isDirtyRef = useRef(false);
     useEffect(() => { isDirtyRef.current = isDirty; }, [isDirty]);
 
+    const onSyncRef = useRef(onSync);
     useEffect(() => {
-        if (isOpen && onSync) onSync();
+        onSyncRef.current = onSync;
+    }, [onSync]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        // Откладываем синхронизацию до завершения анимации выезда (300мс),
+        // чтобы исключить микрофризы и блокировку основного потока на смартфонах.
+        // Запускается строго один раз при открытии окна (зависимость только от isOpen).
+        const timer = setTimeout(() => {
+            if (onSyncRef.current) {
+                onSyncRef.current();
+            }
+        }, 350);
+        return () => clearTimeout(timer);
     }, [isOpen]);
 
     // --- BACK BUTTON NAVIGATION (PWA/Android) ---
@@ -614,29 +633,44 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         }
     };
 
-    const handleToggleSort = () => {
+    const handleToggleSort = useCallback(() => {
         if (!sortLists) return;
         triggerHaptic(10);
-        let nextOrder: SortOrder = sortOrder === 'custom' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'asc';
-        setSortOrder(nextOrder);
-        sortLists(nextOrder === 'desc' ? 'desc' : 'asc');
-    };
+        setSortOrder(prev => {
+            const nextOrder: SortOrder = prev === 'custom' ? 'asc' : prev === 'asc' ? 'desc' : 'asc';
+            sortLists(nextOrder === 'desc' ? 'desc' : 'asc');
+            return nextOrder;
+        });
+    }, [sortLists, triggerHaptic]);
 
-    const handleToggleReorderMode = () => { triggerHaptic(10); setIsReorderMode(!isReorderMode); };
-
-    const handleOpenMenu = (id: string, buttonRect: DOMRect, cardRect: DOMRect) => {
+    const handleToggleReorderMode = useCallback(() => {
         triggerHaptic(10);
-        if (contextMenuTargetId === id) { handleCloseMenu(); return; }
+        setIsReorderMode(prev => !prev);
+    }, [triggerHaptic]);
+
+    const handleCloseMenu = useCallback(() => {
+        setContextMenuTargetId(null);
+        setMenuPosition(null);
+        setActiveItemRect(null);
+    }, []);
+
+    const handleOpenMenu = useCallback((id: string, buttonRect: DOMRect, cardRect: DOMRect) => {
+        triggerHaptic(10);
+        if (contextMenuTargetId === id) {
+            handleCloseMenu();
+            return;
+        }
         setContextMenuTargetId(id);
         setActiveItemRect(cardRect);
         const spaceBelow = window.innerHeight - buttonRect.bottom;
         const minSpaceNeeded = 280;
         const isBottom = spaceBelow < minSpaceNeeded;
-        if (isBottom) { setMenuPosition({ bottom: window.innerHeight - buttonRect.top + 8, right: window.innerWidth - buttonRect.right, origin: 'bottom' }); }
-        else { setMenuPosition({ top: buttonRect.bottom + 8, right: window.innerWidth - buttonRect.right, origin: 'top' }); }
-    };
-
-    const handleCloseMenu = () => { setContextMenuTargetId(null); setMenuPosition(null); setActiveItemRect(null); };
+        if (isBottom) {
+            setMenuPosition({ bottom: window.innerHeight - buttonRect.top + 8, right: window.innerWidth - buttonRect.right, origin: 'bottom' });
+        } else {
+            setMenuPosition({ top: buttonRect.bottom + 8, right: window.innerWidth - buttonRect.right, origin: 'top' });
+        }
+    }, [contextMenuTargetId, handleCloseMenu, triggerHaptic]);
 
     const handleOpenCreate = () => { triggerHaptic(10); setNameModalMode('create'); setNameInputValue(''); setNameModalOpen(true); handleCloseMenu(); };
     const handleOpenRename = (list: HeroList) => { setNameModalMode('rename'); setTargetListId(list.id); setNameInputValue(list.name); setNameModalOpen(true); handleCloseMenu(); };
@@ -683,7 +717,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         handleCloseMenu();
     };
 
-    const handleOpenEditor = (list: HeroList) => {
+    const handleOpenEditor = useCallback((list: HeroList) => {
         triggerHaptic(10);
         if (editingListId && editingListId !== list.id && onDismissHeroUpdates) {
             onDismissHeroUpdates(editingListId);
@@ -705,7 +739,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         }
         setEditorHeroes(heroes);
         handleCloseMenu();
-    };
+    }, [editingListId, onDismissHeroUpdates, isOnline, triggerHaptic, handleCloseMenu]);
 
     const handleRemoveHero = useCallback((index: number) => {
         if (isReadOnly) return;
@@ -861,19 +895,69 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         return 'bg-slate-200 dark:bg-slate-700';
     };
 
-    const handleDragStart = (e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, index: number) => { dragItem.current = index; setIsListDragging(true); handleCloseMenu(); if (sortOrder !== 'custom') setSortOrder('custom'); if ('touches' in e) document.body.style.overflow = 'hidden'; triggerHaptic(10); };
-    const handleDragEnter = (e: React.DragEvent<HTMLDivElement>, index: number) => { if (dragItem.current === null) return; dragOverItem.current = index; if (dragItem.current !== index && reorderLists) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); triggerHaptic(5); } };
-    const handleDragEnd = (e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => { dragItem.current = null; dragOverItem.current = null; setIsListDragging(false); if ('changedTouches' in e) document.body.style.overflow = ''; };
-    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => { if (dragItem.current === null || !reorderLists) return; const touch = e.touches[0]; const targetElement = document.elementFromPoint(touch.clientX, touch.clientY); const listItem = targetElement?.closest('[data-list-index]'); if (listItem) { const index = parseInt(listItem.getAttribute('data-list-index') || '-1', 10); if (index !== -1 && index !== dragItem.current) { const newLists = [...lists]; const draggedListContent = newLists[dragItem.current]; newLists.splice(dragItem.current, 1); newLists.splice(index, 0, draggedListContent); dragItem.current = index; reorderLists(newLists); if (sortOrder !== 'custom') setSortOrder('custom'); triggerHaptic(5); } } };
+    const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, index: number) => {
+        dragItem.current = index;
+        setIsListDragging(true);
+        handleCloseMenu();
+        if (sortOrder !== 'custom') setSortOrder('custom');
+        if ('touches' in e) document.body.style.overflow = 'hidden';
+        triggerHaptic(10);
+    }, [sortOrder, triggerHaptic, handleCloseMenu]);
+
+    const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>, index: number) => {
+        if (dragItem.current === null) return;
+        dragOverItem.current = index;
+        if (dragItem.current !== index && reorderLists) {
+            const newLists = [...lists];
+            const draggedListContent = newLists[dragItem.current];
+            newLists.splice(dragItem.current, 1);
+            newLists.splice(index, 0, draggedListContent);
+            dragItem.current = index;
+            reorderLists(newLists);
+            if (sortOrder !== 'custom') setSortOrder('custom');
+            triggerHaptic(5);
+        }
+    }, [lists, reorderLists, sortOrder, triggerHaptic]);
+
+    const handleDragEnd = useCallback((e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+        dragItem.current = null;
+        dragOverItem.current = null;
+        setIsListDragging(false);
+        if ('changedTouches' in e) document.body.style.overflow = '';
+    }, []);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+        if (dragItem.current === null || !reorderLists) return;
+        const touch = e.touches[0];
+        const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+        const listItem = targetElement?.closest('[data-list-index]');
+        if (listItem) {
+            const index = parseInt(listItem.getAttribute('data-list-index') || '-1', 10);
+            if (index !== -1 && index !== dragItem.current) {
+                const newLists = [...lists];
+                const draggedListContent = newLists[dragItem.current];
+                newLists.splice(dragItem.current, 1);
+                newLists.splice(index, 0, draggedListContent);
+                dragItem.current = index;
+                reorderLists(newLists);
+                if (sortOrder !== 'custom') setSortOrder('custom');
+                triggerHaptic(5);
+            }
+        }
+    }, [lists, reorderLists, sortOrder, triggerHaptic]);
 
     return (
         <div 
-            className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-[transform,opacity] duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}
+            style={{ zIndex: Z_INDEX_BASE.OVERLAY }}
+            aria-hidden={!isOpen}
+            className={`fixed inset-0 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transform-gpu will-change-transform transition-transform duration-300 ease-out ${
+                isOpen ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
+            }`}
         >
             {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
 
             <div 
-                className={`bg-white/70 dark:bg-slate-900/75 backdrop-blur-xl sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/60 transition-opacity duration-200 shadow-2xs ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}
+                className={`bg-white/85 dark:bg-slate-900/85 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/60 transition-opacity duration-200 shadow-2xs ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}
             >
                 <div 
                     className="px-4 py-3 touch-manipulation"
@@ -1114,7 +1198,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                     <div className="pb-safe-area-bottom">
                         <div>
                             <div 
-                                className="flex items-center justify-between sticky top-0 z-30 px-4 pt-3.5 pb-3.5 bg-white/70 dark:bg-slate-900/75 backdrop-blur-2xl border-b border-slate-200/60 dark:border-slate-800/60 shadow-xs"
+                                className="flex items-center justify-between sticky top-0 z-30 px-4 pt-3.5 pb-3.5 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 shadow-xs"
                             >
                                 <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-2xs ${isOnline ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-slate-200/80 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
                                     {isSyncing ? <><Loader2 size={11} className="animate-spin text-amber-500" /> Sync</> : isOnline ? <><Wifi size={11} className="text-emerald-500" /> Online</> : <><WifiOff size={11} className="text-slate-400" /> Offline</>}
@@ -1659,4 +1743,4 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             )}
         </div>
     );
-};
+});

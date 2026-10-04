@@ -122,22 +122,30 @@ const getMockDB = () => {
               if (a[field] > b[field]) return direction === 'asc' ? 1 : -1;
               return 0;
             });
+            const docs = sorted.map(doc => ({
+              id: doc.id,
+              data: () => doc
+            }));
             return Promise.resolve({
-              docs: sorted.map(doc => ({
-                id: doc.id,
-                data: () => doc
-              }))
+              docs,
+              forEach: (cb: (doc: any) => void) => docs.forEach(cb),
+              empty: docs.length === 0,
+              size: docs.length
             });
           }
         }),
-        get: async () => {
-          return Promise.resolve({
-            docs: getCollectionData().map((doc: any) => ({
+          get: async () => {
+            const docs = getCollectionData().map((doc: any) => ({
               id: doc.id,
               data: () => doc
-            }))
-          });
-        }
+            }));
+            return Promise.resolve({
+              docs,
+              forEach: (cb: (doc: any) => void) => docs.forEach(cb),
+              empty: docs.length === 0,
+              size: docs.length
+            });
+          }
       };
     }
   };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useConnectivity } from './useConnectivity';
 import { HeroList, Hero, ToastType } from '../types';
 import { db } from '../firebase';
@@ -89,14 +89,27 @@ export const useHeroLists = (
 
   useEffect(() => {
     if (isLoaded) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+      // Defer synchronous JSON serialization to next event loop tick to prevent blocking active animations
+      const timer = setTimeout(() => {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+        } catch (e) {
+          console.error("Failed to save lists to localStorage", e);
+        }
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [lists, isLoaded]);
+
+  const listsRef = useRef(lists);
+  useEffect(() => {
+    listsRef.current = lists;
+  }, [lists]);
 
   // Use shared connectivity hook
   const { isOnline, checkConnectivity } = useConnectivity();
 
-  const syncWithCloud = async () => {
+  const syncWithCloud = useCallback(async () => {
     if (!isLoaded) return;
     const hasInternet = await checkConnectivity();
 
@@ -139,11 +152,14 @@ export const useHeroLists = (
         } as HeroList);
       });
 
+      let detectedNewUpdates: Set<string> | null = null;
+      let detectedNewHeroUpdates: Map<string, Set<string>> | null = null;
+
       setLists(prevLists => {
         const newLists = [...prevLists];
         let hasChanges = false;
-        const newUpdates = new Set(updatedListIds);
-        const newHeroUpdates = new Map<string, Set<string>>(updatedHeroIds);
+        const newUpdates = new Set<string>();
+        const newHeroUpdates = new Map<string, Set<string>>();
 
         cloudListsMap.forEach((cloudList) => {
           const existingIndex = newLists.findIndex(l => l.id === cloudList.id);
@@ -206,12 +222,29 @@ export const useHeroLists = (
         }
 
         if (hasChanges) {
-          setUpdatedListIds(newUpdates);
-          setUpdatedHeroIds(newHeroUpdates);
+          detectedNewUpdates = newUpdates;
+          detectedNewHeroUpdates = newHeroUpdates;
         }
 
         return hasChanges ? newLists : prevLists;
       });
+
+      if (detectedNewUpdates) {
+        const toAddUpdates = detectedNewUpdates as Set<string>;
+        setUpdatedListIds(prev => {
+          const next = new Set(prev);
+          toAddUpdates.forEach(id => next.add(id));
+          return next;
+        });
+      }
+      if (detectedNewHeroUpdates) {
+        const toAddHeroUpdates = detectedNewHeroUpdates as Map<string, Set<string>>;
+        setUpdatedHeroIds(prev => {
+          const next = new Map(prev);
+          toAddHeroUpdates.forEach((val, key) => next.set(key, val));
+          return next;
+        });
+      }
 
     } catch (error) {
       console.error("Error syncing with Firestore:", error);
@@ -219,9 +252,9 @@ export const useHeroLists = (
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, [isLoaded, checkConnectivity, addToast]);
 
-  const addList = (name: string) => {
+  const addList = useCallback((name: string) => {
     const newList: HeroList = {
       id: generateUUID(),
       name,
@@ -231,10 +264,10 @@ export const useHeroLists = (
     };
     setLists(prev => [...prev, newList]);
     return newList.id;
-  };
+  }, []);
 
-  const uploadToCloud = async (id: string) => {
-    const listToUpload = lists.find(l => l.id === id);
+  const uploadToCloud = useCallback(async (id: string) => {
+    const listToUpload = listsRef.current.find(l => l.id === id);
     if (!listToUpload) return;
 
     const hasInternet = await checkConnectivity();
@@ -270,10 +303,10 @@ export const useHeroLists = (
     } finally {
       setIsSyncing(false);
     }
-  };
+  }, [checkConnectivity, addToast]);
 
-  const updateList = async (id: string, updates: Partial<HeroList>) => {
-    const list = lists.find(l => l.id === id);
+  const updateList = useCallback(async (id: string, updates: Partial<HeroList>) => {
+    const list = listsRef.current.find(l => l.id === id);
 
     // Строгая проверка для облачных списков
     if (list?.isCloud) {
@@ -285,13 +318,13 @@ export const useHeroLists = (
 
     const now = Date.now();
 
-    setLists(prev => prev.map(list =>
-      list.id === id
-        ? { ...list, ...updates, lastModified: now }
-        : list
+    setLists(prev => prev.map(l =>
+      l.id === id
+        ? { ...l, ...updates, lastModified: now }
+        : l
     ));
 
-    const currentList = lists.find(l => l.id === id);
+    const currentList = listsRef.current.find(l => l.id === id);
     const updatedData = { ...currentList, ...updates, lastModified: now };
 
     if (updatedData.isCloud) {
@@ -307,10 +340,10 @@ export const useHeroLists = (
         addToast("Ошибка сохранения в облако", "error");
       }
     }
-  };
+  }, [isOnline, checkConnectivity, addToast]);
 
-  const deleteList = async (id: string) => {
-    const listToDelete = lists.find(l => l.id === id);
+  const deleteList = useCallback(async (id: string) => {
+    const listToDelete = listsRef.current.find(l => l.id === id);
     if (!listToDelete) return;
 
     if (listToDelete.isCloud) {
@@ -321,11 +354,11 @@ export const useHeroLists = (
 
       try {
         await db.collection("lists").doc(id).delete();
-        setLists(prev => prev.map(list => {
-          if (list.id === id) {
-            return { ...list, isCloud: false, isLocal: true };
+        setLists(prev => prev.map(l => {
+          if (l.id === id) {
+            return { ...l, isCloud: false, isLocal: true };
           }
-          return list;
+          return l;
         }));
         addToast("Список удален из облака и сохранен локально", "success");
       } catch (e) {
@@ -333,16 +366,16 @@ export const useHeroLists = (
         addToast("Ошибка удаления из облака", "error");
       }
     } else {
-      setLists(prev => prev.filter(list => list.id !== id));
+      setLists(prev => prev.filter(l => l.id !== id));
     }
-  };
+  }, [isOnline, checkConnectivity, addToast]);
 
-  const resetTemporaryLists = () => {
+  const resetTemporaryLists = useCallback(() => {
     setLists(prev => prev.filter(list => !list.isTemporary));
-  };
+  }, []);
 
-  const forkList = (sourceListId: string, heroesToExclude: Hero[]) => {
-    const sourceList = lists.find(l => l.id === sourceListId);
+  const forkList = useCallback((sourceListId: string, heroesToExclude: Hero[]) => {
+    const sourceList = listsRef.current.find(l => l.id === sourceListId);
     if (!sourceList) return null;
 
     const excludeIds = new Set(heroesToExclude.map(h => h.id));
@@ -361,9 +394,9 @@ export const useHeroLists = (
 
     setLists(prev => [...prev, newList]);
     return newList.id;
-  };
+  }, []);
 
-  const createTemporaryList = (heroes: Hero[], name: string) => {
+  const createTemporaryList = useCallback((heroes: Hero[], name: string) => {
     const newList: HeroList = {
       id: generateUUID(),
       name,
@@ -376,19 +409,19 @@ export const useHeroLists = (
     };
     setLists(prev => [...prev, newList]);
     return newList.id;
-  };
+  }, []);
 
-  const reorderLists = (newLists: HeroList[]) => {
+  const reorderLists = useCallback((newLists: HeroList[]) => {
     setLists(newLists);
-  };
+  }, []);
 
-  const sortLists = (direction: 'asc' | 'desc') => {
+  const sortLists = useCallback((direction: 'asc' | 'desc') => {
     setLists(prev => [...prev].sort((a, b) => {
       return direction === 'asc'
         ? a.name.localeCompare(b.name)
         : b.name.localeCompare(a.name);
     }));
-  };
+  }, []);
 
   const batchMergeHeroesInLists = useCallback(async (targetHeroName: string, sourceHeroNames: string[]) => {
     const cleanTarget = targetHeroName.trim();

@@ -1,5 +1,5 @@
 
-import React, { useRef, memo } from 'react';
+import React, { useRef, memo, useMemo } from 'react';
 import { HeroList } from '../types';
 import { GripVertical, Filter, Cloud, Database, MoreVertical, AlertTriangle, SquareStack, Eye } from 'lucide-react';
 
@@ -62,7 +62,9 @@ export const ListItem: React.FC<ListItemProps> = memo(({
       onDragStart(e, index);
   };
 
-  const hasMissingRanks = list.heroes.some(h => !h.rank || !h.rank.trim());
+  const hasMissingRanks = useMemo(() => {
+    return list.heroes.some(h => !h.rank || !h.rank.trim());
+  }, [list.heroes]);
 
   return (
     <div 
@@ -70,14 +72,14 @@ export const ListItem: React.FC<ListItemProps> = memo(({
       onDragEnd={onDragEnd}
       onDragOver={(e) => e.preventDefault()}
       data-list-index={index}
-      className={`relative group mb-3 transition-all duration-300
+      className={`relative group mb-3 transition-[opacity,transform] duration-200
         ${isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'}
         ${isMenuOpen ? 'z-40 opacity-0' : 'z-auto'} 
       `}
     >
       <div 
          ref={cardRef}
-          className={`bg-white/70 dark:bg-slate-900/75 glass-card-gradient p-4 rounded-2xl flex items-center transition-all duration-200 shadow-xs border border-slate-200/60 dark:border-slate-800/60 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 ${isCloudOffline ? 'bg-slate-50/70 dark:bg-slate-900/40 opacity-80' : ''}`}
+          className={`bg-white/70 dark:bg-slate-900/75 glass-card-gradient p-4 rounded-2xl flex items-center transition-[background-color,border-color,box-shadow] duration-200 shadow-xs border border-slate-200/60 dark:border-slate-800/60 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 ${isCloudOffline ? 'bg-slate-50/70 dark:bg-slate-900/40 opacity-80' : ''}`}
       >
         {isReorderMode && (
           <div 
