@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 // @ts-ignore - virtual module provided by vite-plugin-pwa
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
@@ -6,6 +6,12 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+
+  // Keep ref in sync
+  useEffect(() => {
+    registrationRef.current = registration;
+  }, [registration]);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -14,24 +20,110 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     onRegistered(r: any) {
       if (r) {
         setRegistration(r);
+        registrationRef.current = r;
         console.log('SW Registered: ', r);
-        // Initial auto-check
+
+        // 1. If an updated worker is already waiting in background, notify immediately
+        if (r.waiting) {
+          console.log('SW already waiting on register');
+          setNeedRefresh(true);
+          setShowUpdateBanner(true);
+        }
+
+        // 2. Listen to native updatefound events to detect newly installed workers
+        r.addEventListener('updatefound', () => {
+          const newWorker = r.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker?.controller) {
+                console.log('SW update found and installed');
+                setNeedRefresh(true);
+                setShowUpdateBanner(true);
+              }
+            });
+          }
+        });
+
+        // 3. Immediate check on startup
+        r.update().catch((e: any) => console.log('SW initial update check failed', e));
+
+        // 4. Periodic auto-check every 30 minutes
         setInterval(() => {
-          r.update();
-        }, 60 * 60 * 1000); 
+          r.update().catch((e: any) => console.log('SW interval update failed', e));
+        }, 30 * 60 * 1000); 
       }
     },
     onRegisterError(error: any) {
       console.log('SW registration error', error);
     },
     onOfflineReady() {
-        addToast("Приложение готово к работе оффлайн", "success");
+      addToast("Приложение готово к работе оффлайн", "success");
     }
   });
 
+  // Check existing SW registration on mount if onRegistered didn't fire yet
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    navigator.serviceWorker.getRegistration().then((reg) => {
+      if (reg) {
+        if (!registrationRef.current) {
+          setRegistration(reg);
+          registrationRef.current = reg;
+        }
+        if (reg.waiting) {
+          console.log('SW waiting found via getRegistration()');
+          setNeedRefresh(true);
+          setShowUpdateBanner(true);
+        }
+        // Run update check
+        reg.update().catch(() => {});
+      }
+    }).catch((e) => {
+      console.log('SW getRegistration check failed', e);
+    });
+  }, [setNeedRefresh]);
+
+  // Check for updates when user returns to the app from lockscreen / background tab
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        const currentReg = registrationRef.current;
+        if (currentReg) {
+          if (currentReg.waiting) {
+            setNeedRefresh(true);
+            setShowUpdateBanner(true);
+          }
+          currentReg.update().catch(() => {});
+        } else {
+          navigator.serviceWorker.getRegistration().then((reg) => {
+            if (reg) {
+              setRegistration(reg);
+              registrationRef.current = reg;
+              if (reg.waiting) {
+                setNeedRefresh(true);
+                setShowUpdateBanner(true);
+              }
+              reg.update().catch(() => {});
+            }
+          }).catch(() => {});
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
+    window.addEventListener('focus', handleFocusOrVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+      window.removeEventListener('focus', handleFocusOrVisible);
+    };
+  }, [setNeedRefresh]);
+
   useEffect(() => {
     if (needRefresh) {
-        setShowUpdateBanner(true);
+      setShowUpdateBanner(true);
     }
   }, [needRefresh]);
 
@@ -58,7 +150,7 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     }
   }, [addToast]);
 
-  const handleUpdateApp = useCallback(() => {
+  const handleUpdateApp = useCallback(async () => {
     try {
       window.scrollTo(0, 0);
     } catch (e) {
@@ -73,60 +165,114 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
       console.error("Failed to set update marker", e);
     }
 
-    if (registration && registration.waiting) {
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    }
-
-    updateServiceWorker(true);
-
-    setTimeout(() => {
+    let reloaded = false;
+    const executeReload = () => {
+      if (reloaded) return;
+      reloaded = true;
       window.scrollTo(0, 0);
       const updateUrl = window.location.origin + window.location.pathname + '?updated=' + Date.now();
       window.location.replace(updateUrl);
-    }, 150);
+    };
+
+    // When the new worker takes control, reload cleanly
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        executeReload();
+      });
+    }
+
+    // Try finding the waiting worker from state or native registration
+    let targetWorker = registration?.waiting;
+    if (!targetWorker && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        const nativeReg = await navigator.serviceWorker.getRegistration();
+        targetWorker = nativeReg?.waiting;
+      } catch (e) {
+        console.error("Failed to query native registration", e);
+      }
+    }
+
+    if (targetWorker) {
+      targetWorker.postMessage({ type: 'SKIP_WAITING' });
+    }
+
+    try {
+      await updateServiceWorker(true);
+    } catch (e) {
+      console.log("updateServiceWorker execution", e);
+    }
+
+    // Fallback safety timeout in case controllerchange doesn't fire
+    setTimeout(() => {
+      executeReload();
+    }, 800);
   }, [updateServiceWorker, registration]);
 
   const handleOpenUpdateBanner = useCallback(() => {
-      if (needRefresh) {
-          setShowUpdateBanner(true);
-      }
-  }, [needRefresh]);
+    setShowUpdateBanner(true);
+  }, []);
 
   const checkForUpdate = useCallback(async () => {
-      if (!registration) {
-          addToast("Сервис обновлений недоступен", "error");
-          return;
-      }
-      
-      setIsCheckingUpdate(true);
+    let reg = registrationRef.current || registration;
+    if (!reg && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       try {
-          await registration.update();
-          // If a new worker is found, 'needRefresh' will update via the plugin's internal listener
-          // We wait a short moment to see if state changes, otherwise assume no update
-          setTimeout(() => {
-              if (registration.installing || registration.waiting) {
-                  // Let the useEffect handle showing the banner
-              } else {
-                  addToast("Установлена последняя версия", "info");
-              }
-              setIsCheckingUpdate(false);
-          }, 1000);
-          
+        reg = (await navigator.serviceWorker.getRegistration()) || null;
+        if (reg) {
+          setRegistration(reg);
+          registrationRef.current = reg;
+        }
       } catch (e) {
-          console.error("Update check failed", e);
-          addToast("Ошибка проверки обновлений", "error");
-          setIsCheckingUpdate(false);
+        console.error("Error checking navigator registration", e);
       }
-  }, [registration, addToast]);
+    }
+
+    if (!reg) {
+      addToast("Сервис обновлений недоступен", "error");
+      return;
+    }
+    
+    setIsCheckingUpdate(true);
+    try {
+      // Immediate check if a waiting worker is already queued
+      if (reg.waiting) {
+        setNeedRefresh(true);
+        setShowUpdateBanner(true);
+        addToast("Доступно обновление приложения!", "info");
+        setIsCheckingUpdate(false);
+        return;
+      }
+
+      await reg.update();
+
+      setTimeout(() => {
+        const activeReg = registrationRef.current || reg;
+        if (activeReg?.installing || activeReg?.waiting) {
+          setNeedRefresh(true);
+          setShowUpdateBanner(true);
+          addToast("Доступно обновление приложения!", "info");
+        } else {
+          addToast("Установлена последняя версия", "info");
+        }
+        setIsCheckingUpdate(false);
+      }, 1200);
+      
+    } catch (e) {
+      console.error("Update check failed", e);
+      addToast("Ошибка проверки обновлений", "error");
+      setIsCheckingUpdate(false);
+    }
+  }, [registration, addToast, setNeedRefresh]);
+
+  const isUpdateAvailable = Boolean(needRefresh || showUpdateBanner || registration?.waiting || registrationRef.current?.waiting);
 
   return {
-      waitingWorker: null, 
-      isUpdateAvailable: needRefresh,
-      isCheckingUpdate,
-      showUpdateBanner,
-      setShowUpdateBanner,
-      handleUpdateApp,
-      handleOpenUpdateBanner,
-      checkForUpdate
+    waitingWorker: registration?.waiting || null, 
+    isUpdateAvailable,
+    isCheckingUpdate,
+    showUpdateBanner,
+    setShowUpdateBanner,
+    handleUpdateApp,
+    handleOpenUpdateBanner,
+    checkForUpdate
   };
 };

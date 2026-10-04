@@ -59,6 +59,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     setBgPattern,
     bgGradient = false,
     setBgGradient,
+    checkForUpdate,
     isCheckingUpdate = false,
     isUpdateAvailable = false,
     onUpdateApp,
@@ -741,16 +742,36 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                                     </div>
                                 )}
 
-                                {/* Update PWA Button */}
-                                {isUpdateAvailable && onUpdateApp && (
-                                    <button 
-                                        onClick={onUpdateApp} 
-                                        className="mb-6 px-5 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 active:scale-95 transition-all shadow-md shadow-emerald-600/20"
-                                    >
-                                        <Download size={16} />
-                                        <span>Обновить и перезапустить PWA</span>
-                                    </button>
-                                )}
+                                {/* App Updates Card */}
+                                <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800/80 w-full max-w-xs flex flex-col gap-3 mb-6">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                            Обновление PWA
+                                        </span>
+                                        <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                                            v{APP_VERSION}
+                                        </span>
+                                    </div>
+
+                                    {isUpdateAvailable && onUpdateApp ? (
+                                        <button 
+                                            onClick={() => { triggerHaptic(15); onUpdateApp(); }} 
+                                            className="w-full px-4 py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+                                        >
+                                            <Download size={16} />
+                                            <span>Обновить и перезапустить PWA</span>
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => { triggerHaptic(10); if (checkForUpdate) checkForUpdate(); }}
+                                            disabled={isCheckingUpdate}
+                                            className="w-full px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 active:bg-slate-300 dark:active:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+                                        >
+                                            <RefreshCw size={14} className={isCheckingUpdate ? 'animate-spin text-primary-500' : ''} />
+                                            <span>{isCheckingUpdate ? 'Проверка обновлений...' : 'Проверить обновления'}</span>
+                                        </button>
+                                    )}
+                                </div>
 
                                 {/* Footer Copyright */}
                                 <div className="mt-auto pt-2 pb-4 text-[10px] font-extrabold text-slate-400 dark:text-slate-600 uppercase tracking-widest flex flex-col gap-1 items-center">
