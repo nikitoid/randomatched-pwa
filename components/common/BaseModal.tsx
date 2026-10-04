@@ -74,7 +74,11 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startYRef = useRef(0);
+  const startXRef = useRef(0);
   const currentDragYRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const dragHandleRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLDivElement | null>(null);
 
   // Ссылка на таймер закрытия для отмены при повторном открытии
   const closeTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -82,6 +86,9 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   // Запуск плавной анимации закрытия уездом вниз
   const handleRequestClose = useCallback(() => {
     if (animateState === 'exiting') return;
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setAnimateState('exiting');
     
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
@@ -289,21 +296,38 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   const { backdropZIndex, modalZIndex } = getModalZIndex(stackIndex, isAlert, priority);
 
   // Обработчики тач-свайпа
-  const handleTouchStart = (e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!enableSwipeToClose) return;
-    const clientY = e.touches[0].clientY;
-    startYRef.current = clientY;
+    if (e.touches.length > 1) return;
+
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    startYRef.current = touch.clientY;
+    startXRef.current = touch.clientX;
     currentDragYRef.current = 0;
+    isDraggingRef.current = true;
     setIsDragging(true);
-  };
+  }, [enableSwipeToClose]);
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !enableSwipeToClose) return;
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDraggingRef.current || !enableSwipeToClose) return;
 
-    const clientY = e.touches[0].clientY;
+    const touch = e.touches[0];
+    if (!touch) return;
+
+    const clientY = touch.clientY;
+    const clientX = touch.clientX;
     const deltaY = clientY - startYRef.current;
+    const deltaX = clientX - startXRef.current;
 
     if (deltaY > 0) {
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+      e.stopPropagation();
       currentDragYRef.current = deltaY;
       setDragY(deltaY);
     } else {
@@ -311,14 +335,25 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       currentDragYRef.current = damped;
       setDragY(damped);
     }
-  };
+  }, [enableSwipeToClose]);
 
-  const handleTouchEnd = (e?: React.TouchEvent) => {
-    if (!isDragging || !enableSwipeToClose) return;
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
+    if (!isDraggingRef.current || !enableSwipeToClose) return;
+    isDraggingRef.current = false;
     setIsDragging(false);
 
     const threshold = 110;
     if (currentDragYRef.current > threshold) {
+      // Предотвращаем синтетический клик браузера после свайпа
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+      e.stopPropagation();
+
+      if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+
       setDragY(window.innerHeight);
       if (animateState !== 'exiting') {
         setAnimateState('exiting');
@@ -330,7 +365,41 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     } else {
       setDragY(0);
     }
-  };
+  }, [enableSwipeToClose, animateState, onClose]);
+
+  const handleTouchCancel = useCallback(() => {
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    setDragY(0);
+  }, []);
+
+  useEffect(() => {
+    if (!isRendered || !enableSwipeToClose) return;
+
+    const elements = [dragHandleRef.current, headerRef.current].filter(Boolean) as HTMLDivElement[];
+    if (elements.length === 0) return;
+
+    const touchStartListener = (e: TouchEvent) => handleTouchStart(e);
+    const touchMoveListener = (e: TouchEvent) => handleTouchMove(e);
+    const touchEndListener = (e: TouchEvent) => handleTouchEnd(e);
+    const touchCancelListener = () => handleTouchCancel();
+
+    elements.forEach((el) => {
+      el.addEventListener('touchstart', touchStartListener, { passive: true });
+      el.addEventListener('touchmove', touchMoveListener, { passive: false });
+      el.addEventListener('touchend', touchEndListener, { passive: false });
+      el.addEventListener('touchcancel', touchCancelListener, { passive: false });
+    });
+
+    return () => {
+      elements.forEach((el) => {
+        el.removeEventListener('touchstart', touchStartListener);
+        el.removeEventListener('touchmove', touchMoveListener);
+        el.removeEventListener('touchend', touchEndListener);
+        el.removeEventListener('touchcancel', touchCancelListener);
+      });
+    };
+  }, [isRendered, enableSwipeToClose, handleTouchStart, handleTouchMove, handleTouchEnd, handleTouchCancel]);
 
   if (!isRendered) return null;
 
@@ -422,7 +491,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       ? 'none'
       : animateState === 'entered'
         ? 'none'
-        : 'opacity 300ms ease-out, backdrop-filter 300ms ease-out, -webkit-backdrop-filter 300ms ease-out';
+        : 'opacity 180ms ease-out, backdrop-filter 180ms ease-out, -webkit-backdrop-filter 180ms ease-out';
 
     return {
       opacity,
@@ -447,7 +516,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     >
       {/* Изолированный слой бэкдропа с размытием */}
       <div
-        className="fixed inset-0 bg-slate-950/75 pointer-events-auto"
+        className={`fixed inset-0 bg-slate-950/75 ${animateState === 'exiting' ? 'pointer-events-none' : 'pointer-events-auto'}`}
         style={getBackdropStyle()}
         onClick={handleBackdropClick}
         aria-hidden="true"
@@ -456,13 +525,13 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       {/* Карточка модалки в изолированном контексте наложения */}
       <div
         ref={dialogCardRef}
-        className={`relative z-10 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full pointer-events-auto [isolation:isolate] ${getMaxWidthClass()} ${
+        className={`relative z-10 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
           isBottomSheetScreen
             ? viewportStyle.isFullHeightNeeded
               ? 'rounded-t-2xl sm:rounded-3xl h-full'
               : 'rounded-t-3xl sm:rounded-3xl max-h-[85vh] sm:max-h-[85vh]'
             : 'rounded-3xl max-h-[85vh]'
-        } ${className} ${animateState === 'exiting' ? 'pointer-events-none' : ''}`}
+        } ${className} ${animateState === 'exiting' ? 'pointer-events-none' : 'pointer-events-auto'}`}
         style={{
           zIndex: modalZIndex,
           ...(viewportStyle.maxModalHeight ? { maxHeight: `${viewportStyle.maxModalHeight}px` } : {}),
@@ -473,10 +542,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         {/* Touch Drag handle for mobile bottom sheet */}
         {(variant === 'bottom-sheet' || variant === 'auto') && (
           <div
+            ref={dragHandleRef}
             className="w-full pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none select-none shrink-0 sm:hidden flex justify-center bg-white dark:bg-slate-900"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
           >
             <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700/80 rounded-full" />
           </div>
@@ -485,10 +552,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
         {/* Header */}
         {(title || icon || showCloseButton || headerActions) && (
           <div
+            ref={headerRef}
             className="relative px-6 pt-3 pb-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0 select-none touch-none bg-white dark:bg-slate-900 z-10"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
           >
             <div className="flex items-center gap-3 min-w-0 pr-2">
               {icon && (
