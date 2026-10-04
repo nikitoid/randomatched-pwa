@@ -93,6 +93,9 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   // Интеграция с нативной кнопкой "Назад"
   useBackHandler(isOpen, handleRequestClose, { id: resolvedId, priority });
 
+  // Ссылка на скроллируемый контейнер контента
+  const localContentRef = useRef<HTMLDivElement | null>(null);
+
   // Управление циклом жизни монтирования
   useEffect(() => {
     if (isOpen) {
@@ -102,9 +105,16 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       setDragY(0);
       setIsDragging(false);
 
+      if (localContentRef.current) {
+        localContentRef.current.scrollTop = 0;
+      }
+
       const timer = setTimeout(() => {
         requestAnimationFrame(() => {
           setAnimateState('entered');
+          if (localContentRef.current) {
+            localContentRef.current.scrollTop = 0;
+          }
         });
       }, 25);
 
@@ -125,9 +135,6 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       }
     }
   }, [isOpen]);
-
-  // Ссылка на скроллируемый контейнер контента
-  const localContentRef = useRef<HTMLDivElement | null>(null);
 
   const setMergedContentRef = useCallback(
     (node: HTMLDivElement | null) => {

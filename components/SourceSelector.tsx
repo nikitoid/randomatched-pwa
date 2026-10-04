@@ -45,6 +45,13 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
     useBackHandler(isListSelectorOpen, () => setIsListSelectorOpen(false), { id: 'source-selector', priority: 10 });
     // For UI display in main selector
     const groupableLists = lists.filter(l => l.isGroupable);
+    const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        if (isListSelectorOpen && dropdownRef.current) {
+            dropdownRef.current.scrollTop = 0;
+        }
+    }, [isListSelectorOpen, isGroupMode]);
 
     return (
         <div
@@ -135,7 +142,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                     </div>
 
 
-                    <div className="overflow-y-auto overscroll-contain no-scrollbar py-2 flex-1">
+                    <div ref={dropdownRef} className="overflow-y-auto overscroll-contain no-scrollbar py-2 flex-1">
                         {/* Render lists based on mode */}
                         {!isGroupMode ? (
                             // SINGLE MODE

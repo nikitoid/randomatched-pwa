@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Trophy, ChevronLeft, Shield, Calendar, Skull, TrendingUp, TrendingDown, ChevronDown, ChevronUp, User, Users, Edit2, Check, X, Swords, Zap, Flame, Award, Sparkles, Crown, HelpCircle } from 'lucide-react';
 import { PlayerStat, MatchRecord } from '../types';
 import { calculateWilsonScore, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
@@ -52,11 +52,15 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
     // Rename State
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(player?.name || '');
+    const contentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (player) {
             setEditValue(player.name);
             setIsEditing(false);
+            if (contentRef.current) {
+                contentRef.current.scrollTop = 0;
+            }
         }
     }, [player?.name]);
 
@@ -348,6 +352,7 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                 showCloseButton={true}
                 enableSwipeToClose={true}
                 closeOnBackdropClick={true}
+                contentRef={contentRef}
             >
                 <div className="space-y-4 pb-2">
                     {/* Level & XP Progress Card */}

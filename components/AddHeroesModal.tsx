@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { ChevronLeft, Search, Check } from 'lucide-react';
 import { HeroList, Hero } from '../types';
 import { useBackHandler } from '../hooks/useBackHandler';
@@ -30,6 +30,20 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
     const [selectedList, setSelectedList] = useState<HeroList | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedHeroesByList, setSelectedHeroesByList] = useState<Record<string, Set<string>>>({});
+    const modalContentRef = useRef<HTMLDivElement>(null);
+
+    // Сброс скролла при смене шага и при выборе другого списка
+    useEffect(() => {
+        if (modalContentRef.current) {
+            modalContentRef.current.scrollTop = 0;
+        }
+    }, [step, selectedList?.id]);
+
+    useEffect(() => {
+        if (isOpen && modalContentRef.current) {
+            modalContentRef.current.scrollTop = 0;
+        }
+    }, [isOpen]);
 
     const handleBack = () => {
         trigger('light');
@@ -207,6 +221,7 @@ export const AddHeroesModal: React.FC<AddHeroesModalProps> = ({
             priority={20}
             subHeader={searchSubHeader}
             footer={modalFooter}
+            contentRef={modalContentRef}
         >
             {step === 'select-list' ? (
                 <div className="flex flex-col gap-3">

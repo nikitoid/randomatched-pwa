@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { HeroStat, MatchRecord } from '../types';
 import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles, Merge } from 'lucide-react';
 import { calculateWilsonScore } from './stats/hooks/useStatsCalculations';
@@ -49,11 +49,15 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
     // Rename State
     const [isEditing, setIsEditing] = useState(false);
     const [editValue, setEditValue] = useState(hero?.name || '');
+    const contentRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (hero) {
             setEditValue(hero.name);
             setIsEditing(false);
+            if (contentRef.current) {
+                contentRef.current.scrollTop = 0;
+            }
         }
     }, [hero?.name]);
 
@@ -272,6 +276,7 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                 showCloseButton={true}
                 enableSwipeToClose={true}
                 closeOnBackdropClick={true}
+                contentRef={contentRef}
             >
                 <div className="space-y-4 pb-2">
                     {/* Stats 2x2 Grid */}

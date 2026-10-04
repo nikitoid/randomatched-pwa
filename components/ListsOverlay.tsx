@@ -256,10 +256,28 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         setIsSortMenuOpen(false);
     }, { id: 'list-sort-menu', priority: 25 });
 
+    // Сброс скролла списка при открытии, закрытии или смене списка
+    useEffect(() => {
+        if (editingListId) {
+            if (editorContainerRef.current) {
+                editorContainerRef.current.scrollTop = 0;
+            }
+            const rafId = requestAnimationFrame(() => {
+                if (editorContainerRef.current) {
+                    editorContainerRef.current.scrollTop = 0;
+                }
+            });
+            return () => cancelAnimationFrame(rafId);
+        }
+    }, [editingListId]);
+
     const manualGoBack = () => {
         if (editingListId) {
             if (onDismissHeroUpdates) {
                 onDismissHeroUpdates(editingListId);
+            }
+            if (editorContainerRef.current) {
+                editorContainerRef.current.scrollTop = 0;
             }
             setLocalHeroUpdates(new Set());
             setEditingListId(null);
@@ -321,6 +339,9 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             handleCloseMenu();
             if (editingListId && onDismissHeroUpdates) {
                 onDismissHeroUpdates(editingListId);
+            }
+            if (editorContainerRef.current) {
+                editorContainerRef.current.scrollTop = 0;
             }
             setLocalHeroUpdates(new Set());
         }
@@ -634,6 +655,9 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
             setEditorHeroes(newHeroes);
             setEditorIsGroupable(false);
             setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(newHeroes), isGroupable: false }));
+            if (editorContainerRef.current) {
+                editorContainerRef.current.scrollTop = 0;
+            }
             setEditingListId(newId);
             setIsEditMode(true);
         } else if (nameModalMode === 'rename' && targetListId) {
@@ -663,6 +687,9 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
         triggerHaptic(10);
         if (editingListId && editingListId !== list.id && onDismissHeroUpdates) {
             onDismissHeroUpdates(editingListId);
+        }
+        if (editorContainerRef.current) {
+            editorContainerRef.current.scrollTop = 0;
         }
         setLocalHeroUpdates(new Set());
         setEditingListId(list.id);
@@ -755,17 +782,29 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = ({
                 const hasEmptyNames = activeHeroes.some(h => !h.name.trim());
                 if (hasEmptyNames) { if (addToast) addToast("У всех героев должны быть имена", "warning"); return; }
 
-                const duplicateGroups = findDuplicateOrSimilarHeroGroups(activeHeroes.map(h => h.name));
-                if (duplicateGroups.length > 0) {
-                    setPendingDuplicatesData({
-                        groups: duplicateGroups,
-                        originalHeroes: activeHeroes,
-                        onApply: (resolvedHeroes) => {
-                            executeSave(resolvedHeroes);
-                            setPendingDuplicatesData(null);
-                        }
-                    });
-                    return;
+                let namesChanged = true;
+                try {
+                    const originalData = JSON.parse(originalHeroesJson || '{}');
+                    const originalNames = (originalData.heroes || []).map((h: any) => (h.name || '').trim()).join('|||');
+                    const currentNames = activeHeroes.map(h => h.name.trim()).join('|||');
+                    namesChanged = originalNames !== currentNames;
+                } catch {
+                    namesChanged = true;
+                }
+
+                if (namesChanged) {
+                    const duplicateGroups = findDuplicateOrSimilarHeroGroups(activeHeroes.map(h => h.name));
+                    if (duplicateGroups.length > 0) {
+                        setPendingDuplicatesData({
+                            groups: duplicateGroups,
+                            originalHeroes: activeHeroes,
+                            onApply: (resolvedHeroes) => {
+                                executeSave(resolvedHeroes);
+                                setPendingDuplicatesData(null);
+                            }
+                        });
+                        return;
+                    }
                 }
             }
             executeSave(activeHeroes);

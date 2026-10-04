@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Hero } from '../types';
 import { Search, X } from 'lucide-react';
 import { BaseModal } from './common/BaseModal';
@@ -61,6 +61,15 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
         </div>
     );
 
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    // Сброс скролла при изменении поискового запроса
+    useEffect(() => {
+        if (contentRef.current) {
+            contentRef.current.scrollTop = 0;
+        }
+    }, [searchQuery]);
+
     return (
         <BaseModal
             isOpen={isOpen}
@@ -72,6 +81,7 @@ export const HeroSelectionModal: React.FC<HeroSelectionModalProps> = ({
             priority={20}
             subHeader={searchSubHeader}
             footer={modalFooter}
+            contentRef={contentRef}
             className="data-testid-hero-selection"
         >
             <div className="space-y-1.5 pb-2">
