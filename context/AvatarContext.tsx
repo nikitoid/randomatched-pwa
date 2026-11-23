@@ -8,9 +8,18 @@ import {
   getAllAvatarRecordsFromStorage,
   saveAllAvatarsToStorage,
 } from '../utils/avatarStorage';
-import { collection, doc, getDocs, onSnapshot, setDoc } from '../services/firestore';
+import { collection, doc, getDocs, onSnapshot, setDoc, type AppQuerySnapshot, type AppQueryDocSnapshot } from '../services/firestore';
 import { checkConnectivity as checkConnectivityUtil, withTimeout } from '../utils/connectivity';
 import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
+
+interface CloudAvatarDoc {
+  id?: string;
+  entityType?: 'player' | 'hero';
+  entityId?: string;
+  dataUrl?: string;
+  deleted?: boolean;
+  updatedAt?: number;
+}
 
 
 const getPendingDeletes = (): Set<string> => {
@@ -69,12 +78,12 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const avatarsRef = collection('avatars');
       unsubscribe = onSnapshot(
         avatarsRef,
-        (snapshot: any) => {
+        (snapshot: AppQuerySnapshot) => {
           if (!snapshot || !snapshot.docs) return;
           const pendingDeletes = getPendingDeletes();
 
-          snapshot.docs.forEach((docSnap: any) => {
-            const data = docSnap.data();
+          snapshot.docs.forEach((docSnap: AppQueryDocSnapshot) => {
+            const data = docSnap.data() as CloudAvatarDoc;
             if (!data || !data.id) return;
             const key = data.id;
 
@@ -94,20 +103,21 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 return copy;
               });
             } else if (data.dataUrl) {
+              const nextDataUrl = data.dataUrl;
               setAvatars((prev) => {
-                if (prev[key] === data.dataUrl) return prev;
+                if (prev[key] === nextDataUrl) return prev;
                 const parts = key.split('_');
                 const entityType = parts[0] as 'player' | 'hero';
                 const entityId = parts.slice(1).join('_');
                 if (entityType && entityId) {
-                  saveAvatarToStorage(entityType, entityId, data.dataUrl);
+                  saveAvatarToStorage(entityType, entityId, nextDataUrl);
                 }
-                return { ...prev, [key]: data.dataUrl };
+                return { ...prev, [key]: nextDataUrl };
               });
             }
           });
         },
-        (err: any) => {
+        (err: unknown) => {
           console.warn('[AvatarContext] Firestore snapshot offline or blocked:', err);
         }
       );
@@ -237,12 +247,12 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       // 2. Fetch current Cloud avatar records for conflict resolution
-      const cloudMap = new Map<string, any>();
+      const cloudMap = new Map<string, CloudAvatarDoc>();
       try {
-        const cloudSnapshot = await withTimeout<any>(getDocs(collection('avatars')), 4000);
+        const cloudSnapshot = await withTimeout<AppQuerySnapshot>(getDocs(collection('avatars')), 4000);
         if (cloudSnapshot && cloudSnapshot.docs) {
-          cloudSnapshot.docs.forEach((docSnap: any) => {
-            cloudMap.set(docSnap.id, docSnap.data());
+          cloudSnapshot.docs.forEach((docSnap: AppQueryDocSnapshot) => {
+            cloudMap.set(docSnap.id, docSnap.data() as CloudAvatarDoc);
           });
         }
       } catch (cloudFetchErr) {
@@ -283,9 +293,10 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
           // Case B: Cloud document is newer than local version
           if (cloudData.updatedAt && cloudData.updatedAt > (rec.updatedAt || 0) && cloudData.dataUrl) {
+            const nextDataUrl = cloudData.dataUrl;
             console.log(`[AvatarContext] Cloud avatar ${key} is newer. Accepting cloud version.`);
-            await saveAvatarToStorage(rec.entityType, rec.entityId, cloudData.dataUrl);
-            setAvatars((prev) => ({ ...prev, [key]: cloudData.dataUrl }));
+            await saveAvatarToStorage(rec.entityType, rec.entityId, nextDataUrl);
+            setAvatars((prev) => ({ ...prev, [key]: nextDataUrl }));
             continue;
           }
         }

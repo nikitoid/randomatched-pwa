@@ -142,7 +142,7 @@ export const DebugTab: React.FC<DebugTabProps> = ({
                         <select
                             value={lastSeenVersion || 'ALL_UNREAD'}
                             onChange={(e) => {
-                                onSetLastSeenVersion && onSetLastSeenVersion(e.target.value === 'ALL_UNREAD' ? null : e.target.value);
+                                onSetLastSeenVersion?.(e.target.value === 'ALL_UNREAD' ? null : e.target.value);
                                 triggerHaptic(10);
                             }}
                             className="w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white text-xs font-bold rounded-xl px-3 py-2.5 border border-slate-200 dark:border-slate-800 focus:outline-none truncate cursor-pointer"
@@ -159,7 +159,7 @@ export const DebugTab: React.FC<DebugTabProps> = ({
                         <div className="grid grid-cols-2 gap-2">
                             <button
                                 onClick={() => {
-                                    onSetLastSeenVersion && onSetLastSeenVersion('2.2.6');
+                                    onSetLastSeenVersion?.('2.2.6');
                                     triggerHaptic(10);
                                 }}
                                 className="py-2.5 px-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl text-[11px] font-bold transition-all shadow-xs text-center truncate"
@@ -169,7 +169,7 @@ export const DebugTab: React.FC<DebugTabProps> = ({
                             </button>
                             <button
                                 onClick={() => {
-                                    onSetLastSeenVersion && onSetLastSeenVersion(null);
+                                    onSetLastSeenVersion?.(null);
                                     triggerHaptic(10);
                                 }}
                                 className="py-2.5 px-2 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-xl text-[11px] font-bold transition-all shadow-xs text-center truncate"

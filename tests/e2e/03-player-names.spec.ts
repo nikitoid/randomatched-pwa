@@ -57,7 +57,7 @@ test.describe('Имена игроков', () => {
                     { name: 'Игрок В', heroId: 'hero-3', heroName: 'Hero 3' },
                     { name: 'Игрок Г', heroId: 'hero-4', heroName: 'Hero 4' }
                 ],
-                winner: 'team1'
+                winner: 'team1' as const
             }
         ];
         await injectMatchHistory(app.page, mockHistory);

@@ -333,16 +333,16 @@ export const StatsModal: React.FC<StatsModalProps> = ({
         let idleId: number | null = null;
         let timerId: NodeJS.Timeout | null = null;
 
-        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
-            idleId = (window as any).requestIdleCallback(runBackgroundDuplicateCheck, { timeout: 1000 });
+        if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+            idleId = window.requestIdleCallback(runBackgroundDuplicateCheck, { timeout: 1000 });
         } else {
             timerId = setTimeout(runBackgroundDuplicateCheck, 50);
         }
 
         return () => {
             isCancelled = true;
-            if (idleId !== null && typeof window !== 'undefined' && 'cancelIdleCallback' in window) {
-                (window as any).cancelIdleCallback(idleId);
+            if (idleId !== null && typeof window !== 'undefined' && typeof window.cancelIdleCallback === 'function') {
+                window.cancelIdleCallback(idleId);
             }
             if (timerId !== null) {
                 clearTimeout(timerId);
@@ -1111,13 +1111,13 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 subHeader={
                     <>
                         <div className="flex border-t border-b border-slate-200/40 dark:border-slate-800/40 shrink-0 overflow-x-auto overscroll-contain no-scrollbar bg-white/30 dark:bg-slate-950/30 backdrop-blur-xl touch-manipulation">
-                            {['overview', 'players', 'heroes', 'matches'].map(tab => (
+                            {(['overview', 'players', 'heroes', 'matches'] as const).map(tab => (
                                 <button
                                     key={tab}
                                     type="button"
                                     onClick={() => {
                                         if (activeTab === tab) return;
-                                        setActiveTab(tab as any);
+                                        setActiveTab(tab);
                                         setSelectedPlayer(null);
                                         setSelectedHero(null);
                                         triggerHaptic(10);

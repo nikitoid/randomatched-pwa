@@ -1,6 +1,7 @@
-import { test as base } from '@playwright/test';
+import { test as base, type Page } from '@playwright/test';
 import { RandoMatchedApp } from './page-objects';
 import { injectTestData, mockExternalFonts, HeroList, TEST_LIST_PRIMARY } from './test-data';
+import type { MatchRecord } from '../../types';
 
 // Определение типов для наших фикстур
 type MyFixtures = {
@@ -29,8 +30,8 @@ export const test = base.extend<MyFixtures>({
 /**
  * Инъекция истории матчей
  */
-export async function injectMatchHistory(page: any, history: any[]) {
-    await page.context().addInitScript((historyData: any[]) => {
+export async function injectMatchHistory(page: Page, history: MatchRecord[]) {
+    await page.context().addInitScript((historyData: MatchRecord[]) => {
         localStorage.setItem('randomatched_match_history_v1', JSON.stringify(historyData));
     }, history);
 }

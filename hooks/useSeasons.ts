@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Season, ToastType } from '../types';
-import { collection, doc, getDocs, setDoc } from '../services/firestore';
+import { collection, doc, getDocs, setDoc, type AppQuerySnapshot, type AppQueryDocSnapshot } from '../services/firestore';
 import { useConnectivity } from './useConnectivity';
 import { generateUUID } from '../utils/uuid';
 import { withTimeout } from '../utils/connectivity';
@@ -8,7 +8,7 @@ import { STORAGE_KEYS, getStorageItem, setStorageItem, removeStorageItem, getSto
 
 // Helper to remove any undefined fields before sending data to Firebase Firestore
 const cleanSeasonForFirestore = (season: Season) => {
-    const clean: Record<string, any> = {
+    const clean: Record<string, string | number> = {
         id: season.id,
         name: season.name,
         startDate: season.startDate,
@@ -183,13 +183,13 @@ export const useSeasons = (
             }
 
             // 2. Fetch remote seasons from cloud
-            const snapshot = await withTimeout<any>(getDocs(collection('seasons')), 6000);
+            const snapshot = await withTimeout<AppQuerySnapshot>(getDocs(collection('seasons')), 6000);
             const remoteSeasonsMap = new Map<string, Season & { deleted?: boolean }>();
             const remoteByNameMap = new Map<string, Season>();
 
             if (snapshot && snapshot.docs) {
-                snapshot.docs.forEach((docSnap: any) => {
-                    const data = docSnap.data() as Season & { deleted?: boolean };
+                snapshot.docs.forEach((docSnap: AppQueryDocSnapshot) => {
+                    const data = docSnap.data() as unknown as Season & { deleted?: boolean };
                     const seasonObj = { ...data, id: docSnap.id };
                     remoteSeasonsMap.set(docSnap.id, seasonObj);
                     if (!data.deleted && data.name) {

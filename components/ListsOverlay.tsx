@@ -44,6 +44,12 @@ interface ListsOverlayProps {
     onOpenInactiveModal?: () => void;
 }
 
+type RawImportedHero = {
+    id?: string;
+    name?: string;
+    rank?: string;
+};
+
 type SortOrder = 'asc' | 'desc' | 'custom';
 
 export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
@@ -399,7 +405,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     }, [contextMenuTargetId]);
 
     // --- IMPORT / EXPORT HANDLERS ---
-    const validateRanks = (heroes: any[]): boolean => {
+    const validateRanks = (heroes: RawImportedHero[]): boolean => {
         return heroes.every(h => {
             if (!h.rank) return true;
             return h.rank.trim() === '' || RANKS.includes(h.rank.trim());
@@ -430,7 +436,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${list.name.replace(/[\/\\:*?"<>|]/g, '_')}.json`;
+        link.download = `${list.name.replace(/[/\\:*?"<>|]/g, '_')}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -443,7 +449,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${list.name.replace(/[\/\\:*?"<>|]/g, '_')}.json`;
+        link.download = `${list.name.replace(/[/\\:*?"<>|]/g, '_')}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -467,7 +473,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                         if (fileInputRef.current) fileInputRef.current.value = '';
                         return;
                     }
-                    setPendingFileHeroes(json.heroes.map((h: any) => ({
+                    setPendingFileHeroes(json.heroes.map((h: RawImportedHero) => ({
                         id: h.id || generateUUID(),
                         name: h.name || '',
                         rank: h.rank || ''
@@ -494,7 +500,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                         return;
                     }
                     const name = file.name.replace(/\.json$/i, '');
-                    const cleanHeroes = json.heroes.map((h: any) => ({
+                    const cleanHeroes = json.heroes.map((h: RawImportedHero) => ({
                         id: h.id || generateUUID(),
                         name: h.name || '',
                         rank: h.rank || ''
@@ -834,8 +840,8 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
 
                 let namesChanged = true;
                 try {
-                    const originalData = JSON.parse(originalHeroesJson || '{}');
-                    const originalNames = (originalData.heroes || []).map((h: any) => (h.name || '').trim()).join('|||');
+                    const originalData = JSON.parse(originalHeroesJson || '{}') as { heroes?: Array<{ name?: string }> };
+                    const originalNames = (originalData.heroes || []).map((h) => (h.name || '').trim()).join('|||');
                     const currentNames = activeHeroes.map(h => h.name.trim()).join('|||');
                     namesChanged = originalNames !== currentNames;
                 } catch {

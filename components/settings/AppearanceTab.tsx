@@ -163,7 +163,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                 return (
                                     <button
                                         key={key}
-                                        onClick={() => { setColorScheme && setColorScheme(key as ColorScheme); triggerHaptic(10); }}
+                                        onClick={() => { setColorScheme?.(key as ColorScheme); triggerHaptic(10); }}
                                         className={`relative flex items-center gap-2.5 p-2.5 sm:p-3 rounded-2xl border-2 transition-all duration-200 active:scale-95 text-left ${
                                             isSelected
                                                 ? 'border-primary-500 bg-white dark:bg-slate-900 shadow-md ring-2 ring-primary-500/20'
@@ -218,7 +218,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                     return (
                                         <button
                                             key={r}
-                                            onClick={() => { setRoundness && setRoundness(r); triggerHaptic(10); }}
+                                            onClick={() => { setRoundness?.(r); triggerHaptic(10); }}
                                             className={`flex flex-col items-center justify-center py-2.5 px-2 text-xs font-bold rounded-xl transition-all duration-200 active:scale-95 ${
                                                 isSelected
                                                     ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm'
@@ -252,7 +252,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => { setBgPattern && setBgPattern(!bgPattern); triggerHaptic(10); }}
+                                        onClick={() => { setBgPattern?.(!bgPattern); triggerHaptic(10); }}
                                         className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgPattern ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                     >
                                         <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${bgPattern ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -271,7 +271,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = ({
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => { setBgGradient && setBgGradient(!bgGradient); triggerHaptic(10); }}
+                                        onClick={() => { setBgGradient?.(!bgGradient); triggerHaptic(10); }}
                                         className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${bgGradient ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                                     >
                                         <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${bgGradient ? 'translate-x-6' : 'translate-x-1'}`} />

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Upload, ZoomIn, ZoomOut, RotateCw, Trash2, Check, RefreshCw, Loader2, Image as ImageIcon, Sparkles as SparklesHeaderIcon,
-  Swords, Shield, Wand2, Sparkles, Flame, Zap, Skull, Crown, Target, Ghost, Gem, Axe, Dice5, Bot, FlaskConical, Eye, Star, Trophy, Heart, Anchor, User
+  Swords, Shield, Wand2, Sparkles, Flame, Zap, Skull, Crown, Target, Ghost, Gem, Axe, Dice5, Bot, FlaskConical, Eye, Star, Trophy, Heart, Anchor, User,
+  type LucideIcon
 } from 'lucide-react';
 import { BaseModal } from './BaseModal';
 
@@ -20,7 +21,7 @@ export interface AvatarCropperModalProps {
 export interface PresetIconItem {
   id: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   paths: string;
 }
 

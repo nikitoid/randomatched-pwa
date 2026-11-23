@@ -34,13 +34,13 @@ export interface MockDocSnapshot {
   readonly id: string;
   readonly ref: MockDocRef;
   exists: () => boolean;
-  data: () => Record<string, any> | undefined;
+  data: () => Record<string, unknown> | undefined;
 }
 
 export interface MockQueryDocSnapshot {
   readonly id: string;
   readonly ref: MockDocRef;
-  data: () => Record<string, any>;
+  data: () => Record<string, unknown>;
 }
 
 export interface MockQuerySnapshot {
@@ -51,7 +51,7 @@ export interface MockQuerySnapshot {
 }
 
 export interface MockWriteBatch {
-  set: (ref: MockDocRef, data: Record<string, any>, options?: { merge?: boolean }) => void;
+  set: <T extends object>(ref: MockDocRef, data: T, options?: { merge?: boolean }) => void;
   delete: (ref: MockDocRef) => void;
   commit: () => Promise<void>;
 }
@@ -63,21 +63,20 @@ export interface MockWriteBatch {
 export const isTestEnvironment = (): boolean => {
   if (typeof window === 'undefined') return false;
   return Boolean(
-    (window as any).__PLAYWRIGHT_TEST__ ||
+    window.__PLAYWRIGHT_TEST__ ||
       (window.location && window.location.port === '5177') ||
       (typeof navigator !== 'undefined' && navigator.webdriver)
   );
 };
 
-const getMockStore = (): Record<string, Record<string, any>[]> => {
-  const win = window as any;
-  if (!win.__MOCK_DB_DATA__) {
-    win.__MOCK_DB_DATA__ = {};
+const getMockStore = (): Record<string, Record<string, unknown>[]> => {
+  if (!window.__MOCK_DB_DATA__) {
+    window.__MOCK_DB_DATA__ = {};
   }
-  return win.__MOCK_DB_DATA__;
+  return window.__MOCK_DB_DATA__;
 };
 
-const getCollectionData = (collectionName: string): Record<string, any>[] => {
+const getCollectionData = (collectionName: string): Record<string, unknown>[] => {
   const store = getMockStore();
   if (!Array.isArray(store[collectionName])) {
     store[collectionName] = [];
@@ -85,7 +84,7 @@ const getCollectionData = (collectionName: string): Record<string, any>[] => {
   return store[collectionName];
 };
 
-const setCollectionData = (collectionName: string, data: Record<string, any>[]): void => {
+const setCollectionData = (collectionName: string, data: Record<string, unknown>[]): void => {
   const store = getMockStore();
   store[collectionName] = data;
 };
@@ -130,6 +129,18 @@ export const mockQuery = (
   constraints,
 });
 
+function compareFieldValues(valA: unknown, valB: unknown): number {
+  if (typeof valA === 'number' && typeof valB === 'number') {
+    return valA - valB;
+  }
+  if (typeof valA === 'string' && typeof valB === 'string') {
+    return valA.localeCompare(valB);
+  }
+  const strA = valA === undefined || valA === null ? '' : String(valA);
+  const strB = valB === undefined || valB === null ? '' : String(valB);
+  return strA < strB ? -1 : strA > strB ? 1 : 0;
+}
+
 const buildQuerySnapshot = (
   collectionName: string,
   constraints: MockQueryConstraint[] = []
@@ -144,18 +155,20 @@ const buildQuerySnapshot = (
     } else if (constraint.__constraintType === 'orderBy') {
       const { field, direction } = constraint;
       items.sort((a, b) => {
-        if (a[field] < b[field]) return direction === 'asc' ? -1 : 1;
-        if (a[field] > b[field]) return direction === 'asc' ? 1 : -1;
-        return 0;
+        const cmp = compareFieldValues(a[field], b[field]);
+        return direction === 'asc' ? cmp : -cmp;
       });
     }
   }
 
-  const docs: MockQueryDocSnapshot[] = items.map((item) => ({
-    id: item.id,
-    ref: mockDoc(collectionName, item.id),
-    data: () => item,
-  }));
+  const docs: MockQueryDocSnapshot[] = items.map((item) => {
+    const docId = String(item.id ?? '');
+    return {
+      id: docId,
+      ref: mockDoc(collectionName, docId),
+      data: () => item,
+    };
+  });
 
   return {
     docs,
@@ -177,18 +190,19 @@ export const mockGetDoc = async (docRef: MockDocRef): Promise<MockDocSnapshot> =
   };
 };
 
-export const mockSetDoc = async (
+export const mockSetDoc = async <T extends object>(
   docRef: MockDocRef,
-  data: Record<string, any>,
+  data: T,
   options?: { merge?: boolean }
 ): Promise<void> => {
   const current = [...getCollectionData(docRef.collectionName)];
   const index = current.findIndex((d) => d.id === docRef.id);
   const existing = index >= 0 ? current[index] : {};
-  const nextDoc =
+  const payload = data as Record<string, unknown>;
+  const nextDoc: Record<string, unknown> =
     options?.merge && index >= 0
-      ? { ...existing, ...data, id: docRef.id }
-      : { ...data, id: docRef.id };
+      ? { ...existing, ...payload, id: docRef.id }
+      : { ...payload, id: docRef.id };
 
   if (index >= 0) {
     current[index] = nextDoc;
@@ -213,39 +227,51 @@ export const mockGetDocs = async (
   return buildQuerySnapshot(target.collectionName, constraints);
 };
 
-export const mockOnSnapshot = (
-  target: MockDocRef | MockCollectionRef | MockQueryRef,
-  onNext: (snapshot: any) => void,
+export function mockOnSnapshot(
+  target: MockDocRef,
+  onNext: (snapshot: MockDocSnapshot) => void,
   onError?: (error: unknown) => void
-): (() => void) => {
+): () => void;
+export function mockOnSnapshot(
+  target: MockCollectionRef | MockQueryRef,
+  onNext: (snapshot: MockQuerySnapshot) => void,
+  onError?: (error: unknown) => void
+): () => void;
+export function mockOnSnapshot(
+  target: MockDocRef | MockCollectionRef | MockQueryRef,
+  onNext: ((snapshot: MockDocSnapshot) => void) | ((snapshot: MockQuerySnapshot) => void),
+  onError?: (error: unknown) => void
+): () => void {
   try {
     if (target.__mockType === 'doc') {
       const found = getCollectionData(target.collectionName).find((d) => d.id === target.id);
-      onNext({
+      (onNext as (snapshot: MockDocSnapshot) => void)({
         id: target.id,
         ref: target,
         exists: () => !!found,
         data: () => found,
-      } satisfies MockDocSnapshot);
+      });
     } else {
       const constraints = target.__mockType === 'query' ? target.constraints : [];
-      onNext(buildQuerySnapshot(target.collectionName, constraints));
+      (onNext as (snapshot: MockQuerySnapshot) => void)(
+        buildQuerySnapshot(target.collectionName, constraints)
+      );
     }
   } catch (err) {
     if (onError) onError(err);
   }
   return () => {};
-};
+}
 
 export const mockWriteBatch = (): MockWriteBatch => {
   const operations: Array<
-    | { type: 'set'; ref: MockDocRef; data: Record<string, any>; options?: { merge?: boolean } }
+    | { type: 'set'; ref: MockDocRef; data: Record<string, unknown>; options?: { merge?: boolean } }
     | { type: 'delete'; ref: MockDocRef }
   > = [];
 
   return {
     set: (ref, data, options) => {
-      operations.push({ type: 'set', ref, data, options });
+      operations.push({ type: 'set', ref, data: data as Record<string, unknown>, options });
     },
     delete: (ref) => {
       operations.push({ type: 'delete', ref });

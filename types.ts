@@ -77,16 +77,6 @@ export interface MatchRecord {
   note?: string;
 }
 
-// Assuming ResultOverlayProps is a new interface to be added,
-// or an existing one that was not provided in the original content.
-// Based on the instruction and the provided code snippet,
-// I will add a new interface `ResultOverlayProps` with the specified properties.
-export interface ResultOverlayProps {
-  onRecordResult?: (winner: 'team1' | 'team2', playerKills?: Record<string, number>) => void;
-  onManualSelect?: (playerNumber: number, hero: any) => void;
-  availableHeroes?: any[];
-}
-
 export interface PlayerStat {
   name: string;
   matches: number;

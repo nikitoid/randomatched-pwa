@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-// @ts-ignore - virtual module provided by vite-plugin-pwa
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { SESSION_STORAGE_KEYS, getSessionItem, setSessionItem, removeSessionItem } from '../utils/storage';
 
@@ -30,7 +29,7 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(r: any) {
+    onRegistered(r: ServiceWorkerRegistration | undefined) {
       if (r) {
         setRegistration(r);
         registrationRef.current = r;
@@ -58,18 +57,18 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
         });
 
         // 3. Immediate check on startup
-        r.update().catch((e: any) => console.log('SW initial update check failed', e));
+        r.update().catch((e: unknown) => console.log('SW initial update check failed', e));
 
         // 4. Periodic auto-check every 30 minutes
         if (updateIntervalRef.current) {
           clearInterval(updateIntervalRef.current);
         }
         updateIntervalRef.current = setInterval(() => {
-          r.update().catch((e: any) => console.log('SW interval update failed', e));
+          r.update().catch((e: unknown) => console.log('SW interval update failed', e));
         }, 30 * 60 * 1000); 
       }
     },
-    onRegisterError(error: any) {
+    onRegisterError(error: unknown) {
       console.log('SW registration error', error);
     },
     onOfflineReady() {

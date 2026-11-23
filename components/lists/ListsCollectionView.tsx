@@ -86,7 +86,7 @@ interface ListsCollectionViewProps {
     draggedIndex: number | null;
     updatedListIds?: Set<string>;
     isReorderMode: boolean;
-    listContainerRef: React.RefObject<HTMLDivElement | null>;
+    listContainerRef: React.RefObject<HTMLDivElement>;
     onTouchMove: (e: React.TouchEvent<HTMLDivElement>) => void;
     onOpenMenu: (id: string, buttonRect: DOMRect, cardRect: DOMRect) => void;
     onEdit: (list: HeroList) => void;

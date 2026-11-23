@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { HeroList } from './types';
 import { useThemeContext } from './context/ThemeContext';
 import { useHeroListsContext } from './context/HeroListsContext';
 import { useToast } from './hooks/useToast';
@@ -93,9 +94,9 @@ const App: React.FC = () => {
     const [selectedListId, setSelectedListId] = useState<string>(() => {
         if (typeof window === 'undefined') return '';
         const savedSelectedId = getStorageItem(STORAGE_KEYS.SELECTED_LIST_ID);
-        const parsedLists = getStorageJSON<unknown>(STORAGE_KEYS.LISTS, null);
+        const parsedLists = getStorageJSON<HeroList[] | null>(STORAGE_KEYS.LISTS, null);
 
-        if (savedSelectedId && Array.isArray(parsedLists) && parsedLists.some((l: any) => l.id === savedSelectedId)) {
+        if (savedSelectedId && Array.isArray(parsedLists) && parsedLists.some((l) => l.id === savedSelectedId)) {
             return savedSelectedId;
         }
 

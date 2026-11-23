@@ -44,7 +44,7 @@ export const AppSettingsTab: React.FC<AppSettingsTabProps> = ({
                             </div>
                         </div>
                         <button
-                            onClick={() => { onToggleHaptics && onToggleHaptics(); triggerHaptic(10); }}
+                            onClick={() => { onToggleHaptics?.(); triggerHaptic(10); }}
                             className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${hapticsEnabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                         >
                             <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${hapticsEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -68,7 +68,7 @@ export const AppSettingsTab: React.FC<AppSettingsTabProps> = ({
                             </div>
                         </div>
                         <button
-                            onClick={() => { onToggleForceAudioMode && onToggleForceAudioMode(); triggerHaptic(10); }}
+                            onClick={() => { onToggleForceAudioMode?.(); triggerHaptic(10); }}
                             className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${forceAudioMode ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                         >
                             <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${forceAudioMode ? 'translate-x-6' : 'translate-x-1'}`} />
@@ -89,7 +89,7 @@ export const AppSettingsTab: React.FC<AppSettingsTabProps> = ({
                             </div>
                         </div>
                         <button
-                            onClick={() => { onToggleDebug && onToggleDebug(!isDebugMode); triggerHaptic(10); }}
+                            onClick={() => { onToggleDebug?.(!isDebugMode); triggerHaptic(10); }}
                             className={`shrink-0 relative w-12 h-7 rounded-full transition-colors duration-200 ease-in-out touch-manipulation ${isDebugMode ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'}`}
                         >
                             <span className={`block w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${isDebugMode ? 'translate-x-6' : 'translate-x-1'}`} />

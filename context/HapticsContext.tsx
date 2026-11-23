@@ -26,7 +26,7 @@ let audioCtxInstance: AudioContext | null = null;
 const getAudioContext = (): AudioContext | null => {
   if (typeof window === 'undefined') return null;
   if (!audioCtxInstance) {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (AudioCtx) {
       audioCtxInstance = new AudioCtx();
     }

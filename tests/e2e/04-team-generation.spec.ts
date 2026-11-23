@@ -47,7 +47,7 @@ test.describe('Генерация команд', () => {
         
         // Проверяем наличие записи в localStorage
         const history = await app.getLocalStorageItem('randomatched_match_history_v1');
-        expect(history.length).toBeGreaterThan(0);
+        expect(history!.length).toBeGreaterThan(0);
     });
 
     test('кнопка Сбросить сессию должна очищать текущий результат', async ({ app }) => {

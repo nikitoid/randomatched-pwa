@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { RandoMatchedApp } from '../helpers/page-objects';
 import { injectTestData, waitForAppReady, TEST_LIST_PRIMARY } from '../helpers/test-data';
 
@@ -9,7 +9,7 @@ test.describe('Управление облачными бэкапами', () => 
         // ENABLE TEST MODE (Mock DB)
         // This instructs the app (firebase.ts) to use the in-memory MockFirestore
         await page.addInitScript(() => {
-            (window as any).__PLAYWRIGHT_TEST__ = true;
+            window.__PLAYWRIGHT_TEST__ = true;
         });
 
         // MOCK CONNECTIVITY CHECK
@@ -24,7 +24,7 @@ test.describe('Управление облачными бэкапами', () => 
         await waitForAppReady(page);
     });
 
-    const openBackupMenu = async (page: any) => {
+    const openBackupMenu = async (page: Page) => {
         const statsTitle = page.locator('h2:has-text("Статистика")');
         await expect(statsTitle).toBeVisible();
         await statsTitle.click({ clickCount: 3 });

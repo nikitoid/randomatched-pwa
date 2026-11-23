@@ -24,8 +24,8 @@ interface ListEditorHeaderActionsProps {
     isEditorMenuOpen: boolean;
     isReadOnly: boolean;
     isPermanentlyReadOnly: boolean;
-    sortButtonRef: React.RefObject<HTMLButtonElement | null>;
-    fileInputRef: React.RefObject<HTMLInputElement | null>;
+    sortButtonRef: React.RefObject<HTMLButtonElement>;
+    fileInputRef: React.RefObject<HTMLInputElement>;
     onToggleSortMenu: (e: React.MouseEvent) => void;
     onToggleEditorMenu: (e: React.MouseEvent) => void;
     onSaveEditor: () => void;
@@ -119,14 +119,14 @@ interface ListEditorViewProps {
     localHeroUpdates: Set<string>;
     hasFieldUpdate: (heroId: string, field: 'name' | 'rank') => boolean;
     allHeroSuggestions: HeroSuggestion[];
-    editorContainerRef: React.RefObject<HTMLDivElement | null>;
+    editorContainerRef: React.RefObject<HTMLDivElement>;
     onChangeHero: (index: number, field: 'name' | 'rank', value: string) => void;
     onRemoveHero: (index: number) => void;
     onOpenDuplicatesModal: () => void;
     // Sort Menu Portal
     isSortMenuOpen: boolean;
     setIsSortMenuOpen: (open: boolean) => void;
-    sortButtonRef: React.RefObject<HTMLButtonElement | null>;
+    sortButtonRef: React.RefObject<HTMLButtonElement>;
     heroSortType: 'name' | 'rank';
     heroSortDirection: 'asc' | 'desc' | null;
     onSort: (type: 'name' | 'rank', direction: 'asc' | 'desc') => void;

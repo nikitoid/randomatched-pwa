@@ -1,4 +1,5 @@
-import { Hero, HeroList } from '../../types';
+import type { Page, Route } from '@playwright/test';
+import { Hero, HeroList, MatchRecord } from '../../types';
 import { APP_VERSION } from '../../utils/changelog';
 export type { Hero, HeroList };
 
@@ -82,12 +83,12 @@ const routedFontContexts = new WeakSet<object>();
  * Перехват внешних запросов Google Fonts в E2E-тестах,
  * чтобы нестабильная сеть/TLS в WebKit не блокировала событие load на page.goto().
  */
-export async function mockExternalFonts(page: any) {
+export async function mockExternalFonts(page: Page) {
     const context = page?.context?.();
     if (!context || routedFontContexts.has(context)) return;
     routedFontContexts.add(context);
 
-    await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, (route: any) =>
+    await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, (route: Route) =>
         route.fulfill({
             status: 200,
             contentType: route.request().url().includes('fonts.googleapis.com') ? 'text/css' : 'font/woff2',
@@ -101,11 +102,11 @@ export async function mockExternalFonts(page: any) {
  * ВАЖНО: должна вызываться ПЕРЕД page.goto()
  * Данные устанавливаются через addInitScript на контексте
  */
-export async function injectTestData(page: any, lists: HeroList[] = [TEST_LIST_PRIMARY], appVersion: string = APP_VERSION) {
+export async function injectTestData(page: Page, lists: HeroList[] = [TEST_LIST_PRIMARY], appVersion: string = APP_VERSION) {
     await mockExternalFonts(page);
 
     // Используем addInitScript на контексте браузера - это выполняется ДО загрузки любой страницы
-    await page.context().addInitScript(([listsData, version]: [HeroList[], string]) => {
+    await page.context().addInitScript<[HeroList[], string]>(([listsData, version]) => {
         // Отключаем CSS-анимации и переходы для мгновенного выполнения E2E тестов
         const disableAnimations = () => {
             if (!document.head) return;
@@ -158,7 +159,7 @@ export async function injectTestData(page: any, lists: HeroList[] = [TEST_LIST_P
 /**
  * Инъекция имен игроков
  */
-export async function injectPlayerNames(page: any, names: string[] = TEST_PLAYER_NAMES) {
+export async function injectPlayerNames(page: Page, names: string[] = TEST_PLAYER_NAMES) {
     await page.evaluate((playerNames: string[]) => {
         const savedTeams = [playerNames];
         localStorage.setItem('randomatched_saved_teams_v1', JSON.stringify(savedTeams));
@@ -169,7 +170,7 @@ export async function injectPlayerNames(page: any, names: string[] = TEST_PLAYER
 /**
  * Очистка всех данных из localStorage
  */
-export async function clearTestData(page: any) {
+export async function clearTestData(page: Page) {
     await page.evaluate(() => {
         localStorage.clear();
     });
@@ -178,27 +179,27 @@ export async function clearTestData(page: any) {
 /**
  * Получение текущих списков из localStorage
  */
-export function getStoredLists(page: any): Promise<HeroList[]> {
+export function getStoredLists(page: Page): Promise<HeroList[]> {
     return page.evaluate(() => {
         const data = localStorage.getItem('randomatched_lists_v1');
-        return data ? JSON.parse(data) : [];
+        return data ? (JSON.parse(data) as HeroList[]) : [];
     });
 }
 
 /**
  * Получение истории матчей из localStorage
  */
-export function getMatchHistory(page: any) {
+export function getMatchHistory(page: Page): Promise<MatchRecord[]> {
     return page.evaluate(() => {
         const data = localStorage.getItem('randomatched_match_history_v1');
-        return data ? JSON.parse(data) : [];
+        return data ? (JSON.parse(data) as MatchRecord[]) : [];
     });
 }
 
 /**
  * Ожидание загрузки приложения
  */
-export async function waitForAppReady(page: any) {
+export async function waitForAppReady(page: Page) {
     // Ждем появления основного контента
     await page.waitForSelector('main', { state: 'visible' });
 

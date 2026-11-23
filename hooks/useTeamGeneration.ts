@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Hero, HeroList, AssignedPlayer, GenerationMode, ExtraGenerationMode, MatchRecord } from '../types';
+import { Hero, HeroList, AssignedPlayer, GenerationMode, ExtraGenerationMode, MatchRecord, ToastType } from '../types';
 import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists, getHeroHistoryWeights, getPlayerHeroHistoryWeights, selectWeightedSingle, shuffleArray } from '../utils/generator';
 import { STORAGE_KEYS, getStorageJSON, setStorageJSON, removeStorageItem } from '../utils/storage';
 
@@ -9,7 +9,7 @@ interface UseTeamGenerationProps {
     activeList?: HeroList;
     isGroupMode: boolean;
     selectedGroupIds: Set<string>;
-    addToast: (msg: string, type?: any, duration?: number) => void;
+    addToast: (msg: string, type?: ToastType, duration?: number) => void;
     triggerHaptic: (pattern: number | number[]) => void;
     playerNames: string[];
     saveTeamHistory: () => void;

@@ -16,7 +16,7 @@ test.describe('Групповой режим', () => {
     test('должна существовать возможность работы с несколькими списками', async () => {
         // Проверяем, что оба списка загрузились
         const lists = await app.getLocalStorageItem('randomatched_lists_v1');
-        expect(lists.length).toBe(2);
+        expect(lists!.length).toBe(2);
     });
 
     test('должна быть возможность генерации с группой списков', async ({ page }) => {

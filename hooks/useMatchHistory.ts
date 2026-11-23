@@ -13,11 +13,23 @@ import {
     setDoc,
     where,
     writeBatch,
+    type AppQuerySnapshot,
+    type AppQueryDocSnapshot,
 } from '../services/firestore';
 import { getAllAvatarsFromStorage, saveAllAvatarsToStorage, getAvatarFromStorage, saveAvatarToStorage } from '../utils/avatarStorage';
 import { generateUUID } from '../utils/uuid';
 import { withTimeout } from '../utils/connectivity';
 import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
+
+type CloudMatchDoc = MatchRecord & {
+    deleted?: boolean;
+    permanent?: boolean;
+};
+
+interface CloudBackupMetaDoc {
+    createdAt?: number;
+    matchCount?: number;
+}
 
 export const useMatchHistory = (
     addToast: (message: string, type: ToastType, duration?: number) => void
@@ -179,8 +191,9 @@ export const useMatchHistory = (
     const restoreMatch = useCallback((id: string) => {
         const matchToRestore = deletedHistoryRef.current.find(m => m.id === id);
         if (matchToRestore) {
-            const restoredMatch = { ...matchToRestore, lastUpdated: Date.now() };
-            if ('deleted' in restoredMatch) delete (restoredMatch as any).deleted;
+            const matchWithOptionalDeleted = matchToRestore as MatchRecord & { deleted?: boolean };
+            const { deleted: _deleted, ...withoutDeleted } = matchWithOptionalDeleted;
+            const restoredMatch: MatchRecord = { ...withoutDeleted, lastUpdated: Date.now() };
             
             const nextHistory = [restoredMatch, ...historyRef.current].sort((a, b) => b.timestamp - a.timestamp);
             const nextDeletedHistory = deletedHistoryRef.current.filter(m => m.id !== id);
@@ -334,7 +347,7 @@ export const useMatchHistory = (
 
             const batch = writeBatch();
             let count = 0;
-            snapshot.docs.forEach((docSnap: any) => {
+            snapshot.docs.forEach((docSnap: AppQueryDocSnapshot) => {
                 const data = docSnap.data();
                 // If it already has ONLY these fields, skip to save write ops
                 const keys = Object.keys(data);
@@ -416,10 +429,10 @@ export const useMatchHistory = (
             }
 
             // 2. Fetch all matches from Cloud (with timeout protection against Lie-Fi)
-            const snapshot = await withTimeout<any>(getDocs(collection('match_history')), 6000);
-            const cloudMatchesMap = new Map<string, any>();
-            snapshot.forEach((docSnap: any) => {
-                cloudMatchesMap.set(docSnap.id, docSnap.data());
+            const snapshot = await withTimeout<AppQuerySnapshot>(getDocs(collection('match_history')), 6000);
+            const cloudMatchesMap = new Map<string, CloudMatchDoc>();
+            snapshot.forEach((docSnap: AppQueryDocSnapshot) => {
+                cloudMatchesMap.set(docSnap.id, docSnap.data() as unknown as CloudMatchDoc);
             });
 
             const mergedMap = new Map<string, MatchRecord>();
@@ -435,7 +448,8 @@ export const useMatchHistory = (
             let deletedFromCloud = 0;
 
             // Helper to get effective timestamp for conflict resolution
-            const getTimestamp = (item: any) => item?.lastUpdated || item?.timestamp || 0;
+            const getTimestamp = (item: { lastUpdated?: number; timestamp?: number } | undefined) =>
+                item?.lastUpdated || item?.timestamp || 0;
 
             // 3. Sync LOCAL ACTIVE -> CLOUD
             const currentLocalHistory = currentHistory.filter(m => !currentDeletedIds.has(m.id));
@@ -744,11 +758,11 @@ export const useMatchHistory = (
                 query(collection('backups'), orderBy('createdAt', 'desc'))
             );
 
-            const backups = snapshot.docs.map((docSnap: any) => {
-                const data = docSnap.data();
+            const backups = snapshot.docs.map((docSnap: AppQueryDocSnapshot) => {
+                const data = docSnap.data() as CloudBackupMetaDoc;
                 return {
                     id: docSnap.id,
-                    createdAt: data.createdAt,
+                    createdAt: data.createdAt || 0,
                     matchCount: data.matchCount || 0
                 };
             });
@@ -780,7 +794,11 @@ export const useMatchHistory = (
                 return false;
             }
 
-            const data = docSnap.data() as CloudBackup;
+            const data = docSnap.data() as unknown as CloudBackup | undefined;
+            if (!data) {
+                addToast("Бэкап не найден", "error", 2000);
+                return false;
+            }
             const now = Date.now();
 
             // Обновляем lastUpdated для всех матчей, чтобы при синхронизации они перезаписали данные в БД
@@ -850,7 +868,7 @@ export const useMatchHistory = (
                 addToast("Бэкап не найден", "error", 2000);
                 return null;
             }
-            return docSnap.data() as CloudBackup;
+            return (docSnap.data() as unknown as CloudBackup | undefined) ?? null;
         } catch (e) {
             console.error("Get backup details failed", e);
             addToast("Ошибка получения данных бэкапа", "error", 2000);

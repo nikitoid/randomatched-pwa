@@ -82,6 +82,30 @@ export type AppDocRef = DocumentReference<DocumentData> | MockDocRef;
 export type AppQueryRef = Query<DocumentData> | MockQueryRef;
 export type AppQueryConstraint = QueryConstraint | MockQueryConstraint;
 
+export interface AppDocSnapshot {
+  readonly id: string;
+  exists: () => boolean;
+  data: () => Record<string, unknown> | undefined;
+}
+
+export interface AppQueryDocSnapshot {
+  readonly id: string;
+  data: () => Record<string, unknown>;
+}
+
+export interface AppQuerySnapshot {
+  readonly docs: ReadonlyArray<AppQueryDocSnapshot>;
+  readonly empty: boolean;
+  readonly size: number;
+  forEach: (callback: (docSnap: AppQueryDocSnapshot) => void) => void;
+}
+
+function isMockRef(
+  target: AppDocRef | AppCollectionRef | AppQueryRef
+): target is MockDocRef | MockCollectionRef | MockQueryRef {
+  return '__mockType' in target;
+}
+
 export const collection = (collectionName: string): AppCollectionRef => {
   if (isTestEnvironment()) {
     return mockCollection(collectionName);
@@ -130,30 +154,31 @@ export const query = (
   );
 };
 
-export const getDoc = (docRef: AppDocRef) => {
+export const getDoc = (docRef: AppDocRef): Promise<AppDocSnapshot> => {
   if (isTestEnvironment()) {
     return mockGetDoc(docRef as MockDocRef);
   }
   return fsGetDoc(docRef as DocumentReference<DocumentData>);
 };
 
-export const getDocs = (target: AppCollectionRef | AppQueryRef) => {
+export const getDocs = (target: AppCollectionRef | AppQueryRef): Promise<AppQuerySnapshot> => {
   if (isTestEnvironment()) {
     return mockGetDocs(target as MockCollectionRef | MockQueryRef);
   }
   return fsGetDocs(target as CollectionReference<DocumentData> | Query<DocumentData>);
 };
 
-export const setDoc = (
+export const setDoc = <T extends object>(
   docRef: AppDocRef,
-  data: Record<string, any>,
+  data: T,
   options?: SetOptions
 ): Promise<void> => {
   if (isTestEnvironment()) {
     return mockSetDoc(docRef as MockDocRef, data, options as { merge?: boolean } | undefined);
   }
   const ref = docRef as DocumentReference<DocumentData>;
-  return options ? fsSetDoc(ref, data, options) : fsSetDoc(ref, data);
+  const payload = data as DocumentData;
+  return options ? fsSetDoc(ref, payload, options) : fsSetDoc(ref, payload);
 };
 
 export const deleteDoc = (docRef: AppDocRef): Promise<void> => {
@@ -163,23 +188,45 @@ export const deleteDoc = (docRef: AppDocRef): Promise<void> => {
   return fsDeleteDoc(docRef as DocumentReference<DocumentData>);
 };
 
-export const onSnapshot = (
-  target: AppDocRef | AppCollectionRef | AppQueryRef,
-  onNext: (snapshot: any) => void,
+export function onSnapshot(
+  target: AppDocRef,
+  onNext: (snapshot: AppDocSnapshot) => void,
   onError?: (error: unknown) => void
-): (() => void) => {
-  if (isTestEnvironment()) {
-    return mockOnSnapshot(
-      target as MockDocRef | MockCollectionRef | MockQueryRef,
-      onNext,
+): () => void;
+export function onSnapshot(
+  target: AppCollectionRef | AppQueryRef,
+  onNext: (snapshot: AppQuerySnapshot) => void,
+  onError?: (error: unknown) => void
+): () => void;
+export function onSnapshot(
+  target: AppDocRef | AppCollectionRef | AppQueryRef,
+  onNext: ((snapshot: AppDocSnapshot) => void) | ((snapshot: AppQuerySnapshot) => void),
+  onError?: (error: unknown) => void
+): () => void {
+  if (isMockRef(target)) {
+    if (target.__mockType === 'doc') {
+      return mockOnSnapshot(target, onNext as (snapshot: AppDocSnapshot) => void, onError);
+    }
+    return mockOnSnapshot(target, onNext as (snapshot: AppQuerySnapshot) => void, onError);
+  }
+
+  if (target.type === 'document') {
+    return fsOnSnapshot(
+      target as DocumentReference<DocumentData>,
+      (snap) => (onNext as (snapshot: AppDocSnapshot) => void)(snap),
       onError
     );
   }
-  return fsOnSnapshot(target as any, onNext, onError);
-};
+
+  return fsOnSnapshot(
+    target as CollectionReference<DocumentData> | Query<DocumentData>,
+    (snap) => (onNext as (snapshot: AppQuerySnapshot) => void)(snap),
+    onError
+  );
+}
 
 export interface AppWriteBatch {
-  set: (docRef: AppDocRef, data: Record<string, any>, options?: SetOptions) => void;
+  set: <T extends object>(docRef: AppDocRef, data: T, options?: SetOptions) => void;
   delete: (docRef: AppDocRef) => void;
   commit: () => Promise<void>;
 }
@@ -199,10 +246,11 @@ export const writeBatch = (): AppWriteBatch => {
   return {
     set: (docRef, data, options) => {
       const ref = docRef as DocumentReference<DocumentData>;
+      const payload = data as DocumentData;
       if (options) {
-        batch.set(ref, data, options);
+        batch.set(ref, payload, options);
       } else {
-        batch.set(ref, data);
+        batch.set(ref, payload);
       }
     },
     delete: (docRef) => {

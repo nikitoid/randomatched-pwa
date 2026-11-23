@@ -7,6 +7,9 @@ import {
   orderBy,
   query,
   setDoc,
+  type AppDocSnapshot,
+  type AppQuerySnapshot,
+  type AppQueryDocSnapshot,
 } from '../services/firestore';
 import { ClientData, ClientPrank } from '../types';
 import { getOrCreateClientId, getDeviceInfo, generateDefaultClientName } from '../utils/clientId';
@@ -46,11 +49,12 @@ export const useClientSync = (): UseClientSyncReturn => {
 
       unsubscribe = onSnapshot(
         clientDocRef,
-        (docSnap: any) => {
+        (docSnap: AppDocSnapshot) => {
           if (!docSnap) return;
 
           if (docSnap.exists()) {
-            const data = docSnap.data() as ClientData;
+            const data = docSnap.data() as ClientData | undefined;
+            if (!data) return;
             setClientData({
               ...data,
               clientId: data?.clientId || docSnap.id || clientId
@@ -70,13 +74,13 @@ export const useClientSync = (): UseClientSyncReturn => {
               activePrank: null
             };
 
-            setDoc(clientDocRef, initialData).catch((err: any) => {
+            setDoc(clientDocRef, initialData).catch((err: unknown) => {
               console.warn('[useClientSync] Failed to register client doc:', err);
             });
             setClientData(initialData);
           }
         },
-        (err: any) => {
+        (err: unknown) => {
           console.warn('[useClientSync] Snapshot offline or blocked:', err);
         }
       );
@@ -144,12 +148,12 @@ export const useClientSync = (): UseClientSyncReturn => {
       const clientsRef = query(collection('clients'), orderBy('lastSeen', 'desc'));
       const unsubscribe = onSnapshot(
         clientsRef,
-        (snapshot: any) => {
+        (snapshot: AppQuerySnapshot) => {
           setIsLoadingAllClients(false);
           if (!snapshot || !snapshot.docs) return;
 
-          const clients: ClientData[] = snapshot.docs.map((d: any) => {
-            const data = d.data() || {};
+          const clients: ClientData[] = snapshot.docs.map((d: AppQueryDocSnapshot) => {
+            const data = (d.data() || {}) as Partial<ClientData>;
             return {
               ...data,
               clientId: data.clientId || d.id
@@ -157,7 +161,7 @@ export const useClientSync = (): UseClientSyncReturn => {
           });
           setAllClients(clients);
         },
-        (err: any) => {
+        (err: unknown) => {
           setIsLoadingAllClients(false);
           console.warn('[useClientSync] All clients snapshot error/offline:', err);
         }

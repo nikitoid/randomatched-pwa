@@ -78,7 +78,7 @@ export const getDeviceInfo = (): ClientDeviceInfo => {
   // Определение PWA Standalone режима
   const isPWA = 
     window.matchMedia('(display-mode: standalone)').matches || 
-    (window.navigator as any).standalone === true ||
+    window.navigator.standalone === true ||
     document.referrer.includes('android-app://');
 
   const screen = `${window.screen?.width || window.innerWidth}x${window.screen?.height || window.innerHeight}`;

@@ -87,7 +87,7 @@ export const normalizeHeroKey = (name: string): string => {
     .replace(/\s*\+\s*/g, ' и ') // standardize plus + to ' и '
     .replace(/\s*\/\s*/g, ' и ') // standardize slash / to ' и '
     .replace(/\band\b/gi, ' и ') // standardize English 'and' to ' и '
-    .replace(/[.,#!$%^*;:{}=\_`~()\[\]]/g, ' ') // remove other special chars
+    .replace(/[.,#!$%^*;:{}=_`~()[\]]/g, ' ') // remove other special chars
     .replace(/\s+/g, ' ') // collapse spaces
     .trim();
 };

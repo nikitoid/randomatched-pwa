@@ -326,7 +326,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
         // При равных сериях приоритет отдаётся тому, кто последним получил этот статус
         let bestStreakPlayer: { name: string, streak: number } | null = null;
         let bestStreakMatchIndex = -1;
-        Object.entries(streakStats).forEach(([name, stats]) => {
+        for (const [name, stats] of Object.entries(streakStats)) {
             if (stats.current >= 3 && !playerStats[name]?.isInactive) {
                 if (!bestStreakPlayer ||
                     stats.current > bestStreakPlayer.streak ||
@@ -335,7 +335,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
                     bestStreakMatchIndex = stats.lastStreakMatchIndex;
                 }
             }
-        });
+        }
 
         // Find Underdog (комбинированный подход)
         // Приоритет 1: Игрок с активной серией поражений >= 3
@@ -343,7 +343,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
         // Fallback: Игрок с худшим винрейтом (>= 3 матчей)
         let underdogByLoseStreak: { name: string, loseStreak: number, player: PlayerStat } | null = null;
         let underdogLoseStreakMatchIndex = -1;
-        Object.entries(streakStats).forEach(([name, stats]) => {
+        for (const [name, stats] of Object.entries(streakStats)) {
             if (stats.loseStreak >= 3) {
                 const player = playerStats[name];
                 if (player && !player.isInactive && (!mvp || player.name !== mvp.name)) {
@@ -355,7 +355,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
                     }
                 }
             }
-        });
+        }
 
         // Финальный underdog: приоритет серии поражений, иначе fallback
         const underdog = underdogByLoseStreak ? underdogByLoseStreak.player : fallbackUnderdog;
@@ -415,13 +415,13 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
 
         // 1. Лидер по серии убийств (только среди активных игроков)
         let topKillsSeriesPlayer: { name: string, record: number } | null = null;
-        Object.entries(playerKillsStats).forEach(([name, stats]) => {
+        for (const [name, stats] of Object.entries(playerKillsStats)) {
             if (stats.maxSeries > 0 && !playerStats[name]?.isInactive) {
                 if (!topKillsSeriesPlayer || stats.maxSeries > topKillsSeriesPlayer.record) {
                     topKillsSeriesPlayer = { name, record: stats.maxSeries };
                 }
             }
-        });
+        }
 
         // 2. Лидеры по общему числу убийств (топ-3 среди активных игроков)
         const topTotalKillers = Object.entries(playerKillsStats)
@@ -434,7 +434,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
         // 3. Самый кровавый матч
         let bloodiestMatch: { id: string, timestamp: number, totalKills: number, players: string } | null = null;
         let totalKillsAll = 0;
-        filteredHistory.forEach(m => {
+        for (const m of filteredHistory) {
             const t1Kills = m.team1.reduce((sum, p) => sum + (p.kills || 0), 0);
             const t2Kills = m.team2.reduce((sum, p) => sum + (p.kills || 0), 0);
             const total = t1Kills + t2Kills;
@@ -451,7 +451,7 @@ export const useStatsCalculations = (filteredHistory: MatchRecord[]) => {
                     };
                 }
             }
-        });
+        }
 
         const avgKillsPerMatch = filteredHistory.length > 0 ? totalKillsAll / filteredHistory.length : 0;
 

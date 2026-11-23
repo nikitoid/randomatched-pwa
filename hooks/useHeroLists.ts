@@ -1,11 +1,35 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useConnectivity } from './useConnectivity';
 import { HeroList, Hero, ToastType } from '../types';
-import { collection, deleteDoc, doc, getDocs, setDoc } from '../services/firestore';
+import { collection, deleteDoc, doc, getDocs, setDoc, type AppQueryDocSnapshot } from '../services/firestore';
 import { generateUUID } from '../utils/uuid';
 import { normalizeHeroKey, mergeHeroInList } from '../utils/heroNormalization';
 import { RANK_VALUES } from '../constants';
 import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
+
+interface RawHeroInput {
+  id?: string;
+  name?: string;
+  rank?: string;
+}
+
+interface RawStoredHeroList {
+  id: string;
+  name: string;
+  heroes?: Array<string | Hero>;
+  isLocal: boolean;
+  isCloud?: boolean;
+  isTemporary?: boolean;
+  isGroupable?: boolean;
+  lastModified?: number;
+}
+
+interface CloudHeroListDoc {
+  name?: string;
+  heroes?: Array<string | RawHeroInput>;
+  isGroupable?: boolean;
+  lastModified?: number;
+}
 
 // Inject toast function via arguments to keep hook pure regarding UI state
 export const useHeroLists = (
@@ -13,20 +37,23 @@ export const useHeroLists = (
 ) => {
   const [lists, setLists] = useState<HeroList[]>(() => {
     if (typeof window === 'undefined') return [];
-    const parsedLists = getStorageJSON<any[]>(STORAGE_KEYS.LISTS, []);
+    const parsedLists = getStorageJSON<RawStoredHeroList[]>(STORAGE_KEYS.LISTS, []);
     if (Array.isArray(parsedLists)) {
-      return parsedLists.map((list: any) => {
+      return parsedLists.map((list): HeroList => {
         if (list.heroes && list.heroes.length > 0 && typeof list.heroes[0] === 'string') {
           return {
             ...list,
-            heroes: list.heroes.map((name: string, idx: number) => ({
+            heroes: (list.heroes as string[]).map((name: string, idx: number) => ({
               id: `${list.id}_migrated_${idx}`,
               name: name,
               rank: 'C+'
             }))
           };
         }
-        return list;
+        return {
+          ...list,
+          heroes: Array.isArray(list.heroes) ? (list.heroes as Hero[]) : []
+        };
       });
     }
     return [];
@@ -111,33 +138,34 @@ export const useHeroLists = (
       const querySnapshot = await getDocs(collection("lists"));
       const cloudListsMap = new Map<string, HeroList>();
 
-      querySnapshot.forEach((docSnap: any) => {
-        const data = docSnap.data();
+      querySnapshot.forEach((docSnap: AppQueryDocSnapshot) => {
+        const data = docSnap.data() as CloudHeroListDoc;
         let processedHeroes: Hero[] = [];
         if (Array.isArray(data.heroes)) {
           if (data.heroes.length > 0 && typeof data.heroes[0] === 'string') {
-            processedHeroes = data.heroes.map((name: string, idx: number) => ({
+            processedHeroes = (data.heroes as string[]).map((name: string, idx: number) => ({
               id: `${docSnap.id}_legacy_${idx}`,
               name,
               rank: 'C+'
             }));
           } else {
-            processedHeroes = data.heroes.map((h: any, idx: number) => ({
-              ...h,
-              id: h.id || `${docSnap.id}_fallback_${idx}`
+            processedHeroes = (data.heroes as RawHeroInput[]).map((h, idx: number) => ({
+              id: h.id || `${docSnap.id}_fallback_${idx}`,
+              name: h.name || '',
+              rank: h.rank || ''
             }));
           }
         }
 
         cloudListsMap.set(docSnap.id, {
           id: docSnap.id,
-          name: data.name,
+          name: data.name || 'Без названия',
           heroes: processedHeroes,
           isLocal: false,
           isCloud: true,
           isGroupable: data.isGroupable ?? false,
           lastModified: data.lastModified || Date.now() // Use cloud timestamp if available
-        } as HeroList);
+        });
       });
 
       let detectedNewUpdates: Set<string> | null = null;
@@ -156,7 +184,7 @@ export const useHeroLists = (
             const existingList = newLists[existingIndex];
 
             // Only update if cloud version is newer or if local is not cloud-synced
-            if (existingList.lastModified < (cloudList.lastModified || 0) || !existingList.isCloud) {
+            if ((existingList.lastModified ?? 0) < (cloudList.lastModified ?? 0) || !existingList.isCloud) {
               const isNameChanged = (existingList.name || '').trim() !== (cloudList.name || '').trim();
               const isGroupableChanged = existingList.isGroupable !== cloudList.isGroupable;
               const isHeroesChanged = !areHeroArraysEqual(existingList.heroes, cloudList.heroes);
@@ -384,7 +412,7 @@ export const useHeroLists = (
     return newList.id;
   }, []);
 
-  const createTemporaryList = useCallback((heroes: Hero[], name: string) => {
+  const createTemporaryList = useCallback((heroes: Hero[], name: string = 'Временный список') => {
     const newList: HeroList = {
       id: generateUUID(),
       name,

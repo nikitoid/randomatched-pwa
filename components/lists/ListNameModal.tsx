@@ -7,7 +7,7 @@ interface ListNameModalProps {
     mode: 'create' | 'rename';
     nameInputValue: string;
     setNameInputValue: (val: string) => void;
-    createListFileInputRef: React.RefObject<HTMLInputElement | null>;
+    createListFileInputRef: React.RefObject<HTMLInputElement>;
     onTriggerCreateListFileUpload: () => void;
     onNewListImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSubmit: (e: React.FormEvent) => void;

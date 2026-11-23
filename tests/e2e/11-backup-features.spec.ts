@@ -5,7 +5,7 @@ test.describe('Резервное копирование статистики', 
     test.beforeEach(async ({ page, injectData }) => {
         // ENABLE TEST MODE (Mock DB)
         await page.addInitScript(() => {
-            (window as any).__PLAYWRIGHT_TEST__ = true;
+            window.__PLAYWRIGHT_TEST__ = true;
         });
 
         // MOCK CONNECTIVITY CHECK
