@@ -17,7 +17,7 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({
 
     return (
         <div 
-            className="fixed top-0 left-0 w-full p-4 animate-in slide-in-from-top duration-500 pointer-events-none"
+            className="fixed top-0 left-0 w-full p-4 animate-in fade-in slide-in-from-top animate-duration-500 pointer-events-none"
             style={{ 
                 paddingTop: 'calc(1rem + env(safe-area-inset-top))',
                 zIndex: Z_INDEX_BASE.TOAST + 5

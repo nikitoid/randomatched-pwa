@@ -60,9 +60,30 @@ function saveLocalStorageAvatar(key: string, dataUrl: string | null) {
     } else {
       delete avatars[key];
     }
-    localStorage.setItem(LOCAL_STORAGE_FALLBACK_KEY, JSON.stringify(avatars));
+    if (Object.keys(avatars).length === 0) {
+      localStorage.removeItem(LOCAL_STORAGE_FALLBACK_KEY);
+    } else {
+      localStorage.setItem(LOCAL_STORAGE_FALLBACK_KEY, JSON.stringify(avatars));
+    }
   } catch (e) {
     console.warn('[AvatarStorage] localStorage fallback error:', e);
+  }
+}
+
+function removeLocalStorageAvatarIfPresent(key: string) {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_FALLBACK_KEY);
+    if (!raw) return;
+    const avatars = JSON.parse(raw) as Record<string, string>;
+    if (!avatars || typeof avatars !== 'object' || !(key in avatars)) return;
+    delete avatars[key];
+    if (Object.keys(avatars).length === 0) {
+      localStorage.removeItem(LOCAL_STORAGE_FALLBACK_KEY);
+    } else {
+      localStorage.setItem(LOCAL_STORAGE_FALLBACK_KEY, JSON.stringify(avatars));
+    }
+  } catch (e) {
+    console.warn('[AvatarStorage] Failed to cleanup localStorage fallback:', e);
   }
 }
 
@@ -79,7 +100,12 @@ export async function getAvatarFromStorage(entityType: 'player' | 'hero', entity
 
       req.onsuccess = () => {
         const record = req.result as AvatarRecord | undefined;
-        resolve(record ? record.dataUrl : getLocalStorageAvatars()[key] || null);
+        if (record) {
+          removeLocalStorageAvatarIfPresent(key);
+          resolve(record.dataUrl);
+        } else {
+          resolve(getLocalStorageAvatars()[key] || null);
+        }
       };
 
       req.onerror = () => {
@@ -105,26 +131,31 @@ export async function saveAvatarToStorage(
     updatedAt: Date.now(),
   };
 
-  saveLocalStorageAvatar(key, dataUrl);
-
   try {
     const db = await getDB();
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const req = store.put(record);
 
-      req.onsuccess = () => resolve(record);
-      req.onerror = () => resolve(record); // Fallback already saved
+      req.onsuccess = () => {
+        removeLocalStorageAvatarIfPresent(key);
+        resolve(record);
+      };
+      req.onerror = () => {
+        saveLocalStorageAvatar(key, dataUrl);
+        resolve(record);
+      };
     });
   } catch (e) {
+    saveLocalStorageAvatar(key, dataUrl);
     return record;
   }
 }
 
 export async function deleteAvatarFromStorage(entityType: 'player' | 'hero', entityId: string): Promise<void> {
   const key = getAvatarKey(entityType, entityId);
-  saveLocalStorageAvatar(key, null);
+  removeLocalStorageAvatarIfPresent(key);
 
   try {
     const db = await getDB();
@@ -174,10 +205,30 @@ export async function getAllAvatarsFromStorage(): Promise<Record<string, string>
 
       req.onsuccess = () => {
         const records = req.result as AvatarRecord[];
-        const map: Record<string, string> = { ...getLocalStorageAvatars() };
+        const fallbackAvatars = getLocalStorageAvatars();
+        const map: Record<string, string> = { ...fallbackAvatars };
+        let hasDuplicatesInFallback = false;
+
         records.forEach((r) => {
           map[r.id] = r.dataUrl;
+          if (r.id in fallbackAvatars) {
+            delete fallbackAvatars[r.id];
+            hasDuplicatesInFallback = true;
+          }
         });
+
+        if (hasDuplicatesInFallback) {
+          try {
+            if (Object.keys(fallbackAvatars).length === 0) {
+              localStorage.removeItem(LOCAL_STORAGE_FALLBACK_KEY);
+            } else {
+              localStorage.setItem(LOCAL_STORAGE_FALLBACK_KEY, JSON.stringify(fallbackAvatars));
+            }
+          } catch (e) {
+            console.warn('[AvatarStorage] Failed to prune fallback localStorage:', e);
+          }
+        }
+
         resolve(map);
       };
 

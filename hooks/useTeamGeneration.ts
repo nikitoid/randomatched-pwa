@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Hero, HeroList, AssignedPlayer, GenerationMode, ExtraGenerationMode, MatchRecord } from '../types';
-import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists, getHeroHistoryWeights, getPlayerHeroHistoryWeights, selectWeightedSingle } from '../utils/generator';
+import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists, getHeroHistoryWeights, getPlayerHeroHistoryWeights, selectWeightedSingle, shuffleArray } from '../utils/generator';
 
 const STORAGE_KEY_ASSIGNMENTS = 'randomatched_last_session_v1';
 const STORAGE_KEY_DEBUG_MODE = 'randomatched_debug_mode_v1';
@@ -195,7 +195,7 @@ export const useTeamGeneration = ({
 
         setTimeout(() => {
             const positions: ('bottom' | 'top' | 'left' | 'right')[] = ['bottom', 'top', 'left', 'right'];
-            const playerNumbers = [1, 2, 3, 4].sort(() => 0.5 - Math.random());
+            const playerNumbers = shuffleArray([1, 2, 3, 4]);
 
             const newAssignments: AssignedPlayer[] = positions.map((pos, index) => {
                 const pNum = playerNumbers[index];
@@ -398,7 +398,7 @@ export const useTeamGeneration = ({
 
     const handleShuffleTeams = () => {
         triggerHaptic(20);
-        const pNums = [1, 2, 3, 4].sort(() => 0.5 - Math.random());
+        const pNums = shuffleArray([1, 2, 3, 4]);
 
         const newAssignments: AssignedPlayer[] = assignments.map((assignment, index) => {
             const pNum = pNums[index];

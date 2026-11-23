@@ -7,6 +7,7 @@ import { APP_VERSION, CHANGELOG, getUnreadReleasesCount } from '../utils/changel
 import { useHaptics } from '../hooks/useHaptics';
 import { generateUUID } from '../utils/uuid';
 import { copyToClipboard } from '../utils/clipboard';
+import { shuffleArray } from '../utils/generator';
 
 
 interface SettingsOverlayProps {
@@ -239,7 +240,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         const now = Date.now();
 
         for (let i = 0; i < 15; i++) {
-            const shuffledHeroes = [...allHeroes].sort(() => 0.5 - Math.random());
+            const shuffledHeroes = shuffleArray(allHeroes);
             const selectedHeroes = shuffledHeroes.slice(0, 4);
 
             const team1 = [

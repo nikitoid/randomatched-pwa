@@ -4,6 +4,7 @@ import App from './App';
 import './index.css';
 import { ConnectivityProvider } from './context/ConnectivityContext';
 import { AvatarProvider } from './context/AvatarContext';
+import { ToastProvider } from './context/ToastContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -13,10 +14,12 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ConnectivityProvider>
-      <AvatarProvider>
-        <App />
-      </AvatarProvider>
-    </ConnectivityProvider>
+    <ToastProvider>
+      <ConnectivityProvider>
+        <AvatarProvider>
+          <App />
+        </AvatarProvider>
+      </ConnectivityProvider>
+    </ToastProvider>
   </React.StrictMode>
 );

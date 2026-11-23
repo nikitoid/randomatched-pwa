@@ -14,7 +14,6 @@ import { ResultOverlay } from './components/ResultOverlay';
 import { SettingsOverlay } from './components/SettingsOverlay';
 import { ListsOverlay } from './components/ListsOverlay';
 import { StatsModal } from './components/StatsModal';
-import { ToastContainer } from './components/Toast';
 import { Header } from './components/Header';
 import { SourceSelector } from './components/SourceSelector';
 import { PlayerNameInput } from './components/PlayerNameInput';
@@ -51,7 +50,7 @@ const App: React.FC = () => {
         bgGradient,
         setBgGradient
     } = useTheme();
-    const { toasts, addToast, removeToast } = useToast();
+    const { addToast } = useToast();
     const { trigger: triggerHaptic, toggle: toggleHaptics, isEnabled: hapticsEnabled, forceAudioMode, toggleForceAudioMode, setForceAudioMode } = useHaptics();
 
     const {
@@ -465,8 +464,6 @@ const App: React.FC = () => {
     return (
         <NavigationProvider>
             <div className="relative h-full w-full flex flex-col bg-transparent transition-colors duration-300 overflow-hidden">
-                <ToastContainer toasts={toasts} removeToast={removeToast} />
-
                 <Header
                     isCheckingUpdate={isCheckingUpdate}
                     isUpdateAvailable={isUpdateAvailable}
@@ -629,7 +626,7 @@ const App: React.FC = () => {
                     onToggleForceAudioMode={toggleForceAudioMode}
                     triggerHaptic={triggerHaptic}
                     history={history}
-                    onImportData={importData}
+                    onImportData={handleImportDataCombined}
                     addToast={addToast}
                     onOpenChangelog={() => setIsChangelogOpen(true)}
                     lastSeenVersion={lastSeenVersion}
@@ -779,8 +776,6 @@ const App: React.FC = () => {
                     remainingSeconds={remainingSeconds}
                     onDismissMessage={dismissSecretMessage}
                 />
-
-                <ToastContainer toasts={toasts} removeToast={removeToast} />
             </div>
         </NavigationProvider>
     );

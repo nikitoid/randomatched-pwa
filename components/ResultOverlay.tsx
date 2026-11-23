@@ -228,21 +228,6 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         }
     }, [isOpen]);
 
-    // Обработка закрытия по Escape
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) {
-                // Let back handler handle logic if complex, or just close
-                // For consistecy, maybe call the same logic?
-                // But Escape is usually "Close All" or "Step Back".
-                // Simple onClose is fine for Desktop fallback.
-                onClose();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
-
     useEffect(() => {
         if (confirmModal) {
             setDisplayModal(confirmModal);

@@ -7,11 +7,23 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const updateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isControllerListenerAttachedRef = useRef<boolean>(false);
 
   // Keep ref in sync
   useEffect(() => {
     registrationRef.current = registration;
   }, [registration]);
+
+  // Clear periodic SW update interval on unmount
+  useEffect(() => {
+    return () => {
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -48,7 +60,10 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
         r.update().catch((e: any) => console.log('SW initial update check failed', e));
 
         // 4. Periodic auto-check every 30 minutes
-        setInterval(() => {
+        if (updateIntervalRef.current) {
+          clearInterval(updateIntervalRef.current);
+        }
+        updateIntervalRef.current = setInterval(() => {
           r.update().catch((e: any) => console.log('SW interval update failed', e));
         }, 30 * 60 * 1000); 
       }
@@ -175,10 +190,11 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     };
 
     // When the new worker takes control, reload cleanly
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !isControllerListenerAttachedRef.current) {
+      isControllerListenerAttachedRef.current = true;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         executeReload();
-      });
+      }, { once: true });
     }
 
     // Try finding the waiting worker from state or native registration

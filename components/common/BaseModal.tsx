@@ -38,6 +38,26 @@ export interface BaseModalProps {
   contentRef?: React.Ref<HTMLDivElement>;
 }
 
+const MODAL_MAX_WIDTH_CLASSES: Record<NonNullable<BaseModalProps['maxWidth']>, string> = {
+  xs: 'max-w-xs',
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  full: 'max-w-full',
+};
+
+const MODAL_SM_MAX_WIDTH_CLASSES: Record<NonNullable<BaseModalProps['maxWidth']>, string> = {
+  xs: 'max-w-full sm:max-w-xs',
+  sm: 'max-w-full sm:max-w-sm',
+  md: 'max-w-full sm:max-w-md',
+  lg: 'max-w-full sm:max-w-lg',
+  xl: 'max-w-full sm:max-w-xl',
+  '2xl': 'max-w-full sm:max-w-2xl',
+  full: 'max-w-full sm:max-w-full',
+};
+
 export const BaseModal: React.FC<BaseModalProps> = ({
   isOpen,
   onClose,
@@ -401,28 +421,39 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     };
   }, [isRendered, enableSwipeToClose, handleTouchStart, handleTouchMove, handleTouchEnd, handleTouchCancel]);
 
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return true;
+    return window.matchMedia('(max-width: 639px)').matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobileViewport(e.matches);
+    };
+
+    handleChange(mediaQuery);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
   if (!isRendered) return null;
 
-  const isBottomSheetScreen = variant === 'bottom-sheet' || (variant === 'auto' && (typeof window !== 'undefined' ? window.innerWidth < 640 : true));
+  const isBottomSheetScreen = variant === 'bottom-sheet' || (variant === 'auto' && isMobileViewport);
 
   const getMaxWidthClass = () => {
-    let widthClass = 'max-w-md';
-    switch (maxWidth) {
-      case 'xs': widthClass = 'max-w-xs'; break;
-      case 'sm': widthClass = 'max-w-sm'; break;
-      case 'md': widthClass = 'max-w-md'; break;
-      case 'lg': widthClass = 'max-w-lg'; break;
-      case 'xl': widthClass = 'max-w-xl'; break;
-      case '2xl': widthClass = 'max-w-2xl'; break;
-      case 'full': widthClass = 'max-w-full'; break;
-      default: widthClass = 'max-w-md'; break;
-    }
-
     if (isBottomSheetScreen) {
-      return `max-w-full sm:${widthClass}`;
+      return MODAL_SM_MAX_WIDTH_CLASSES[maxWidth] || MODAL_SM_MAX_WIDTH_CLASSES.md;
     }
 
-    return widthClass;
+    return MODAL_MAX_WIDTH_CLASSES[maxWidth] || MODAL_MAX_WIDTH_CLASSES.md;
   };
 
   const getContainerLayoutClass = () => {

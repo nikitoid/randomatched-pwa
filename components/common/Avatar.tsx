@@ -19,7 +19,7 @@ const SIZE_MAP = {
   md: 'w-9 h-9 text-sm',
   lg: 'w-12 h-12 text-base',
   xl: 'w-16 h-16 text-xl',
-  '2xl': 'w-22 h-22 text-3xl',
+  '2xl': 'w-[88px] h-[88px] text-3xl',
 };
 
 const ICON_SIZE_MAP = {

@@ -358,8 +358,8 @@ export const getBestPermutation = (heroes: Hero[]): { groupA: Hero[], groupB: He
 };
 
 // Helper for Fisher-Yates Shuffle
-export const shuffleArray = <T>(array: T[]): T[] => {
-  const arr = [...array];
+export const shuffleArray = <T>(items: readonly T[]): T[] => {
+  const arr = [...items];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
