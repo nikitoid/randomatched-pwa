@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useBackHandler } from '../../hooks/useBackHandler';
 import { Z_INDEX_BASE } from '../../constants/zIndex';
@@ -59,11 +59,28 @@ export const ScreenOverlay: React.FC<ScreenOverlayProps> = ({
   const [phase, setPhase] = useState<'closed' | 'entering' | 'entered' | 'exiting'>(
     isOpen ? 'entering' : 'closed'
   );
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const raf1Ref = useRef<number | null>(null);
   const raf2Ref = useRef<number | null>(null);
 
   useBackHandler(isOpen, onClose, { id: screenId, priority });
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!isOpen) {
+      const activeEl = document.activeElement;
+      if (activeEl instanceof HTMLElement && container.contains(activeEl)) {
+        activeEl.blur();
+      }
+    }
+
+    if ('inert' in container) {
+      container.inert = !isOpen;
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (closeTimerRef.current) {
@@ -123,8 +140,8 @@ export const ScreenOverlay: React.FC<ScreenOverlayProps> = ({
 
   return (
     <div
+      ref={containerRef}
       data-testid={testId}
-      aria-hidden={!isOpen}
       className={`fixed inset-0 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transform-gpu will-change-transform transition-[transform,opacity] duration-300 ${visibilityClasses}`}
       style={{
         zIndex: zIndex ?? Z_INDEX_BASE.OVERLAY,
