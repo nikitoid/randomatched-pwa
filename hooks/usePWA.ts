@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 // @ts-ignore - virtual module provided by vite-plugin-pwa
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { SESSION_STORAGE_KEYS, getSessionItem, setSessionItem, removeSessionItem } from '../utils/storage';
 
 export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error') => void) => {
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
@@ -147,15 +148,11 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     if (typeof window === 'undefined') return;
     const urlParams = new URLSearchParams(window.location.search);
     const hasUpdatedParam = urlParams.has('updated');
-    const justUpdated = sessionStorage.getItem('randomatched_just_updated');
+    const justUpdated = getSessionItem(SESSION_STORAGE_KEYS.JUST_UPDATED);
 
     if (hasUpdatedParam || justUpdated) {
       addToast('Приложение успешно обновлено до последней версии!', 'success');
-      try {
-        sessionStorage.removeItem('randomatched_just_updated');
-      } catch (e) {
-        console.error("Failed to remove update marker", e);
-      }
+      removeSessionItem(SESSION_STORAGE_KEYS.JUST_UPDATED);
       if (hasUpdatedParam) {
         urlParams.delete('updated');
         const newSearch = urlParams.toString();
@@ -174,11 +171,7 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     
     setShowUpdateBanner(false);
 
-    try {
-      sessionStorage.setItem('randomatched_just_updated', 'true');
-    } catch (e) {
-      console.error("Failed to set update marker", e);
-    }
+    setSessionItem(SESSION_STORAGE_KEYS.JUST_UPDATED, 'true');
 
     let reloaded = false;
     const executeReload = () => {

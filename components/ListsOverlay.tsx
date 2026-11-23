@@ -14,14 +14,19 @@ import { ListNameModal } from './lists/ListNameModal';
 import { ListImportExportModals, ListImportMode } from './lists/ListImportExportModals';
 import { generateUUID } from '../utils/uuid';
 import { normalizeHeroKey, findDuplicateOrSimilarHeroGroups, DuplicateGroup, KNOWN_HERO_ALIASES } from '../utils/heroNormalization';
+import { useHeroListsContext } from '../context/HeroListsContext';
+import { useConnectivityContext } from '../context/ConnectivityContext';
+import { useMatchHistoryContext } from '../context/MatchHistoryContext';
+import { useToast } from '../hooks/useToast';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface ListsOverlayProps {
     isOpen: boolean;
     onClose: () => void;
-    lists: HeroList[];
-    onAddList: (name: string) => string;
-    onUpdateList: (id: string, updates: Partial<HeroList>) => void;
-    onDeleteList: (id: string) => void;
+    lists?: HeroList[];
+    onAddList?: (name: string) => string;
+    onUpdateList?: (id: string, updates: Partial<HeroList>) => void;
+    onDeleteList?: (id: string) => void;
     onUploadToCloud?: (id: string) => void;
     onSync?: () => void;
     reorderLists?: (lists: HeroList[]) => void;
@@ -34,7 +39,7 @@ interface ListsOverlayProps {
     onMarkSeen?: (id: string) => void;
     updatedHeroIds?: Map<string, Set<string>>;
     onDismissHeroUpdates?: (listId: string) => void;
-    triggerHaptic: (pattern?: number | number[]) => void;
+    triggerHaptic?: (pattern?: number | number[]) => void;
     history?: MatchRecord[];
     onOpenInactiveModal?: () => void;
 }
@@ -44,26 +49,50 @@ type SortOrder = 'asc' | 'desc' | 'custom';
 export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     isOpen,
     onClose,
-    lists,
-    onAddList,
-    onUpdateList,
-    onDeleteList,
-    onUploadToCloud,
-    onSync,
-    reorderLists,
-    sortLists,
-    isOnline = true,
-    isSyncing = false,
-    checkConnectivity,
-    addToast,
-    updatedListIds,
-    onMarkSeen,
-    updatedHeroIds,
-    onDismissHeroUpdates,
-    triggerHaptic,
-    history = [],
+    lists: listsProp,
+    onAddList: onAddListProp,
+    onUpdateList: onUpdateListProp,
+    onDeleteList: onDeleteListProp,
+    onUploadToCloud: onUploadToCloudProp,
+    onSync: onSyncProp,
+    reorderLists: reorderListsProp,
+    sortLists: sortListsProp,
+    isOnline: isOnlineProp,
+    isSyncing: isSyncingProp,
+    checkConnectivity: checkConnectivityProp,
+    addToast: addToastProp,
+    updatedListIds: updatedListIdsProp,
+    onMarkSeen: onMarkSeenProp,
+    updatedHeroIds: updatedHeroIdsProp,
+    onDismissHeroUpdates: onDismissHeroUpdatesProp,
+    triggerHaptic: triggerHapticProp,
+    history: historyProp,
     onOpenInactiveModal,
 }) => {
+    const heroListsCtx = useHeroListsContext();
+    const connectivityCtx = useConnectivityContext();
+    const { history: ctxHistory } = useMatchHistoryContext();
+    const { addToast: ctxAddToast } = useToast();
+    const { trigger: ctxTriggerHaptic } = useHaptics();
+
+    const lists = listsProp ?? heroListsCtx.lists;
+    const onAddList = onAddListProp ?? heroListsCtx.addList;
+    const onUpdateList = onUpdateListProp ?? heroListsCtx.updateList;
+    const onDeleteList = onDeleteListProp ?? heroListsCtx.deleteList;
+    const onUploadToCloud = onUploadToCloudProp ?? heroListsCtx.uploadToCloud;
+    const onSync = onSyncProp ?? heroListsCtx.syncWithCloud;
+    const reorderLists = reorderListsProp ?? heroListsCtx.reorderLists;
+    const sortLists = sortListsProp ?? heroListsCtx.sortLists;
+    const isOnline = isOnlineProp ?? connectivityCtx.isOnline;
+    const isSyncing = isSyncingProp ?? heroListsCtx.isSyncing;
+    const checkConnectivity = checkConnectivityProp ?? connectivityCtx.checkConnectivity;
+    const addToast = addToastProp ?? ctxAddToast;
+    const updatedListIds = updatedListIdsProp ?? heroListsCtx.updatedListIds;
+    const onMarkSeen = onMarkSeenProp ?? heroListsCtx.markListAsSeen;
+    const updatedHeroIds = updatedHeroIdsProp ?? heroListsCtx.updatedHeroIds;
+    const onDismissHeroUpdates = onDismissHeroUpdatesProp ?? heroListsCtx.dismissHeroUpdates;
+    const triggerHaptic = triggerHapticProp ?? ctxTriggerHaptic;
+    const history = historyProp ?? ctxHistory;
     const [editingListId, setEditingListId] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<SortOrder>('custom');
     const [isReorderMode, setIsReorderMode] = useState(false);

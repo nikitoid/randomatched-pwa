@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useTheme } from './hooks/useTheme';
-import { useHeroLists } from './hooks/useHeroLists';
+import { useThemeContext } from './context/ThemeContext';
+import { useHeroListsContext } from './context/HeroListsContext';
 import { useToast } from './hooks/useToast';
 import { usePWA } from './hooks/usePWA';
-import { useHaptics, HapticsProvider } from './hooks/useHaptics';
-import { useMatchHistory } from './hooks/useMatchHistory';
+import { useHaptics } from './hooks/useHaptics';
+import { useMatchHistoryContext } from './context/MatchHistoryContext';
 import { useAppStats } from './hooks/useAppStats';
 import { useGroupSelection } from './hooks/useGroupSelection';
 import { useHistoryInput } from './hooks/useHistoryInput';
 import { useTeamGeneration } from './hooks/useTeamGeneration';
-import { useSeasons } from './hooks/useSeasons';
+import { useInitialAutoSync } from './hooks/useInitialAutoSync';
 import { Header } from './components/Header';
 import { Z_INDEX_BASE } from './constants/zIndex';
 import { SourceSelector } from './components/SourceSelector';
@@ -22,10 +22,10 @@ import { GenConfirmModal } from './components/GenConfirmModal';
 import { getUniqueHeroesFromLists } from './utils/generator';
 import { NavigationProvider } from './context/NavigationContext';
 import { PrankOverlay } from './components/PrankOverlay';
-import { useAvatars } from './context/AvatarContext';
 import { useClientSync } from './hooks/useClientSync';
 import { usePranks } from './hooks/usePranks';
 import { APP_VERSION, getInitialLastSeenVersion } from './utils/changelog';
+import { STORAGE_KEYS, getStorageItem, getStorageJSON, setStorageItem, removeStorageItem } from './utils/storage';
 import { LazyOverlayBoundary } from './components/common/ErrorBoundary';
 import {
     LazyResultOverlay as ResultOverlay,
@@ -43,20 +43,9 @@ import {
 import { Hero } from './types';
 
 const App: React.FC = () => {
-    const {
-        theme,
-        toggleTheme,
-        colorScheme,
-        setColorScheme,
-        roundness,
-        setRoundness,
-        bgPattern,
-        setBgPattern,
-        bgGradient,
-        setBgGradient
-    } = useTheme();
+    const { theme, toggleTheme } = useThemeContext();
     const { addToast } = useToast();
-    const { trigger: triggerHaptic, toggle: toggleHaptics, isEnabled: hapticsEnabled, forceAudioMode, toggleForceAudioMode, setForceAudioMode } = useHaptics();
+    const { trigger: triggerHaptic } = useHaptics();
 
     // Background preload all lazy screens after initial paint so offline navigation works without network
     useEffect(() => {
@@ -87,12 +76,9 @@ const App: React.FC = () => {
     }, []);
 
     const {
-        lists, addList, updateList, deleteList, forkList, createTemporaryList,
-        resetTemporaryLists, uploadToCloud, syncWithCloud, reorderLists,
-        sortLists, checkConnectivity, isOnline, isSyncing, updatedListIds,
-        markListAsSeen, updatedHeroIds, dismissHeroUpdates, isLoaded: isListsLoaded,
-        batchMergeHeroesInLists, renameHeroInLists
-    } = useHeroLists(addToast);
+        lists, updateList, forkList, createTemporaryList,
+        resetTemporaryLists, checkConnectivity, isOnline, isLoaded: isListsLoaded,
+    } = useHeroListsContext();
 
     const {
         isUpdateAvailable, isCheckingUpdate, showUpdateBanner, setShowUpdateBanner,
@@ -100,76 +86,21 @@ const App: React.FC = () => {
     } = usePWA(addToast);
 
     const {
-        history, addMatch, addManualMatch, updateMatch, deleteMatch,
-        renamePlayer, renameHero, batchMergeHeroes, syncHistory, isSyncingHistory,
-        deletedHistory, restoreMatch, permanentDeleteMatch, clearTrash, importData,
-        // Облачный бэкап
-        createCloudBackup, listCloudBackups, restoreFromCloudBackup,
-        cloudBackups, isCreatingBackup, isLoadingBackups, isRestoringBackup,
-        deleteCloudBackup, getCloudBackupDetails, isLoaded: isHistoryLoaded
-    } = useMatchHistory(addToast);
-
-    const handleMergeHeroes = useCallback(async (targetHeroName: string, sourceHeroNames: string[]) => {
-        await batchMergeHeroes(targetHeroName, sourceHeroNames);
-        const affectedLists = await batchMergeHeroesInLists(targetHeroName, sourceHeroNames);
-        if (affectedLists > 0) {
-            addToast(`Герой «${targetHeroName}» обновлен в ${affectedLists} списк(ах)`, 'info', 2500);
-        }
-    }, [batchMergeHeroes, batchMergeHeroesInLists, addToast]);
-
-    const handleRenameHero = useCallback(async (oldName: string, newName: string) => {
-        renameHero(oldName, newName);
-        await renameHeroInLists(oldName, newName);
-    }, [renameHero, renameHeroInLists]);
-
-    const {
-        seasons, latestSeason, userDefaultSeasonId, setUserDefaultSeasonId,
-        addSeason, updateSeason, deleteSeason, syncSeasons, importSeasons,
-        isLoaded: isSeasonsLoaded
-    } = useSeasons(addToast);
-
-    const { syncAvatarsToCloud, importAvatars } = useAvatars();
-
-    const handleImportDataCombined = (data: any) => {
-        const success = importData(data);
-        if (success && Array.isArray(data.seasons)) {
-            importSeasons(data.seasons);
-        }
-        if (success && data.avatars && typeof data.avatars === 'object') {
-            importAvatars(data.avatars);
-        }
-        return success;
-    };
-
+        history, addMatch, syncHistory,
+    } = useMatchHistoryContext();
 
     // UI State
     const [selectedListId, setSelectedListId] = useState<string>(() => {
         if (typeof window === 'undefined') return '';
-        const savedSelectedId = localStorage.getItem('randomatched_selected_list_id');
-        if (savedSelectedId) {
-            try {
-                const storedLists = localStorage.getItem('randomatched_lists_v1');
-                if (storedLists) {
-                    const parsedLists = JSON.parse(storedLists);
-                    if (Array.isArray(parsedLists) && parsedLists.some((l: any) => l.id === savedSelectedId)) {
-                        return savedSelectedId;
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to parse lists for selectedListId check", e);
-            }
+        const savedSelectedId = getStorageItem(STORAGE_KEYS.SELECTED_LIST_ID);
+        const parsedLists = getStorageJSON<unknown>(STORAGE_KEYS.LISTS, null);
+
+        if (savedSelectedId && Array.isArray(parsedLists) && parsedLists.some((l: any) => l.id === savedSelectedId)) {
+            return savedSelectedId;
         }
 
-        try {
-            const storedLists = localStorage.getItem('randomatched_lists_v1');
-            if (storedLists) {
-                const parsedLists = JSON.parse(storedLists);
-                if (Array.isArray(parsedLists) && parsedLists.length > 0) {
-                    return parsedLists[0].id;
-                }
-            }
-        } catch (e) {
-            console.error("Failed to parse lists for default selectedListId", e);
+        if (Array.isArray(parsedLists) && parsedLists.length > 0) {
+            return parsedLists[0].id;
         }
 
         return '';
@@ -297,74 +228,13 @@ const App: React.FC = () => {
                 const hasNet = await checkConnectivity(2500);
                 if (hasNet) {
                     await syncHistory({ silentIfNoChanges: true, silentErrors: true });
-                    await syncAvatarsToCloud();
                 }
             })().catch(e => console.warn('Background match sync skipped/failed:', e));
         }
     });
 
-    const isAllLoaded = isListsLoaded && isHistoryLoaded && isSeasonsLoaded;
-    const [autoSyncAttempted, setAutoSyncAttempted] = useState(false);
-
     // Одноразовая автосинхронизация списков и статистики при самом первом запуске НОВОГО пользователя из сети
-    useEffect(() => {
-        if (!isAllLoaded || !isOnline || autoSyncAttempted) return;
-
-        const hasSyncedBefore = localStorage.getItem('randomatched_has_auto_synced');
-        if (!hasSyncedBefore) {
-            // Безопасно проверяем, содержит ли хранилище реальные пользовательские данные (а не пустые инициализационные массивы [])
-            const hasExistingData = (() => {
-                try {
-                    const rawLists = localStorage.getItem('randomatched_lists_v1');
-                    if (rawLists) {
-                        const parsed = JSON.parse(rawLists);
-                        if (Array.isArray(parsed) && parsed.length > 0) return true;
-                    }
-                    const rawHistory = localStorage.getItem('randomatched_match_history_v1');
-                    if (rawHistory) {
-                        const parsed = JSON.parse(rawHistory);
-                        if (Array.isArray(parsed) && parsed.length > 0) return true;
-                    }
-                    const rawSeasons = localStorage.getItem('randomatched_seasons_v1');
-                    if (rawSeasons) {
-                        const parsed = JSON.parse(rawSeasons);
-                        if (Array.isArray(parsed) && parsed.length > 0) return true;
-                    }
-                    const rawNames = localStorage.getItem('randomatched_player_names_v1');
-                    if (rawNames) {
-                        const parsed = JSON.parse(rawNames);
-                        if (Array.isArray(parsed) && parsed.some((n: string) => typeof n === 'string' && n.trim() !== '')) return true;
-                    }
-                    return false;
-                } catch (e) {
-                    return false;
-                }
-            })();
-
-            // Помечаем, что флаг установлен, чтобы исключить повторные вызовы
-            localStorage.setItem('randomatched_has_auto_synced', 'true');
-            setAutoSyncAttempted(true);
-
-            // Автосинхронизация выполняется СТРОГО для новых пользователей без существующих локальных данных
-            if (!hasExistingData) {
-                localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
-                setLastSeenVersion(APP_VERSION);
-
-                const performInitialAutoSync = async () => {
-                    try {
-                        await syncWithCloud();
-                        await syncHistory({ silentIfNoChanges: true });
-                        await syncSeasons({ silentIfNoChanges: true });
-                        await syncAvatarsToCloud();
-                    } catch (e) {
-                        console.error("Error during initial auto-sync:", e);
-                    }
-                };
-
-                performInitialAutoSync();
-            }
-        }
-    }, [isAllLoaded, isOnline, autoSyncAttempted, syncWithCloud, syncHistory, syncSeasons, syncAvatarsToCloud]);
+    useInitialAutoSync(setLastSeenVersion);
 
     // Effect: Select default list if none selected
     useEffect(() => {
@@ -381,9 +251,9 @@ const App: React.FC = () => {
     // Save selected list ID to localStorage whenever it changes
     useEffect(() => {
         if (selectedListId) {
-            localStorage.setItem('randomatched_selected_list_id', selectedListId);
+            setStorageItem(STORAGE_KEYS.SELECTED_LIST_ID, selectedListId);
         } else {
-            localStorage.removeItem('randomatched_selected_list_id');
+            removeStorageItem(STORAGE_KEYS.SELECTED_LIST_ID);
         }
     }, [selectedListId]);
 
@@ -403,16 +273,16 @@ const App: React.FC = () => {
 
     const handleCloseChangelog = () => {
         setIsChangelogOpen(false);
-        localStorage.setItem('randomatched_last_seen_version', APP_VERSION);
+        setStorageItem(STORAGE_KEYS.LAST_SEEN_VERSION, APP_VERSION);
         setLastSeenVersion(APP_VERSION);
     };
 
     const handleSetLastSeenVersion = (version: string | null) => {
         if (!version || version === 'ALL_UNREAD') {
-            localStorage.removeItem('randomatched_last_seen_version');
+            removeStorageItem(STORAGE_KEYS.LAST_SEEN_VERSION);
             setLastSeenVersion(null);
         } else {
-            localStorage.setItem('randomatched_last_seen_version', version);
+            setStorageItem(STORAGE_KEYS.LAST_SEEN_VERSION, version);
             setLastSeenVersion(version);
         }
     };
@@ -613,8 +483,6 @@ const App: React.FC = () => {
                         prioritizeUnplayed={prioritizeUnplayed}
                         setPrioritizeUnplayed={setPrioritizeUnplayed}
                         isDebugMode={isDebugMode}
-                        history={history}
-                        bgGradient={bgGradient}
                     />
                 </LazyOverlayBoundary>
 
@@ -627,24 +495,6 @@ const App: React.FC = () => {
                     <ListsOverlay
                         isOpen={isListsOpen}
                         onClose={handleCloseLists}
-                        lists={lists}
-                        onAddList={addList}
-                        onUpdateList={updateList}
-                        onDeleteList={deleteList}
-                        onUploadToCloud={uploadToCloud}
-                        onSync={syncWithCloud}
-                        reorderLists={reorderLists}
-                        sortLists={sortLists}
-                        isOnline={isOnline}
-                        isSyncing={isSyncing}
-                        checkConnectivity={checkConnectivity}
-                        addToast={addToast}
-                        updatedListIds={updatedListIds}
-                        onMarkSeen={markListAsSeen}
-                        updatedHeroIds={updatedHeroIds}
-                        onDismissHeroUpdates={dismissHeroUpdates}
-                        triggerHaptic={triggerHaptic}
-                        history={history}
                         onOpenInactiveModal={handleOpenInactiveModal}
                     />
                 </LazyOverlayBoundary>
@@ -658,29 +508,12 @@ const App: React.FC = () => {
                     <SettingsOverlay
                         isOpen={isSettingsOpen}
                         onClose={() => setIsSettingsOpen(false)}
-                        lists={lists}
-                        colorScheme={colorScheme}
-                        setColorScheme={setColorScheme}
-                        roundness={roundness}
-                        setRoundness={setRoundness}
-                        bgPattern={bgPattern}
-                        setBgPattern={setBgPattern}
-                        bgGradient={bgGradient}
-                        setBgGradient={setBgGradient}
                         checkForUpdate={checkForUpdate}
                         isCheckingUpdate={isCheckingUpdate}
                         isUpdateAvailable={isUpdateAvailable}
                         onUpdateApp={handleUpdateApp}
                         isDebugMode={isDebugMode}
                         onToggleDebug={setIsDebugMode}
-                        hapticsEnabled={hapticsEnabled}
-                        onToggleHaptics={toggleHaptics}
-                        forceAudioMode={forceAudioMode}
-                        onToggleForceAudioMode={toggleForceAudioMode}
-                        triggerHaptic={triggerHaptic}
-                        history={history}
-                        onImportData={handleImportDataCombined}
-                        addToast={addToast}
                         onOpenChangelog={() => setIsChangelogOpen(true)}
                         lastSeenVersion={lastSeenVersion}
                         onSetLastSeenVersion={handleSetLastSeenVersion}
@@ -698,59 +531,7 @@ const App: React.FC = () => {
                     <StatsModal
                         isOpen={isHistoryStatsOpen}
                         onClose={() => setIsHistoryStatsOpen(false)}
-                        history={history}
-                        onDeleteMatch={deleteMatch}
-                        onUpdateMatch={updateMatch}
-                        onAddMatch={addManualMatch}
-                        onRenamePlayer={renamePlayer}
-                        onRenameHero={handleRenameHero}
-                        onMergeHeroes={handleMergeHeroes}
-                        onSync={async (options) => {
-                            const historySuccess = await syncHistory(options);
-                            await syncSeasons(options);
-                            await syncAvatarsToCloud();
-                            return historySuccess;
-                        }}
-
-                        isSyncing={isSyncingHistory}
-                        isOnline={isOnline}
                         isDebugMode={isDebugMode}
-                        addToast={addToast}
-
-                        seasons={seasons}
-                        latestSeasonId={latestSeason?.id}
-                        userDefaultSeasonId={userDefaultSeasonId}
-                        onSetUserDefaultSeason={setUserDefaultSeasonId}
-                        onAddSeason={addSeason}
-                        onUpdateSeason={updateSeason}
-                        onDeleteSeason={deleteSeason}
-
-                        lists={lists}
-                        triggerHaptic={triggerHaptic}
-                        deletedHistory={deletedHistory}
-                        onRestoreMatch={restoreMatch}
-                        onPermanentDeleteMatch={permanentDeleteMatch}
-                        onClearTrash={clearTrash}
-
-                        onImportData={handleImportDataCombined}
-                        checkConnectivity={checkConnectivity}
-                        // Облачный бэкап
-                        cloudBackups={cloudBackups}
-                        isCreatingBackup={isCreatingBackup}
-                        isLoadingBackups={isLoadingBackups}
-                        isRestoringBackup={isRestoringBackup}
-                        onCreateCloudBackup={createCloudBackup}
-                        onListCloudBackups={listCloudBackups}
-                        onRestoreFromCloudBackup={async (id) => {
-                            const backup = await getCloudBackupDetails(id);
-                            const res = await restoreFromCloudBackup(id);
-                            if (res && backup && Array.isArray(backup.seasons)) {
-                                importSeasons(backup.seasons);
-                            }
-                            return res;
-                        }}
-                        onDeleteCloudBackup={deleteCloudBackup}
-                        onGetCloudBackupDetails={getCloudBackupDetails}
                         onOpenInactiveModal={handleOpenInactiveModal}
                     />
                 </LazyOverlayBoundary>
@@ -877,11 +658,5 @@ const App: React.FC = () => {
     );
 };
 
-const AppWithHaptics: React.FC = () => (
-    <HapticsProvider>
-        <App />
-    </HapticsProvider>
-);
-
-export default AppWithHaptics;
+export default App;
 

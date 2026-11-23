@@ -1,3 +1,5 @@
+import { STORAGE_KEYS, getStorageItem } from './storage';
+
 export interface ChangelogSection {
   type: 'added' | 'changed' | 'fixed' | 'security';
   title: string;
@@ -557,7 +559,7 @@ export const CHANGELOG: ChangelogRelease[] = [
  */
 export function getInitialLastSeenVersion(): string | null {
   if (typeof window === 'undefined') return APP_VERSION;
-  return localStorage.getItem('randomatched_last_seen_version');
+  return getStorageItem(STORAGE_KEYS.LAST_SEEN_VERSION);
 }
 
 /**

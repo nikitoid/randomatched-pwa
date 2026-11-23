@@ -17,11 +17,7 @@ import {
 import { getAllAvatarsFromStorage, saveAllAvatarsToStorage, getAvatarFromStorage, saveAvatarToStorage } from '../utils/avatarStorage';
 import { generateUUID } from '../utils/uuid';
 import { withTimeout } from '../utils/connectivity';
-
-
-const STORAGE_KEY_HISTORY = 'randomatched_match_history_v1';
-const STORAGE_KEY_DELETED = 'randomatched_deleted_matches_v1';
-const STORAGE_KEY_DELETED_HISTORY = 'randomatched_deleted_history_content_v1';
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
 
 export const useMatchHistory = (
     addToast: (message: string, type: ToastType, duration?: number) => void
@@ -46,27 +42,22 @@ export const useMatchHistory = (
 
     useEffect(() => {
         try {
-            const savedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
-            if (savedHistory) {
-                const parsed = JSON.parse(savedHistory);
-                setHistory(parsed);
-                historyRef.current = parsed;
+            const parsedHistory = getStorageJSON<unknown>(STORAGE_KEYS.MATCH_HISTORY, null);
+            if (Array.isArray(parsedHistory)) {
+                setHistory(parsedHistory);
+                historyRef.current = parsedHistory;
             }
-            const savedDeleted = localStorage.getItem(STORAGE_KEY_DELETED);
-            if (savedDeleted) {
-                const parsed = new Set<string>(JSON.parse(savedDeleted));
-                setDeletedIds(parsed);
-                deletedIdsRef.current = parsed;
+            const parsedDeleted = getStorageJSON<unknown>(STORAGE_KEYS.DELETED_MATCHES, null);
+            if (Array.isArray(parsedDeleted)) {
+                const parsedSet = new Set<string>(parsedDeleted);
+                setDeletedIds(parsedSet);
+                deletedIdsRef.current = parsedSet;
             }
-            const savedDeletedHistory = localStorage.getItem(STORAGE_KEY_DELETED_HISTORY);
-            if (savedDeletedHistory) {
-                const parsed = JSON.parse(savedDeletedHistory);
-                setDeletedHistory(parsed);
-                deletedHistoryRef.current = parsed;
+            const parsedDeletedHistory = getStorageJSON<unknown>(STORAGE_KEYS.DELETED_HISTORY_CONTENT, null);
+            if (Array.isArray(parsedDeletedHistory)) {
+                setDeletedHistory(parsedDeletedHistory);
+                deletedHistoryRef.current = parsedDeletedHistory;
             }
-
-
-
         } catch (e) {
             console.error("Failed to load history", e);
         } finally {
@@ -76,20 +67,20 @@ export const useMatchHistory = (
 
     useEffect(() => {
         if (!isLoaded) return;
-        localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+        setStorageJSON(STORAGE_KEYS.MATCH_HISTORY, history);
     }, [history, isLoaded]);
 
     useEffect(() => {
         if (!isLoaded) return;
-        localStorage.setItem(STORAGE_KEY_DELETED, JSON.stringify(Array.from(deletedIds)));
+        setStorageJSON(STORAGE_KEYS.DELETED_MATCHES, Array.from(deletedIds));
     }, [deletedIds, isLoaded]);
 
     useEffect(() => {
         if (!isLoaded) return;
-        localStorage.setItem(STORAGE_KEY_DELETED_HISTORY, JSON.stringify(deletedHistory));
+        setStorageJSON(STORAGE_KEYS.DELETED_HISTORY_CONTENT, deletedHistory);
     }, [deletedHistory, isLoaded]);
 
-    const addMatch = (
+    const addMatch = useCallback((
         assignments: AssignedPlayer[],
         winner: 'team1' | 'team2',
         playerNames: string[],
@@ -139,9 +130,9 @@ export const useMatchHistory = (
         historyRef.current = [newMatch, ...historyRef.current];
         setHistory(prev => [newMatch, ...prev]);
         return newMatch;
-    };
+    }, []);
 
-    const addManualMatch = (
+    const addManualMatch = useCallback((
         team1: MatchPlayer[],
         team2: MatchPlayer[],
         winner: 'team1' | 'team2',
@@ -158,16 +149,16 @@ export const useMatchHistory = (
         historyRef.current = [newMatch, ...historyRef.current];
         setHistory(prev => [newMatch, ...prev]);
         addToast("Матч добавлен вручную", "success", 2000);
-    };
+    }, [addToast]);
 
-    const updateMatch = (id: string, updates: Partial<MatchRecord>) => {
+    const updateMatch = useCallback((id: string, updates: Partial<MatchRecord>) => {
         const updated = historyRef.current.map(m => m.id === id ? { ...m, ...updates, lastUpdated: Date.now() } : m);
         historyRef.current = updated;
         setHistory(updated);
         addToast("Матч обновлен", "success", 2000);
-    };
+    }, [addToast]);
 
-    const deleteMatch = (id: string) => {
+    const deleteMatch = useCallback((id: string) => {
         const matchToDelete = historyRef.current.find(m => m.id === id);
         if (matchToDelete) {
             const nextHistory = historyRef.current.filter(m => m.id !== id);
@@ -183,9 +174,9 @@ export const useMatchHistory = (
             setDeletedIds(nextDeletedIds);
             addToast("Матч перемещен в корзину", "info", 2000);
         }
-    };
+    }, [addToast]);
 
-    const restoreMatch = (id: string) => {
+    const restoreMatch = useCallback((id: string) => {
         const matchToRestore = deletedHistoryRef.current.find(m => m.id === id);
         if (matchToRestore) {
             const restoredMatch = { ...matchToRestore, lastUpdated: Date.now() };
@@ -205,9 +196,9 @@ export const useMatchHistory = (
             setDeletedIds(nextDeletedIds);
             addToast("Матч восстановлен", "success", 2000);
         }
-    };
+    }, [addToast]);
 
-    const permanentDeleteMatch = (id: string) => {
+    const permanentDeleteMatch = useCallback((id: string) => {
         const nextHistory = historyRef.current.filter(m => m.id !== id);
         const nextDeletedHistory = deletedHistoryRef.current.filter(m => m.id !== id);
         const nextDeletedIds = new Set(deletedIdsRef.current).add(id);
@@ -220,9 +211,9 @@ export const useMatchHistory = (
         setDeletedHistory(nextDeletedHistory);
         setDeletedIds(nextDeletedIds);
         addToast("Матч удален навсегда", "info", 2000);
-    };
+    }, [addToast]);
 
-    const clearTrash = () => {
+    const clearTrash = useCallback(() => {
         if (deletedHistoryRef.current.length === 0) return;
         const ids = deletedHistoryRef.current.map(m => m.id);
         const nextDeletedIds = new Set(deletedIdsRef.current);
@@ -234,9 +225,9 @@ export const useMatchHistory = (
         setDeletedIds(nextDeletedIds);
         setDeletedHistory([]);
         addToast("Корзина очищена", "info", 2000);
-    };
+    }, [addToast]);
 
-    const renamePlayer = (oldName: string, newName: string) => {
+    const renamePlayer = useCallback((oldName: string, newName: string) => {
         if (!oldName.trim() || !newName.trim() || oldName === newName) return;
 
         const nextHistory = historyRef.current.map(match => {
@@ -259,10 +250,10 @@ export const useMatchHistory = (
         historyRef.current = nextHistory;
         setHistory(nextHistory);
         addToast(`Игрок "${oldName}" переименован`, 'success', 2000);
-    };
+    }, [addToast]);
 
 
-    const renameHero = (oldName: string, newName: string) => {
+    const renameHero = useCallback((oldName: string, newName: string) => {
         if (!oldName.trim() || !newName.trim() || oldName === newName) return;
 
         setHistory(prev => prev.map(match => {
@@ -284,9 +275,9 @@ export const useMatchHistory = (
             return match;
         }));
         addToast(`Герой "${oldName}" переименован`, 'success', 2000);
-    };
+    }, [addToast]);
 
-    const batchMergeHeroes = async (targetHeroName: string, sourceHeroNames: string[]) => {
+    const batchMergeHeroes = useCallback(async (targetHeroName: string, sourceHeroNames: string[]) => {
         const cleanTarget = targetHeroName.trim();
         const cleanSources = sourceHeroNames.map(s => s.trim()).filter(s => s && s !== cleanTarget);
         if (!cleanTarget || cleanSources.length === 0) return;
@@ -331,9 +322,9 @@ export const useMatchHistory = (
         }
 
         addToast(`Объединено ${cleanSources.length} дубликат(ов) в «${cleanTarget}» (${affectedMatches} матчей)`, 'success', 3000);
-    };
+    }, [addToast]);
 
-    const cleanupPermanentDeletes = async () => {
+    const cleanupPermanentDeletes = useCallback(async () => {
         try {
             const snapshot = await getDocs(
                 query(collection('match_history'), where('permanent', '==', true))
@@ -367,9 +358,9 @@ export const useMatchHistory = (
         } catch (error) {
             console.error("Cleanup failed", error);
         }
-    };
+    }, []);
 
-    const syncHistory = async (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }): Promise<boolean> => {
+    const syncHistory = useCallback(async (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }): Promise<boolean> => {
         const { silentIfNoChanges = false, silentErrors = false } = options || {};
 
         if (!isOnline && !(await checkConnectivity())) {
@@ -662,9 +653,9 @@ export const useMatchHistory = (
         } finally {
             setIsSyncingHistory(false);
         }
-    };
+    }, [isOnline, checkConnectivity, addToast, cleanupPermanentDeletes]);
 
-    const importData = (data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => {
+    const importData = useCallback((data: { history: MatchRecord[], deletedHistory: MatchRecord[] }) => {
         try {
             if (!Array.isArray(data.history) || !Array.isArray(data.deletedHistory)) {
                 throw new Error("Invalid data format");
@@ -683,7 +674,7 @@ export const useMatchHistory = (
             addToast("Ошибка импорта данных", "error", 2000);
             return false;
         }
-    };
+    }, [addToast]);
 
 
     // === Облачный бэкап ===
@@ -695,7 +686,7 @@ export const useMatchHistory = (
 
 
     // Создание бэкапа в облаке
-    const createCloudBackup = async () => {
+    const createCloudBackup = useCallback(async () => {
         if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return null;
@@ -706,13 +697,15 @@ export const useMatchHistory = (
             const backupId = generateUUID();
             const now = Date.now();
             const avatarsMap = await getAllAvatarsFromStorage();
+            const currentHistory = historyRef.current;
+            const currentDeletedHistory = deletedHistoryRef.current;
 
             const backupData: CloudBackup = {
                 id: backupId,
                 createdAt: now,
-                matchCount: history.length,
-                history: history,
-                deletedHistory: deletedHistory,
+                matchCount: currentHistory.length,
+                history: currentHistory,
+                deletedHistory: currentDeletedHistory,
                 avatars: avatarsMap,
             };
 
@@ -725,7 +718,7 @@ export const useMatchHistory = (
             setCloudBackups(prev => [{
                 id: backupId,
                 createdAt: now,
-                matchCount: history.length
+                matchCount: currentHistory.length
             }, ...prev]);
 
             return backupId;
@@ -736,10 +729,10 @@ export const useMatchHistory = (
         } finally {
             setIsCreatingBackup(false);
         }
-    };
+    }, [isOnline, checkConnectivity, addToast]);
 
     // Получение списка бэкапов из облака
-    const listCloudBackups = async () => {
+    const listCloudBackups = useCallback(async () => {
         if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return [];
@@ -769,10 +762,10 @@ export const useMatchHistory = (
         } finally {
             setIsLoadingBackups(false);
         }
-    };
+    }, [isOnline, checkConnectivity, addToast]);
 
     // Восстановление из бэкапа
-    const restoreFromCloudBackup = async (backupId: string) => {
+    const restoreFromCloudBackup = useCallback(async (backupId: string) => {
         if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return false; // Changed from null/empty array to match respective return type logically or handle upstream
@@ -801,6 +794,10 @@ export const useMatchHistory = (
                 lastUpdated: now
             }));
 
+            historyRef.current = restoredHistory;
+            deletedHistoryRef.current = restoredDeletedHistory;
+            deletedIdsRef.current = new Set();
+
             setHistory(restoredHistory);
             setDeletedHistory(restoredDeletedHistory);
             setDeletedIds(new Set());
@@ -819,10 +816,10 @@ export const useMatchHistory = (
         } finally {
             setIsRestoringBackup(false);
         }
-    };
+    }, [isOnline, checkConnectivity, addToast]);
 
     // Удаление бэкапа из облака
-    const deleteCloudBackup = async (backupId: string) => {
+    const deleteCloudBackup = useCallback(async (backupId: string) => {
         if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return false;
@@ -838,10 +835,10 @@ export const useMatchHistory = (
             addToast("Ошибка удаления бэкапа", "error", 2000);
             return false;
         }
-    };
+    }, [isOnline, checkConnectivity, addToast]);
 
     // Получение деталей бэкапа (для просмотра)
-    const getCloudBackupDetails = async (backupId: string): Promise<CloudBackup | null> => {
+    const getCloudBackupDetails = useCallback(async (backupId: string): Promise<CloudBackup | null> => {
         if (!isOnline && !(await checkConnectivity())) {
             addToast("Нет подключения к интернету", "error", 2000);
             return null;
@@ -859,7 +856,7 @@ export const useMatchHistory = (
             addToast("Ошибка получения данных бэкапа", "error", 2000);
             return null;
         }
-    };
+    }, [isOnline, checkConnectivity, addToast]);
 
     return {
         history,

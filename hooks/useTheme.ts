@@ -1,14 +1,15 @@
 
-import { useState, useLayoutEffect } from 'react';
+import { useState, useLayoutEffect, useCallback } from 'react';
 import { ColorScheme, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
+import { STORAGE_KEYS, getStorageItem, setStorageItem, setStorageJSON } from '../utils/storage';
 
 export const useTheme = () => {
   // Lazy initialization for theme to prevent flash and handle defaults correctly
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
     
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const savedTheme = getStorageItem(STORAGE_KEYS.THEME) as 'light' | 'dark' | null;
     if (savedTheme) return savedTheme;
     
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -22,7 +23,7 @@ export const useTheme = () => {
   const [colorScheme, setColorScheme] = useState<ColorScheme>(() => {
     if (typeof window === 'undefined') return 'emerald';
     
-    const savedScheme = localStorage.getItem('colorScheme') as ColorScheme | null;
+    const savedScheme = getStorageItem(STORAGE_KEYS.COLOR_SCHEME) as ColorScheme | null;
     if (savedScheme && COLOR_SCHEMES_DATA[savedScheme]) {
       return savedScheme;
     }
@@ -33,18 +34,18 @@ export const useTheme = () => {
   // Personalization settings
   const [roundness, setRoundness] = useState<ThemeRoundness>(() => {
     if (typeof window === 'undefined') return 'medium';
-    return (localStorage.getItem('themeRoundness') as ThemeRoundness) || 'medium';
+    return (getStorageItem(STORAGE_KEYS.THEME_ROUNDNESS) as ThemeRoundness) || 'medium';
   });
 
   const [bgPattern, setBgPattern] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
-    const saved = localStorage.getItem('themeBgPattern');
+    const saved = getStorageItem(STORAGE_KEYS.THEME_BG_PATTERN);
     return saved !== null ? saved === 'true' : false;
   });
 
   const [bgGradient, setBgGradient] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
-    const saved = localStorage.getItem('themeBgGradient');
+    const saved = getStorageItem(STORAGE_KEYS.THEME_BG_GRADIENT);
     return saved !== null ? saved === 'true' : false;
   });
 
@@ -56,7 +57,7 @@ export const useTheme = () => {
       document.documentElement.classList.remove('dark');
     }
     // Save to local storage
-    localStorage.setItem('theme', theme);
+    setStorageItem(STORAGE_KEYS.THEME, theme);
   }, [theme]);
 
   useLayoutEffect(() => {
@@ -89,29 +90,29 @@ export const useTheme = () => {
         metaThemeColor.setAttribute('content', `rgb(${schemeData.primary[600]})`);
     }
 
-    localStorage.setItem('colorScheme', colorScheme);
-    localStorage.setItem('themeVariables', JSON.stringify(vars));
+    setStorageItem(STORAGE_KEYS.COLOR_SCHEME, colorScheme);
+    setStorageJSON(STORAGE_KEYS.THEME_VARIABLES, vars);
   }, [colorScheme]);
 
   // Effects for new settings
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-roundness', roundness);
-    localStorage.setItem('themeRoundness', roundness);
+    setStorageItem(STORAGE_KEYS.THEME_ROUNDNESS, roundness);
   }, [roundness]);
 
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-bg-pattern', String(bgPattern));
-    localStorage.setItem('themeBgPattern', String(bgPattern));
+    setStorageItem(STORAGE_KEYS.THEME_BG_PATTERN, String(bgPattern));
   }, [bgPattern]);
 
   useLayoutEffect(() => {
     document.documentElement.setAttribute('data-bg-gradient', String(bgGradient));
-    localStorage.setItem('themeBgGradient', String(bgGradient));
+    setStorageItem(STORAGE_KEYS.THEME_BG_GRADIENT, String(bgGradient));
   }, [bgGradient]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
+  }, []);
 
   return {
     theme,

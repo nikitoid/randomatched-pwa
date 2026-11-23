@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { checkConnectivity as checkConnectivityUtil } from '../utils/connectivity';
 
 interface ConnectivityContextType {
@@ -54,8 +54,13 @@ export const ConnectivityProvider: React.FC<{ children: ReactNode }> = ({ childr
         };
     }, [checkStatus]);
 
+    const value = useMemo(
+        () => ({ isOnline, checkConnectivity: checkStatus, verifyNow: checkStatus }),
+        [isOnline, checkStatus]
+    );
+
     return (
-        <ConnectivityContext.Provider value={{ isOnline, checkConnectivity: checkStatus, verifyNow: checkStatus }}>
+        <ConnectivityContext.Provider value={value}>
             {children}
         </ConnectivityContext.Provider>
     );

@@ -1,17 +1,24 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Palette, Info, SmartphoneNfc, Terminal, Sliders } from 'lucide-react';
-import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
+import { HeroList, ColorScheme, MatchRecord, Season, ThemeRoundness } from '../types';
 import { getUnreadReleasesCount } from '../utils/changelog';
 import { ScreenOverlay } from './common/ScreenOverlay';
 import { AppearanceTab } from './settings/AppearanceTab';
 import { AppSettingsTab } from './settings/AppSettingsTab';
 import { InfoTab } from './settings/InfoTab';
 import { DebugTab } from './settings/DebugTab';
+import { useThemeContext } from '../context/ThemeContext';
+import { useHeroListsContext } from '../context/HeroListsContext';
+import { useMatchHistoryContext } from '../context/MatchHistoryContext';
+import { useSeasonsContext } from '../context/SeasonsContext';
+import { useAvatars } from '../context/AvatarContext';
+import { useHaptics } from '../hooks/useHaptics';
+import { useToast } from '../hooks/useToast';
 
 interface SettingsOverlayProps {
     isOpen: boolean;
     onClose: () => void;
-    lists: HeroList[];
+    lists?: HeroList[];
     history?: MatchRecord[];
 }
 
@@ -34,8 +41,8 @@ interface ExpandedSettingsProps extends SettingsOverlayProps {
     onToggleHaptics?: () => void;
     forceAudioMode?: boolean;
     onToggleForceAudioMode?: () => void;
-    triggerHaptic: (pattern?: number | number[]) => void;
-    onImportData?: (data: { history: MatchRecord[]; deletedHistory: MatchRecord[] }) => boolean;
+    triggerHaptic?: (pattern?: number | number[]) => void;
+    onImportData?: (data: { history: MatchRecord[]; deletedHistory: MatchRecord[]; seasons?: Season[]; avatars?: Record<string, string> }) => boolean;
     addToast?: (message: string, type: 'info' | 'success' | 'error' | 'warning', duration?: number) => void;
     onOpenChangelog: () => void;
     lastSeenVersion?: string | null;
@@ -49,34 +56,72 @@ type TabType = 'appearance' | 'app_settings' | 'info' | 'debug';
 export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
     isOpen,
     onClose,
-    lists,
-    colorScheme = 'emerald',
-    setColorScheme,
-    roundness = 'medium',
-    setRoundness,
-    bgPattern = false,
-    setBgPattern,
-    bgGradient = false,
-    setBgGradient,
+    lists: listsProp,
+    colorScheme: colorSchemeProp,
+    setColorScheme: setColorSchemeProp,
+    roundness: roundnessProp,
+    setRoundness: setRoundnessProp,
+    bgPattern: bgPatternProp,
+    setBgPattern: setBgPatternProp,
+    bgGradient: bgGradientProp,
+    setBgGradient: setBgGradientProp,
     checkForUpdate,
     isCheckingUpdate = false,
     isUpdateAvailable = false,
     onUpdateApp,
     isDebugMode = false,
     onToggleDebug,
-    hapticsEnabled = true,
-    onToggleHaptics,
-    forceAudioMode = false,
-    onToggleForceAudioMode,
-    triggerHaptic,
-    onImportData,
-    addToast,
+    hapticsEnabled: hapticsEnabledProp,
+    onToggleHaptics: onToggleHapticsProp,
+    forceAudioMode: forceAudioModeProp,
+    onToggleForceAudioMode: onToggleForceAudioModeProp,
+    triggerHaptic: triggerHapticProp,
+    onImportData: onImportDataProp,
+    addToast: addToastProp,
     onOpenChangelog,
     lastSeenVersion,
     onSetLastSeenVersion,
     clientId,
     isAdmin = false,
 }) => {
+    const themeCtx = useThemeContext();
+    const { lists: ctxLists } = useHeroListsContext();
+    const { importData } = useMatchHistoryContext();
+    const { importSeasons } = useSeasonsContext();
+    const { importAvatars } = useAvatars();
+    const hapticsCtx = useHaptics();
+    const { addToast: ctxAddToast } = useToast();
+
+    const defaultOnImportData = useCallback(
+        (data: { history: MatchRecord[]; deletedHistory: MatchRecord[]; seasons?: Season[]; avatars?: Record<string, string> }) => {
+            const success = importData(data);
+            if (success && Array.isArray(data.seasons)) {
+                importSeasons(data.seasons);
+            }
+            if (success && data.avatars && typeof data.avatars === 'object') {
+                void importAvatars(data.avatars);
+            }
+            return success;
+        },
+        [importData, importSeasons, importAvatars]
+    );
+
+    const lists = listsProp ?? ctxLists;
+    const colorScheme = colorSchemeProp ?? themeCtx.colorScheme;
+    const setColorScheme = setColorSchemeProp ?? themeCtx.setColorScheme;
+    const roundness = roundnessProp ?? themeCtx.roundness;
+    const setRoundness = setRoundnessProp ?? themeCtx.setRoundness;
+    const bgPattern = bgPatternProp ?? themeCtx.bgPattern;
+    const setBgPattern = setBgPatternProp ?? themeCtx.setBgPattern;
+    const bgGradient = bgGradientProp ?? themeCtx.bgGradient;
+    const setBgGradient = setBgGradientProp ?? themeCtx.setBgGradient;
+    const hapticsEnabled = hapticsEnabledProp ?? hapticsCtx.isEnabled;
+    const onToggleHaptics = onToggleHapticsProp ?? hapticsCtx.toggle;
+    const forceAudioMode = forceAudioModeProp ?? hapticsCtx.forceAudioMode;
+    const onToggleForceAudioMode = onToggleForceAudioModeProp ?? hapticsCtx.toggleForceAudioMode;
+    const triggerHaptic = triggerHapticProp ?? hapticsCtx.trigger;
+    const onImportData = onImportDataProp ?? defaultOnImportData;
+    const addToast = addToastProp ?? ctxAddToast;
     const unreadChangelogCount = getUnreadReleasesCount(lastSeenVersion ?? null);
     const [activeTab, setActiveTab] = useState<TabType>('appearance');
 

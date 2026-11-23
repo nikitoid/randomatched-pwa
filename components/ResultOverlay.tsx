@@ -13,6 +13,9 @@ import { PlayerResultCard, FloatingResultCard } from './result/PlayerResultCard'
 import { ResultTopBar } from './result/ResultTopBar';
 import { ResultControlsBar } from './result/ResultControlsBar';
 import { WeightsDebugModal } from './result/WeightsDebugModal';
+import { useMatchHistoryContext } from '../context/MatchHistoryContext';
+import { useThemeContext } from '../context/ThemeContext';
+import { STORAGE_KEYS, getStorageItem, setStorageItem } from '../utils/storage';
 
 interface ResultOverlayProps {
     isOpen: boolean;
@@ -66,9 +69,13 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
     prioritizeUnplayed = false,
     setPrioritizeUnplayed,
     isDebugMode = false,
-    history = [],
-    bgGradient
+    history: historyProp,
+    bgGradient: bgGradientProp
 }) => {
+    const { history: ctxHistory } = useMatchHistoryContext();
+    const { bgGradient: ctxBgGradient } = useThemeContext();
+    const history = historyProp ?? ctxHistory;
+    const bgGradient = bgGradientProp ?? ctxBgGradient;
     const { trigger } = useHaptics();
     const [confirmModal, setConfirmModal] = useState<{ type: 'single' | 'ban_all' | 'winner'; playerNumber?: number; playerName?: string } | null>(null);
 
@@ -95,24 +102,16 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
     // Режим отображения оверлея: facing (лицом к пользователю) или cross (по кругу / крест)
     const [viewMode, setViewMode] = useState<'facing' | 'cross'>(() => {
-        try {
-            const saved = localStorage.getItem('randomatched_result_view_mode');
-            if (saved === 'facing' || saved === 'cross') return saved;
-            return 'facing';
-        } catch {
-            return 'facing';
-        }
+        const saved = getStorageItem(STORAGE_KEYS.RESULT_VIEW_MODE);
+        if (saved === 'facing' || saved === 'cross') return saved;
+        return 'facing';
     });
 
     const [isViewModeAnimating, setIsViewModeAnimating] = useState(false);
     const viewModeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        try {
-            localStorage.setItem('randomatched_result_view_mode', viewMode);
-        } catch (e) {
-            console.error('Failed to save result view mode:', e);
-        }
+        setStorageItem(STORAGE_KEYS.RESULT_VIEW_MODE, viewMode);
     }, [viewMode]);
 
     useEffect(() => {

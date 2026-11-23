@@ -4,6 +4,7 @@ import { HeroList, MatchRecord } from '../../types';
 import { CHANGELOG } from '../../utils/changelog';
 import { generateUUID } from '../../utils/uuid';
 import { shuffleArray } from '../../utils/generator';
+import { getStorageSnapshot } from '../../utils/storage';
 
 interface DebugTabProps {
     lists: HeroList[];
@@ -89,9 +90,8 @@ export const DebugTab: React.FC<DebugTabProps> = ({
                         <Database size={15} /> Сводка LocalStorage
                     </h3>
                     <div className="text-xs font-mono space-y-1.5 max-h-40 overflow-y-auto no-scrollbar bg-slate-900 text-slate-200 p-3 rounded-xl border border-slate-800">
-                        {Object.keys(localStorage).map(key => {
-                            const val = localStorage.getItem(key) || '';
-                            const displaySize = parseFloat(`${(val.length * 2) / 1024}`).toFixed(2);
+                        {getStorageSnapshot().map(({ key, value }) => {
+                            const displaySize = parseFloat(`${(value.length * 2) / 1024}`).toFixed(2);
                             return (
                                 <div key={key} className="flex justify-between gap-4 border-b border-slate-800/80 pb-1 last:border-0 last:pb-0">
                                     <span className="truncate text-slate-400">{key}</span>

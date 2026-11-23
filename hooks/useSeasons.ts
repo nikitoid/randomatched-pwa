@@ -1,13 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Season, ToastType } from '../types';
 import { collection, doc, getDocs, setDoc } from '../services/firestore';
 import { useConnectivity } from './useConnectivity';
 import { generateUUID } from '../utils/uuid';
 import { withTimeout } from '../utils/connectivity';
-
-const STORAGE_KEY_SEASONS = 'randomatched_seasons_v1';
-const STORAGE_KEY_DELETED_SEASONS = 'randomatched_deleted_seasons_v1';
-const STORAGE_KEY_USER_DEFAULT_SEASON = 'randomatched_user_default_season_v1';
+import { STORAGE_KEYS, getStorageItem, setStorageItem, removeStorageItem, getStorageJSON, setStorageJSON } from '../utils/storage';
 
 // Helper to remove any undefined fields before sending data to Firebase Firestore
 const cleanSeasonForFirestore = (season: Season) => {
@@ -36,21 +33,15 @@ export const useSeasons = (
     // Initial load from localStorage
     useEffect(() => {
         try {
-            const savedSeasons = localStorage.getItem(STORAGE_KEY_SEASONS);
-            if (savedSeasons) {
-                const parsed = JSON.parse(savedSeasons);
-                if (Array.isArray(parsed)) {
-                    setSeasons(parsed);
-                }
+            const parsed = getStorageJSON<unknown>(STORAGE_KEYS.SEASONS, null);
+            if (Array.isArray(parsed)) {
+                setSeasons(parsed);
             }
-            const savedDeleted = localStorage.getItem(STORAGE_KEY_DELETED_SEASONS);
-            if (savedDeleted) {
-                const parsedDeleted = JSON.parse(savedDeleted);
-                if (Array.isArray(parsedDeleted)) {
-                    setDeletedSeasonIds(new Set(parsedDeleted));
-                }
+            const parsedDeleted = getStorageJSON<unknown>(STORAGE_KEYS.DELETED_SEASONS, null);
+            if (Array.isArray(parsedDeleted)) {
+                setDeletedSeasonIds(new Set(parsedDeleted));
             }
-            const savedUserDefault = localStorage.getItem(STORAGE_KEY_USER_DEFAULT_SEASON);
+            const savedUserDefault = getStorageItem(STORAGE_KEYS.USER_DEFAULT_SEASON);
             if (savedUserDefault) {
                 setUserDefaultSeasonIdState(savedUserDefault);
             }
@@ -64,25 +55,20 @@ export const useSeasons = (
     // Save to localStorage when seasons change
     useEffect(() => {
         if (!isLoaded) return;
-        try {
-            localStorage.setItem(STORAGE_KEY_SEASONS, JSON.stringify(seasons));
-        } catch (e) {
-            console.error('Failed to save seasons to local storage', e);
-        }
+        setStorageJSON(STORAGE_KEYS.SEASONS, seasons);
     }, [seasons, isLoaded]);
 
     // Save deletedSeasonIds to localStorage
     useEffect(() => {
         if (!isLoaded) return;
-        try {
-            localStorage.setItem(STORAGE_KEY_DELETED_SEASONS, JSON.stringify(Array.from(deletedSeasonIds)));
-        } catch (e) {
-            console.error('Failed to save deleted seasons to local storage', e);
-        }
+        setStorageJSON(STORAGE_KEYS.DELETED_SEASONS, Array.from(deletedSeasonIds));
     }, [deletedSeasonIds, isLoaded]);
 
     // Sort seasons by startDate ascending
-    const sortedSeasons = [...seasons].sort((a, b) => a.startDate.localeCompare(b.startDate));
+    const sortedSeasons = useMemo(
+        () => [...seasons].sort((a, b) => a.startDate.localeCompare(b.startDate)),
+        [seasons]
+    );
 
     // Get latest (current) season - highest startDate
     const latestSeason = sortedSeasons.length > 0 ? sortedSeasons[sortedSeasons.length - 1] : null;
@@ -138,14 +124,10 @@ export const useSeasons = (
 
     const setUserDefaultSeasonId = useCallback((id: string | null) => {
         setUserDefaultSeasonIdState(id);
-        try {
-            if (id) {
-                localStorage.setItem(STORAGE_KEY_USER_DEFAULT_SEASON, id);
-            } else {
-                localStorage.removeItem(STORAGE_KEY_USER_DEFAULT_SEASON);
-            }
-        } catch (e) {
-            console.error('Failed to save default season to local storage', e);
+        if (id) {
+            setStorageItem(STORAGE_KEYS.USER_DEFAULT_SEASON, id);
+        } else {
+            removeStorageItem(STORAGE_KEYS.USER_DEFAULT_SEASON);
         }
     }, []);
 
@@ -163,11 +145,7 @@ export const useSeasons = (
         setDeletedSeasonIds(prev => new Set(prev).add(id));
         setUserDefaultSeasonIdState(prev => {
             if (prev === id) {
-                try {
-                    localStorage.removeItem(STORAGE_KEY_USER_DEFAULT_SEASON);
-                } catch (e) {
-                    console.error('Failed to remove default season from local storage', e);
-                }
+                removeStorageItem(STORAGE_KEYS.USER_DEFAULT_SEASON);
                 return null;
             }
             return prev;

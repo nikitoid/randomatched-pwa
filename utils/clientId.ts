@@ -1,6 +1,5 @@
 import { ClientDeviceInfo } from '../types';
-
-const CLIENT_ID_STORAGE_KEY = 'randomatched_client_id';
+import { STORAGE_KEYS, getStorageItem, setStorageItem } from './storage';
 
 /**
  * Получает существующий или генерирует новый уникальный идентификатор клиента/устройства.
@@ -11,7 +10,7 @@ export const getOrCreateClientId = (): string => {
   }
 
   try {
-    let id = localStorage.getItem(CLIENT_ID_STORAGE_KEY);
+    let id = getStorageItem(STORAGE_KEYS.CLIENT_ID);
     if (!id || typeof id !== 'string' || id.trim() === '' || id === 'undefined' || id === 'null' || !id.startsWith('rm_')) {
       // Генерация криптографически стойкого случайного суффикса даже в HTTP LAN
       let randomSuffix = '';
@@ -24,7 +23,7 @@ export const getOrCreateClientId = (): string => {
       }
 
       id = `rm_${Date.now().toString(36)}_${randomSuffix}`;
-      localStorage.setItem(CLIENT_ID_STORAGE_KEY, id);
+      setStorageItem(STORAGE_KEYS.CLIENT_ID, id);
     }
     return id;
   } catch (e) {

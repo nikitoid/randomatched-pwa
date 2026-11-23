@@ -5,6 +5,11 @@ import './index.css';
 import { ConnectivityProvider } from './context/ConnectivityContext';
 import { AvatarProvider } from './context/AvatarContext';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { HapticsProvider } from './hooks/useHaptics';
+import { HeroListsProvider } from './context/HeroListsContext';
+import { MatchHistoryProvider } from './context/MatchHistoryContext';
+import { SeasonsProvider } from './context/SeasonsContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const rootElement = document.getElementById('root');
@@ -18,9 +23,19 @@ root.render(
     <ErrorBoundary variant="fullscreen">
       <ToastProvider>
         <ConnectivityProvider>
-          <AvatarProvider>
-            <App />
-          </AvatarProvider>
+          <ThemeProvider>
+            <HapticsProvider>
+              <AvatarProvider>
+                <HeroListsProvider>
+                  <MatchHistoryProvider>
+                    <SeasonsProvider>
+                      <App />
+                    </SeasonsProvider>
+                  </MatchHistoryProvider>
+                </HeroListsProvider>
+              </AvatarProvider>
+            </HapticsProvider>
+          </ThemeProvider>
         </ConnectivityProvider>
       </ToastProvider>
     </ErrorBoundary>

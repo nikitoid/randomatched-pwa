@@ -1,9 +1,9 @@
 import { AvatarRecord } from '../types';
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON, removeStorageItem } from './storage';
 
 const DB_NAME = 'randomatched_avatars_db';
 const DB_VERSION = 1;
 const STORE_NAME = 'avatars';
-const LOCAL_STORAGE_FALLBACK_KEY = 'randomatched_avatars_fallback';
 
 export function getAvatarKey(entityType: 'player' | 'hero', entityId: string): string {
   // Normalize string for consistency (case insensitive trimming for names)
@@ -44,46 +44,34 @@ async function getDB(): Promise<IDBDatabase> {
 
 // Fallback helpers for localStorage
 function getLocalStorageAvatars(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_FALLBACK_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (e) {
-    return {};
-  }
+  const parsed = getStorageJSON<unknown>(STORAGE_KEYS.AVATARS_FALLBACK, {});
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed as Record<string, string>)
+    : {};
 }
 
 function saveLocalStorageAvatar(key: string, dataUrl: string | null) {
-  try {
-    const avatars = getLocalStorageAvatars();
-    if (dataUrl) {
-      avatars[key] = dataUrl;
-    } else {
-      delete avatars[key];
-    }
-    if (Object.keys(avatars).length === 0) {
-      localStorage.removeItem(LOCAL_STORAGE_FALLBACK_KEY);
-    } else {
-      localStorage.setItem(LOCAL_STORAGE_FALLBACK_KEY, JSON.stringify(avatars));
-    }
-  } catch (e) {
-    console.warn('[AvatarStorage] localStorage fallback error:', e);
+  const avatars = getLocalStorageAvatars();
+  if (dataUrl) {
+    avatars[key] = dataUrl;
+  } else {
+    delete avatars[key];
+  }
+  if (Object.keys(avatars).length === 0) {
+    removeStorageItem(STORAGE_KEYS.AVATARS_FALLBACK);
+  } else {
+    setStorageJSON(STORAGE_KEYS.AVATARS_FALLBACK, avatars);
   }
 }
 
 function removeLocalStorageAvatarIfPresent(key: string) {
-  try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_FALLBACK_KEY);
-    if (!raw) return;
-    const avatars = JSON.parse(raw) as Record<string, string>;
-    if (!avatars || typeof avatars !== 'object' || !(key in avatars)) return;
-    delete avatars[key];
-    if (Object.keys(avatars).length === 0) {
-      localStorage.removeItem(LOCAL_STORAGE_FALLBACK_KEY);
-    } else {
-      localStorage.setItem(LOCAL_STORAGE_FALLBACK_KEY, JSON.stringify(avatars));
-    }
-  } catch (e) {
-    console.warn('[AvatarStorage] Failed to cleanup localStorage fallback:', e);
+  const avatars = getLocalStorageAvatars();
+  if (!(key in avatars)) return;
+  delete avatars[key];
+  if (Object.keys(avatars).length === 0) {
+    removeStorageItem(STORAGE_KEYS.AVATARS_FALLBACK);
+  } else {
+    setStorageJSON(STORAGE_KEYS.AVATARS_FALLBACK, avatars);
   }
 }
 
@@ -218,14 +206,10 @@ export async function getAllAvatarsFromStorage(): Promise<Record<string, string>
         });
 
         if (hasDuplicatesInFallback) {
-          try {
-            if (Object.keys(fallbackAvatars).length === 0) {
-              localStorage.removeItem(LOCAL_STORAGE_FALLBACK_KEY);
-            } else {
-              localStorage.setItem(LOCAL_STORAGE_FALLBACK_KEY, JSON.stringify(fallbackAvatars));
-            }
-          } catch (e) {
-            console.warn('[AvatarStorage] Failed to prune fallback localStorage:', e);
+          if (Object.keys(fallbackAvatars).length === 0) {
+            removeStorageItem(STORAGE_KEYS.AVATARS_FALLBACK);
+          } else {
+            setStorageJSON(STORAGE_KEYS.AVATARS_FALLBACK, fallbackAvatars);
           }
         }
 

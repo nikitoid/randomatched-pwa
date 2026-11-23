@@ -1,25 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-
-const STORAGE_KEY_PLAYER_NAMES = 'randomatched_player_names_v1';
-const STORAGE_KEY_SAVED_TEAMS = 'randomatched_saved_teams_v1';
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
 
 export const useHistoryInput = () => {
     const [playerNames, setPlayerNames] = useState<string[]>(() => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY_PLAYER_NAMES);
-            return saved ? JSON.parse(saved) : ['', '', '', ''];
-        } catch {
-            return ['', '', '', ''];
-        }
+        const saved = getStorageJSON<unknown>(STORAGE_KEYS.PLAYER_NAMES, null);
+        return Array.isArray(saved) ? saved : ['', '', '', ''];
     });
 
     const [savedTeams, setSavedTeams] = useState<string[][]>(() => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY_SAVED_TEAMS);
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            return [];
-        }
+        const saved = getStorageJSON<unknown>(STORAGE_KEYS.SAVED_TEAMS, null);
+        return Array.isArray(saved) ? saved : [];
     });
 
     const [deleteHistoryConfirm, setDeleteHistoryConfirm] = useState<number | null>(null);
@@ -33,11 +23,11 @@ export const useHistoryInput = () => {
     const [isHistoryDragScroll, setIsHistoryDragScroll] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_PLAYER_NAMES, JSON.stringify(playerNames));
+        setStorageJSON(STORAGE_KEYS.PLAYER_NAMES, playerNames);
     }, [playerNames]);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_SAVED_TEAMS, JSON.stringify(savedTeams));
+        setStorageJSON(STORAGE_KEYS.SAVED_TEAMS, savedTeams);
     }, [savedTeams]);
 
     // Click outside listener for History Delete Confirmation

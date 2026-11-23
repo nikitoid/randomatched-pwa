@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   getAvatarKey,
   getAvatarFromStorage,
@@ -10,25 +10,16 @@ import {
 } from '../utils/avatarStorage';
 import { collection, doc, getDocs, onSnapshot, setDoc } from '../services/firestore';
 import { checkConnectivity as checkConnectivityUtil, withTimeout } from '../utils/connectivity';
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
 
-
-const PENDING_DELETE_KEYS_STORAGE = 'randomatched_deleted_avatar_keys_v1';
 
 const getPendingDeletes = (): Set<string> => {
-  try {
-    const raw = localStorage.getItem(PENDING_DELETE_KEYS_STORAGE);
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch (e) {
-    return new Set();
-  }
+  const parsed = getStorageJSON<unknown>(STORAGE_KEYS.DELETED_AVATAR_KEYS, []);
+  return Array.isArray(parsed) ? new Set(parsed) : new Set();
 };
 
 const savePendingDeletes = (set: Set<string>) => {
-  try {
-    localStorage.setItem(PENDING_DELETE_KEYS_STORAGE, JSON.stringify(Array.from(set)));
-  } catch (e) {
-    console.error('Failed to save pending deletes:', e);
-  }
+  setStorageJSON(STORAGE_KEYS.DELETED_AVATAR_KEYS, Array.from(set));
 };
 
 const addPendingDelete = (key: string) => {
@@ -350,19 +341,21 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
 
-  return (
-    <AvatarContext.Provider
-      value={{
-        avatars,
-        getAvatar,
-        setAvatar,
-        removeAvatar,
-        exportAvatars,
-        importAvatars,
-        syncAvatarsToCloud,
-      }}
-    >
+  const value = useMemo(
+    () => ({
+      avatars,
+      getAvatar,
+      setAvatar,
+      removeAvatar,
+      exportAvatars,
+      importAvatars,
+      syncAvatarsToCloud,
+    }),
+    [avatars, getAvatar, setAvatar, removeAvatar, exportAvatars, importAvatars, syncAvatarsToCloud]
+  );
 
+  return (
+    <AvatarContext.Provider value={value}>
       {children}
     </AvatarContext.Provider>
   );

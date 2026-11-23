@@ -5,8 +5,7 @@ import { collection, deleteDoc, doc, getDocs, setDoc } from '../services/firesto
 import { generateUUID } from '../utils/uuid';
 import { normalizeHeroKey, mergeHeroInList } from '../utils/heroNormalization';
 import { RANK_VALUES } from '../constants';
-
-const STORAGE_KEY = 'randomatched_lists_v1';
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
 
 // Inject toast function via arguments to keep hook pure regarding UI state
 export const useHeroLists = (
@@ -14,28 +13,21 @@ export const useHeroLists = (
 ) => {
   const [lists, setLists] = useState<HeroList[]>(() => {
     if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsedLists = JSON.parse(stored);
-        if (Array.isArray(parsedLists)) {
-          return parsedLists.map((list: any) => {
-            if (list.heroes && list.heroes.length > 0 && typeof list.heroes[0] === 'string') {
-              return {
-                ...list,
-                heroes: list.heroes.map((name: string, idx: number) => ({
-                  id: `${list.id}_migrated_${idx}`,
-                  name: name,
-                  rank: 'C+'
-                }))
-              };
-            }
-            return list;
-          });
+    const parsedLists = getStorageJSON<any[]>(STORAGE_KEYS.LISTS, []);
+    if (Array.isArray(parsedLists)) {
+      return parsedLists.map((list: any) => {
+        if (list.heroes && list.heroes.length > 0 && typeof list.heroes[0] === 'string') {
+          return {
+            ...list,
+            heroes: list.heroes.map((name: string, idx: number) => ({
+              id: `${list.id}_migrated_${idx}`,
+              name: name,
+              rank: 'C+'
+            }))
+          };
         }
-      }
-    } catch (e) {
-      console.error("Failed to parse lists during initialization", e);
+        return list;
+      });
     }
     return [];
   });
@@ -91,11 +83,7 @@ export const useHeroLists = (
     if (isLoaded) {
       // Defer synchronous JSON serialization to next event loop tick to prevent blocking active animations
       const timer = setTimeout(() => {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
-        } catch (e) {
-          console.error("Failed to save lists to localStorage", e);
-        }
+        setStorageJSON(STORAGE_KEYS.LISTS, lists);
       }, 0);
       return () => clearTimeout(timer);
     }

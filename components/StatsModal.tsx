@@ -24,29 +24,36 @@ import { TrashMatchesModal, DeleteMatchAction } from './stats/TrashMatchesModal'
 import { StatsSortDropdown, HeroSortOption, PlayerSortOption } from './stats/StatsSortDropdown';
 import { ScreenOverlay } from './common/ScreenOverlay';
 import { findDuplicateOrSimilarHeroGroups, normalizeHeroKey } from '../utils/heroNormalization';
+import { useMatchHistoryContext } from '../context/MatchHistoryContext';
+import { useHeroListsContext } from '../context/HeroListsContext';
+import { useSeasonsContext } from '../context/SeasonsContext';
+import { useAvatars } from '../context/AvatarContext';
+import { useConnectivityContext } from '../context/ConnectivityContext';
+import { useToast } from '../hooks/useToast';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface StatsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    history: MatchRecord[];
-    onDeleteMatch: (id: string) => void;
-    onUpdateMatch: (id: string, data: Partial<MatchRecord>) => void;
-    onAddMatch: (t1: MatchPlayer[], t2: MatchPlayer[], winner: 'team1' | 'team2', timestamp: number) => void;
-    onRenamePlayer: (oldName: string, newName: string) => void;
-    onRenameHero: (oldName: string, newName: string) => void;
+    history?: MatchRecord[];
+    onDeleteMatch?: (id: string) => void;
+    onUpdateMatch?: (id: string, data: Partial<MatchRecord>) => void;
+    onAddMatch?: (t1: MatchPlayer[], t2: MatchPlayer[], winner: 'team1' | 'team2', timestamp: number) => void;
+    onRenamePlayer?: (oldName: string, newName: string) => void;
+    onRenameHero?: (oldName: string, newName: string) => void;
     onMergeHeroes?: (targetName: string, sourceNames: string[]) => void;
-    onSync: (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }) => Promise<boolean>;
-    isSyncing: boolean;
-    isOnline: boolean;
-    lists: HeroList[]; // For autocomplete
-    triggerHaptic: (pattern?: number | number[]) => void;
-    deletedHistory: MatchRecord[];
-    onRestoreMatch: (id: string) => void;
+    onSync?: (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }) => Promise<boolean>;
+    isSyncing?: boolean;
+    isOnline?: boolean;
+    lists?: HeroList[]; // For autocomplete
+    triggerHaptic?: (pattern?: number | number[]) => void;
+    deletedHistory?: MatchRecord[];
+    onRestoreMatch?: (id: string) => void;
 
-    onPermanentDeleteMatch: (id: string) => void;
-    onClearTrash: () => void;
+    onPermanentDeleteMatch?: (id: string) => void;
+    onClearTrash?: () => void;
 
-    onImportData: (data: { history: MatchRecord[], deletedHistory: MatchRecord[], seasons?: Season[] }) => boolean;
+    onImportData?: (data: { history: MatchRecord[], deletedHistory: MatchRecord[], seasons?: Season[], avatars?: Record<string, string> }) => boolean;
     checkConnectivity?: (timeoutMs?: number) => Promise<boolean>;
     addToast?: (message: string, type: ToastType, duration?: number) => void;
 
@@ -60,15 +67,15 @@ interface StatsModalProps {
     onDeleteSeason?: (id: string) => void;
 
     // Облачный бэкап
-    cloudBackups: Array<{ id: string; createdAt: number; matchCount: number }>;
-    isCreatingBackup: boolean;
-    isLoadingBackups: boolean;
-    isRestoringBackup: boolean;
-    onCreateCloudBackup: () => Promise<string | null>;
-    onListCloudBackups: () => Promise<Array<{ id: string; createdAt: number; matchCount: number }>>;
-    onRestoreFromCloudBackup: (id: string) => Promise<boolean>;
-    onDeleteCloudBackup: (id: string) => Promise<boolean>;
-    onGetCloudBackupDetails: (id: string) => Promise<CloudBackup | null>;
+    cloudBackups?: Array<{ id: string; createdAt: number; matchCount: number }>;
+    isCreatingBackup?: boolean;
+    isLoadingBackups?: boolean;
+    isRestoringBackup?: boolean;
+    onCreateCloudBackup?: () => Promise<string | null>;
+    onListCloudBackups?: () => Promise<Array<{ id: string; createdAt: number; matchCount: number }>>;
+    onRestoreFromCloudBackup?: (id: string) => Promise<boolean>;
+    onDeleteCloudBackup?: (id: string) => Promise<boolean>;
+    onGetCloudBackupDetails?: (id: string) => Promise<CloudBackup | null>;
     isDebugMode?: boolean;
     onOpenInactiveModal?: () => void;
 }
@@ -76,49 +83,163 @@ interface StatsModalProps {
 export const StatsModal: React.FC<StatsModalProps> = ({
     isOpen,
     onClose,
-    history,
-    onDeleteMatch,
-    onUpdateMatch,
-    onAddMatch,
-    onRenamePlayer,
-    onRenameHero,
-    onMergeHeroes,
-    onSync,
+    history: historyProp,
+    onDeleteMatch: onDeleteMatchProp,
+    onUpdateMatch: onUpdateMatchProp,
+    onAddMatch: onAddMatchProp,
+    onRenamePlayer: onRenamePlayerProp,
+    onRenameHero: onRenameHeroProp,
+    onMergeHeroes: onMergeHeroesProp,
+    onSync: onSyncProp,
     isSyncing: _isSyncing,
-    isOnline,
-    lists,
-    triggerHaptic,
-    deletedHistory = [],
-    onRestoreMatch = () => { },
-    onPermanentDeleteMatch = () => { },
-    onClearTrash = () => { },
+    isOnline: isOnlineProp,
+    lists: listsProp,
+    triggerHaptic: triggerHapticProp,
+    deletedHistory: deletedHistoryProp,
+    onRestoreMatch: onRestoreMatchProp,
+    onPermanentDeleteMatch: onPermanentDeleteMatchProp,
+    onClearTrash: onClearTrashProp,
 
-    onImportData,
-    checkConnectivity,
-    addToast,
+    onImportData: onImportDataProp,
+    checkConnectivity: checkConnectivityProp,
+    addToast: addToastProp,
 
     // Seasons management
-    seasons = [],
-    latestSeasonId = null,
-    userDefaultSeasonId = null,
-    onSetUserDefaultSeason,
-    onAddSeason,
-    onUpdateSeason,
-    onDeleteSeason,
+    seasons: seasonsProp,
+    latestSeasonId: latestSeasonIdProp,
+    userDefaultSeasonId: userDefaultSeasonIdProp,
+    onSetUserDefaultSeason: onSetUserDefaultSeasonProp,
+    onAddSeason: onAddSeasonProp,
+    onUpdateSeason: onUpdateSeasonProp,
+    onDeleteSeason: onDeleteSeasonProp,
 
     // Облачный бэкап
-    cloudBackups = [],
-    isCreatingBackup = false,
-    isLoadingBackups = false,
-    isRestoringBackup = false,
-    onCreateCloudBackup = async () => null,
-    onListCloudBackups = async () => [],
-    onRestoreFromCloudBackup = async () => false,
-    onDeleteCloudBackup = async () => false,
-    onGetCloudBackupDetails = async () => null,
+    cloudBackups: cloudBackupsProp,
+    isCreatingBackup: isCreatingBackupProp,
+    isLoadingBackups: isLoadingBackupsProp,
+    isRestoringBackup: isRestoringBackupProp,
+    onCreateCloudBackup: onCreateCloudBackupProp,
+    onListCloudBackups: onListCloudBackupsProp,
+    onRestoreFromCloudBackup: onRestoreFromCloudBackupProp,
+    onDeleteCloudBackup: onDeleteCloudBackupProp,
+    onGetCloudBackupDetails: onGetCloudBackupDetailsProp,
     isDebugMode = false,
     onOpenInactiveModal
 }) => {
+    const matchHistoryCtx = useMatchHistoryContext();
+    const heroListsCtx = useHeroListsContext();
+    const seasonsCtx = useSeasonsContext();
+    const { importAvatars, syncAvatarsToCloud } = useAvatars();
+    const connectivityCtx = useConnectivityContext();
+    const { addToast: ctxAddToast } = useToast();
+    const { trigger: ctxTriggerHaptic } = useHaptics();
+
+    const addToast = addToastProp ?? ctxAddToast;
+    const triggerHaptic = triggerHapticProp ?? ctxTriggerHaptic;
+
+    const {
+        renameHero: ctxRenameHero,
+        batchMergeHeroes: ctxBatchMergeHeroes,
+        syncHistory: ctxSyncHistory,
+        importData: ctxImportData,
+        getCloudBackupDetails: ctxGetCloudBackupDetails,
+        restoreFromCloudBackup: ctxRestoreFromCloudBackup,
+    } = matchHistoryCtx;
+    const {
+        renameHeroInLists: ctxRenameHeroInLists,
+        batchMergeHeroesInLists: ctxBatchMergeHeroesInLists,
+    } = heroListsCtx;
+    const { importSeasons: ctxImportSeasons, syncSeasons: ctxSyncSeasons } = seasonsCtx;
+
+    const defaultOnRenameHero = useCallback(
+        async (oldName: string, newName: string) => {
+            ctxRenameHero(oldName, newName);
+            await ctxRenameHeroInLists(oldName, newName);
+        },
+        [ctxRenameHero, ctxRenameHeroInLists]
+    );
+
+    const defaultOnMergeHeroes = useCallback(
+        async (targetHeroName: string, sourceHeroNames: string[]) => {
+            await ctxBatchMergeHeroes(targetHeroName, sourceHeroNames);
+            const affectedLists = await ctxBatchMergeHeroesInLists(targetHeroName, sourceHeroNames);
+            if (affectedLists > 0) {
+                addToast(`Герой «${targetHeroName}» обновлен в ${affectedLists} списк(ах)`, 'info', 2500);
+            }
+        },
+        [ctxBatchMergeHeroes, ctxBatchMergeHeroesInLists, addToast]
+    );
+
+    const defaultOnSync = useCallback(
+        async (options?: { silentIfNoChanges?: boolean; silentErrors?: boolean }) => {
+            const historySuccess = await ctxSyncHistory(options);
+            await ctxSyncSeasons(options);
+            await syncAvatarsToCloud();
+            return historySuccess;
+        },
+        [ctxSyncHistory, ctxSyncSeasons, syncAvatarsToCloud]
+    );
+
+    const defaultOnImportData = useCallback(
+        (data: { history: MatchRecord[]; deletedHistory: MatchRecord[]; seasons?: Season[]; avatars?: Record<string, string> }) => {
+            const success = ctxImportData(data);
+            if (success && Array.isArray(data.seasons)) {
+                ctxImportSeasons(data.seasons);
+            }
+            if (success && data.avatars && typeof data.avatars === 'object') {
+                void importAvatars(data.avatars);
+            }
+            return success;
+        },
+        [ctxImportData, ctxImportSeasons, importAvatars]
+    );
+
+    const defaultOnRestoreFromCloudBackup = useCallback(
+        async (id: string) => {
+            const backup = await ctxGetCloudBackupDetails(id);
+            const res = await ctxRestoreFromCloudBackup(id);
+            if (res && backup && Array.isArray(backup.seasons)) {
+                ctxImportSeasons(backup.seasons);
+            }
+            return res;
+        },
+        [ctxGetCloudBackupDetails, ctxRestoreFromCloudBackup, ctxImportSeasons]
+    );
+
+    const history = historyProp ?? matchHistoryCtx.history;
+    const onDeleteMatch = onDeleteMatchProp ?? matchHistoryCtx.deleteMatch;
+    const onUpdateMatch = onUpdateMatchProp ?? matchHistoryCtx.updateMatch;
+    const onAddMatch = onAddMatchProp ?? matchHistoryCtx.addManualMatch;
+    const onRenamePlayer = onRenamePlayerProp ?? matchHistoryCtx.renamePlayer;
+    const onRenameHero = onRenameHeroProp ?? defaultOnRenameHero;
+    const onMergeHeroes = onMergeHeroesProp ?? defaultOnMergeHeroes;
+    const onSync = onSyncProp ?? defaultOnSync;
+    const isOnline = isOnlineProp ?? connectivityCtx.isOnline;
+    const lists = listsProp ?? heroListsCtx.lists;
+    const deletedHistory = deletedHistoryProp ?? matchHistoryCtx.deletedHistory;
+    const onRestoreMatch = onRestoreMatchProp ?? matchHistoryCtx.restoreMatch;
+    const onPermanentDeleteMatch = onPermanentDeleteMatchProp ?? matchHistoryCtx.permanentDeleteMatch;
+    const onClearTrash = onClearTrashProp ?? matchHistoryCtx.clearTrash;
+    const onImportData = onImportDataProp ?? defaultOnImportData;
+    const checkConnectivity = checkConnectivityProp ?? connectivityCtx.checkConnectivity;
+
+    const seasons = seasonsProp ?? seasonsCtx.seasons;
+    const latestSeasonId = latestSeasonIdProp !== undefined ? latestSeasonIdProp : (seasonsCtx.latestSeason?.id ?? null);
+    const userDefaultSeasonId = userDefaultSeasonIdProp !== undefined ? userDefaultSeasonIdProp : seasonsCtx.userDefaultSeasonId;
+    const onSetUserDefaultSeason = onSetUserDefaultSeasonProp ?? seasonsCtx.setUserDefaultSeasonId;
+    const onAddSeason = onAddSeasonProp ?? seasonsCtx.addSeason;
+    const onUpdateSeason = onUpdateSeasonProp ?? seasonsCtx.updateSeason;
+    const onDeleteSeason = onDeleteSeasonProp ?? seasonsCtx.deleteSeason;
+
+    const cloudBackups = cloudBackupsProp ?? matchHistoryCtx.cloudBackups;
+    const isCreatingBackup = isCreatingBackupProp ?? matchHistoryCtx.isCreatingBackup;
+    const isLoadingBackups = isLoadingBackupsProp ?? matchHistoryCtx.isLoadingBackups;
+    const isRestoringBackup = isRestoringBackupProp ?? matchHistoryCtx.isRestoringBackup;
+    const onCreateCloudBackup = onCreateCloudBackupProp ?? matchHistoryCtx.createCloudBackup;
+    const onListCloudBackups = onListCloudBackupsProp ?? matchHistoryCtx.listCloudBackups;
+    const onRestoreFromCloudBackup = onRestoreFromCloudBackupProp ?? defaultOnRestoreFromCloudBackup;
+    const onDeleteCloudBackup = onDeleteCloudBackupProp ?? matchHistoryCtx.deleteCloudBackup;
+    const onGetCloudBackupDetails = onGetCloudBackupDetailsProp ?? ctxGetCloudBackupDetails;
     const [isSeasonsManagerOpen, setIsSeasonsManagerOpen] = useState(false);
     const [isMergeModalOpen, setIsMergeModalOpen] = useState(false);
     const [showEfficiencyInfo, setShowEfficiencyInfo] = useState(false);
