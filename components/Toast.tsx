@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { ToastMessage } from '../types';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 
 interface ToastProps {
   toast: ToastMessage;
@@ -57,7 +58,12 @@ export const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
     <div data-testid="toast" className={`relative overflow-hidden flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-top-2 duration-300 max-w-sm w-full ${styles[toast.type]}`}>
       <div className="shrink-0">{icons[toast.type]}</div>
       <p className="text-sm font-medium flex-1">{toast.message}</p>
-      <button onClick={() => onClose(toast.id)} className="opacity-60 active:opacity-100 z-10">
+      <button
+        type="button"
+        onClick={() => onClose(toast.id)}
+        aria-label="Закрыть уведомление"
+        className="opacity-60 active:opacity-100 z-10 p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+      >
         <X size={16} />
       </button>
       
@@ -84,7 +90,10 @@ export const ToastContainer: React.FC<{ toasts: ToastMessage[]; removeToast: (id
   const visibleToasts = toasts.slice(0, 3);
 
   return (
-    <div className="fixed top-4 left-0 w-full flex flex-col items-center gap-2 z-[100] pointer-events-none px-4">
+    <div
+      className="fixed top-4 left-0 w-full flex flex-col items-center gap-2 pointer-events-none px-4"
+      style={{ zIndex: Z_INDEX_BASE.TOAST }}
+    >
       {visibleToasts.map(toast => (
         <div key={toast.id} className="pointer-events-auto w-full max-w-sm">
            <Toast toast={toast} onClose={removeToast} />

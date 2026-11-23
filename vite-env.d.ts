@@ -18,7 +18,7 @@ declare module 'virtual:pwa-register/react' {
     onNeedRefresh?: () => void;
     onOfflineReady?: () => void;
     onRegistered?: (registration: ServiceWorkerRegistration | undefined) => void;
-    onRegisterError?: (error: any) => void;
+    onRegisterError?: (error: unknown) => void;
   }
 
   export function useRegisterSW(options?: RegisterSWOptions): {
@@ -26,4 +26,16 @@ declare module 'virtual:pwa-register/react' {
     offlineReady: [boolean, (value: boolean) => void];
     updateServiceWorker: (reloadPage?: boolean) => Promise<void>;
   };
+}
+
+interface Window {
+  __PLAYWRIGHT_TEST__?: boolean;
+  __MOCK_DB_DATA__?: Record<string, Record<string, unknown>[]>;
+  webkitAudioContext?: typeof AudioContext;
+  requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  cancelIdleCallback?: (handle: number) => void;
+}
+
+interface Navigator {
+  readonly standalone?: boolean;
 }

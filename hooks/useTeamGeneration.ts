@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Hero, HeroList, AssignedPlayer, GenerationMode, ExtraGenerationMode, MatchRecord } from '../types';
-import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists, getHeroHistoryWeights, getPlayerHeroHistoryWeights, selectWeightedSingle } from '../utils/generator';
-
-const STORAGE_KEY_ASSIGNMENTS = 'randomatched_last_session_v1';
-const STORAGE_KEY_DEBUG_MODE = 'randomatched_debug_mode_v1';
+import { Hero, HeroList, AssignedPlayer, GenerationMode, ExtraGenerationMode, MatchRecord, ToastType } from '../types';
+import { generateAssignmentsWithMode, getHeroWeight, getUniqueHeroesFromLists, getHeroHistoryWeights, getPlayerHeroHistoryWeights, selectWeightedSingle, shuffleArray } from '../utils/generator';
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON, removeStorageItem } from '../utils/storage';
 
 // We need to define the props this hook expects
 interface UseTeamGenerationProps {
@@ -11,7 +9,7 @@ interface UseTeamGenerationProps {
     activeList?: HeroList;
     isGroupMode: boolean;
     selectedGroupIds: Set<string>;
-    addToast: (msg: string, type?: any, duration?: number) => void;
+    addToast: (msg: string, type?: ToastType, duration?: number) => void;
     triggerHaptic: (pattern: number | number[]) => void;
     playerNames: string[];
     saveTeamHistory: () => void;
@@ -49,83 +47,59 @@ export const useTeamGeneration = ({
 }: UseTeamGenerationProps) => {
 
     const [assignments, setAssignments] = useState<AssignedPlayer[]>(() => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY_ASSIGNMENTS);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    const sample = parsed[0].hero;
-                    if (sample && typeof sample !== 'object') {
-                        return [];
-                    }
+        const parsed = getStorageJSON<unknown>(STORAGE_KEYS.LAST_SESSION, null);
+        if (Array.isArray(parsed)) {
+            if (parsed.length > 0) {
+                const sample = parsed[0]?.hero;
+                if (sample && typeof sample !== 'object') {
+                    return [];
                 }
-                return parsed;
             }
-            return [];
-        } catch (e) {
-            return [];
+            return parsed;
         }
+        return [];
     });
     const [generationMode, setGenerationMode] = useState<GenerationMode>(() => {
-        try {
-            const saved = localStorage.getItem('randomatched_generation_mode_v1');
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed === 'random' || parsed === 'balanced' || parsed === 'strict') {
-                    return parsed;
-                }
-            }
-            return 'balanced';
-        } catch (e) {
-            return 'balanced';
+        const parsed = getStorageJSON<unknown>(STORAGE_KEYS.GENERATION_MODE, null);
+        if (parsed === 'random' || parsed === 'balanced' || parsed === 'strict') {
+            return parsed;
         }
+        return 'balanced';
     });
     const [balanceThreshold, setBalanceThreshold] = useState<number>(1);
     const [extraMode, setExtraMode] = useState<ExtraGenerationMode>(() => {
-        try {
-            const savedExtra = localStorage.getItem('randomatched_extra_mode_v1');
-            if (savedExtra) {
-                const parsed = JSON.parse(savedExtra);
-                if (parsed === 'none' || parsed === 'global_freshness' || parsed === 'player_freshness') {
-                    return parsed;
-                }
-            }
-            const savedPrioritize = localStorage.getItem('randomatched_prioritize_unplayed_v1');
-            if (savedPrioritize) {
-                const parsed = JSON.parse(savedPrioritize);
-                if (parsed === true) return 'global_freshness';
-            }
-            return 'none';
-        } catch (e) {
-            return 'none';
+        const parsedExtra = getStorageJSON<unknown>(STORAGE_KEYS.EXTRA_MODE, null);
+        if (parsedExtra === 'none' || parsedExtra === 'global_freshness' || parsedExtra === 'player_freshness') {
+            return parsedExtra;
         }
+        const parsedPrioritize = getStorageJSON<unknown>(STORAGE_KEYS.PRIORITIZE_UNPLAYED, null);
+        if (parsedPrioritize === true) {
+            return 'global_freshness';
+        }
+        return 'none';
     });
     const [isDebugMode, setIsDebugMode] = useState<boolean>(() => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY_DEBUG_MODE);
-            return saved ? JSON.parse(saved) : false;
-        } catch (e) {
-            return false;
-        }
+        const parsed = getStorageJSON<unknown>(STORAGE_KEYS.DEBUG_MODE, false);
+        return typeof parsed === 'boolean' ? parsed : Boolean(parsed);
     });
     const [showResult, setShowResult] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_ASSIGNMENTS, JSON.stringify(assignments));
+        setStorageJSON(STORAGE_KEYS.LAST_SESSION, assignments);
     }, [assignments]);
 
     useEffect(() => {
-        localStorage.setItem('randomatched_generation_mode_v1', JSON.stringify(generationMode));
+        setStorageJSON(STORAGE_KEYS.GENERATION_MODE, generationMode);
     }, [generationMode]);
 
     useEffect(() => {
-        localStorage.setItem('randomatched_extra_mode_v1', JSON.stringify(extraMode));
+        setStorageJSON(STORAGE_KEYS.EXTRA_MODE, extraMode);
     }, [extraMode]);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_DEBUG_MODE, JSON.stringify(isDebugMode));
+        setStorageJSON(STORAGE_KEYS.DEBUG_MODE, isDebugMode);
     }, [isDebugMode]);
 
     const getWeightsForGeneration = () => {
@@ -195,7 +169,7 @@ export const useTeamGeneration = ({
 
         setTimeout(() => {
             const positions: ('bottom' | 'top' | 'left' | 'right')[] = ['bottom', 'top', 'left', 'right'];
-            const playerNumbers = [1, 2, 3, 4].sort(() => 0.5 - Math.random());
+            const playerNumbers = shuffleArray([1, 2, 3, 4]);
 
             const newAssignments: AssignedPlayer[] = positions.map((pos, index) => {
                 const pNum = playerNumbers[index];
@@ -237,7 +211,7 @@ export const useTeamGeneration = ({
     const confirmReset = () => {
         setAssignments([]);
         resetTemporaryLists();
-        localStorage.removeItem(STORAGE_KEY_ASSIGNMENTS);
+        removeStorageItem(STORAGE_KEYS.LAST_SESSION);
         setIsResetConfirmOpen(false);
         addToast("Сессия сброшена", "info", 1500);
         triggerHaptic(20);
@@ -398,7 +372,7 @@ export const useTeamGeneration = ({
 
     const handleShuffleTeams = () => {
         triggerHaptic(20);
-        const pNums = [1, 2, 3, 4].sort(() => 0.5 - Math.random());
+        const pNums = shuffleArray([1, 2, 3, 4]);
 
         const newAssignments: AssignedPlayer[] = assignments.map((assignment, index) => {
             const pNum = pNums[index];

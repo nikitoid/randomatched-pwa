@@ -2,6 +2,7 @@
 import React, { useRef, memo, useMemo } from 'react';
 import { HeroList } from '../types';
 import { GripVertical, Filter, Cloud, Database, MoreVertical, AlertTriangle, SquareStack, Eye } from 'lucide-react';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 
 interface ListItemProps {
   list: HeroList;
@@ -74,8 +75,9 @@ export const ListItem: React.FC<ListItemProps> = memo(({
       data-list-index={index}
       className={`relative group mb-3 transition-[opacity,transform] duration-200
         ${isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'}
-        ${isMenuOpen ? 'z-40 opacity-0' : 'z-auto'} 
+        ${isMenuOpen ? 'opacity-0' : ''} 
       `}
+      style={isMenuOpen ? { zIndex: Z_INDEX_BASE.DROPDOWN } : undefined}
     >
       <div 
          ref={cardRef}
@@ -100,8 +102,9 @@ export const ListItem: React.FC<ListItemProps> = memo(({
              )}
         </div>
 
-        <div 
-            className="flex-1 min-w-0 mr-3 cursor-pointer"
+        <button
+            type="button"
+            className="flex-1 min-w-0 mr-3 cursor-pointer text-left bg-transparent border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
             onClick={handleEditClick}
         >
             <h3 className={`font-bold text-base sm:text-lg leading-snug truncate mb-1 ${isTemp ? 'text-primary-900 dark:text-primary-300 italic' : isCloudOffline ? 'text-slate-600 dark:text-slate-400' : 'text-slate-900 dark:text-slate-100'}`}>
@@ -134,7 +137,7 @@ export const ListItem: React.FC<ListItemProps> = memo(({
                     </span>
                 )}
             </div>
-        </div>
+        </button>
         
         {!isReorderMode && (
             <button 

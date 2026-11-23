@@ -96,7 +96,7 @@ export const useMatchFilters = (
     }, [defaultSeasonInfo, addToast]);
 
     // Track previous isOpen state to trigger default filter application strictly on opening transition
-    const prevIsOpenRef = useRef(isOpen);
+    const prevIsOpenRef = useRef(false);
 
     useLayoutEffect(() => {
         if (isOpen && !prevIsOpenRef.current) {

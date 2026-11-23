@@ -19,7 +19,7 @@ const SIZE_MAP = {
   md: 'w-9 h-9 text-sm',
   lg: 'w-12 h-12 text-base',
   xl: 'w-16 h-16 text-xl',
-  '2xl': 'w-22 h-22 text-3xl',
+  '2xl': 'w-[88px] h-[88px] text-3xl',
 };
 
 const ICON_SIZE_MAP = {
@@ -114,31 +114,45 @@ export const Avatar: React.FC<AvatarProps> = ({
     }
   };
 
+  const isInteractive = Boolean(onClick || (showEditButton && onEditClick));
+
+  const content = avatarUrl ? (
+    <img
+      src={avatarUrl}
+      alt={name || 'Avatar'}
+      className="w-full h-full object-cover rounded-full"
+      loading="lazy"
+    />
+  ) : entityType === 'player' ? (
+    <span>{initials}</span>
+  ) : (
+    renderHeroIcon()
+  );
+
+  const circleClasses = `rounded-full overflow-hidden flex items-center justify-center font-bold border border-white/20 dark:border-slate-700/50 shadow-sm transition-all duration-200 ${
+    SIZE_MAP[size]
+  } ${avatarUrl ? 'bg-slate-200 dark:bg-slate-800' : `bg-gradient-to-br ${gradientClass}`} ${
+    isInteractive ? 'cursor-pointer group-active:scale-95 group-hover:ring-2 group-hover:ring-primary-500/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500' : ''
+  } ${className}`;
+
   return (
     <div
-      className={`relative inline-flex items-center justify-center shrink-0 select-none ${onClick || (showEditButton && onEditClick) ? 'cursor-pointer group' : ''}`}
-      onClick={handleContainerClick}
+      className={`relative inline-flex items-center justify-center shrink-0 select-none ${isInteractive ? 'group' : ''}`}
     >
-      <div
-        className={`rounded-full overflow-hidden flex items-center justify-center font-bold border border-white/20 dark:border-slate-700/50 shadow-sm transition-all duration-200 ${
-          SIZE_MAP[size]
-        } ${avatarUrl ? 'bg-slate-200 dark:bg-slate-800' : `bg-gradient-to-br ${gradientClass}`} ${
-          onClick || (showEditButton && onEditClick) ? 'group-active:scale-95 group-hover:ring-2 group-hover:ring-indigo-500/40' : ''
-        } ${className}`}
-      >
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={name || 'Avatar'}
-            className="w-full h-full object-cover rounded-full"
-            loading="lazy"
-          />
-        ) : entityType === 'player' ? (
-          <span>{initials}</span>
-        ) : (
-          renderHeroIcon()
-        )}
-      </div>
+      {isInteractive ? (
+        <button
+          type="button"
+          onClick={handleContainerClick}
+          className={circleClasses}
+          aria-label={name || 'Аватар'}
+        >
+          {content}
+        </button>
+      ) : (
+        <div className={circleClasses}>
+          {content}
+        </div>
+      )}
 
       {showEditButton && (
         <button
@@ -147,7 +161,7 @@ export const Avatar: React.FC<AvatarProps> = ({
             e.stopPropagation();
             if (onEditClick) onEditClick();
           }}
-          className={`absolute -bottom-0.5 -right-0.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-md border-2 border-white dark:border-slate-900 flex items-center justify-center transition-all group-hover:scale-110 active:scale-95 ${
+          className={`absolute -bottom-0.5 -right-0.5 rounded-full bg-primary-600 hover:bg-primary-500 text-white shadow-md border-2 border-white dark:border-slate-900 flex items-center justify-center transition-all group-hover:scale-110 active:scale-95 ${
             size === '2xl' ? 'p-2' : size === 'xl' ? 'p-1.5' : 'p-1'
           }`}
           aria-label="Изменить аватар"

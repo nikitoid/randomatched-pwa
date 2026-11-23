@@ -87,7 +87,7 @@ export const normalizeHeroKey = (name: string): string => {
     .replace(/\s*\+\s*/g, ' и ') // standardize plus + to ' и '
     .replace(/\s*\/\s*/g, ' и ') // standardize slash / to ' и '
     .replace(/\band\b/gi, ' и ') // standardize English 'and' to ' и '
-    .replace(/[.,#!$%^*;:{}=\_`~()\[\]]/g, ' ') // remove other special chars
+    .replace(/[.,#!$%^*;:{}=_`~()[\]]/g, ' ') // remove other special chars
     .replace(/\s+/g, ' ') // collapse spaces
     .trim();
 };
@@ -343,13 +343,15 @@ export const getBestCanonicalDisplayName = (variants: string[]): string => {
   return entries[0][0];
 };
 
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON, removeStorageItem } from './storage';
+
 export interface DuplicateGroup {
   primaryName: string;
   duplicateNames: string[];
   reason: 'exact_normalized' | 'typo' | 'alias';
 }
 
-export const MERGE_IGNORED_GROUPS_KEY = 'randomatched_merge_ignored_groups';
+export const MERGE_IGNORED_GROUPS_KEY = STORAGE_KEYS.MERGE_IGNORED_GROUPS;
 
 export interface IgnoredMergeGroup {
   id: string;
@@ -358,15 +360,8 @@ export interface IgnoredMergeGroup {
 }
 
 export const getIgnoredMergeGroups = (): IgnoredMergeGroup[] => {
-  try {
-    const raw = localStorage.getItem(MERGE_IGNORED_GROUPS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-    return [];
-  } catch {
-    return [];
-  }
+  const parsed = getStorageJSON<unknown>(MERGE_IGNORED_GROUPS_KEY, []);
+  return Array.isArray(parsed) ? parsed : [];
 };
 
 export const addIgnoredMergeGroup = (names: string[]): IgnoredMergeGroup[] => {
@@ -386,31 +381,19 @@ export const addIgnoredMergeGroup = (names: string[]): IgnoredMergeGroup[] => {
   };
 
   const updated = [newItem, ...current];
-  try {
-    localStorage.setItem(MERGE_IGNORED_GROUPS_KEY, JSON.stringify(updated));
-  } catch (e) {
-    console.error('Failed to save ignored merge groups to localStorage', e);
-  }
+  setStorageJSON(MERGE_IGNORED_GROUPS_KEY, updated);
   return updated;
 };
 
 export const removeIgnoredMergeGroup = (id: string): IgnoredMergeGroup[] => {
   const current = getIgnoredMergeGroups();
   const updated = current.filter(g => g.id !== id);
-  try {
-    localStorage.setItem(MERGE_IGNORED_GROUPS_KEY, JSON.stringify(updated));
-  } catch (e) {
-    console.error('Failed to remove ignored merge group from localStorage', e);
-  }
+  setStorageJSON(MERGE_IGNORED_GROUPS_KEY, updated);
   return updated;
 };
 
 export const clearAllIgnoredMergeGroups = (): void => {
-  try {
-    localStorage.removeItem(MERGE_IGNORED_GROUPS_KEY);
-  } catch (e) {
-    console.error('Failed to clear ignored merge groups from localStorage', e);
-  }
+  removeStorageItem(MERGE_IGNORED_GROUPS_KEY);
 };
 
 /**

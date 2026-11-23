@@ -15,7 +15,8 @@ import {
     ChevronUp
 } from 'lucide-react';
 import { CHANGELOG, ChangelogSection, isReleaseUnread, getUnreadReleasesCount, APP_VERSION } from '../utils/changelog';
-import { BaseModal } from './common/BaseModal';
+import { ScreenOverlay } from './common/ScreenOverlay';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 
 interface ChangelogOverlayProps {
     isOpen: boolean;
@@ -131,31 +132,34 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
 
     const modalTitle = (
         <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent dark:from-amber-500/25 dark:via-orange-500/20 rounded-2xl flex items-center justify-center text-amber-500 dark:text-amber-400 shrink-0 border border-amber-500/30 shadow-xs">
-                <Sparkles size={20} className="fill-amber-500/30 animate-pulse" aria-hidden="true" />
+            <div className="w-9 h-9 bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-transparent dark:from-amber-500/25 dark:via-orange-500/20 rounded-2xl flex items-center justify-center text-amber-500 dark:text-amber-400 shrink-0 border border-amber-500/30 shadow-xs">
+                <Sparkles size={18} className="fill-amber-500/30 animate-pulse" aria-hidden="true" />
             </div>
             <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white leading-tight">
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight">
                         Что нового?
-                    </h3>
+                    </h2>
                     {unreadCount > 0 && (
                         <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-rose-500 text-white rounded-full shadow-xs animate-pulse">
                             +{unreadCount} {unreadCount === 1 ? 'новое' : 'новых'}
                         </span>
                     )}
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
-                    <span>История обновлений</span>
-                    <span className="inline-block w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                    <span className="font-semibold text-slate-400 dark:text-slate-500 lowercase">v{APP_VERSION}</span>
-                </p>
             </div>
         </div>
     );
 
+    const modalSubtitle = (
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+            <span>История обновлений</span>
+            <span className="inline-block w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <span className="font-semibold text-slate-400 dark:text-slate-500 lowercase">v{APP_VERSION}</span>
+        </p>
+    );
+
     const subHeaderContent = (
-        <div className="space-y-2.5">
+        <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800/70 space-y-2.5 max-w-2xl mx-auto w-full">
             {/* Search Input */}
             <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" aria-hidden="true" />
@@ -238,30 +242,35 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
     );
 
     const modalFooter = (
-        <button
-            type="button"
-            onClick={handleClose}
-            className="w-full py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 active:from-primary-700 active:to-primary-800 text-white font-bold text-sm sm:text-base rounded-2xl active:scale-[0.98] transition-all shadow-md shadow-primary-500/25 flex items-center justify-center gap-2 min-h-[48px] cursor-pointer"
-        >
-            <Check size={18} className="stroke-[2.5]" aria-hidden="true" />
-            <span>Понятно, класс!</span>
-        </button>
+        <div className="max-w-2xl mx-auto w-full">
+            <button
+                type="button"
+                onClick={handleClose}
+                className="w-full py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 active:from-primary-700 active:to-primary-800 text-white font-bold text-sm sm:text-base rounded-2xl active:scale-[0.98] transition-all shadow-md shadow-primary-500/25 flex items-center justify-center gap-2 min-h-[48px] cursor-pointer"
+            >
+                <Check size={18} className="stroke-[2.5]" aria-hidden="true" />
+                <span>Понятно, класс!</span>
+            </button>
+        </div>
     );
 
     return (
-        <BaseModal
+        <ScreenOverlay
             isOpen={isOpen}
             onClose={handleClose}
             title={modalTitle}
+            subtitle={modalSubtitle}
             subHeader={subHeaderContent}
-            maxWidth="md"
-            variant="auto"
-            modalId="changelog-overlay"
-            priority={40}
-            showCloseButton={false}
             footer={modalFooter}
+            screenId="changelog-screen"
+            priority={40}
+            zIndex={Z_INDEX_BASE.OVERLAY_NESTED}
+            headerAlign="left"
+            closeButtonAriaLabel="Закрыть"
+            testId="changelog-overlay"
+            bodyClassName="px-4 py-4 sm:px-6"
         >
-            <div className="space-y-4 pr-0.5">
+            <div className="space-y-4 max-w-2xl mx-auto w-full">
                 {filteredReleases.length === 0 ? (
                     <div className="py-12 px-4 text-center">
                         <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700/50 flex items-center justify-center mx-auto mb-3 text-slate-400 dark:text-slate-500">
@@ -306,9 +315,11 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                                     }`}
                                 >
                                     {/* Card Header */}
-                                    <div
+                                    <button
+                                        type="button"
                                         onClick={() => toggleExpandRelease(release.version)}
-                                        className="p-3.5 sm:p-4 flex items-start justify-between gap-2.5 cursor-pointer select-none active:bg-slate-100/50 dark:active:bg-slate-800/40 transition-colors"
+                                        aria-expanded={isExpanded}
+                                        className="w-full text-left p-3.5 sm:p-4 flex items-start justify-between gap-2.5 cursor-pointer select-none active:bg-slate-100/50 dark:active:bg-slate-800/40 transition-colors"
                                     >
                                         <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
                                             {/* Version Pill */}
@@ -343,18 +354,13 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                                         </div>
 
                                         {/* Toggle Expand Icon */}
-                                        <button
-                                            type="button"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                toggleExpandRelease(release.version);
-                                            }}
+                                        <span
+                                            aria-hidden="true"
                                             className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center shrink-0 transition-colors mt-0.5"
-                                            aria-label={isExpanded ? 'Свернуть' : 'Развернуть'}
                                         >
                                             {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                                        </button>
-                                    </div>
+                                        </span>
+                                    </button>
 
                                     {/* Card Content (Sections & Items) */}
                                     {isExpanded && (
@@ -411,6 +417,6 @@ export const ChangelogOverlay: React.FC<ChangelogOverlayProps> = ({
                     })
                 )}
             </div>
-        </BaseModal>
+        </ScreenOverlay>
     );
 };

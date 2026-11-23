@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Trophy, ChevronLeft, Shield, Calendar, Skull, TrendingUp, TrendingDown, ChevronDown, ChevronUp, User, Users, Edit2, Check, X, Swords, Zap, Flame, Award, Sparkles, Crown, HelpCircle } from 'lucide-react';
+import { Trophy, Shield, Calendar, Skull, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Users, Edit2, Check, X, Swords, Zap, Flame, HelpCircle } from 'lucide-react';
 import { PlayerStat, MatchRecord } from '../types';
-import { calculateWilsonScore, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
 import { Avatar } from './common/Avatar';
-import { AvatarCropperModal } from './common/AvatarCropperModal';
-import { calculatePlayerLevel } from '../utils/playerLevel';
+import { LazyOverlayBoundary } from './common/ErrorBoundary';
+import { LazyAvatarCropperModal as AvatarCropperModal } from '../utils/lazyScreens';
 import { formatPlural } from '../utils/heroNormalization';
+import { calculatePlayerAnalytics } from '../utils/statsAnalytics';
 import { RanksInfoModal } from './stats/RanksInfoModal';
 import { BaseModal } from './common/BaseModal';
 import { useHaptics } from '../hooks/useHaptics';
@@ -81,173 +81,20 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
 
     // Dynamic stats calculated directly from the passed history slice
     const playerName = player?.name || '';
-    const { recentMatches, topHeroes, partnerStats, bestStreak, worstStreak, totalKills, maxKills, matchesCount, winsCount, lossesCount, dynamicScore, levelInfo } = useMemo(() => {
-        if (!playerName) {
-            return {
-                recentMatches: [],
-                topHeroes: [],
-                partnerStats: [],
-                bestStreak: 0,
-                worstStreak: 0,
-                totalKills: 0,
-                maxKills: 0,
-                matchesCount: 0,
-                winsCount: 0,
-                lossesCount: 0,
-                dynamicScore: 0,
-                levelInfo: calculatePlayerLevel(0, 0, 0)
-            };
-        }
-
-        // Filter matches involving this player
-        const playerMatches = history.filter(m =>
-            m.team1.some(p => p.name === playerName) ||
-            m.team2.some(p => p.name === playerName)
-        ).sort((a, b) => b.timestamp - a.timestamp); // Newest first
-
-        let winsCount = 0;
-        let lossesCount = 0;
-        let totalKills = 0;
-
-        // Top Heroes
-        const heroesMap = new Map<string, { matches: number, wins: number }>();
-
-        playerMatches.forEach(m => {
-            const isTeam1 = m.team1.some(p => p.name === playerName);
-            const pData = isTeam1 ? m.team1.find(p => p.name === playerName) : m.team2.find(p => p.name === playerName);
-            const won = (isTeam1 && m.winner === 'team1') || (!isTeam1 && m.winner === 'team2');
-
-            if (won) winsCount++;
-            else lossesCount++;
-
-            if (pData && pData.heroName) {
-                const hStart = heroesMap.get(pData.heroName) || { matches: 0, wins: 0 };
-                hStart.matches++;
-                if (won) hStart.wins++;
-                heroesMap.set(pData.heroName, hStart);
-            }
-
-            if (pData && pData.kills !== undefined && pData.kills !== null) {
-                totalKills += pData.kills;
-            }
-        });
-
-        const matchesCount = playerMatches.length;
-
-        // Calculate dynamic Wilson Score for this history selection
-        const weightedBreakdown = getPlayerWeightedBreakdown(playerName, history);
-        const dynamicScore = calculateWilsonScore(weightedBreakdown.totalWeightedWins, weightedBreakdown.totalWeightedMatches);
-
-        // Calculate max kills in a series of games (gap <= 6 hours)
-        const chronologicalMatches = [...playerMatches].sort((a, b) => a.timestamp - b.timestamp);
-        let maxKills = 0;
-        let currentSeriesKills = 0;
-        let lastTimestamp = 0;
-
-        chronologicalMatches.forEach(m => {
-            const isTeam1 = m.team1.some(p => p.name === playerName);
-            const pData = isTeam1 ? m.team1.find(p => p.name === playerName) : m.team2.find(p => p.name === playerName);
-            const kills = (pData && pData.kills !== undefined && pData.kills !== null) ? pData.kills : 0;
-
-            if (lastTimestamp === 0) {
-                currentSeriesKills = kills;
-                lastTimestamp = m.timestamp;
-            } else if (m.timestamp - lastTimestamp <= 6 * 60 * 60 * 1000) {
-                currentSeriesKills += kills;
-                lastTimestamp = m.timestamp;
-            } else {
-                if (currentSeriesKills > maxKills) {
-                    maxKills = currentSeriesKills;
-                }
-                currentSeriesKills = kills;
-                lastTimestamp = m.timestamp;
-            }
-        });
-        if (currentSeriesKills > maxKills) {
-            maxKills = currentSeriesKills;
-        }
-
-        const topHeroes = Array.from(heroesMap.entries())
-            .map(([name, stats]) => {
-                const score = calculateWilsonScore(stats.wins, stats.matches);
-                return { name, ...stats, score };
-            })
-            .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
-            .slice(0, 5);
-
-        // Win and Lose streaks
-        let currentStreak = 0;
-        let bestStreak = 0;
-        let currentLoseStreak = 0;
-        let worstStreak = 0;
-        // Iterate backwards (oldest to newest) for streak
-        [...playerMatches].reverse().forEach(m => {
-            const isTeam1 = m.team1.some(p => p.name === playerName);
-            const won = (isTeam1 && m.winner === 'team1') || (!isTeam1 && m.winner === 'team2');
-            if (won) {
-                currentStreak++;
-                if (currentStreak > bestStreak) bestStreak = currentStreak;
-                currentLoseStreak = 0;
-            } else {
-                currentLoseStreak++;
-                if (currentLoseStreak > worstStreak) worstStreak = currentLoseStreak;
-                currentStreak = 0;
-            }
-        });
-
-        // Partner Stats (Other players played WITH this player)
-        const partnerMap = new Map<string, { matches: number, wins: number }>();
-        playerMatches.forEach(m => {
-            if (m.team1.some(p => p.name === playerName)) {
-                const won = m.winner === 'team1';
-                m.team1.forEach(p => {
-                    if (p.name !== playerName && p.name) {
-                        const s = partnerMap.get(p.name) || { matches: 0, wins: 0 };
-                        s.matches++;
-                        if (won) s.wins++;
-                        partnerMap.set(p.name, s);
-                    }
-                });
-            }
-            if (m.team2.some(p => p.name === playerName)) {
-                const won = m.winner === 'team2';
-                m.team2.forEach(p => {
-                    if (p.name !== playerName && p.name) {
-                        const s = partnerMap.get(p.name) || { matches: 0, wins: 0 };
-                        s.matches++;
-                        if (won) s.wins++;
-                        partnerMap.set(p.name, s);
-                    }
-                });
-            }
-        });
-
-        const partnerStats = Array.from(partnerMap.entries())
-            .filter(([_, stats]) => stats.matches >= 1)
-            .map(([name, stats]) => {
-                const score = calculateWilsonScore(stats.wins, stats.matches);
-                return { name, ...stats, score };
-            })
-            .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
-            .slice(0, 5);
-
-        const levelInfo = calculatePlayerLevel(winsCount, lossesCount, totalKills);
-
-        return {
-            recentMatches: playerMatches.slice(0, 10),
-            topHeroes,
-            partnerStats,
-            bestStreak,
-            worstStreak,
-            totalKills,
-            maxKills,
-            matchesCount,
-            winsCount,
-            lossesCount,
-            dynamicScore,
-            levelInfo
-        };
-    }, [playerName, history]);
+    const {
+        recentMatches,
+        topHeroes,
+        partnerStats,
+        bestStreak,
+        worstStreak,
+        totalKills,
+        maxKills,
+        matchesCount,
+        winsCount,
+        lossesCount,
+        dynamicScore,
+        levelInfo
+    } = useMemo(() => calculatePlayerAnalytics(playerName, history), [playerName, history]);
 
     if (!player) return null;
 
@@ -498,7 +345,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                     {/* Top Heroes Section */}
                     <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                         <div
-                            className="flex items-center justify-between cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={heroesState !== 'collapsed'}
+                            className="flex items-center justify-between cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setHeroesState(prev => {
@@ -506,6 +356,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setHeroesState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -644,7 +505,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                     {/* Top Partners Section */}
                     <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                         <div
-                            className="flex items-center justify-between cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={partnersState !== 'collapsed'}
+                            className="flex items-center justify-between cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setPartnersState(prev => {
@@ -652,6 +516,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setPartnersState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -790,7 +665,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                     {/* Match History Section */}
                     <div>
                         <div
-                            className="flex items-center justify-between mb-3 cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={matchesState !== 'collapsed'}
+                            className="flex items-center justify-between mb-3 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setMatchesState(prev => {
@@ -798,6 +676,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setMatchesState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -1025,13 +914,19 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
             </BaseModal>
 
             {/* Avatar Cropper Modal */}
-            <AvatarCropperModal
+            <LazyOverlayBoundary
                 isOpen={isCropperOpen}
                 onClose={() => setIsCropperOpen(false)}
-                entityType="player"
-                entityId={player.name}
-                entityName={player.name}
-            />
+                fallbackTitle="Ошибка редактора аватара"
+            >
+                <AvatarCropperModal
+                    isOpen={isCropperOpen}
+                    onClose={() => setIsCropperOpen(false)}
+                    entityType="player"
+                    entityId={player.name}
+                    entityName={player.name}
+                />
+            </LazyOverlayBoundary>
 
             {/* Ranks Info Modal */}
             <RanksInfoModal

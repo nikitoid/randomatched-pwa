@@ -44,7 +44,7 @@ export const PrankOverlay: React.FC<PrankOverlayProps> = ({
       {secretMessage && (
         <div
           className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn transition-all duration-300"
-          style={{ zIndex: Z_INDEX_BASE.ALERT + 30 }}
+          style={{ zIndex: Z_INDEX_BASE.PRANK }}
         >
           <div className="w-full max-w-sm bg-white/95 dark:bg-slate-900/95 border border-primary-500/30 rounded-3xl p-6 shadow-2xl shadow-primary-500/20 backdrop-blur-xl relative overflow-hidden animate-scaleUp">
             {/* Декоративное фоновое свечение */}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, Users, Clock, Trash2, X, User } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useHaptics } from '../hooks/useHaptics';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 
 interface PlayerNameInputProps {
     isNamesOpen: boolean;
@@ -71,7 +72,13 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
     const filledNamesText = hasFilledNames ? filledNames.join(', ') : 'Не заполнены';
 
     return (
-        <div className={`w-full mb-4 relative transition-all duration-300 ${isNamesOpen ? 'z-50' : 'z-20'}`}>
+        <div
+            className="w-full mb-4 relative"
+            style={{
+                zIndex: isNamesOpen ? Z_INDEX_BASE.DROPDOWN : Z_INDEX_BASE.CONTENT_ELEVATED,
+                transition: isNamesOpen ? 'z-index 0s' : 'z-index 0s linear 0.2s',
+            }}
+        >
             <button
                 onClick={() => {
                     trigger('medium');
@@ -93,7 +100,7 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                 </div>
             </button>
 
-            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 glass-dropdown-gradient border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl transition-all duration-300 origin-top ${isNamesOpen ? 'opacity-100 scale-y-100 pointer-events-auto visible overflow-visible' : 'opacity-0 scale-y-0 pointer-events-none invisible overflow-hidden'}`}>
+            <div className={`absolute top-[100%] left-0 w-full bg-white dark:bg-slate-900 glass-dropdown-gradient border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl transition-[opacity,transform,visibility] duration-200 ease-out ${isNamesOpen ? 'opacity-100 translate-y-0 pointer-events-auto visible overflow-visible' : 'opacity-0 -translate-y-2 pointer-events-none invisible overflow-hidden'}`}>
                 <div className="p-4 pt-5">
 
                     {savedTeams.length > 0 && (
@@ -176,7 +183,10 @@ export const PlayerNameInput: React.FC<PlayerNameInputProps> = ({
                                     <User size={14} />
                                 </div>
                                 {focusedIndex === index && activeSuggestions.length > 0 && (
-                                    <div className="suggestions-dropdown absolute top-[100%] left-0 right-0 mt-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div
+                                        className="suggestions-dropdown absolute top-[100%] left-0 right-0 mt-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                                        style={{ zIndex: Z_INDEX_BASE.DROPDOWN }}
+                                    >
                                         <div className="p-1 flex flex-col gap-0.5 max-h-48 overflow-y-auto overscroll-contain">
                                             {activeSuggestions.map((name) => (
                                                 <button

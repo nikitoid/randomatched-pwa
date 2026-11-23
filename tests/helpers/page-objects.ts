@@ -1,4 +1,5 @@
-import { Page, Locator, expect } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
+import type { HeroList, MatchRecord } from '../../types';
 
 /**
  * Page Objects для RandoMatched App
@@ -60,13 +61,17 @@ export class RandoMatchedApp {
 
     // --- Методы взаимодействия ---
 
-    async getLocalStorageItem(key: string): Promise<any> {
+    async getLocalStorageItem(key: 'randomatched_lists_v1'): Promise<HeroList[] | null>;
+    async getLocalStorageItem(key: 'randomatched_match_history_v1'): Promise<MatchRecord[] | null>;
+    async getLocalStorageItem(key: 'randomatched_player_names_v1'): Promise<string[] | null>;
+    async getLocalStorageItem<T = unknown>(key: string): Promise<T | null>;
+    async getLocalStorageItem<T = unknown>(key: string): Promise<T | null> {
         const value = await this.page.evaluate((k) => localStorage.getItem(k), key);
         if (!value) return null;
         try {
-            return JSON.parse(value);
-        } catch (e) {
-            return value;
+            return JSON.parse(value) as T;
+        } catch {
+            return value as unknown as T;
         }
     }
 

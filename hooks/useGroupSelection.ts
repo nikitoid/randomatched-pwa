@@ -1,21 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { HeroList } from '../types';
-
-const STORAGE_KEY_GROUP_MODE = 'randomatched_group_mode_v1';
-const STORAGE_KEY_SELECTED_GROUP = 'randomatched_selected_group_v1';
+import { STORAGE_KEYS, getStorageItem, setStorageItem, getStorageJSON, setStorageJSON } from '../utils/storage';
 
 export const useGroupSelection = (lists: HeroList[], currentSingleId?: string) => {
     const [isGroupMode, setIsGroupMode] = useState<boolean>(() => {
-        try {
-            return localStorage.getItem(STORAGE_KEY_GROUP_MODE) === 'true';
-        } catch { return false; }
+        return getStorageItem(STORAGE_KEYS.GROUP_MODE) === 'true';
     });
 
     const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(() => {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY_SELECTED_GROUP);
-            return saved ? new Set(JSON.parse(saved)) : new Set();
-        } catch { return new Set(); }
+        const saved = getStorageJSON<unknown>(STORAGE_KEYS.SELECTED_GROUP, null);
+        return Array.isArray(saved) ? new Set(saved) : new Set();
     });
 
     const prevListIds = useRef<Set<string>>(new Set());
@@ -71,11 +65,11 @@ export const useGroupSelection = (lists: HeroList[], currentSingleId?: string) =
     }, [isGroupMode, currentSingleId, lists]);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_GROUP_MODE, String(isGroupMode));
+        setStorageItem(STORAGE_KEYS.GROUP_MODE, String(isGroupMode));
     }, [isGroupMode]);
 
     useEffect(() => {
-        localStorage.setItem(STORAGE_KEY_SELECTED_GROUP, JSON.stringify(Array.from(selectedGroupIds)));
+        setStorageJSON(STORAGE_KEYS.SELECTED_GROUP, Array.from(selectedGroupIds));
     }, [selectedGroupIds]);
 
     const handleToggleGroupItem = (id: string) => {

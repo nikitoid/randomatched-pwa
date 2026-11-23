@@ -16,7 +16,7 @@ test.describe('PWA функции', () => {
         // Проверяем, что данные сохранены в localStorage
         const lists = await app.getLocalStorageItem('randomatched_lists_v1');
         expect(lists).toBeTruthy();
-        expect(lists.length).toBeGreaterThan(0);
+        expect(lists!.length).toBeGreaterThan(0);
     });
 
     test('должно сохраняться состояние после перезагрузки страницы', async ({ page }) => {
@@ -27,7 +27,7 @@ test.describe('PWA функции', () => {
         // Проверяем, что данные все еще на месте
         const lists = await app.getLocalStorageItem('randomatched_lists_v1');
         expect(lists).toBeTruthy();
-        expect(lists.length).toBeGreaterThan(0);
+        expect(lists!.length).toBeGreaterThan(0);
 
         // Проверяем, что список все еще выбран
         const listName = await app.sourceSelectorText.textContent();

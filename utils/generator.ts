@@ -142,7 +142,13 @@ export const getHeroHistoryWeights = (
       return;
     }
 
-    // Степенная зави  weights.set(hero.id, Math.max(0.001, finalWeight));
+    // Степенная зависимость давности (1.5) для контраста
+    const recencyWeight = 1 + Math.pow(inactivityScore, 1.5) * 1.5;
+
+    // Штраф за частоту игр в анализируемом периоде
+    const finalWeight = recencyWeight / (1 + playCount * 0.5);
+
+    weights.set(hero.id, Math.max(0.001, finalWeight));
   });
 
   return weights;
@@ -247,7 +253,7 @@ export const getBestPlayerAssignmentForPermutation = (
         res[idx] = perm.groupB[gB++];
       }
     });
-    const freshnessScore = res.reduce((sum, h) => sum + 1, 0);
+    const freshnessScore = res.reduce((sum) => sum + 1, 0);
     return { assignmentHeroes: res, freshnessScore };
   }
 
@@ -358,8 +364,8 @@ export const getBestPermutation = (heroes: Hero[]): { groupA: Hero[], groupB: He
 };
 
 // Helper for Fisher-Yates Shuffle
-export const shuffleArray = <T>(array: T[]): T[] => {
-  const arr = [...array];
+export const shuffleArray = <T>(items: readonly T[]): T[] => {
+  const arr = [...items];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
@@ -382,7 +388,7 @@ export const generateAssignmentsWithMode = (
   if (allHeroes.length < 4 || currentAssignments.length !== 4) return currentAssignments;
 
   let chosenHeroes: Hero[] = [];
-  let newAssignments = [...currentAssignments];
+  const newAssignments = [...currentAssignments];
 
   const hasPlayerWeights = Array.isArray(playerWeightsArray) && playerWeightsArray.length === 4;
 

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { STORAGE_KEYS, getStorageItem, setStorageItem } from '../utils/storage';
 
 export type HapticFeedbackType =
   | 'light'    // 8ms - soft tap for tabs, selectors, items, checkboxes
@@ -18,8 +19,6 @@ interface HapticsContextType {
   trigger: (type?: HapticFeedbackType) => void;
 }
 
-const STORAGE_KEY_HAPTICS = 'randomatched_haptics_enabled_v1';
-const STORAGE_KEY_FORCE_AUDIO_HAPTICS = 'randomatched_haptics_force_audio_v1';
 
 // Web Audio API Haptic Engine Singleton (for iOS Safari where navigator.vibrate is undefined)
 let audioCtxInstance: AudioContext | null = null;
@@ -27,7 +26,7 @@ let audioCtxInstance: AudioContext | null = null;
 const getAudioContext = (): AudioContext | null => {
   if (typeof window === 'undefined') return null;
   if (!audioCtxInstance) {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (AudioCtx) {
       audioCtxInstance = new AudioCtx();
     }
@@ -193,23 +192,23 @@ const HapticsContext = createContext<HapticsContextType | undefined>(undefined);
 export const HapticsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isEnabled, setIsEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    const saved = localStorage.getItem(STORAGE_KEY_HAPTICS);
+    const saved = getStorageItem(STORAGE_KEYS.HAPTICS_ENABLED);
     return saved !== null ? saved === 'true' : true;
   });
 
   const [forceAudioMode, setForceAudioMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     const searchHasForce = window.location.search.includes('forceAudioHaptics=true') || window.location.search.includes('audioHaptics=1');
-    const saved = localStorage.getItem(STORAGE_KEY_FORCE_AUDIO_HAPTICS);
+    const saved = getStorageItem(STORAGE_KEYS.HAPTICS_FORCE_AUDIO);
     return searchHasForce || (saved !== null ? saved === 'true' : false);
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_HAPTICS, String(isEnabled));
+    setStorageItem(STORAGE_KEYS.HAPTICS_ENABLED, String(isEnabled));
   }, [isEnabled]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_FORCE_AUDIO_HAPTICS, String(forceAudioMode));
+    setStorageItem(STORAGE_KEYS.HAPTICS_FORCE_AUDIO, String(forceAudioMode));
   }, [forceAudioMode]);
 
   const trigger = useCallback(
@@ -239,10 +238,13 @@ export const HapticsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   }, []);
 
+  const value = useMemo(
+    () => ({ isEnabled, forceAudioMode, toggle, toggleForceAudioMode, setForceAudioMode, trigger }),
+    [isEnabled, forceAudioMode, toggle, toggleForceAudioMode, trigger]
+  );
+
   return (
-    <HapticsContext.Provider
-      value={{ isEnabled, forceAudioMode, toggle, toggleForceAudioMode, setForceAudioMode, trigger }}
-    >
+    <HapticsContext.Provider value={value}>
       {children}
     </HapticsContext.Provider>
   );
@@ -251,8 +253,8 @@ export const HapticsProvider: React.FC<{ children: React.ReactNode }> = ({ child
 export const useHaptics = (): HapticsContextType => {
   const context = useContext(HapticsContext);
   if (!context) {
-    const savedEnabled = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_HAPTICS) : null;
-    const savedForce = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY_FORCE_AUDIO_HAPTICS) : null;
+    const savedEnabled = typeof window !== 'undefined' ? getStorageItem(STORAGE_KEYS.HAPTICS_ENABLED) : null;
+    const savedForce = typeof window !== 'undefined' ? getStorageItem(STORAGE_KEYS.HAPTICS_FORCE_AUDIO) : null;
     const isEnabled = savedEnabled !== null ? savedEnabled === 'true' : true;
     const forceAudioMode = savedForce !== null ? savedForce === 'true' : false;
 

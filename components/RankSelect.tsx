@@ -2,6 +2,7 @@
 import React, { useState, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { RANKS } from '../constants';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 import { useHaptics } from '../hooks/useHaptics';
 
 interface RankSelectProps {
@@ -97,10 +98,11 @@ export const RankSelect: React.FC<RankSelectProps> = ({ value, onChange, isOpen,
 
             {isOpen && !disabled && !readOnly && createPortal(
                 <div 
-                    className={`fixed bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden z-[102] rank-select-menu ring-1 ring-black/5 dark:ring-white/10
+                    className={`fixed bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden rank-select-menu ring-1 ring-black/5 dark:ring-white/10
                         ${menuStyle.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-left' : 'animate-menu-in origin-top-left'}
                     `}
                     style={{
+                        zIndex: Z_INDEX_BASE.TOOLTIP,
                         top: menuStyle.top,
                         bottom: menuStyle.bottom,
                         left: menuStyle.left,

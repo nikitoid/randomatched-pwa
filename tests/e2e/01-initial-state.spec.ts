@@ -51,8 +51,8 @@ test.describe('Начальное состояние приложения', () =
     test('должны корректно сохраняться данные в localStorage', async ({ app }) => {
         const lists = await app.getLocalStorageItem('randomatched_lists_v1');
         expect(lists).toBeTruthy();
-        expect(lists.length).toBeGreaterThan(0);
-        expect(lists[0].name).toBe('Тестовый список 1');
+        expect(lists!.length).toBeGreaterThan(0);
+        expect(lists![0].name).toBe('Тестовый список 1');
 
         expect(await app.getLocalStorageItem('theme')).toBe('dark');
         expect(await app.getLocalStorageItem('colorScheme')).toBe('indigo');

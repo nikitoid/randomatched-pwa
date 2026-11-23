@@ -38,6 +38,45 @@ export interface BaseModalProps {
   contentRef?: React.Ref<HTMLDivElement>;
 }
 
+const MODAL_MAX_WIDTH_CLASSES: Record<NonNullable<BaseModalProps['maxWidth']>, string> = {
+  xs: 'max-w-xs',
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  full: 'max-w-full',
+};
+
+const MODAL_SM_MAX_WIDTH_CLASSES: Record<NonNullable<BaseModalProps['maxWidth']>, string> = {
+  xs: 'max-w-full sm:max-w-xs',
+  sm: 'max-w-full sm:max-w-sm',
+  md: 'max-w-full sm:max-w-md',
+  lg: 'max-w-full sm:max-w-lg',
+  xl: 'max-w-full sm:max-w-xl',
+  '2xl': 'max-w-full sm:max-w-2xl',
+  full: 'max-w-full sm:max-w-full',
+};
+
+const activeModalStack: string[] = [];
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+function getVisibleFocusableElements(container: HTMLElement): HTMLElement[] {
+  const candidates = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+  return candidates.filter((el) => {
+    if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') return false;
+    return el.offsetParent !== null || el.getClientRects().length > 0;
+  });
+}
+
 export const BaseModal: React.FC<BaseModalProps> = ({
   isOpen,
   onClose,
@@ -63,6 +102,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 }) => {
   const generatedId = useId();
   const resolvedId = modalId || generatedId;
+  const titleId = `${resolvedId}-title`;
   const finalCloseButtonTestId = propCloseButtonTestId || (resolvedId ? `${resolvedId}-close-btn` : 'modal-close-button');
   const { getStackIndex } = useNavigation();
 
@@ -156,6 +196,88 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   );
 
   const dialogCardRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  // Focus trap, initial focus & focus restoration
+  useEffect(() => {
+    if (!isOpen || !isRendered || typeof document === 'undefined') return;
+
+    if (!previouslyFocusedRef.current && document.activeElement instanceof HTMLElement) {
+      previouslyFocusedRef.current = document.activeElement;
+    }
+
+    if (!activeModalStack.includes(resolvedId)) {
+      activeModalStack.push(resolvedId);
+    }
+
+    const focusRaf = requestAnimationFrame(() => {
+      const card = dialogCardRef.current;
+      if (card && !card.contains(document.activeElement)) {
+        card.focus({ preventScroll: true });
+      }
+    });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (activeModalStack[activeModalStack.length - 1] !== resolvedId) return;
+
+      const card = dialogCardRef.current;
+      if (!card) return;
+
+      const focusable = getVisibleFocusableElements(card);
+      if (focusable.length === 0) {
+        e.preventDefault();
+        card.focus({ preventScroll: true });
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey) {
+        if (!active || active === first || active === card || !card.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (!active || active === last || !card.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      cancelAnimationFrame(focusRaf);
+      document.removeEventListener('keydown', handleKeyDown);
+      const idx = activeModalStack.lastIndexOf(resolvedId);
+      if (idx !== -1) {
+        activeModalStack.splice(idx, 1);
+      }
+    };
+  }, [isOpen, isRendered, resolvedId]);
+
+  useEffect(() => {
+    if (!isRendered && previouslyFocusedRef.current) {
+      const target = previouslyFocusedRef.current;
+      previouslyFocusedRef.current = null;
+      if (target.isConnected) {
+        target.focus({ preventScroll: true });
+      }
+    }
+  }, [isRendered]);
+
+  useEffect(() => {
+    return () => {
+      if (previouslyFocusedRef.current && previouslyFocusedRef.current.isConnected) {
+        previouslyFocusedRef.current.focus({ preventScroll: true });
+      }
+      previouslyFocusedRef.current = null;
+    };
+  }, []);
 
   // Фиксация максимальной высоты вьюпорта без клавиатуры и состояния фокуса на инпутах
   const maxSeenHeightRef = useRef<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
@@ -401,28 +523,39 @@ export const BaseModal: React.FC<BaseModalProps> = ({
     };
   }, [isRendered, enableSwipeToClose, handleTouchStart, handleTouchMove, handleTouchEnd, handleTouchCancel]);
 
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return true;
+    return window.matchMedia('(max-width: 639px)').matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia('(max-width: 639px)');
+    const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      setIsMobileViewport(e.matches);
+    };
+
+    handleChange(mediaQuery);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
   if (!isRendered) return null;
 
-  const isBottomSheetScreen = variant === 'bottom-sheet' || (variant === 'auto' && (typeof window !== 'undefined' ? window.innerWidth < 640 : true));
+  const isBottomSheetScreen = variant === 'bottom-sheet' || (variant === 'auto' && isMobileViewport);
 
   const getMaxWidthClass = () => {
-    let widthClass = 'max-w-md';
-    switch (maxWidth) {
-      case 'xs': widthClass = 'max-w-xs'; break;
-      case 'sm': widthClass = 'max-w-sm'; break;
-      case 'md': widthClass = 'max-w-md'; break;
-      case 'lg': widthClass = 'max-w-lg'; break;
-      case 'xl': widthClass = 'max-w-xl'; break;
-      case '2xl': widthClass = 'max-w-2xl'; break;
-      case 'full': widthClass = 'max-w-full'; break;
-      default: widthClass = 'max-w-md'; break;
-    }
-
     if (isBottomSheetScreen) {
-      return `max-w-full sm:${widthClass}`;
+      return MODAL_SM_MAX_WIDTH_CLASSES[maxWidth] || MODAL_SM_MAX_WIDTH_CLASSES.md;
     }
 
-    return widthClass;
+    return MODAL_MAX_WIDTH_CLASSES[maxWidth] || MODAL_MAX_WIDTH_CLASSES.md;
   };
 
   const getContainerLayoutClass = () => {
@@ -512,6 +645,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       }}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={!title ? 'Диалоговое окно' : undefined}
       data-testid={resolvedId}
     >
       {/* Изолированный слой бэкдропа с размытием */}
@@ -525,7 +660,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       {/* Карточка модалки в изолированном контексте наложения */}
       <div
         ref={dialogCardRef}
-        className={`relative z-10 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
+        tabIndex={-1}
+        className={`relative z-10 outline-none bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
           isBottomSheetScreen
             ? viewportStyle.isFullHeightNeeded
               ? 'rounded-t-2xl sm:rounded-3xl h-full'
@@ -561,7 +697,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
                   {icon}
                 </div>
               )}
-              <div className="min-w-0 flex-1">
+              <div id={title ? titleId : undefined} className="min-w-0 flex-1">
                 {title && (
                   typeof title === 'string' ? (
                     <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight truncate">

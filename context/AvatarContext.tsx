@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   getAvatarKey,
   getAvatarFromStorage,
@@ -8,27 +8,27 @@ import {
   getAllAvatarRecordsFromStorage,
   saveAllAvatarsToStorage,
 } from '../utils/avatarStorage';
-import { db } from '../firebase';
+import { collection, doc, getDocs, onSnapshot, setDoc, type AppQuerySnapshot, type AppQueryDocSnapshot } from '../services/firestore';
 import { checkConnectivity as checkConnectivityUtil, withTimeout } from '../utils/connectivity';
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
 
+interface CloudAvatarDoc {
+  id?: string;
+  entityType?: 'player' | 'hero';
+  entityId?: string;
+  dataUrl?: string;
+  deleted?: boolean;
+  updatedAt?: number;
+}
 
-const PENDING_DELETE_KEYS_STORAGE = 'randomatched_deleted_avatar_keys_v1';
 
 const getPendingDeletes = (): Set<string> => {
-  try {
-    const raw = localStorage.getItem(PENDING_DELETE_KEYS_STORAGE);
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch (e) {
-    return new Set();
-  }
+  const parsed = getStorageJSON<unknown>(STORAGE_KEYS.DELETED_AVATAR_KEYS, []);
+  return Array.isArray(parsed) ? new Set(parsed) : new Set();
 };
 
 const savePendingDeletes = (set: Set<string>) => {
-  try {
-    localStorage.setItem(PENDING_DELETE_KEYS_STORAGE, JSON.stringify(Array.from(set)));
-  } catch (e) {
-    console.error('Failed to save pending deletes:', e);
-  }
+  setStorageJSON(STORAGE_KEYS.DELETED_AVATAR_KEYS, Array.from(set));
 };
 
 const addPendingDelete = (key: string) => {
@@ -75,52 +75,52 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     try {
-      if (db && typeof db.collection === 'function') {
-        const avatarsRef = db.collection('avatars');
-        unsubscribe = avatarsRef.onSnapshot(
-          (snapshot: any) => {
-            if (!snapshot || !snapshot.docs) return;
-            const pendingDeletes = getPendingDeletes();
+      const avatarsRef = collection('avatars');
+      unsubscribe = onSnapshot(
+        avatarsRef,
+        (snapshot: AppQuerySnapshot) => {
+          if (!snapshot || !snapshot.docs) return;
+          const pendingDeletes = getPendingDeletes();
 
-            snapshot.docs.forEach((doc: any) => {
-              const data = doc.data();
-              if (!data || !data.id) return;
-              const key = data.id;
+          snapshot.docs.forEach((docSnap: AppQueryDocSnapshot) => {
+            const data = docSnap.data() as CloudAvatarDoc;
+            if (!data || !data.id) return;
+            const key = data.id;
 
-              // Check if deleted in Cloud OR pending delete locally
-              if (data.deleted || pendingDeletes.has(key)) {
-                setAvatars((prev) => {
-                  if (!prev[key]) return prev;
-                  const copy = { ...prev };
-                  delete copy[key];
+            // Check if deleted in Cloud OR pending delete locally
+            if (data.deleted || pendingDeletes.has(key)) {
+              setAvatars((prev) => {
+                if (!prev[key]) return prev;
+                const copy = { ...prev };
+                delete copy[key];
 
-                  const parts = key.split('_');
-                  const entityType = parts[0] as 'player' | 'hero';
-                  const entityId = parts.slice(1).join('_');
-                  if (entityType && entityId) {
-                    deleteAvatarFromStorage(entityType, entityId);
-                  }
-                  return copy;
-                });
-              } else if (data.dataUrl) {
-                setAvatars((prev) => {
-                  if (prev[key] === data.dataUrl) return prev;
-                  const parts = key.split('_');
-                  const entityType = parts[0] as 'player' | 'hero';
-                  const entityId = parts.slice(1).join('_');
-                  if (entityType && entityId) {
-                    saveAvatarToStorage(entityType, entityId, data.dataUrl);
-                  }
-                  return { ...prev, [key]: data.dataUrl };
-                });
-              }
-            });
-          },
-          (err: any) => {
-            console.warn('[AvatarContext] Firestore snapshot offline or blocked:', err);
-          }
-        );
-      }
+                const parts = key.split('_');
+                const entityType = parts[0] as 'player' | 'hero';
+                const entityId = parts.slice(1).join('_');
+                if (entityType && entityId) {
+                  deleteAvatarFromStorage(entityType, entityId);
+                }
+                return copy;
+              });
+            } else if (data.dataUrl) {
+              const nextDataUrl = data.dataUrl;
+              setAvatars((prev) => {
+                if (prev[key] === nextDataUrl) return prev;
+                const parts = key.split('_');
+                const entityType = parts[0] as 'player' | 'hero';
+                const entityId = parts.slice(1).join('_');
+                if (entityType && entityId) {
+                  saveAvatarToStorage(entityType, entityId, nextDataUrl);
+                }
+                return { ...prev, [key]: nextDataUrl };
+              });
+            }
+          });
+        },
+        (err: unknown) => {
+          console.warn('[AvatarContext] Firestore snapshot offline or blocked:', err);
+        }
+      );
     } catch (e) {
       console.warn('[AvatarContext] Firebase sync not initialized:', e);
     }
@@ -160,19 +160,17 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             return;
           }
 
-          if (db && typeof db.collection === 'function') {
-            await withTimeout(
-              db.collection('avatars').doc(key).set({
-                id: key,
-                entityType,
-                entityId: entityId.trim(),
-                dataUrl,
-                deleted: false,
-                updatedAt: Date.now(),
-              }),
-              3500
-            );
-          }
+          await withTimeout(
+            setDoc(doc('avatars', key), {
+              id: key,
+              entityType,
+              entityId: entityId.trim(),
+              dataUrl,
+              deleted: false,
+              updatedAt: Date.now(),
+            }),
+            3500
+          );
         } catch (e) {
           console.warn('[AvatarContext] Background push skipped:', e);
         }
@@ -203,17 +201,15 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const isConnected = await checkConnectivityUtil(3000);
           if (!isConnected) return;
 
-          if (db && typeof db.collection === 'function') {
-            await withTimeout(
-              db.collection('avatars').doc(key).set({
-                id: key,
-                deleted: true,
-                updatedAt: Date.now(),
-              }),
-              3500
-            );
-            removePendingDelete(key);
-          }
+          await withTimeout(
+            setDoc(doc('avatars', key), {
+              id: key,
+              deleted: true,
+              updatedAt: Date.now(),
+            }),
+            3500
+          );
+          removePendingDelete(key);
         } catch (e) {
           console.warn('[AvatarContext] Background delete skipped:', e);
         }
@@ -224,8 +220,6 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const syncAvatarsToCloud = useCallback(async (): Promise<boolean> => {
     try {
-      if (!db || typeof db.collection !== 'function') return false;
-
       const isConnected = await checkConnectivityUtil(4000);
       if (!isConnected) {
         console.log('[AvatarContext] Skip sync: no internet connectivity');
@@ -238,7 +232,7 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         for (const key of Array.from(pendingDeletes)) {
           try {
             await withTimeout(
-              db.collection('avatars').doc(key).set({
+              setDoc(doc('avatars', key), {
                 id: key,
                 deleted: true,
                 updatedAt: Date.now(),
@@ -253,12 +247,12 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
 
       // 2. Fetch current Cloud avatar records for conflict resolution
-      const cloudMap = new Map<string, any>();
+      const cloudMap = new Map<string, CloudAvatarDoc>();
       try {
-        const cloudSnapshot: any = await withTimeout(db.collection('avatars').get(), 4000);
+        const cloudSnapshot = await withTimeout<AppQuerySnapshot>(getDocs(collection('avatars')), 4000);
         if (cloudSnapshot && cloudSnapshot.docs) {
-          cloudSnapshot.docs.forEach((doc: any) => {
-            cloudMap.set(doc.id, doc.data());
+          cloudSnapshot.docs.forEach((docSnap: AppQueryDocSnapshot) => {
+            cloudMap.set(docSnap.id, docSnap.data() as CloudAvatarDoc);
           });
         }
       } catch (cloudFetchErr) {
@@ -299,9 +293,10 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
           // Case B: Cloud document is newer than local version
           if (cloudData.updatedAt && cloudData.updatedAt > (rec.updatedAt || 0) && cloudData.dataUrl) {
+            const nextDataUrl = cloudData.dataUrl;
             console.log(`[AvatarContext] Cloud avatar ${key} is newer. Accepting cloud version.`);
-            await saveAvatarToStorage(rec.entityType, rec.entityId, cloudData.dataUrl);
-            setAvatars((prev) => ({ ...prev, [key]: cloudData.dataUrl }));
+            await saveAvatarToStorage(rec.entityType, rec.entityId, nextDataUrl);
+            setAvatars((prev) => ({ ...prev, [key]: nextDataUrl }));
             continue;
           }
         }
@@ -310,7 +305,7 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (rec.dataUrl) {
           try {
             await withTimeout(
-              db.collection('avatars').doc(key).set({
+              setDoc(doc('avatars', key), {
                 id: key,
                 entityType: rec.entityType,
                 entityId: rec.entityId,
@@ -357,19 +352,21 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
 
-  return (
-    <AvatarContext.Provider
-      value={{
-        avatars,
-        getAvatar,
-        setAvatar,
-        removeAvatar,
-        exportAvatars,
-        importAvatars,
-        syncAvatarsToCloud,
-      }}
-    >
+  const value = useMemo(
+    () => ({
+      avatars,
+      getAvatar,
+      setAvatar,
+      removeAvatar,
+      exportAvatars,
+      importAvatars,
+      syncAvatarsToCloud,
+    }),
+    [avatars, getAvatar, setAvatar, removeAvatar, exportAvatars, importAvatars, syncAvatarsToCloud]
+  );
 
+  return (
+    <AvatarContext.Provider value={value}>
       {children}
     </AvatarContext.Provider>
   );

@@ -104,10 +104,18 @@ export const StatsPlayersTab: React.FC<StatsPlayersTabProps> = ({
                     return (
                         <div
                             key={player.name}
+                            role="button"
+                            tabIndex={0}
                             onClick={() => {
                                 openPlayerDetails(player);
                             }}
-                            className="flex items-center justify-between py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation active:scale-[0.99]"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    openPlayerDetails(player);
+                                }
+                            }}
+                            className="flex items-center justify-between py-2.5 px-3 rounded-2xl bg-white dark:bg-slate-900 glass-card-gradient shadow-sm border border-slate-150 dark:border-slate-800/60 active:bg-slate-50 dark:active:bg-slate-800 transition-colors cursor-pointer touch-manipulation active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                         >
                             <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                                 <div className="relative shrink-0 flex items-center justify-center">

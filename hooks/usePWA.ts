@@ -1,23 +1,35 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-// @ts-ignore - virtual module provided by vite-plugin-pwa
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { SESSION_STORAGE_KEYS, getSessionItem, setSessionItem, removeSessionItem } from '../utils/storage';
 
 export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error') => void) => {
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const updateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isControllerListenerAttachedRef = useRef<boolean>(false);
 
   // Keep ref in sync
   useEffect(() => {
     registrationRef.current = registration;
   }, [registration]);
 
+  // Clear periodic SW update interval on unmount
+  useEffect(() => {
+    return () => {
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
+      }
+    };
+  }, []);
+
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegistered(r: any) {
+    onRegistered(r: ServiceWorkerRegistration | undefined) {
       if (r) {
         setRegistration(r);
         registrationRef.current = r;
@@ -45,15 +57,18 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
         });
 
         // 3. Immediate check on startup
-        r.update().catch((e: any) => console.log('SW initial update check failed', e));
+        r.update().catch((e: unknown) => console.log('SW initial update check failed', e));
 
         // 4. Periodic auto-check every 30 minutes
-        setInterval(() => {
-          r.update().catch((e: any) => console.log('SW interval update failed', e));
+        if (updateIntervalRef.current) {
+          clearInterval(updateIntervalRef.current);
+        }
+        updateIntervalRef.current = setInterval(() => {
+          r.update().catch((e: unknown) => console.log('SW interval update failed', e));
         }, 30 * 60 * 1000); 
       }
     },
-    onRegisterError(error: any) {
+    onRegisterError(error: unknown) {
       console.log('SW registration error', error);
     },
     onOfflineReady() {
@@ -132,15 +147,11 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     if (typeof window === 'undefined') return;
     const urlParams = new URLSearchParams(window.location.search);
     const hasUpdatedParam = urlParams.has('updated');
-    const justUpdated = sessionStorage.getItem('randomatched_just_updated');
+    const justUpdated = getSessionItem(SESSION_STORAGE_KEYS.JUST_UPDATED);
 
     if (hasUpdatedParam || justUpdated) {
       addToast('Приложение успешно обновлено до последней версии!', 'success');
-      try {
-        sessionStorage.removeItem('randomatched_just_updated');
-      } catch (e) {
-        console.error("Failed to remove update marker", e);
-      }
+      removeSessionItem(SESSION_STORAGE_KEYS.JUST_UPDATED);
       if (hasUpdatedParam) {
         urlParams.delete('updated');
         const newSearch = urlParams.toString();
@@ -159,11 +170,7 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     
     setShowUpdateBanner(false);
 
-    try {
-      sessionStorage.setItem('randomatched_just_updated', 'true');
-    } catch (e) {
-      console.error("Failed to set update marker", e);
-    }
+    setSessionItem(SESSION_STORAGE_KEYS.JUST_UPDATED, 'true');
 
     let reloaded = false;
     const executeReload = () => {
@@ -175,10 +182,11 @@ export const usePWA = (addToast: (msg: string, type: 'success' | 'info' | 'error
     };
 
     // When the new worker takes control, reload cleanly
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && !isControllerListenerAttachedRef.current) {
+      isControllerListenerAttachedRef.current = true;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         executeReload();
-      });
+      }, { once: true });
     }
 
     // Try finding the waiting worker from state or native registration

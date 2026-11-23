@@ -44,6 +44,14 @@ export default {
         heading: ['"Chakra Petch"', 'sans-serif'],
         sans: ['"Outfit"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
+      borderRadius: {
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
+        '2xl': 'var(--radius-2xl)',
+        '3xl': 'var(--radius-3xl)',
+      },
 
       keyframes: {
         fadeIn: {
@@ -64,8 +72,8 @@ export default {
           '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
         },
         heroInSmooth: {
-          '0%': { opacity: '0', transform: 'translateY(20px) scale(0.9)', filter: 'blur(4px)' },
-          '100%': { opacity: '1', transform: 'translateY(0) scale(1)', filter: 'blur(0)' },
+          '0%': { opacity: '0', transform: 'translateY(20px) scale(0.9)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
         pulseSoft: {
           '0%, 100%': { opacity: '1', transform: 'scale(1)' },

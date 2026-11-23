@@ -1,10 +1,11 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { HeroStat, MatchRecord } from '../types';
-import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles, Merge } from 'lucide-react';
-import { calculateWilsonScore } from './stats/hooks/useStatsCalculations';
+import { User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles, Merge } from 'lucide-react';
 import { Avatar } from './common/Avatar';
-import { AvatarCropperModal } from './common/AvatarCropperModal';
+import { LazyOverlayBoundary } from './common/ErrorBoundary';
+import { LazyAvatarCropperModal as AvatarCropperModal } from '../utils/lazyScreens';
 import { normalizeHeroKey, formatPlural } from '../utils/heroNormalization';
+import { calculateHeroAnalytics } from '../utils/statsAnalytics';
 import { BaseModal } from './common/BaseModal';
 import { useHaptics } from '../hooks/useHaptics';
 
@@ -76,97 +77,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
     const [matchesState, setMatchesState] = useState<'partial' | 'expanded' | 'collapsed'>('partial');
 
     const heroName = hero?.name || '';
-    const { recentMatches, topPlayers, topSynergies } = useMemo(() => {
-        if (!heroName) {
-            return {
-                recentMatches: [],
-                topPlayers: [],
-                topSynergies: []
-            };
-        }
-
-        const targetHeroKey = normalizeHeroKey(heroName);
-
-        // Filter matches involving this hero
-        const heroMatches = history.filter(m =>
-            m.team1.some(p => normalizeHeroKey(p.heroName) === targetHeroKey) ||
-            m.team2.some(p => normalizeHeroKey(p.heroName) === targetHeroKey)
-        ).sort((a, b) => b.timestamp - a.timestamp);
-
-        // Top Players on this Hero
-        const playersMap = new Map<string, { matches: number, wins: number }>();
-        heroMatches.forEach(m => {
-            const t1Idx = m.team1.findIndex(p => normalizeHeroKey(p.heroName) === targetHeroKey);
-            const t2Idx = m.team2.findIndex(p => normalizeHeroKey(p.heroName) === targetHeroKey);
-
-            if (t1Idx !== -1) {
-                const pName = m.team1[t1Idx].name;
-                const won = m.winner === 'team1';
-                const pStart = playersMap.get(pName) || { matches: 0, wins: 0 };
-                pStart.matches++;
-                if (won) pStart.wins++;
-                playersMap.set(pName, pStart);
-            }
-            if (t2Idx !== -1) {
-                const pName = m.team2[t2Idx].name;
-                const won = m.winner === 'team2';
-                const pStart = playersMap.get(pName) || { matches: 0, wins: 0 };
-                pStart.matches++;
-                if (won) pStart.wins++;
-                playersMap.set(pName, pStart);
-            }
-        });
-
-        const topPlayers = Array.from(playersMap.entries())
-            .map(([name, stats]) => {
-                const score = calculateWilsonScore(stats.wins, stats.matches);
-                return { name, ...stats, score };
-            })
-            .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
-            .slice(0, 5);
-
-        // Best Synergies (Heroes played WITH this hero on the same team)
-        const synergyMap = new Map<string, { matches: number, wins: number }>();
-        heroMatches.forEach(m => {
-            if (m.team1.some(p => normalizeHeroKey(p.heroName) === targetHeroKey)) {
-                const won = m.winner === 'team1';
-                m.team1.forEach(p => {
-                    if (normalizeHeroKey(p.heroName) !== targetHeroKey && p.heroName) {
-                        const s = synergyMap.get(p.heroName) || { matches: 0, wins: 0 };
-                        s.matches++;
-                        if (won) s.wins++;
-                        synergyMap.set(p.heroName, s);
-                    }
-                });
-            }
-            if (m.team2.some(p => normalizeHeroKey(p.heroName) === targetHeroKey)) {
-                const won = m.winner === 'team2';
-                m.team2.forEach(p => {
-                    if (normalizeHeroKey(p.heroName) !== targetHeroKey && p.heroName) {
-                        const s = synergyMap.get(p.heroName) || { matches: 0, wins: 0 };
-                        s.matches++;
-                        if (won) s.wins++;
-                        synergyMap.set(p.heroName, s);
-                    }
-                });
-            }
-        });
-
-        const topSynergies = Array.from(synergyMap.entries())
-            .filter(([_, stats]) => stats.matches >= 1)
-            .map(([name, stats]) => {
-                const score = calculateWilsonScore(stats.wins, stats.matches);
-                return { name, ...stats, score };
-            })
-            .sort((a, b) => b.score - a.score || b.matches - a.matches || b.wins - a.wins)
-            .slice(0, 5);
-
-        return {
-            recentMatches: heroMatches.slice(0, 10),
-            topPlayers,
-            topSynergies
-        };
-    }, [heroName, history]);
+    const { recentMatches, topPlayers, topSynergies } = useMemo(
+        () => calculateHeroAnalytics(heroName, history),
+        [heroName, history]
+    );
 
     if (!hero) return null;
 
@@ -351,7 +265,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                     {/* Top Players Section */}
                     <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                         <div
-                            className="flex items-center justify-between cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={playersState !== 'collapsed'}
+                            className="flex items-center justify-between cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setPlayersState(prev => {
@@ -359,6 +276,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setPlayersState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -497,7 +425,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                     {/* Top Synergies Section */}
                     <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                         <div
-                            className="flex items-center justify-between cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={synergiesState !== 'collapsed'}
+                            className="flex items-center justify-between cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setSynergiesState(prev => {
@@ -505,6 +436,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setSynergiesState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -643,7 +585,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                     {/* Match History Section */}
                     <div>
                         <div
-                            className="flex items-center justify-between mb-3 cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={matchesState !== 'collapsed'}
+                            className="flex items-center justify-between mb-3 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setMatchesState(prev => {
@@ -651,6 +596,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setMatchesState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -880,13 +836,19 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
             </BaseModal>
 
             {/* Avatar Cropper Modal */}
-            <AvatarCropperModal
+            <LazyOverlayBoundary
                 isOpen={isCropperOpen}
                 onClose={() => setIsCropperOpen(false)}
-                entityType="hero"
-                entityId={hero.name}
-                entityName={hero.name}
-            />
+                fallbackTitle="Ошибка редактора аватара"
+            >
+                <AvatarCropperModal
+                    isOpen={isCropperOpen}
+                    onClose={() => setIsCropperOpen(false)}
+                    entityType="hero"
+                    entityId={hero.name}
+                    entityName={hero.name}
+                />
+            </LazyOverlayBoundary>
         </>
     );
 };

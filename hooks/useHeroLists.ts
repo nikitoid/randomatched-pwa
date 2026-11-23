@@ -1,12 +1,35 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useConnectivity } from './useConnectivity';
 import { HeroList, Hero, ToastType } from '../types';
-import { db } from '../firebase';
+import { collection, deleteDoc, doc, getDocs, setDoc, type AppQueryDocSnapshot } from '../services/firestore';
 import { generateUUID } from '../utils/uuid';
 import { normalizeHeroKey, mergeHeroInList } from '../utils/heroNormalization';
 import { RANK_VALUES } from '../constants';
+import { STORAGE_KEYS, getStorageJSON, setStorageJSON } from '../utils/storage';
 
-const STORAGE_KEY = 'randomatched_lists_v1';
+interface RawHeroInput {
+  id?: string;
+  name?: string;
+  rank?: string;
+}
+
+interface RawStoredHeroList {
+  id: string;
+  name: string;
+  heroes?: Array<string | Hero>;
+  isLocal: boolean;
+  isCloud?: boolean;
+  isTemporary?: boolean;
+  isGroupable?: boolean;
+  lastModified?: number;
+}
+
+interface CloudHeroListDoc {
+  name?: string;
+  heroes?: Array<string | RawHeroInput>;
+  isGroupable?: boolean;
+  lastModified?: number;
+}
 
 // Inject toast function via arguments to keep hook pure regarding UI state
 export const useHeroLists = (
@@ -14,28 +37,24 @@ export const useHeroLists = (
 ) => {
   const [lists, setLists] = useState<HeroList[]>(() => {
     if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsedLists = JSON.parse(stored);
-        if (Array.isArray(parsedLists)) {
-          return parsedLists.map((list: any) => {
-            if (list.heroes && list.heroes.length > 0 && typeof list.heroes[0] === 'string') {
-              return {
-                ...list,
-                heroes: list.heroes.map((name: string, idx: number) => ({
-                  id: `${list.id}_migrated_${idx}`,
-                  name: name,
-                  rank: 'C+'
-                }))
-              };
-            }
-            return list;
-          });
+    const parsedLists = getStorageJSON<RawStoredHeroList[]>(STORAGE_KEYS.LISTS, []);
+    if (Array.isArray(parsedLists)) {
+      return parsedLists.map((list): HeroList => {
+        if (list.heroes && list.heroes.length > 0 && typeof list.heroes[0] === 'string') {
+          return {
+            ...list,
+            heroes: (list.heroes as string[]).map((name: string, idx: number) => ({
+              id: `${list.id}_migrated_${idx}`,
+              name: name,
+              rank: 'C+'
+            }))
+          };
         }
-      }
-    } catch (e) {
-      console.error("Failed to parse lists during initialization", e);
+        return {
+          ...list,
+          heroes: Array.isArray(list.heroes) ? (list.heroes as Hero[]) : []
+        };
+      });
     }
     return [];
   });
@@ -91,11 +110,7 @@ export const useHeroLists = (
     if (isLoaded) {
       // Defer synchronous JSON serialization to next event loop tick to prevent blocking active animations
       const timer = setTimeout(() => {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
-        } catch (e) {
-          console.error("Failed to save lists to localStorage", e);
-        }
+        setStorageJSON(STORAGE_KEYS.LISTS, lists);
       }, 0);
       return () => clearTimeout(timer);
     }
@@ -120,36 +135,37 @@ export const useHeroLists = (
     setIsSyncing(true);
 
     try {
-      const querySnapshot = await db.collection("lists").get();
+      const querySnapshot = await getDocs(collection("lists"));
       const cloudListsMap = new Map<string, HeroList>();
 
-      querySnapshot.forEach((docSnap: any) => {
-        const data = docSnap.data();
+      querySnapshot.forEach((docSnap: AppQueryDocSnapshot) => {
+        const data = docSnap.data() as CloudHeroListDoc;
         let processedHeroes: Hero[] = [];
         if (Array.isArray(data.heroes)) {
           if (data.heroes.length > 0 && typeof data.heroes[0] === 'string') {
-            processedHeroes = data.heroes.map((name: string, idx: number) => ({
+            processedHeroes = (data.heroes as string[]).map((name: string, idx: number) => ({
               id: `${docSnap.id}_legacy_${idx}`,
               name,
               rank: 'C+'
             }));
           } else {
-            processedHeroes = data.heroes.map((h: any, idx: number) => ({
-              ...h,
-              id: h.id || `${docSnap.id}_fallback_${idx}`
+            processedHeroes = (data.heroes as RawHeroInput[]).map((h, idx: number) => ({
+              id: h.id || `${docSnap.id}_fallback_${idx}`,
+              name: h.name || '',
+              rank: h.rank || ''
             }));
           }
         }
 
         cloudListsMap.set(docSnap.id, {
           id: docSnap.id,
-          name: data.name,
+          name: data.name || 'Без названия',
           heroes: processedHeroes,
           isLocal: false,
           isCloud: true,
           isGroupable: data.isGroupable ?? false,
           lastModified: data.lastModified || Date.now() // Use cloud timestamp if available
-        } as HeroList);
+        });
       });
 
       let detectedNewUpdates: Set<string> | null = null;
@@ -168,7 +184,7 @@ export const useHeroLists = (
             const existingList = newLists[existingIndex];
 
             // Only update if cloud version is newer or if local is not cloud-synced
-            if (existingList.lastModified < (cloudList.lastModified || 0) || !existingList.isCloud) {
+            if ((existingList.lastModified ?? 0) < (cloudList.lastModified ?? 0) || !existingList.isCloud) {
               const isNameChanged = (existingList.name || '').trim() !== (cloudList.name || '').trim();
               const isGroupableChanged = existingList.isGroupable !== cloudList.isGroupable;
               const isHeroesChanged = !areHeroArraysEqual(existingList.heroes, cloudList.heroes);
@@ -278,7 +294,7 @@ export const useHeroLists = (
 
     try {
       setIsSyncing(true);
-      await db.collection("lists").doc(listToUpload.id).set({
+      await setDoc(doc("lists", listToUpload.id), {
         name: listToUpload.name,
         heroes: listToUpload.heroes,
         isGroupable: listToUpload.isGroupable || false
@@ -329,7 +345,7 @@ export const useHeroLists = (
 
     if (updatedData.isCloud) {
       try {
-        await db.collection("lists").doc(id).set({
+        await setDoc(doc("lists", id), {
           name: updatedData.name,
           heroes: updatedData.heroes,
           isGroupable: updatedData.isGroupable || false,
@@ -353,7 +369,7 @@ export const useHeroLists = (
       }
 
       try {
-        await db.collection("lists").doc(id).delete();
+        await deleteDoc(doc("lists", id));
         setLists(prev => prev.map(l => {
           if (l.id === id) {
             return { ...l, isCloud: false, isLocal: true };
@@ -396,7 +412,7 @@ export const useHeroLists = (
     return newList.id;
   }, []);
 
-  const createTemporaryList = useCallback((heroes: Hero[], name: string) => {
+  const createTemporaryList = useCallback((heroes: Hero[], name: string = 'Временный список') => {
     const newList: HeroList = {
       id: generateUUID(),
       name,
@@ -465,7 +481,7 @@ export const useHeroLists = (
         const hasNet = await checkConnectivity();
         if (hasNet) {
           const batchPromises = listsToUpdateInCloud.map(cloudList =>
-            db.collection("lists").doc(cloudList.id).set({
+            setDoc(doc("lists", cloudList.id), {
               name: cloudList.name,
               heroes: cloudList.heroes,
               isGroupable: cloudList.isGroupable || false,
