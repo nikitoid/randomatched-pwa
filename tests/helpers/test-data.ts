@@ -76,12 +76,34 @@ export const TEST_LIST_SECONDARY: HeroList = createTestList(
     TEST_HEROES_SECONDARY
 );
 
+const routedFontContexts = new WeakSet<object>();
+
+/**
+ * Перехват внешних запросов Google Fonts в E2E-тестах,
+ * чтобы нестабильная сеть/TLS в WebKit не блокировала событие load на page.goto().
+ */
+export async function mockExternalFonts(page: any) {
+    const context = page?.context?.();
+    if (!context || routedFontContexts.has(context)) return;
+    routedFontContexts.add(context);
+
+    await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, (route: any) =>
+        route.fulfill({
+            status: 200,
+            contentType: route.request().url().includes('fonts.googleapis.com') ? 'text/css' : 'font/woff2',
+            body: '',
+        })
+    );
+}
+
 /**
  * Инъекция тестовых данных в localStorage
  * ВАЖНО: должна вызываться ПЕРЕД page.goto()
  * Данные устанавливаются через addInitScript на контексте
  */
 export async function injectTestData(page: any, lists: HeroList[] = [TEST_LIST_PRIMARY], appVersion: string = APP_VERSION) {
+    await mockExternalFonts(page);
+
     // Используем addInitScript на контексте браузера - это выполняется ДО загрузки любой страницы
     await page.context().addInitScript(([listsData, version]: [HeroList[], string]) => {
         // Отключаем CSS-анимации и переходы для мгновенного выполнения E2E тестов

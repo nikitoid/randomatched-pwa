@@ -90,9 +90,10 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
 
             <div className="grid grid-cols-2 gap-3">
                 {/* MVP Card */}
-                <div
+                <button
+                    type="button"
                     onClick={() => { setActiveNominationModal('mvp'); triggerHaptic(10); }}
-                    className="p-3.5 rounded-2xl bg-gradient-to-br from-white to-yellow-500/10 dark:from-slate-900 dark:to-yellow-500/10 border border-yellow-200/60 dark:border-yellow-900/30 relative overflow-hidden h-full cursor-pointer active:scale-[0.98] transition-all select-none"
+                    className="w-full text-left p-3.5 rounded-2xl bg-gradient-to-br from-white to-yellow-500/10 dark:from-slate-900 dark:to-yellow-500/10 border border-yellow-200/60 dark:border-yellow-900/30 relative overflow-hidden h-full cursor-pointer active:scale-[0.98] transition-all select-none"
                 >
                     <div className="flex items-center gap-2 mb-2.5 text-yellow-600 dark:text-yellow-500">
                         <Star size={18} fill="currentColor" />
@@ -109,7 +110,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                     ) : (
                         <div className="text-sm text-slate-400 italic">Нет данных</div>
                     )}
-                </div>
+                </button>
 
                 {/* Scrollable Card Area */}
                 {bestStreakPlayer ? (
@@ -126,9 +127,10 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                         >
                             {/* Slide 1: Hot Streak */}
                             <div className="w-full h-full flex-shrink-0">
-                                <div
+                                <button
+                                    type="button"
                                     onClick={() => { setActiveNominationModal('streak'); triggerHaptic(10); }}
-                                    className="p-3.5 h-full rounded-2xl bg-gradient-to-br from-white to-orange-500/10 dark:from-slate-900 dark:to-orange-500/10 border border-orange-200/60 dark:border-orange-900/30 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
+                                    className="w-full text-left p-3.5 h-full rounded-2xl bg-gradient-to-br from-white to-orange-500/10 dark:from-slate-900 dark:to-orange-500/10 border border-orange-200/60 dark:border-orange-900/30 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
                                 >
                                     <div className="flex items-center gap-2 mb-2.5 text-orange-500">
                                         <Flame size={18} className="animate-pulse text-orange-500" />
@@ -141,14 +143,15 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                                     <div className="absolute opacity-10 bottom-1 right-1 text-orange-500">
                                         <TrendingUp size={48} />
                                     </div>
-                                </div>
+                                </button>
                             </div>
 
                             {/* Slide 2: Underdog */}
                             <div className="w-full h-full flex-shrink-0">
-                                <div
+                                <button
+                                    type="button"
                                     onClick={() => { setActiveNominationModal('underdog'); triggerHaptic(10); }}
-                                    className="p-3.5 h-full rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
+                                    className="w-full text-left p-3.5 h-full rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
                                 >
                                     <div className="flex items-center gap-2 mb-2.5 text-slate-400">
                                         <Skull size={18} />
@@ -165,7 +168,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                                     ) : (
                                         <div className="text-sm text-slate-400 italic">Нет данных</div>
                                     )}
-                                </div>
+                                </button>
                             </div>
                         </div>
 
@@ -177,9 +180,10 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                     </div>
                 ) : (
                     /* No streak - just show Underdog */
-                    <div
+                    <button
+                        type="button"
                         onClick={() => { setActiveNominationModal('underdog'); triggerHaptic(10); }}
-                        className="p-3.5 h-full rounded-2xl bg-gradient-to-br from-white to-slate-500/10 dark:from-slate-900 dark:to-slate-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
+                        className="w-full text-left p-3.5 h-full rounded-2xl bg-gradient-to-br from-white to-slate-500/10 dark:from-slate-900 dark:to-slate-500/10 shadow-sm border border-slate-200/60 dark:border-slate-800 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
                     >
                         <div className="flex items-center gap-2 mb-2.5 text-slate-400">
                             <Skull size={18} />
@@ -196,7 +200,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                         ) : (
                             <div className="text-sm text-slate-400 italic">Нет данных</div>
                         )}
-                    </div>
+                    </button>
                 )}
 
                 {/* Боевая статистика */}
@@ -208,9 +212,10 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                     {/* Сетка карточек рекордов */}
                     <div className="grid grid-cols-2 gap-3 mb-1">
                         {/* Рекорд за серию */}
-                        <div
+                        <button
+                            type="button"
                             onClick={() => { setActiveNominationModal('seriesKills'); triggerHaptic(10); }}
-                            className="p-3 rounded-2xl bg-gradient-to-br from-white to-rose-500/10 dark:from-slate-900 dark:to-rose-500/10 border border-rose-200/60 dark:border-rose-900/30 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
+                            className="w-full text-left p-3 rounded-2xl bg-gradient-to-br from-white to-rose-500/10 dark:from-slate-900 dark:to-rose-500/10 border border-rose-200/60 dark:border-rose-900/30 relative overflow-hidden cursor-pointer active:scale-[0.98] transition-all select-none"
                         >
                             <div className="text-[10px] font-bold text-red-500 uppercase mb-1">Рекорд за встречу</div>
                             {topKillsSeriesPlayer ? (
@@ -223,12 +228,13 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                             ) : (
                                 <div className="text-xs text-slate-400 italic">Нет данных</div>
                             )}
-                        </div>
+                        </button>
 
                         {/* Король убийств */}
-                        <div
+                        <button
+                            type="button"
                             onClick={() => { setActiveNominationModal('totalKills'); triggerHaptic(10); }}
-                            className="p-3 rounded-2xl bg-gradient-to-br from-white to-red-500/10 dark:from-slate-900 dark:to-red-500/10 border border-slate-200/60 dark:border-slate-800 relative overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all select-none"
+                            className="w-full text-left p-3 rounded-2xl bg-gradient-to-br from-white to-red-500/10 dark:from-slate-900 dark:to-red-500/10 border border-slate-200/60 dark:border-slate-800 relative overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-all select-none"
                         >
                             <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase mb-1">Король убийств</div>
                             {topTotalKillers && topTotalKillers.length > 0 ? (
@@ -241,7 +247,7 @@ export const StatsOverviewTab: React.FC<StatsOverviewTabProps> = ({
                             ) : (
                                 <div className="text-xs text-slate-400 italic">Нет данных</div>
                             )}
-                        </div>
+                        </button>
                     </div>
 
                 </div>

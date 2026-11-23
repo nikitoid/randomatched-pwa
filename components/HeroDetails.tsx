@@ -352,7 +352,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                     {/* Top Players Section */}
                     <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                         <div
-                            className="flex items-center justify-between cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={playersState !== 'collapsed'}
+                            className="flex items-center justify-between cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setPlayersState(prev => {
@@ -360,6 +363,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setPlayersState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -498,7 +512,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                     {/* Top Synergies Section */}
                     <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                         <div
-                            className="flex items-center justify-between cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={synergiesState !== 'collapsed'}
+                            className="flex items-center justify-between cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setSynergiesState(prev => {
@@ -506,6 +523,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setSynergiesState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -644,7 +672,10 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                     {/* Match History Section */}
                     <div>
                         <div
-                            className="flex items-center justify-between mb-3 cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={matchesState !== 'collapsed'}
+                            className="flex items-center justify-between mb-3 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setMatchesState(prev => {
@@ -652,6 +683,17 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setMatchesState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">

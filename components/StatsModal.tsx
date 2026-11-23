@@ -6,7 +6,6 @@ import { MatchRecord, PlayerStat, MatchPlayer, HeroList, Hero, HeroStat, CloudBa
 import { PlayerDetails } from './PlayerDetails';
 import { HeroDetails } from './HeroDetails';
 import { CloudBackupManager } from './CloudBackupManager';
-import { useBackHandler } from '../hooks/useBackHandler';
 import { useStatsCalculations, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
 import { useMatchFilters } from './stats/hooks/useMatchFilters';
 import { StatsOverviewTab } from './stats/StatsOverviewTab';
@@ -20,6 +19,8 @@ import { SeasonsManagerModal } from './stats/SeasonsManagerModal';
 import { MergeHeroesModal } from './stats/MergeHeroesModal';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
+import { ScreenOverlay } from './common/ScreenOverlay';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 import { findDuplicateOrSimilarHeroGroups, normalizeHeroKey } from '../utils/heroNormalization';
 
 interface StatsModalProps {
@@ -527,10 +528,6 @@ export const StatsModal: React.FC<StatsModalProps> = ({
             contentContainerRef.current.scrollTop = 0;
         }
     }, [activeTab]);
-
-    useBackHandler(isOpen, () => {
-        onClose();
-    }, { id: 'stats-modal', priority: 10 });
 
     const closeDetails = () => {
         triggerHaptic(10);
@@ -1106,412 +1103,426 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                 />
             )}
 
-            <div
-                data-testid="stats-modal"
-                className={`fixed inset-0 z-[60] flex items-center justify-center bg-slate-50 dark:bg-slate-950 bg-grid-pattern ${isOpen ? 'opacity-100 visible transition-opacity duration-300' : 'opacity-0 invisible pointer-events-none transition-none'}`}
-                onClick={onClose}
-            >
-                <div
-                    className={`bg-transparent w-full h-full flex flex-col overflow-hidden will-change-transform [transform:translateZ(0)] ${isOpen ? 'scale-100 translate-y-0 transition-transform duration-300 ease-out' : 'scale-95 translate-y-4 transition-none'}`}
-                    onClick={e => e.stopPropagation()}
-                >
-                    <div 
-                        className="p-4 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between shrink-0 bg-white/70 dark:bg-slate-900/75 backdrop-blur-xl z-10 sticky top-0 touch-manipulation"
-                        style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
+            <ScreenOverlay
+                isOpen={isOpen}
+                onClose={onClose}
+                screenId="stats-screen"
+                priority={10}
+                testId="stats-modal"
+                closeButtonTestId="stats-close-btn"
+                closeButtonAriaLabel="Закрыть"
+                title={
+                    <h2
+                        className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 select-none active:scale-95 transition-transform cursor-pointer"
+                        data-testid="stats-title"
+                        onClick={handleTitleClick}
                     >
-                        <h2
-                            className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 select-none active:scale-95 transition-transform"
-                            data-testid="stats-title"
-                            onClick={handleTitleClick}
-                        >
-                            <Trophy size={20} className="text-yellow-500" /> Статистика
-                        </h2>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => syncWithAnimation()}
-                                disabled={!isOnline || visualSyncState !== 'idle' || isDebugMode}
-                                className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-150 active:scale-95 ${(!isOnline || isDebugMode) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
-                                    visualSyncState === 'success' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' :
-                                        'text-slate-500 active:bg-slate-100 dark:text-slate-400 dark:active:bg-slate-800'}`}
-                                aria-label={isDebugMode ? "Синхронизация отключена в режиме разработчика" : "Синхронизация"}
-                            >
-                                {visualSyncState === 'syncing' ? (
-                                    <Loader2 size={20} className="animate-spin" />
-                                ) : visualSyncState === 'success' ? (
-                                    <Check size={20} className="animate-in zoom-in spin-in-90 duration-300" />
-                                ) : (
-                                    <RefreshCw size={20} />
-                                )}
-                            </button>
-                            <button
-                                onClick={onClose}
-                                data-testid="stats-close-btn"
-                                aria-label="Закрыть"
-                                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/60 dark:bg-slate-800/60 text-slate-900 dark:text-white active:scale-95 active:bg-slate-200 dark:active:bg-slate-700 transition-all backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 shadow-xs"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex border-b border-slate-200/40 dark:border-slate-800/40 shrink-0 overflow-x-auto overscroll-contain no-scrollbar bg-white/30 dark:bg-slate-950/30 backdrop-blur-xl touch-manipulation">
-                        {['overview', 'players', 'heroes', 'matches'].map(tab => (
-                            <button
-                                key={tab}
-                                onClick={() => {
-                                    if (activeTab === tab) return;
-                                    setActiveTab(tab as any);
-                                    // Ensure detailed views are closed when switching tabs
-                                    setSelectedPlayer(null);
-                                    setSelectedHero(null);
-                                    triggerHaptic(10);
-                                }}
-                                className={`flex-1 min-w-[84px] min-h-[44px] py-2.5 text-sm font-bold border-b-2 transition-all active:scale-95 capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/20 dark:hover:bg-slate-900/20'}`}
-                            >
-                                {tab === 'overview' ? 'Обзор' : tab === 'players' ? 'Игроки' : tab === 'heroes' ? 'Герои' : 'Матчи'}
-                            </button>
-                        ))}
-                    </div>
-
-
-                    {/* Unified Stats Control Toolbar */}
-                    <div className="flex items-center justify-between gap-1.5 px-3 py-2 bg-white/20 dark:bg-slate-950/20 backdrop-blur-xl z-10 border-b border-slate-200/40 dark:border-slate-800/40 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
-                        {isSearchExpanded && currentSearchState ? (
-                            /* Full-width Search Input Mode */
-                            <div className="flex-1 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
-                                <div className="relative flex-1 min-w-0">
-                                    <input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        value={currentSearchState.value}
-                                        onChange={(e) => currentSearchState.onChange(e.target.value)}
-                                        placeholder={currentSearchState.placeholder}
-                                        className="w-full pl-8 pr-8 py-1.5 h-9 bg-white/80 dark:bg-slate-900/80 rounded-xl text-xs border border-slate-200/80 dark:border-slate-700/60 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
-                                    />
-                                    <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    {currentSearchState.value && (
-                                        <button
-                                            onClick={() => { currentSearchState.onChange(''); triggerHaptic(10); searchInputRef.current?.focus(); }}
-                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200 p-1"
-                                        >
-                                            <X size={12} />
-                                        </button>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={() => { setIsSearchExpanded(false); triggerHaptic(10); }}
-                                    className="h-9 px-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 active:scale-95 transition-all"
-                                >
-                                    Готово
-                                </button>
-                            </div>
+                        <Trophy size={20} className="text-yellow-500 shrink-0" /> Статистика
+                    </h2>
+                }
+                headerActions={
+                    <button
+                        type="button"
+                        onClick={() => syncWithAnimation()}
+                        disabled={!isOnline || visualSyncState !== 'idle' || isDebugMode}
+                        className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-all duration-150 active:scale-95 ${(!isOnline || isDebugMode) ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' :
+                            visualSyncState === 'success' ? 'text-green-500 bg-green-100 dark:bg-green-900/30' :
+                                'text-slate-500 active:bg-slate-100 dark:text-slate-400 dark:active:bg-slate-800'}`}
+                        aria-label={isDebugMode ? "Синхронизация отключена в режиме разработчика" : "Синхронизация"}
+                    >
+                        {visualSyncState === 'syncing' ? (
+                            <Loader2 size={20} className="animate-spin" />
+                        ) : visualSyncState === 'success' ? (
+                            <Check size={20} className="animate-in zoom-in spin-in-90 duration-300" />
                         ) : (
-                            /* Compact Mode: Flex-1 Date Pill + Collapsed Search + Right Actions */
-                            <>
-                                {/* Period / Season Filter Pill Button */}
+                            <RefreshCw size={20} />
+                        )}
+                    </button>
+                }
+                subHeader={
+                    <>
+                        <div className="flex border-t border-b border-slate-200/40 dark:border-slate-800/40 shrink-0 overflow-x-auto overscroll-contain no-scrollbar bg-white/30 dark:bg-slate-950/30 backdrop-blur-xl touch-manipulation">
+                            {['overview', 'players', 'heroes', 'matches'].map(tab => (
                                 <button
-                                    onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
-                                    title={isDateFilterOpen ? "Свернуть настройки периода" : "Открыть настройки периода"}
-                                    className={`h-9 px-2.5 text-xs font-bold rounded-xl flex items-center justify-between gap-1 flex-1 min-w-0 transition-all active:scale-95 border ${
-                                        isDateFilterOpen
-                                            ? 'bg-primary-500/10 dark:bg-primary-500/20 border-primary-500/60 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500/30 shadow-xs font-extrabold'
-                                            : filterStartDate && filterEndDate && filterEndDate < filterStartDate
-                                                ? 'bg-rose-50/80 border-rose-200 text-rose-600 dark:bg-rose-900/40 dark:border-rose-800 dark:text-rose-400'
-                                                : !isDefaultFilterState
-                                                    ? 'bg-primary-50/80 border-primary-200 text-primary-600 dark:bg-primary-900/40 dark:border-primary-800 dark:text-primary-400 font-extrabold'
-                                                    : 'bg-white/60 border-slate-200/80 text-slate-700 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
-                                    }`}
+                                    key={tab}
+                                    type="button"
+                                    onClick={() => {
+                                        if (activeTab === tab) return;
+                                        setActiveTab(tab as any);
+                                        // Ensure detailed views are closed when switching tabs
+                                        setSelectedPlayer(null);
+                                        setSelectedHero(null);
+                                        triggerHaptic(10);
+                                    }}
+                                    className={`flex-1 min-w-[84px] min-h-[44px] py-2.5 text-sm font-bold border-b-2 transition-all active:scale-95 capitalize ${activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/20 dark:hover:bg-slate-900/20'}`}
                                 >
-                                    <div className="flex items-center gap-1.5 min-w-0 truncate">
-                                        <Calendar size={14} className={isDateFilterOpen || !isDefaultFilterState ? 'text-primary-500 shrink-0' : filterStartDate && filterEndDate && filterEndDate < filterStartDate ? 'text-rose-500 shrink-0' : 'text-slate-400 shrink-0'} />
-                                        <span className="hidden sm:inline shrink-0 text-slate-400 font-normal">Период: </span>
-                                        <span className="truncate text-left">{formatPeriodLabel()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 ml-1.5 shrink-0">
-                                        {!isDefaultFilterState && (
-                                            <span
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleResetDateFilter();
-                                                    triggerHaptic(10);
-                                                }}
-                                                data-testid="reset-date-filter-btn"
-                                                className="w-6 h-6 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex items-center justify-center active:scale-90"
-                                                title="Сбросить фильтр дат"
-                                                aria-label="Сбросить фильтр дат"
-                                            >
-                                                <X size={13} strokeWidth={2.5} />
-                                            </span>
-                                        )}
-                                        <div className={`p-0.5 rounded-lg transition-all flex items-center justify-center ${
-                                            isDateFilterOpen
-                                                ? 'bg-primary-500 text-white shadow-xs'
-                                                : 'text-slate-400'
-                                        }`}>
-                                            {isDateFilterOpen ? <ChevronUp size={14} strokeWidth={2.5} /> : <ChevronDown size={14} />}
-                                        </div>
-                                    </div>
+                                    {tab === 'overview' ? 'Обзор' : tab === 'players' ? 'Игроки' : tab === 'heroes' ? 'Герои' : 'Матчи'}
                                 </button>
+                            ))}
+                        </div>
 
-                                <div className={`flex items-center gap-1.5 justify-end ${currentSearchState?.value ? 'flex-1 min-w-0' : 'shrink-0'}`}>
-                                    {/* Search Toggle / Active Chip */}
-                                    {currentSearchState && (
-                                        !currentSearchState.value ? (
+                        {/* Unified Stats Control Toolbar */}
+                        <div className="flex items-center justify-between gap-1.5 px-3 py-2 bg-white/20 dark:bg-slate-950/20 backdrop-blur-xl border-b border-slate-200/40 dark:border-slate-800/40 animate-in fade-in slide-in-from-top-2 duration-300 overflow-hidden">
+                            {isSearchExpanded && currentSearchState ? (
+                                /* Full-width Search Input Mode */
+                                <div className="flex-1 flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
+                                    <div className="relative flex-1 min-w-0">
+                                        <input
+                                            ref={searchInputRef}
+                                            type="text"
+                                            value={currentSearchState.value}
+                                            onChange={(e) => currentSearchState.onChange(e.target.value)}
+                                            placeholder={currentSearchState.placeholder}
+                                            className="w-full pl-8 pr-8 py-1.5 h-9 bg-white/80 dark:bg-slate-900/80 rounded-xl text-xs border border-slate-200/80 dark:border-slate-700/60 outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-white"
+                                        />
+                                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        {currentSearchState.value && (
                                             <button
-                                                onClick={() => { setIsSearchExpanded(true); triggerHaptic(10); }}
-                                                className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md text-slate-500 dark:text-slate-400 active:scale-95 transition-all shrink-0"
-                                                aria-label="Поиск"
+                                                type="button"
+                                                onClick={() => { currentSearchState.onChange(''); triggerHaptic(10); searchInputRef.current?.focus(); }}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 active:text-slate-600 dark:active:text-slate-200 p-1"
+                                                aria-label="Очистить поиск"
                                             >
-                                                <Search size={16} />
+                                                <X size={12} />
                                             </button>
-                                        ) : (
-                                            <div className="flex items-center gap-1 h-9 px-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800/60 rounded-xl text-xs font-bold text-primary-600 dark:text-primary-400 flex-1 min-w-0">
-                                                <button
-                                                    onClick={() => { setIsSearchExpanded(true); triggerHaptic(10); }}
-                                                    className="flex items-center gap-1.5 min-w-0 flex-1 text-left truncate"
-                                                    aria-label="Редактировать поиск"
-                                                >
-                                                    <Search size={13} className="shrink-0 text-primary-500" />
-                                                    <span className="truncate flex-1">{currentSearchState.value}</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => { currentSearchState.onChange(''); triggerHaptic(10); }}
-                                                    className="w-6 h-6 rounded-md hover:bg-primary-200/60 dark:hover:bg-primary-800/60 text-primary-500 flex items-center justify-center shrink-0 active:scale-90 transition-all"
-                                                    aria-label="Очистить поиск"
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsSearchExpanded(false); triggerHaptic(10); }}
+                                        className="h-9 px-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0 active:scale-95 transition-all"
+                                    >
+                                        Готово
+                                    </button>
+                                </div>
+                            ) : (
+                                /* Compact Mode: Flex-1 Date Pill + Collapsed Search + Right Actions */
+                                <>
+                                    {/* Period / Season Filter Pill Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsDateFilterOpen(!isDateFilterOpen); triggerHaptic(10); }}
+                                        title={isDateFilterOpen ? "Свернуть настройки периода" : "Открыть настройки периода"}
+                                        className={`h-9 px-2.5 text-xs font-bold rounded-xl flex items-center justify-between gap-1 flex-1 min-w-0 transition-all active:scale-95 border ${
+                                            isDateFilterOpen
+                                                ? 'bg-primary-500/10 dark:bg-primary-500/20 border-primary-500/60 text-primary-700 dark:text-primary-300 ring-2 ring-primary-500/30 shadow-xs font-extrabold'
+                                                : filterStartDate && filterEndDate && filterEndDate < filterStartDate
+                                                    ? 'bg-rose-50/80 border-rose-200 text-rose-600 dark:bg-rose-900/40 dark:border-rose-800 dark:text-rose-400'
+                                                    : !isDefaultFilterState
+                                                        ? 'bg-primary-50/80 border-primary-200 text-primary-600 dark:bg-primary-900/40 dark:border-primary-800 dark:text-primary-400 font-extrabold'
+                                                        : 'bg-white/60 border-slate-200/80 text-slate-700 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                            <Calendar size={14} className={isDateFilterOpen || !isDefaultFilterState ? 'text-primary-500 shrink-0' : filterStartDate && filterEndDate && filterEndDate < filterStartDate ? 'text-rose-500 shrink-0' : 'text-slate-400 shrink-0'} />
+                                            <span className="hidden sm:inline shrink-0 text-slate-400 font-normal">Период: </span>
+                                            <span className="truncate text-left">{formatPeriodLabel()}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 ml-1.5 shrink-0">
+                                            {!isDefaultFilterState && (
+                                                <span
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleResetDateFilter();
+                                                        triggerHaptic(10);
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleResetDateFilter();
+                                                            triggerHaptic(10);
+                                                        }
+                                                    }}
+                                                    data-testid="reset-date-filter-btn"
+                                                    className="w-6 h-6 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-slate-600 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex items-center justify-center active:scale-90"
+                                                    title="Сбросить фильтр дат"
+                                                    aria-label="Сбросить фильтр дат"
                                                 >
                                                     <X size={13} strokeWidth={2.5} />
-                                                </button>
+                                                </span>
+                                            )}
+                                            <div className={`p-0.5 rounded-lg transition-all flex items-center justify-center ${
+                                                isDateFilterOpen
+                                                    ? 'bg-primary-500 text-white shadow-xs'
+                                                    : 'text-slate-400'
+                                            }`}>
+                                                {isDateFilterOpen ? <ChevronUp size={14} strokeWidth={2.5} /> : <ChevronDown size={14} />}
                                             </div>
-                                        )
-                                    )}
-
-                                    {/* Tab Specific Action Buttons */}
-                                    {activeTab === 'matches' && (
-                                        <>
-                                            {editMode && deletedHistory.length > 0 && (
-                                                <button
-                                                    onClick={() => { setShowTrashOnly(!showTrashOnly); triggerHaptic(10); }}
-                                                    className={`w-9 h-9 rounded-xl border transition-colors flex items-center justify-center relative ${showTrashOnly ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-900/50' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
-                                                    aria-label={showTrashOnly ? 'Все матчи' : `Корзина (${deletedHistory.length})`}
-                                                >
-                                                    <Trash2 size={16} />
-                                                    {!showTrashOnly && (
-                                                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white">
-                                                            {deletedHistory.length}
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            )}
-                                            {editMode && (
-                                                <button
-                                                    onClick={openAddMatch}
-                                                    className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 active:scale-95 transition-transform"
-                                                    aria-label="Добавить матч"
-                                                >
-                                                    <Plus size={16} />
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={() => { setEditMode(!editMode); setShowTrashOnly(false); triggerHaptic(10); }}
-                                                className={`w-9 h-9 rounded-xl border transition-colors flex items-center justify-center ${editMode ? 'bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
-                                                aria-label={editMode ? 'Готово' : 'Редактировать'}
-                                            >
-                                                {editMode ? <Check size={16} /> : <Edit2 size={16} />}
-                                            </button>
-                                        </>
-                                    )}
-
-                                    {activeTab === 'heroes' && (
-                                        <div className="relative shrink-0">
-                                            <button
-                                                ref={(el) => {
-                                                    if (el && isSortMenuOpen && !dropdownPosition) {
-                                                        const rect = el.getBoundingClientRect();
-                                                        setDropdownPosition({
-                                                            top: rect.bottom + 8,
-                                                            left: rect.right - 192,
-                                                            width: 192
-                                                        });
-                                                    }
-                                                }}
-                                                onClick={(e) => {
-                                                    if (!isSortMenuOpen) {
-                                                        const rect = e.currentTarget.getBoundingClientRect();
-                                                        setDropdownPosition({
-                                                            top: rect.bottom + 8,
-                                                            left: rect.right - 192,
-                                                            width: 192
-                                                        });
-                                                    }
-                                                    setIsSortMenuOpen(!isSortMenuOpen);
-                                                    triggerHaptic(10);
-                                                }}
-                                                className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${isSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                                                aria-label="Сортировка"
-                                            >
-                                                {heroSort === 'winrate' && <TrendingUp size={16} />}
-                                                {heroSort === 'matches' && <BarChart3 size={16} />}
-                                                {heroSort === 'az' && <ArrowDownAZ size={16} />}
-                                                {heroSort === 'za' && <ArrowUpAZ size={16} />}
-                                                {heroSort === 'pop' && <BarChart3 size={16} />}
-                                            </button>
-
-                                            {/* Sort Dropdown Portal */}
-                                            {isSortMenuOpen && dropdownPosition && createPortal(
-                                                <>
-                                                    <div className="fixed inset-0 z-[9990]" onClick={() => setIsSortMenuOpen(false)}></div>
-                                                    <div
-                                                        className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
-                                                        style={{
-                                                            top: dropdownPosition.top,
-                                                            left: dropdownPosition.left,
-                                                            width: dropdownPosition.width
-                                                        }}
-                                                    >
-                                                        <button onClick={() => { setHeroSort('winrate'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
-                                                            {heroSort === 'winrate' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setHeroSort('matches'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
-                                                            {heroSort === 'matches' && <Check size={14} />}
-                                                        </button>
-                                                        <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
-                                                        <button onClick={() => { setHeroSort('az'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
-                                                            {heroSort === 'az' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setHeroSort('za'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
-                                                            {heroSort === 'za' && <Check size={14} />}
-                                                        </button>
-                                                    </div>
-                                                </>,
-                                                document.body
-                                            )}
                                         </div>
-                                    )}
+                                    </button>
 
-                                    {activeTab === 'players' && (
-                                        <div className="relative shrink-0">
-                                            <button
-                                                ref={(el) => {
-                                                    if (el && isPlayerSortMenuOpen && !playerDropdownPosition) {
-                                                        const rect = el.getBoundingClientRect();
-                                                        setPlayerDropdownPosition({
-                                                            top: rect.bottom + 8,
-                                                            left: rect.right - 192,
-                                                            width: 192
-                                                        });
-                                                    }
-                                                }}
-                                                onClick={(e) => {
-                                                    if (!isPlayerSortMenuOpen) {
-                                                        const rect = e.currentTarget.getBoundingClientRect();
-                                                        setPlayerDropdownPosition({
-                                                            top: rect.bottom + 8,
-                                                            left: rect.right - 192,
-                                                            width: 192
-                                                        });
-                                                    }
-                                                    setIsPlayerSortMenuOpen(!isPlayerSortMenuOpen);
-                                                    triggerHaptic(10);
-                                                }}
-                                                className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${isPlayerSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
-                                                aria-label="Сортировка"
-                                            >
-                                                {playerSort === 'efficiency' && <TrendingUp size={16} />}
-                                                {playerSort === 'winrate' && <TrendingUp size={16} />}
-                                                {playerSort === 'matches' && <BarChart3 size={16} />}
-                                                {playerSort === 'kills' && <Skull size={16} />}
-                                                {playerSort === 'killPercent' && <Percent size={16} />}
-                                                {playerSort === 'az' && <ArrowDownAZ size={16} />}
-                                                {playerSort === 'za' && <ArrowUpAZ size={16} />}
-                                            </button>
-
-                                            {/* Player Sort Dropdown Portal */}
-                                            {isPlayerSortMenuOpen && playerDropdownPosition && createPortal(
-                                                <>
-                                                    <div className="fixed inset-0 z-[9990]" onClick={() => setIsPlayerSortMenuOpen(false)}></div>
-                                                    <div
-                                                        className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden z-[9999] animate-in fade-in zoom-in-95 duration-100"
-                                                        style={{
-                                                            top: playerDropdownPosition.top,
-                                                            left: playerDropdownPosition.left,
-                                                            width: playerDropdownPosition.width
-                                                        }}
+                                    <div className={`flex items-center gap-1.5 justify-end ${currentSearchState?.value ? 'flex-1 min-w-0' : 'shrink-0'}`}>
+                                        {/* Search Toggle / Active Chip */}
+                                        {currentSearchState && (
+                                            !currentSearchState.value ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setIsSearchExpanded(true); triggerHaptic(10); }}
+                                                    className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200/80 dark:border-slate-700/60 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md text-slate-500 dark:text-slate-400 active:scale-95 transition-all shrink-0"
+                                                    aria-label="Поиск"
+                                                >
+                                                    <Search size={16} />
+                                                </button>
+                                            ) : (
+                                                <div className="flex items-center gap-1 h-9 px-2 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800/60 rounded-xl text-xs font-bold text-primary-600 dark:text-primary-400 flex-1 min-w-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setIsSearchExpanded(true); triggerHaptic(10); }}
+                                                        className="flex items-center gap-1.5 min-w-0 flex-1 text-left truncate"
+                                                        aria-label="Редактировать поиск"
                                                     >
-                                                        <button onClick={() => { setPlayerSort('efficiency'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'efficiency' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><TrendingUp size={14} /> По эффективности</span>
-                                                            {playerSort === 'efficiency' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setPlayerSort('winrate'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
-                                                            {playerSort === 'winrate' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setPlayerSort('matches'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
-                                                            {playerSort === 'matches' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setPlayerSort('kills'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'kills' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><Skull size={14} /> По убийствам</span>
-                                                            {playerSort === 'kills' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setPlayerSort('killPercent'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'killPercent' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><Percent size={14} /> По % убийств</span>
-                                                            {playerSort === 'killPercent' && <Check size={14} />}
-                                                        </button>
-                                                        <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
-                                                        <button onClick={() => { setPlayerSort('az'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
-                                                            {playerSort === 'az' && <Check size={14} />}
-                                                        </button>
-                                                        <button onClick={() => { setPlayerSort('za'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
-                                                            <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
-                                                            {playerSort === 'za' && <Check size={14} />}
-                                                        </button>
-                                                    </div>
-                                                </>,
-                                                document.body
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </div>
+                                                        <Search size={13} className="shrink-0 text-primary-500" />
+                                                        <span className="truncate flex-1">{currentSearchState.value}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { currentSearchState.onChange(''); triggerHaptic(10); }}
+                                                        className="w-6 h-6 rounded-md hover:bg-primary-200/60 dark:hover:bg-primary-800/60 text-primary-500 flex items-center justify-center shrink-0 active:scale-90 transition-all"
+                                                        aria-label="Очистить поиск"
+                                                    >
+                                                        <X size={13} strokeWidth={2.5} />
+                                                    </button>
+                                                </div>
+                                            )
+                                        )}
 
-                    {/* Date Filter Collapsible Panel */}
-                    <StatsDateFilter
-                        isDateFilterOpen={isDateFilterOpen}
-                        setIsDateFilterOpen={setIsDateFilterOpen}
-                        filterStartDate={filterStartDate}
-                        setFilterStartDate={setFilterStartDate}
-                        filterEndDate={filterEndDate}
-                        setFilterEndDate={setFilterEndDate}
-                        formatPeriodLabel={formatPeriodLabel}
-                        handleResetDateFilter={handleResetDateFilter}
-                        isDefaultFilterState={isDefaultFilterState}
-                        handlePresetToday={handlePresetToday}
-                        handlePresetYesterday={handlePresetYesterday}
-                        handlePresetLastEvening={handlePresetLastEvening}
-                        todayStr={todayStr}
-                        yesterdayStr={yesterdayStr}
-                        lastEveningDateStr={lastEveningDateStr}
-                        historyLength={history.length}
-                        triggerHaptic={triggerHaptic}
-                        seasons={seasons}
-                        selectedSeasonId={selectedSeasonId}
-                        defaultSeasonId={defaultSeasonId}
-                        isManualDefault={isManualDefault}
-                        onSelectSeason={handleSelectSeason}
-                        onOpenSeasonsManager={() => setIsSeasonsManagerOpen(true)}
-                    />
+                                        {/* Tab Specific Action Buttons */}
+                                        {activeTab === 'matches' && (
+                                            <>
+                                                {editMode && deletedHistory.length > 0 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setShowTrashOnly(!showTrashOnly); triggerHaptic(10); }}
+                                                        className={`w-9 h-9 rounded-xl border transition-colors flex items-center justify-center relative ${showTrashOnly ? 'bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-900/50' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
+                                                        aria-label={showTrashOnly ? 'Все матчи' : `Корзина (${deletedHistory.length})`}
+                                                    >
+                                                        <Trash2 size={16} />
+                                                        {!showTrashOnly && (
+                                                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white">
+                                                                {deletedHistory.length}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                )}
+                                                {editMode && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={openAddMatch}
+                                                        className="w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 active:scale-95 transition-transform"
+                                                        aria-label="Добавить матч"
+                                                    >
+                                                        <Plus size={16} />
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setEditMode(!editMode); setShowTrashOnly(false); triggerHaptic(10); }}
+                                                    className={`w-9 h-9 rounded-xl border transition-colors flex items-center justify-center ${editMode ? 'bg-primary-50 text-primary-600 border-primary-200 dark:bg-primary-900/30 dark:text-primary-300 dark:border-primary-800' : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}
+                                                    aria-label={editMode ? 'Готово' : 'Редактировать'}
+                                                >
+                                                    {editMode ? <Check size={16} /> : <Edit2 size={16} />}
+                                                </button>
+                                            </>
+                                        )}
 
-                    <div
-                        ref={contentContainerRef}
-                        className="overflow-y-auto flex-1 no-scrollbar touch-pan-y p-0"
-                    >
+                                        {activeTab === 'heroes' && (
+                                            <div className="relative shrink-0">
+                                                <button
+                                                    type="button"
+                                                    ref={(el) => {
+                                                        if (el && isSortMenuOpen && !dropdownPosition) {
+                                                            const rect = el.getBoundingClientRect();
+                                                            setDropdownPosition({
+                                                                top: rect.bottom + 8,
+                                                                left: rect.right - 192,
+                                                                width: 192
+                                                            });
+                                                        }
+                                                    }}
+                                                    onClick={(e) => {
+                                                        if (!isSortMenuOpen) {
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                            setDropdownPosition({
+                                                                top: rect.bottom + 8,
+                                                                left: rect.right - 192,
+                                                                width: 192
+                                                            });
+                                                        }
+                                                        setIsSortMenuOpen(!isSortMenuOpen);
+                                                        triggerHaptic(10);
+                                                    }}
+                                                    className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${isSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                                                    aria-label="Сортировка"
+                                                >
+                                                    {heroSort === 'winrate' && <TrendingUp size={16} />}
+                                                    {heroSort === 'matches' && <BarChart3 size={16} />}
+                                                    {heroSort === 'az' && <ArrowDownAZ size={16} />}
+                                                    {heroSort === 'za' && <ArrowUpAZ size={16} />}
+                                                    {heroSort === 'pop' && <BarChart3 size={16} />}
+                                                </button>
+
+                                                {/* Sort Dropdown Portal */}
+                                                {isSortMenuOpen && dropdownPosition && createPortal(
+                                                    <>
+                                                        <div className="fixed inset-0" style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }} onClick={() => setIsSortMenuOpen(false)}></div>
+                                                        <div
+                                                            className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                                                            style={{
+                                                                zIndex: Z_INDEX_BASE.OVERLAY_POPOVER,
+                                                                top: dropdownPosition.top,
+                                                                left: dropdownPosition.left,
+                                                                width: dropdownPosition.width
+                                                            }}
+                                                        >
+                                                            <button onClick={() => { setHeroSort('winrate'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
+                                                                {heroSort === 'winrate' && <Check size={14} />}
+                                                            </button>
+                                                            <button onClick={() => { setHeroSort('matches'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
+                                                                {heroSort === 'matches' && <Check size={14} />}
+                                                            </button>
+                                                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
+                                                            <button onClick={() => { setHeroSort('az'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
+                                                                {heroSort === 'az' && <Check size={14} />}
+                                                            </button>
+                                                            <button onClick={() => { setHeroSort('za'); setIsSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${heroSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
+                                                                {heroSort === 'za' && <Check size={14} />}
+                                                            </button>
+                                                        </div>
+                                                    </>,
+                                                    document.body
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {activeTab === 'players' && (
+                                            <div className="relative shrink-0">
+                                                <button
+                                                    type="button"
+                                                    ref={(el) => {
+                                                        if (el && isPlayerSortMenuOpen && !playerDropdownPosition) {
+                                                            const rect = el.getBoundingClientRect();
+                                                            setPlayerDropdownPosition({
+                                                                top: rect.bottom + 8,
+                                                                left: rect.right - 192,
+                                                                width: 192
+                                                            });
+                                                        }
+                                                    }}
+                                                    onClick={(e) => {
+                                                        if (!isPlayerSortMenuOpen) {
+                                                            const rect = e.currentTarget.getBoundingClientRect();
+                                                            setPlayerDropdownPosition({
+                                                                top: rect.bottom + 8,
+                                                                left: rect.right - 192,
+                                                                width: 192
+                                                            });
+                                                        }
+                                                        setIsPlayerSortMenuOpen(!isPlayerSortMenuOpen);
+                                                        triggerHaptic(10);
+                                                    }}
+                                                    className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${isPlayerSortMenuOpen ? 'bg-primary-50 border-primary-200 text-primary-600 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400' : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+                                                    aria-label="Сортировка"
+                                                >
+                                                    {playerSort === 'efficiency' && <TrendingUp size={16} />}
+                                                    {playerSort === 'winrate' && <TrendingUp size={16} />}
+                                                    {playerSort === 'matches' && <BarChart3 size={16} />}
+                                                    {playerSort === 'kills' && <Skull size={16} />}
+                                                    {playerSort === 'killPercent' && <Percent size={16} />}
+                                                    {playerSort === 'az' && <ArrowDownAZ size={16} />}
+                                                    {playerSort === 'za' && <ArrowUpAZ size={16} />}
+                                                </button>
+
+                                                {/* Player Sort Dropdown Portal */}
+                                                {isPlayerSortMenuOpen && playerDropdownPosition && createPortal(
+                                                    <>
+                                                        <div className="fixed inset-0" style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }} onClick={() => setIsPlayerSortMenuOpen(false)}></div>
+                                                        <div
+                                                            className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                                                            style={{
+                                                                zIndex: Z_INDEX_BASE.OVERLAY_POPOVER,
+                                                                top: playerDropdownPosition.top,
+                                                                left: playerDropdownPosition.left,
+                                                                width: playerDropdownPosition.width
+                                                            }}
+                                                        >
+                                                            <button onClick={() => { setPlayerSort('efficiency'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'efficiency' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По эффективности</span>
+                                                                {playerSort === 'efficiency' && <Check size={14} />}
+                                                            </button>
+                                                            <button onClick={() => { setPlayerSort('winrate'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'winrate' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><TrendingUp size={14} /> По винрейту</span>
+                                                                {playerSort === 'winrate' && <Check size={14} />}
+                                                            </button>
+                                                            <button onClick={() => { setPlayerSort('matches'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'matches' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><BarChart3 size={14} /> По популярности</span>
+                                                                {playerSort === 'matches' && <Check size={14} />}
+                                                            </button>
+                                                            <button onClick={() => { setPlayerSort('kills'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'kills' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><Skull size={14} /> По убийствам</span>
+                                                                {playerSort === 'kills' && <Check size={14} />}
+                                                            </button>
+                                                            <button onClick={() => { setPlayerSort('killPercent'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'killPercent' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><Percent size={14} /> По % убийств</span>
+                                                                {playerSort === 'killPercent' && <Check size={14} />}
+                                                            </button>
+                                                            <div className="h-px bg-slate-100 dark:bg-slate-700 my-0"></div>
+                                                            <button onClick={() => { setPlayerSort('az'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'az' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><ArrowDownAZ size={14} /> По алфавиту (А-Я)</span>
+                                                                {playerSort === 'az' && <Check size={14} />}
+                                                            </button>
+                                                            <button onClick={() => { setPlayerSort('za'); setIsPlayerSortMenuOpen(false); triggerHaptic(10); }} className={`w-full text-left px-4 py-3 text-sm flex items-center justify-between ${playerSort === 'za' ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400' : 'text-slate-600 dark:text-slate-300 active:bg-slate-50 dark:active:bg-slate-700'}`}>
+                                                                <span className="flex items-center gap-2"><ArrowUpAZ size={14} /> По алфавиту (Я-А)</span>
+                                                                {playerSort === 'za' && <Check size={14} />}
+                                                            </button>
+                                                        </div>
+                                                    </>,
+                                                    document.body
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Date Filter Collapsible Panel */}
+                        <StatsDateFilter
+                            isDateFilterOpen={isDateFilterOpen}
+                            setIsDateFilterOpen={setIsDateFilterOpen}
+                            filterStartDate={filterStartDate}
+                            setFilterStartDate={setFilterStartDate}
+                            filterEndDate={filterEndDate}
+                            setFilterEndDate={setFilterEndDate}
+                            formatPeriodLabel={formatPeriodLabel}
+                            handleResetDateFilter={handleResetDateFilter}
+                            isDefaultFilterState={isDefaultFilterState}
+                            handlePresetToday={handlePresetToday}
+                            handlePresetYesterday={handlePresetYesterday}
+                            handlePresetLastEvening={handlePresetLastEvening}
+                            todayStr={todayStr}
+                            yesterdayStr={yesterdayStr}
+                            lastEveningDateStr={lastEveningDateStr}
+                            historyLength={history.length}
+                            triggerHaptic={triggerHaptic}
+                            seasons={seasons}
+                            selectedSeasonId={selectedSeasonId}
+                            defaultSeasonId={defaultSeasonId}
+                            isManualDefault={isManualDefault}
+                            onSelectSeason={handleSelectSeason}
+                            onOpenSeasonsManager={() => setIsSeasonsManagerOpen(true)}
+                        />
+                    </>
+                }
+                bodyRef={contentContainerRef}
+                bodyClassName="no-scrollbar touch-pan-y p-0"
+            >
                         {activeTab === 'overview' && (
                             <StatsOverviewTab
                                 totalMatches={totalMatches}
@@ -1590,30 +1601,27 @@ export const StatsModal: React.FC<StatsModalProps> = ({
                                 triggerHaptic={triggerHaptic}
                             />
                         )}
-                    </div>
+            </ScreenOverlay>
 
-                    {/* Delete Confirmation Modal */}
-                    <ConfirmModal
-                        isOpen={!!deleteConfirmId}
-                        onCancel={() => setDeleteConfirmId(null)}
-                        onConfirm={confirmDeleteMatch}
-                        title={
-                            deleteConfirmAction === 'clear-trash' ? 'Очистить корзину?' :
-                                deleteConfirmAction === 'permanent' ? 'Удалить навсегда?' : 'Удалить матч?'
-                        }
-                        description={
-                            deleteConfirmAction === 'move-to-trash' ? 'Матч будет перемещен в корзину.' : 'Это действие нельзя отменить.'
-                        }
-                        confirmText={deleteConfirmAction === 'move-to-trash' ? 'В корзину' : 'Удалить'}
-                        cancelText="Отмена"
-                        confirmVariant="danger"
-                        icon={<Trash2 size={24} />}
-                        priority={80}
-                        modalId="stats-delete-confirm-modal"
-                    />
-
-                </div>
-            </div>
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!deleteConfirmId}
+                onCancel={() => setDeleteConfirmId(null)}
+                onConfirm={confirmDeleteMatch}
+                title={
+                    deleteConfirmAction === 'clear-trash' ? 'Очистить корзину?' :
+                        deleteConfirmAction === 'permanent' ? 'Удалить навсегда?' : 'Удалить матч?'
+                }
+                description={
+                    deleteConfirmAction === 'move-to-trash' ? 'Матч будет перемещен в корзину.' : 'Это действие нельзя отменить.'
+                }
+                confirmText={deleteConfirmAction === 'move-to-trash' ? 'В корзину' : 'Удалить'}
+                cancelText="Отмена"
+                confirmVariant="danger"
+                icon={<Trash2 size={24} />}
+                priority={80}
+                modalId="stats-delete-confirm-modal"
+            />
 
             {/* Efficiency Info Overlay */}
             {showEfficiencyInfo && (

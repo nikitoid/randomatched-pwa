@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Shield, Swords } from 'lucide-react';
 import { MatchPlayer, MatchRecord, Hero } from '../../types';
 import { BaseModal } from '../common/BaseModal';
+import { Z_INDEX_BASE } from '../../constants/zIndex';
 
 export interface MatchFormState {
     id?: string;
@@ -205,11 +206,14 @@ export const MatchEditorForm: React.FC<MatchEditorFormProps> = ({
                     </div>
 
                     {isFocused && activeSuggestions.length > 0 && (
-                        <div className={`suggestions-dropdown absolute top-[100%] mt-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${
-                            isHeroField
-                                ? 'right-0 min-w-[180px] sm:min-w-[220px] max-w-[calc(100vw-48px)]'
-                                : 'left-0 min-w-[180px] sm:min-w-[220px] max-w-[calc(100vw-48px)]'
-                        }`}>
+                        <div
+                            className={`suggestions-dropdown absolute top-[100%] mt-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150 ${
+                                isHeroField
+                                    ? 'right-0 min-w-[180px] sm:min-w-[220px] max-w-[calc(100vw-48px)]'
+                                    : 'left-0 min-w-[180px] sm:min-w-[220px] max-w-[calc(100vw-48px)]'
+                            }`}
+                            style={{ zIndex: Z_INDEX_BASE.DROPDOWN }}
+                        >
                             <div className="p-1 flex flex-col gap-0.5 max-h-44 overflow-y-auto overscroll-contain no-scrollbar">
                                 {activeSuggestions.map((item) => (
                                     <button

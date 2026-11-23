@@ -9,6 +9,7 @@ import { ConfirmModal } from './common/ConfirmModal';
 import { useHaptics } from '../hooks/useHaptics';
 import { Avatar } from './common/Avatar';
 import { MatchWinnerModal } from './MatchWinnerModal';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 
 
 
@@ -413,11 +414,11 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
         const shadowStyle = isGradientActive
             ? isTeamOdd
-                ? "shadow-[0_0_30px_rgba(var(--primary-500)/0.5)] ring-1 ring-primary-300/40"
-                : "shadow-[0_0_30px_rgba(var(--secondary-500)/0.5)] ring-1 ring-secondary-300/40"
+                ? "shadow-[0_0_30px_rgb(var(--primary-500)/0.5)] ring-1 ring-primary-300/40"
+                : "shadow-[0_0_30px_rgb(var(--secondary-500)/0.5)] ring-1 ring-secondary-300/40"
             : isTeamOdd
-                ? "shadow-[0_0_20px_rgba(var(--primary-500)/0.4)]"
-                : "shadow-[0_0_20px_rgba(var(--secondary-500)/0.4)]";
+                ? "shadow-[0_0_20px_rgb(var(--primary-500)/0.4)]"
+                : "shadow-[0_0_20px_rgb(var(--secondary-500)/0.4)]";
 
         const gradient = isTeamOdd
             ? `bg-gradient-to-br from-primary-500/90 to-primary-700/90 text-white ${shadowStyle} border border-primary-200/30`
@@ -435,13 +436,14 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 relative flex flex-col items-center justify-center p-3 select-none [transform:translateZ(0)] [backface-visibility:hidden] transition-none
                 ${gradient}
                 ${isFloating
-                        ? `${cardSizeClass} rounded-2xl shadow-2xl ring-4 ring-white/50 z-[100]`
+                        ? `${cardSizeClass} rounded-2xl shadow-2xl ring-4 ring-white/50`
                         : `${cardSizeClass} rounded-3xl`}
                 ${isHoveredTarget ? 'scale-90 opacity-80 ring-4 ring-white/50' : ''}
                 ${isDragMode && !isFloating ? 'cursor-grab active:cursor-grabbing animate-pulse-slow ring-2 ring-white ring-offset-2 ring-offset-slate-200 dark:ring-offset-slate-900' : ''}
             `}
                 style={isFloating ? {
                     position: 'fixed',
+                    zIndex: Z_INDEX_BASE.TOOLTIP,
                     left: activeDrag!.currX,
                     top: activeDrag!.currY,
                     transform: 'translate(-50%, -50%) rotate(0deg)',
@@ -460,23 +462,45 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         }}
                     >
                         <div
-                            className={`w-full h-full rounded-full blur-[12px] sm:blur-[16px] opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] animate-pulse-glow ${isAnyModalOpen ? '[animation-play-state:paused]' : ''}`}
+                            className={`w-full h-full rounded-full opacity-80 dark:opacity-85 [transform:translateZ(0)] [backface-visibility:hidden] will-change-[opacity] animate-pulse-glow ${isAnyModalOpen ? '[animation-play-state:paused]' : ''}`}
                             style={{
                                 background: isTeamOdd
-                                    ? 'radial-gradient(circle, rgba(var(--primary-500)/0.65) 0%, rgba(var(--primary-500)/0.32) 35%, rgba(var(--primary-500)/0.1) 58%, transparent 75%)'
-                                    : 'radial-gradient(circle, rgba(var(--secondary-500)/0.65) 0%, rgba(var(--secondary-500)/0.32) 35%, rgba(var(--secondary-500)/0.1) 58%, transparent 75%)',
+                                    ? 'radial-gradient(circle, rgb(var(--primary-500) / 0.55) 0%, rgb(var(--primary-500) / 0.28) 28%, rgb(var(--primary-500) / 0.1) 52%, transparent 72%)'
+                                    : 'radial-gradient(circle, rgb(var(--secondary-500) / 0.55) 0%, rgb(var(--secondary-500) / 0.28) 28%, rgb(var(--secondary-500) / 0.1) 52%, transparent 72%)',
                             }}
                         />
                     </div>
                 )}
                 {!isFloating && hasHero && !isDragMode && (
                     <div className="absolute top-0 left-0 w-full flex justify-between p-2 z-20">
-                        <button onClick={(e) => handleBanClick(e, player)} className={buttonStyle}><Ban size={14} /></button>
+                        <button
+                            type="button"
+                            onClick={(e) => handleBanClick(e, player)}
+                            aria-label="Забанить героя"
+                            className={buttonStyle}
+                        >
+                            <Ban size={14} />
+                        </button>
                         <div className="flex gap-1">
                             {onManualSelect && (
-                                <button data-testid="manual-select-btn" onClick={(e) => handleOpenManualSelect(e, player.playerNumber)} className={buttonStyle}><UserCog size={14} /></button>
+                                <button
+                                    type="button"
+                                    data-testid="manual-select-btn"
+                                    onClick={(e) => handleOpenManualSelect(e, player.playerNumber)}
+                                    aria-label="Выбрать героя вручную"
+                                    className={buttonStyle}
+                                >
+                                    <UserCog size={14} />
+                                </button>
                             )}
-                            <button onClick={(e) => { e.stopPropagation(); onRerollSpecific(player.playerNumber); }} className={buttonStyle}><RefreshCw size={14} /></button>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); onRerollSpecific(player.playerNumber); }}
+                                aria-label="Перевыбрать героя"
+                                className={buttonStyle}
+                            >
+                                <RefreshCw size={14} />
+                            </button>
                         </div>
                     </div>
                 )}
@@ -684,11 +708,12 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
         <>
             <div
                 data-testid="result-overlay"
-                className={`fixed inset-0 z-50 bg-slate-100 dark:bg-slate-950 transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}
+                className={`fixed inset-0 bg-slate-100 dark:bg-slate-950 transition-all duration-500 ${isOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}`}
                 style={{
+                    zIndex: Z_INDEX_BASE.OVERLAY,
                     backgroundImage: `
-                        radial-gradient(circle at 10% 10%, rgba(var(--primary-500) / 0.18), transparent 55%),
-                        radial-gradient(circle at 90% 90%, rgba(var(--secondary-500) / 0.18), transparent 55%)
+                        radial-gradient(circle at 10% 10%, rgb(var(--primary-500) / 0.18), transparent 55%),
+                        radial-gradient(circle at 90% 90%, rgb(var(--secondary-500) / 0.18), transparent 55%)
                     `
                 }}
             >
@@ -697,7 +722,8 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
 
                 {/* Backdrop for Mode Selector */}
                 <div
-                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-[60] transition-all duration-300 ${isModeSelectorOpen || isExtraModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                    className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] transition-all duration-300 ${isModeSelectorOpen || isExtraModeSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                    style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }}
                     onClick={() => { setIsModeSelectorOpen(false); setIsExtraModeSelectorOpen(false); }}
                 />
 
@@ -707,7 +733,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}
                 >
                     {setGenerationMode && (
-                        <div className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen || isExtraModeSelectorOpen ? 'z-[61] ring-2 ring-primary-500/50' : 'z-50'}`}>
+                        <div
+                            className={`pointer-events-auto relative flex items-center gap-0 bg-white dark:bg-slate-800 h-12 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-4 duration-500 transition-shadow ${isModeSelectorOpen || isExtraModeSelectorOpen ? 'ring-2 ring-primary-500/50' : ''}`}
+                            style={{ zIndex: isModeSelectorOpen || isExtraModeSelectorOpen ? Z_INDEX_BASE.OVERLAY_POPOVER : Z_INDEX_BASE.OVERLAY }}
+                        >
 
                             <button
                                 onClick={() => { setIsModeSelectorOpen(!isModeSelectorOpen); setIsExtraModeSelectorOpen(false); }}
@@ -788,7 +817,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                     </button>
 
                                     {/* Dropdown Menu for Extra Mode */}
-                                    <div className={`absolute top-[calc(100%+8px)] left-0 w-[240px] max-w-[calc(100vw-32px)] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 origin-top-left z-[62] ${isExtraModeSelectorOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'}`}>
+                                    <div
+                                        className={`absolute top-[calc(100%+8px)] left-0 w-[240px] max-w-[calc(100vw-32px)] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden transition-all duration-300 origin-top-left ${isExtraModeSelectorOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible pointer-events-none'}`}
+                                        style={{ zIndex: Z_INDEX_BASE.OVERLAY_POPOVER + 1 }}
+                                    >
                                         <div className="p-1.5 flex flex-col gap-0.5">
                                             <div className="px-2.5 py-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                                                 Доп. режим свежести
@@ -832,24 +864,40 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                                 </button>
                             )}
 
-                            <button onClick={() => setShowInfo(true)} className="mr-1 p-2 rounded-full text-slate-400 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"><HelpCircle size={20} /></button>
+                            <button
+                                type="button"
+                                onClick={() => setShowInfo(true)}
+                                aria-label="Справка по режимам генерации"
+                                className="mr-1 p-2 rounded-full text-slate-400 active:text-primary-500 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"
+                            >
+                                <HelpCircle size={20} />
+                            </button>
                         </div>
                     )}
-                    <button data-testid="close-result-overlay" onClick={onClose} className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative z-50"><X size={24} /></button>
+                    <button
+                        type="button"
+                        data-testid="close-result-overlay"
+                        onClick={onClose}
+                        aria-label="Закрыть"
+                        className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg active:scale-95 transition-transform border border-slate-200 dark:border-slate-700 relative"
+                        style={{ zIndex: Z_INDEX_BASE.OVERLAY }}
+                    >
+                        <X size={24} />
+                    </button>
                 </div>
 
                 {/* Standalone Team Power Badge (Visible in both Facing & Cross modes) */}
                 {heroesRevealed && !isDragMode && (
                     <div 
-                        className="absolute left-1/2 -translate-x-1/2 z-40 pointer-events-auto"
-                        style={{ top: 'calc(6.2rem + env(safe-area-inset-top))' }}
+                        className="absolute left-1/2 -translate-x-1/2 pointer-events-auto"
+                        style={{ zIndex: Z_INDEX_BASE.NAVBAR, top: 'calc(6.2rem + env(safe-area-inset-top))' }}
                     >
                         <div 
                             data-testid="team-power-badge"
                             className="px-3.5 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/60 dark:border-slate-800 shadow-lg flex items-center gap-3 text-xs font-bold whitespace-nowrap animate-menu-in"
                         >
                             <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                                <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_6px_rgba(var(--primary-500)/0.8)] shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_6px_rgb(var(--primary-500)/0.8)] shrink-0" />
                                 <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 tracking-tight whitespace-nowrap">Команда 1:</span>
                                 <span className="font-mono font-black text-xs sm:text-sm text-primary-600 dark:text-primary-400">{oddPower}</span>
                             </div>
@@ -857,7 +905,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             <div className="w-px h-3.5 bg-slate-200 dark:bg-slate-700/80 shrink-0" />
 
                             <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                                <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_6px_rgba(var(--secondary-500)/0.8)] shrink-0" />
+                                <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_6px_rgb(var(--secondary-500)/0.8)] shrink-0" />
                                 <span className="text-[10px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 tracking-tight whitespace-nowrap">Команда 2:</span>
                                 <span className="font-mono font-black text-xs sm:text-sm text-secondary-600 dark:text-secondary-400">{evenPower}</span>
                             </div>
@@ -886,7 +934,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         }`}
                         style={{ top: 'calc(50% - min(43vmin, 265px))' }}
                     >
-                        <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(var(--primary-500)/0.8)]" />
+                        <span className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgb(var(--primary-500)/0.8)]" />
                         <span>Команда 1</span>
                     </div>
 
@@ -896,7 +944,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                         }`}
                         style={{ top: 'calc(50% + min(43vmin, 265px))' }}
                     >
-                        <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_8px_rgba(var(--secondary-500)/0.8)]" />
+                        <span className="w-2 h-2 rounded-full bg-secondary-500 shadow-[0_0_8px_rgb(var(--secondary-500)/0.8)]" />
                         <span>Команда 2</span>
                     </div>
 
@@ -906,11 +954,21 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                     {getPlayer('right') && renderCardContainer(getPlayer('right')!)}
 
                     {/* Invisible Backdrop for Reroll Confirm */}
-                    {isRerollConfirm && <div className="fixed inset-0 z-40 bg-transparent cursor-default pointer-events-auto" onClick={() => setIsRerollConfirm(false)} />}
+                    {isRerollConfirm && (
+                        <div
+                            className="fixed inset-0 bg-transparent cursor-default pointer-events-auto"
+                            style={{ zIndex: Z_INDEX_BASE.BACKDROP }}
+                            onClick={() => setIsRerollConfirm(false)}
+                        />
+                    )}
 
                     {/* CENTER ACTION BUTTON */}
-                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto animate-fade-in ${isRerollConfirm ? 'z-50' : 'z-30'}`}>
+                    <div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto animate-fade-in"
+                        style={{ zIndex: isRerollConfirm ? Z_INDEX_BASE.DROPDOWN : Z_INDEX_BASE.NAVBAR }}
+                    >
                         <button
+                            type="button"
                             data-testid="center-action-button"
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -922,7 +980,7 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                             className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-white active:scale-95 transition-all border-4 shadow-[0_0_40px_rgba(0,0,0,0.3)]
                     ${isDragMode ? 'opacity-20 grayscale cursor-not-allowed bg-slate-500 border-slate-400' :
                                     isRerollConfirm ? 'bg-red-500 border-red-300 active:bg-red-600 shadow-[0_0_50px_rgba(239,68,68,0.8)]'
-                                        : 'bg-primary-600 border-primary-400/50 active:bg-primary-500 shadow-[0_0_40px_rgba(var(--primary-500)/0.6)]'}`}
+                                        : 'bg-primary-600 border-primary-400/50 active:bg-primary-500 shadow-[0_0_40px_rgb(var(--primary-500)/0.6)]'}`}
                         >
                             <div className="flex flex-col items-center">
                                 {heroesRevealed ? (isRerollConfirm ? <Check size={28} className="mb-1 animate-pulse" /> : <RefreshCw size={28} className="mb-1" />) : <Dice5 size={28} className="mb-1" />}
@@ -936,7 +994,10 @@ export const ResultOverlay: React.FC<ResultOverlayProps> = ({
                 {renderFloatingClone()}
 
                 {/* Bottom Dock */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 dark:border-slate-800 transition-all duration-500">
+                <div
+                    className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/20 dark:border-slate-800 transition-all duration-500"
+                    style={{ zIndex: Z_INDEX_BASE.OVERLAY }}
+                >
 
                     {hasCustomNames && (
                         <>

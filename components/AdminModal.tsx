@@ -654,13 +654,23 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                   return (
                     <div
                       key={cid}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         if (client.clientId) {
                           setSelectedClientId(client.clientId);
                           triggerHaptic(20);
                         }
                       }}
-                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99] group ${
+                      onKeyDown={(e) => {
+                        if (e.target !== e.currentTarget) return;
+                        if ((e.key === 'Enter' || e.key === ' ') && client.clientId) {
+                          e.preventDefault();
+                          setSelectedClientId(client.clientId);
+                          triggerHaptic(20);
+                        }
+                      }}
+                      className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 active:scale-[0.99] group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 ${
                         isSelf
                           ? 'bg-amber-500/5 hover:bg-amber-500/10 border-amber-500/30'
                           : 'bg-slate-100/80 dark:bg-slate-800/70 hover:bg-slate-200/80 dark:hover:bg-slate-750 border-slate-200/80 dark:border-slate-700/80'

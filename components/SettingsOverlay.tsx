@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Dice5, Check, Copy, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles, Sliders, Layers, ShieldCheck, Activity, Volume2 } from 'lucide-react';
-import { useBackHandler } from '../hooks/useBackHandler';
+import { Dice5, Check, Copy, Palette, Database, Info, SmartphoneNfc, Terminal, RefreshCw, Trash, Download, Vibrate, Grid, Circle, Sparkles, Sliders, Layers, ShieldCheck, Activity, Volume2 } from 'lucide-react';
 import { HeroList, ColorScheme, MatchRecord, ThemeRoundness } from '../types';
 import { COLOR_SCHEMES_DATA } from '../constants';
 import { APP_VERSION, CHANGELOG, getUnreadReleasesCount } from '../utils/changelog';
@@ -8,6 +7,7 @@ import { useHaptics } from '../hooks/useHaptics';
 import { generateUUID } from '../utils/uuid';
 import { copyToClipboard } from '../utils/clipboard';
 import { shuffleArray } from '../utils/generator';
+import { ScreenOverlay } from './common/ScreenOverlay';
 
 
 interface SettingsOverlayProps {
@@ -125,10 +125,6 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
 
         return () => clearTimeout(timer);
     }, [activeTab, isOpen]);
-
-    useBackHandler(isOpen, () => {
-        onClose();
-    }, { id: 'settings-overlay', priority: 20 });
 
     const handleMouseDown = (e: React.MouseEvent) => {
         const el = tabsContainerRef.current;
@@ -280,59 +276,54 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
         }
     };
 
-    return (
-        <div className={`fixed inset-0 z-50 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transition-all duration-300 ease-in-out ${isOpen ? 'translate-x-0 opacity-100 visible' : 'translate-x-full opacity-0 invisible'}`}>
-            {/* Header with Safe Area */}
-            <div className="bg-white/70 dark:bg-slate-900/75 backdrop-blur-xl sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/60 transition-all duration-300 shadow-xs">
-                <div 
-                    className="px-4 py-3"
-                    style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
-                >
-                    <div className="relative flex items-center justify-center w-full min-h-[44px] touch-manipulation">
-                        <button
-                            onClick={onClose}
-                            aria-label="Закрыть"
-                            data-testid="settings-close-btn"
-                            className="absolute left-0 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-slate-100/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-90 transition-all shadow-xs"
-                        >
-                            <ChevronLeft size={22} />
-                        </button>
-                        <div className="flex items-center gap-2">
-                            <Sliders size={20} className="text-primary-500" />
-                            <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Настройки</h2>
-                        </div>
-                    </div>
-                </div>
+    const settingsTitle = (
+        <div className="flex items-center gap-2">
+            <Sliders size={20} className="text-primary-500 shrink-0" />
+            <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Настройки</h2>
+        </div>
+    );
 
-                {/* Tabs Bar */}
-                <div className="px-4 pb-3">
-                    <div 
-                        ref={tabsContainerRef} 
-                        onMouseDown={handleMouseDown} 
-                        onMouseLeave={handleMouseLeave} 
-                        onMouseUp={handleMouseUp} 
-                        onMouseMove={handleMouseMove} 
-                        className={`flex items-center gap-2 overflow-x-auto overscroll-contain no-scrollbar pb-0.5 touch-manipulation ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-                    >
-                        {renderTabButton('appearance', 'Внешний вид', <Palette size={16} />)}
-                        {renderTabButton('app_settings', 'Приложение', <SmartphoneNfc size={16} />)}
-                        {renderTabButton(
-                            'info', 
-                            'Инфо', 
-                            <Info size={16} />, 
-                            unreadChangelogCount > 0 ? (
-                                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse ml-0.5" />
-                            ) : null
-                        )}
-                        {isDebugMode && renderTabButton('debug', 'Debug', <Terminal size={16} />)}
-                    </div>
-                </div>
+    const settingsSubHeader = (
+        <div className="px-4 pb-3">
+            <div
+                ref={tabsContainerRef}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+                className={`flex items-center gap-2 overflow-x-auto overscroll-contain no-scrollbar pb-0.5 touch-manipulation ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+            >
+                {renderTabButton('appearance', 'Внешний вид', <Palette size={16} />)}
+                {renderTabButton('app_settings', 'Приложение', <SmartphoneNfc size={16} />)}
+                {renderTabButton(
+                    'info',
+                    'Инфо',
+                    <Info size={16} />,
+                    unreadChangelogCount > 0 ? (
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse ml-0.5" />
+                    ) : null
+                )}
+                {isDebugMode && renderTabButton('debug', 'Debug', <Terminal size={16} />)}
             </div>
+        </div>
+    );
 
-            {/* Scrollable Tab Content Container */}
-            <div className="flex-1 relative overflow-hidden" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-                <div className="absolute inset-0 overflow-y-auto overscroll-contain no-scrollbar">
-                    <div className="pb-safe-area-bottom min-h-full">
+    return (
+        <ScreenOverlay
+            isOpen={isOpen}
+            onClose={onClose}
+            title={settingsTitle}
+            subHeader={settingsSubHeader}
+            screenId="settings-screen"
+            priority={20}
+            testId="settings-overlay"
+            closeButtonTestId="settings-close-btn"
+            closeButtonAriaLabel="Закрыть"
+            bodyClassName="no-scrollbar"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+        >
+            <div className="pb-safe-area-bottom min-h-full">
                         {/* TAB 1: APPEARANCE */}
                         {activeTab === 'appearance' && (
                             <div className="flex flex-col items-center justify-start min-h-full px-4 py-4 sm:p-6 text-center animate-in fade-in slide-in-from-bottom-2 duration-200">
@@ -899,9 +890,7 @@ export const SettingsOverlay: React.FC<ExpandedSettingsProps> = ({
                             </div>
                         )}
                     </div>
-                </div>
-            </div>
-        </div>
+        </ScreenOverlay>
     );
 };
 

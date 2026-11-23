@@ -3,6 +3,7 @@ import { ChevronDown, X, SquareStack, Layers, BarChart3, Database, Filter, Cloud
 import { HeroList } from '../types';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { useHaptics } from '../hooks/useHaptics';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 
 interface SourceSelectorProps {
     lists: HeroList[];
@@ -57,7 +58,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
         <div
             className="w-full mb-6 relative"
             style={{
-                zIndex: isListSelectorOpen ? 50 : 20,
+                zIndex: isListSelectorOpen ? Z_INDEX_BASE.DROPDOWN : Z_INDEX_BASE.CONTENT_ELEVATED,
                 transition: isListSelectorOpen ? 'z-index 0s' : 'z-index 0s linear 0.3s'
             }}
         >
@@ -109,7 +110,7 @@ export const SourceSelector: React.FC<SourceSelectorProps> = ({
                     </div>
                 </button>
 
-                <div className={`absolute top-full left-0 w-full bg-white dark:bg-slate-900 glass-dropdown-gradient border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl overflow-hidden transition-all duration-300 origin-top flex flex-col source-selector-dropdown ${isListSelectorOpen ? 'opacity-100 scale-y-100 pointer-events-auto visible' : 'opacity-0 scale-y-0 pointer-events-none invisible'}`}>
+                <div className={`absolute top-full left-0 w-full bg-white dark:bg-slate-900 glass-dropdown-gradient border border-t-0 border-slate-100 dark:border-slate-800 rounded-b-3xl shadow-xl overflow-hidden transition-[opacity,transform,visibility] duration-200 ease-out flex flex-col source-selector-dropdown ${isListSelectorOpen ? 'opacity-100 translate-y-0 pointer-events-auto visible' : 'opacity-0 -translate-y-2 pointer-events-none invisible'}`}>
 
                     {/* Tabs Switcher */}
                     <div className="px-5 pt-4 pb-2">

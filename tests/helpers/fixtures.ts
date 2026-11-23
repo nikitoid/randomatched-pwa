@@ -1,6 +1,6 @@
 import { test as base } from '@playwright/test';
 import { RandoMatchedApp } from './page-objects';
-import { injectTestData, HeroList, TEST_LIST_PRIMARY } from './test-data';
+import { injectTestData, mockExternalFonts, HeroList, TEST_LIST_PRIMARY } from './test-data';
 
 // Определение типов для наших фикстур
 type MyFixtures = {
@@ -12,6 +12,7 @@ type MyFixtures = {
 export const test = base.extend<MyFixtures>({
     // Фикстура для главного объекта приложения
     app: async ({ page }, use) => {
+        await mockExternalFonts(page);
         const app = new RandoMatchedApp(page);
         await use(app);
     },

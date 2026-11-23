@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-    X, Plus, ChevronLeft, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, 
+    X, Plus, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, 
     Wifi, WifiOff, Loader2, Files, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, 
     BarChart3, Dice5, Check, GripVertical, MoreVertical, FileJson, FileText, 
     ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, 
@@ -17,6 +17,7 @@ import { CustomScrollbar } from './CustomScrollbar';
 import { HeroEditorRow, HeroViewRow } from './HeroEditorRow';
 import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
+import { ScreenOverlay } from './common/ScreenOverlay';
 import { DuplicateResolutionModal } from './DuplicateResolutionModal';
 import { generateUUID } from '../utils/uuid';
 import { normalizeHeroKey, findDuplicateOrSimilarHeroGroups, DuplicateGroup, KNOWN_HERO_ALIASES } from '../utils/heroNormalization';
@@ -247,10 +248,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     }, [isOpen]);
 
     // --- BACK BUTTON NAVIGATION (PWA/Android) ---
-    useBackHandler(isOpen, () => {
-        onClose();
-    }, { id: 'lists-overlay', priority: 20 });
-
     useBackHandler(isOpen && !!editingListId, () => {
         if (isEditMode) {
             handleCancelEditor();
@@ -946,124 +943,167 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         }
     }, [lists, reorderLists, sortOrder, triggerHaptic]);
 
-    return (
-        <div 
-            style={{ zIndex: Z_INDEX_BASE.OVERLAY }}
-            aria-hidden={!isOpen}
-            className={`fixed inset-0 bg-slate-50 dark:bg-slate-950 bg-grid-pattern flex flex-col transform-gpu will-change-transform transition-transform duration-300 ease-out ${
-                isOpen ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none'
-            }`}
-        >
-            {focusedRowIndex !== null && (<div className="fixed inset-0 z-40 bg-transparent" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setFocusedRowIndex(null); }} />)}
-
-            <div 
-                className={`bg-white/85 dark:bg-slate-900/85 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200/60 dark:border-slate-800/60 transition-opacity duration-200 shadow-2xs ${focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}`}
+    const editorHeaderActions = editingListId ? (
+        <>
+            <button
+                type="button"
+                ref={sortButtonRef}
+                onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); triggerHaptic(10); }}
+                className={`w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 active:scale-95 transition-all ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white ring-2 ring-primary-500/30' : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'}`}
+                aria-label="Сортировка списка"
+                title="Сортировка"
             >
-                <div 
-                    className="px-4 py-3 touch-manipulation"
-                    style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
+                {heroSortType === 'name' ? (
+                    heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />
+                ) : (
+                    <ArrowLeftRight size={18} className="rotate-90" />
+                )}
+            </button>
+            <button
+                type="button"
+                onClick={handleToggleEditorMenu}
+                className={`w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 active:scale-95 transition-all ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white ring-2 ring-primary-500/30' : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'}`}
+                aria-label="Дополнительные функции списка"
+                title="Опции списка"
+            >
+                <SlidersHorizontal size={18} />
+            </button>
+            {!isReadOnly ? (
+                <button
+                    type="button"
+                    onClick={handleSaveEditor}
+                    className="h-10 min-h-[40px] w-10 sm:w-32 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-xs shadow-md shadow-primary-600/20 active:scale-95 transition-all shrink-0"
+                    aria-label="Сохранить изменения"
+                    title="Сохранить изменения"
                 >
-                    {editingListId ? (
-                        <>
-                            <div className="flex items-center justify-between gap-2 min-h-[44px]">
-                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
-                                    <button 
-                                        onClick={handleCancelEditor} 
-                                        aria-label="Назад"
-                                        className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all shrink-0 border border-slate-200/50 dark:border-slate-700/50"
-                                    > 
-                                        <ChevronLeft size={22} /> 
-                                    </button>
-                                    <div className="flex-1 min-w-0 pr-1">
-                                        <h2 
-                                            className="font-heading text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate leading-tight"
-                                            title={lists.find(l => l.id === editingListId)?.name}
-                                        >
-                                            {lists.find(l => l.id === editingListId)?.name}
-                                        </h2>
-                                        <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 min-w-0">
-                                            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">Героев: {getCleanHeroes(editorHeroes).length}</span>
-                                            <span 
-                                                className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg font-bold border shrink-0 whitespace-nowrap ${
-                                                    editorIsGroupable 
-                                                        ? 'bg-violet-500/10 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-500/20' 
-                                                        : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 border-slate-200/70 dark:border-slate-700/70'
-                                                }`}
-                                                title={editorIsGroupable ? "Список включен в групповой режим" : "Список не включен в групповой режим"}
-                                            >
-                                                <SquareStack size={11} className={editorIsGroupable ? "text-violet-600 dark:text-violet-400" : "opacity-60"} /> 
-                                                <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
+                    <Save size={17} />
+                    <span className="hidden sm:inline">Сохранить</span>
+                </button>
+            ) : (
+                !isPermanentlyReadOnly && (
+                    <button
+                        type="button"
+                        onClick={() => { setIsEditMode(true); triggerHaptic(10); }}
+                        className="h-10 min-h-[40px] w-10 sm:w-32 flex items-center justify-center gap-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-600 dark:text-primary-300 font-bold text-xs active:scale-95 transition-all shrink-0"
+                        aria-label="Редактировать список"
+                        title="Редактировать список"
+                    >
+                        <Edit2 size={17} />
+                        <span className="hidden sm:inline">Редактировать</span>
+                    </button>
+                )
+            )}
+            <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
+        </>
+    ) : undefined;
 
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                    <button 
-                                        ref={sortButtonRef}
-                                        onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); triggerHaptic(10); }} 
-                                        className={`w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 active:scale-95 transition-all ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white ring-2 ring-primary-500/30' : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'}`}
-                                        aria-label="Сортировка списка"
-                                        title="Сортировка"
-                                    > 
-                                        {heroSortType === 'name' ? (
-                                            heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />
-                                        ) : (
-                                            <ArrowLeftRight size={18} className="rotate-90" />
-                                        )} 
-                                    </button>
-                                    <button 
-                                        onClick={handleToggleEditorMenu} 
-                                        className={`w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 active:scale-95 transition-all ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white ring-2 ring-primary-500/30' : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'}`}
-                                        aria-label="Дополнительные функции списка"
-                                        title="Опции списка"
-                                    >
-                                        <SlidersHorizontal size={18} />
-                                    </button>
-                                    {!isReadOnly ? (
-                                        <button 
-                                            onClick={handleSaveEditor} 
-                                            className="h-10 min-h-[40px] w-10 sm:w-32 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-xs shadow-md shadow-primary-600/20 active:scale-95 transition-all shrink-0"
-                                            aria-label="Сохранить изменения"
-                                            title="Сохранить изменения"
-                                        > 
-                                            <Save size={17} /> 
-                                            <span className="hidden sm:inline">Сохранить</span> 
-                                        </button>
-                                    ) : (
-                                        !isPermanentlyReadOnly && (
-                                            <button 
-                                                onClick={() => { setIsEditMode(true); triggerHaptic(10); }} 
-                                                className="h-10 min-h-[40px] w-10 sm:w-32 flex items-center justify-center gap-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-600 dark:text-primary-300 font-bold text-xs active:scale-95 transition-all shrink-0"
-                                                aria-label="Редактировать список"
-                                                title="Редактировать список"
-                                            > 
-                                                <Edit2 size={17} /> 
-                                                <span className="hidden sm:inline">Редактировать</span> 
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-                            </div>
-                            <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
-                        </>
-                    ) : (
-                        <div className="relative flex items-center justify-center w-full min-h-[44px]">
-                            <button 
-                                onClick={onClose} 
-                                aria-label="Закрыть списки"
-                                data-testid="lists-close-btn"
-                                className="absolute left-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full bg-slate-100/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all border border-slate-200/50 dark:border-slate-700/50"
-                            > 
-                                <ChevronLeft size={22} /> 
-                            </button>
-                            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Списки героев</h2>
-                        </div>
-                    )}
-                </div>
+    const listsSubHeader = !editingListId ? (
+        <div
+            className="flex items-center justify-between px-4 py-3 border-t border-slate-200/60 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40"
+        >
+            <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-2xs ${isOnline ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-slate-200/80 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
+                {isSyncing ? <><Loader2 size={11} className="animate-spin text-amber-500" /> Sync</> : isOnline ? <><Wifi size={11} className="text-emerald-500" /> Online</> : <><WifiOff size={11} className="text-slate-400" /> Offline</>}
             </div>
+            <div className="flex items-center gap-1.5 xs:gap-2">
+                {onOpenInactiveModal && (
+                    <button
+                        type="button"
+                        onClick={() => { triggerHaptic(10); onOpenInactiveModal(); }}
+                        className="h-9 px-3 flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-full shadow-2xs active:scale-95 transition-all font-bold text-xs"
+                        title="Сформировать список из давно не игравших героев"
+                    >
+                        <Clock size={15} />
+                        <span className="hidden xs:inline">Забытые</span>
+                    </button>
+                )}
+                <button
+                    type="button"
+                    onClick={handleToggleReorderMode}
+                    aria-label="Переупорядочить списки"
+                    className={`w-9 h-9 flex items-center justify-center rounded-full border shadow-2xs transition-all ${isReorderMode ? 'bg-primary-500/15 text-primary-600 border-primary-500/40 dark:bg-primary-900/40 dark:text-primary-300' : 'bg-white/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                >
+                    <GripVertical size={18} />
+                </button>
+                <button
+                    type="button"
+                    onClick={handleToggleSort}
+                    aria-label="Сортировать списки"
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
+                >
+                    {sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}
+                </button>
+                <button
+                    type="button"
+                    onClick={handleOpenCreate}
+                    className="h-9 px-3.5 sm:px-4 flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-full shadow-md shadow-primary-600/25 active:scale-95 transition-all font-bold text-xs"
+                    data-testid="new-list-btn"
+                >
+                    <Plus size={17} /> <span>Новый</span>
+                </button>
+            </div>
+        </div>
+    ) : undefined;
 
-            <div className="flex-1 relative overflow-hidden">
+    return (
+        <>
+        <ScreenOverlay
+            isOpen={isOpen}
+            onClose={onClose}
+            screenId="lists-screen"
+            priority={20}
+            testId="lists-overlay"
+            headerAlign={editingListId ? 'left' : 'center'}
+            onBackClick={editingListId ? handleCancelEditor : onClose}
+            closeButtonAriaLabel={editingListId ? 'Назад' : 'Закрыть списки'}
+            closeButtonTestId={editingListId ? undefined : 'lists-close-btn'}
+            headerClassName={focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}
+            overlayTopSlot={
+                focusedRowIndex !== null ? (
+                    <div
+                        className="fixed inset-0 bg-transparent"
+                        style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }}
+                        onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setFocusedRowIndex(null);
+                        }}
+                    />
+                ) : null
+            }
+            title={
+                editingListId ? (
+                    <h2
+                        className="font-heading text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate leading-tight"
+                        title={lists.find(l => l.id === editingListId)?.name}
+                    >
+                        {lists.find(l => l.id === editingListId)?.name}
+                    </h2>
+                ) : (
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Списки героев</h2>
+                )
+            }
+            subtitle={
+                editingListId ? (
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">Героев: {getCleanHeroes(editorHeroes).length}</span>
+                        <span
+                            className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg font-bold border shrink-0 whitespace-nowrap ${
+                                editorIsGroupable
+                                    ? 'bg-violet-500/10 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-500/20'
+                                    : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 border-slate-200/70 dark:border-slate-700/70'
+                            }`}
+                            title={editorIsGroupable ? "Список включен в групповой режим" : "Список не включен в групповой режим"}
+                        >
+                            <SquareStack size={11} className={editorIsGroupable ? "text-violet-600 dark:text-violet-400" : "opacity-60"} />
+                            <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
+                        </span>
+                    </div>
+                ) : undefined
+            }
+            headerActions={editorHeaderActions}
+            subHeader={listsSubHeader}
+            bodyScrollable={false}
+        >
                 {/* Editor Container */}
                 <div 
                     className={`absolute inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 bg-grid-pattern ${editingListId ? 'block pointer-events-auto' : 'hidden pointer-events-none'}`}
@@ -1196,30 +1236,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                 {/* Lists Main Screen */}
                 <div ref={listContainerRef} onTouchMove={handleTouchMove} className={`absolute inset-0 overflow-y-auto no-scrollbar ${editingListId ? 'hidden pointer-events-none' : 'block pointer-events-auto'}`}>
                     <div className="pb-safe-area-bottom">
-                        <div>
-                            <div 
-                                className="flex items-center justify-between sticky top-0 z-30 px-4 pt-3.5 pb-3.5 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 shadow-xs"
-                            >
-                                <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-2xs ${isOnline ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-slate-200/80 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
-                                    {isSyncing ? <><Loader2 size={11} className="animate-spin text-amber-500" /> Sync</> : isOnline ? <><Wifi size={11} className="text-emerald-500" /> Online</> : <><WifiOff size={11} className="text-slate-400" /> Offline</>}
-                                </div>
-                                <div className="flex items-center gap-1.5 xs:gap-2">
-                                    {onOpenInactiveModal && (
-                                        <button 
-                                            onClick={() => { triggerHaptic(10); onOpenInactiveModal(); }}
-                                            className="h-9 px-3 flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-full shadow-2xs active:scale-95 transition-all font-bold text-xs"
-                                            title="Сформировать список из давно не игравших героев"
-                                        >
-                                            <Clock size={15} />
-                                            <span className="hidden xs:inline">Забытые</span>
-                                        </button>
-                                    )}
-                                    <button onClick={handleToggleReorderMode} className={`w-9 h-9 flex items-center justify-center rounded-full border shadow-2xs transition-all ${isReorderMode ? 'bg-primary-500/15 text-primary-600 border-primary-500/40 dark:bg-primary-900/40 dark:text-primary-300' : 'bg-white/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}> <GripVertical size={18} /> </button>
-                                    <button onClick={handleToggleSort} className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"> {sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />} </button>
-                                    <button onClick={handleOpenCreate} className="h-9 px-3.5 sm:px-4 flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-full shadow-md shadow-primary-600/25 active:scale-95 transition-all font-bold text-xs" data-testid="new-list-btn"> <Plus size={17} /> <span>Новый</span> </button>
-                                </div>
-                            </div>
-                            <div className="px-4 pt-4 pb-4">
+                        <div className="px-4 pt-4 pb-4">
                                 {lists.length === 0 && (
                                     <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
                                         <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-4 shadow-inner">
@@ -1251,19 +1268,19 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                                         isReorderMode={isReorderMode} 
                                     />
                                 ))}
-                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+        </ScreenOverlay>
 
             {/* Sort Menu Portal */}
             {isSortMenuOpen && sortButtonRef.current && createPortal(
                 <>
-                    <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsSortMenuOpen(false)} />
+                    <div className="fixed inset-0 bg-transparent" style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }} onClick={() => setIsSortMenuOpen(false)} />
                     <div 
-                        className="fixed z-[61] w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200 p-1.5" 
+                        className="fixed w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200 p-1.5" 
                         style={{ 
+                            zIndex: Z_INDEX_BASE.OVERLAY_POPOVER,
                             top: sortButtonRef.current.getBoundingClientRect().bottom + 8, 
                             right: window.innerWidth - sortButtonRef.current.getBoundingClientRect().right, 
                         }}
@@ -1317,10 +1334,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             {/* Editor Menu Portal */}
             {isEditorMenuOpen && editorMenuRect && createPortal(
                 <>
-                    <div className="fixed inset-0 z-[60] bg-transparent" onClick={() => setIsEditorMenuOpen(false)} /> 
+                    <div className="fixed inset-0 bg-transparent" style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }} onClick={() => setIsEditorMenuOpen(false)} /> 
                     <div 
-                        className="fixed z-[61] w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200 p-1.5" 
-                        style={{ top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right }}
+                        className="fixed w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200 p-1.5" 
+                        style={{ zIndex: Z_INDEX_BASE.OVERLAY_POPOVER, top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right }}
                     > 
                         <button onClick={() => handleEditorMenuAction(() => setIsStatsModalOpen(true))} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <BarChart3 size={16} className="text-violet-500" /> <span>Баланс героев</span> </button>
                         <button
@@ -1375,8 +1392,8 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             {/* Context Menu Portal */}
             {contextMenuTargetId && menuPosition && activeListForMenu && activeItemRect && createPortal(
                 <>
-                    <div className="fixed inset-0 z-[60] bg-slate-950/30 backdrop-blur-[2px] animate-in fade-in duration-200" onClick={(e) => { e.stopPropagation(); handleCloseMenu(); }} /> 
-                    <div onClick={() => handleCloseMenu()} className="fixed z-[61] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-4 rounded-2xl flex items-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10" style={{ top: activeItemRect.top, left: activeItemRect.left, width: activeItemRect.width, height: activeItemRect.height, transformOrigin: 'center center' }}> 
+                    <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] animate-in fade-in duration-200" style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }} onClick={(e) => { e.stopPropagation(); handleCloseMenu(); }} /> 
+                    <div onClick={() => handleCloseMenu()} className="fixed bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-4 rounded-2xl flex items-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10" style={{ zIndex: Z_INDEX_BASE.OVERLAY_POPOVER, top: activeItemRect.top, left: activeItemRect.left, width: activeItemRect.width, height: activeItemRect.height, transformOrigin: 'center center' }}> 
                         <div className="mr-3.5 flex items-center justify-center w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/60 dark:border-slate-700/60 relative"> 
                             {getListIcon(activeListForMenu)} 
                             {updatedListIds && updatedListIds.has(activeListForMenu.id) && (<span className="absolute -top-1 -right-1 w-3 h-3 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900"></span>)} 
@@ -1393,7 +1410,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                             <MoreVertical size={18} /> 
                         </div> 
                     </div> 
-                    <div className={`fixed z-[62] w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 p-1.5 ${menuPosition.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-right' : 'animate-menu-in origin-top-right'}`} style={{ top: menuPosition.top, bottom: menuPosition.bottom, right: menuPosition.right }}> 
+                    <div className={`fixed w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 p-1.5 ${menuPosition.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-right' : 'animate-menu-in origin-top-right'}`} style={{ zIndex: Z_INDEX_BASE.OVERLAY_POPOVER + 1, top: menuPosition.top, bottom: menuPosition.bottom, right: menuPosition.right }}> 
                         {!activeListForMenu.isCloud && !activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleUpload(activeListForMenu.id); }} disabled={!isOnline} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors border-b border-slate-100 dark:border-slate-800/60 mb-1 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'hover:bg-sky-50 dark:hover:bg-sky-950/30 text-sky-600 dark:text-sky-400'}`}> <UploadCloud size={16} /> Выгрузить в облако </button>)} 
                         {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleOpenRename(activeListForMenu); }} disabled={(!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors ${(!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200'}`}> <Edit2 size={16} className="text-slate-500" /> Переименовать </button>)} 
                         {!activeListForMenu.isTemporary && (
@@ -1741,6 +1758,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                     triggerHaptic={triggerHaptic}
                 />
             )}
-        </div>
+        </>
     );
 });

@@ -58,6 +58,25 @@ const MODAL_SM_MAX_WIDTH_CLASSES: Record<NonNullable<BaseModalProps['maxWidth']>
   full: 'max-w-full sm:max-w-full',
 };
 
+const activeModalStack: string[] = [];
+
+const FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ');
+
+function getVisibleFocusableElements(container: HTMLElement): HTMLElement[] {
+  const candidates = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+  return candidates.filter((el) => {
+    if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') return false;
+    return el.offsetParent !== null || el.getClientRects().length > 0;
+  });
+}
+
 export const BaseModal: React.FC<BaseModalProps> = ({
   isOpen,
   onClose,
@@ -83,6 +102,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
 }) => {
   const generatedId = useId();
   const resolvedId = modalId || generatedId;
+  const titleId = `${resolvedId}-title`;
   const finalCloseButtonTestId = propCloseButtonTestId || (resolvedId ? `${resolvedId}-close-btn` : 'modal-close-button');
   const { getStackIndex } = useNavigation();
 
@@ -176,6 +196,88 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   );
 
   const dialogCardRef = useRef<HTMLDivElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  // Focus trap, initial focus & focus restoration
+  useEffect(() => {
+    if (!isOpen || !isRendered || typeof document === 'undefined') return;
+
+    if (!previouslyFocusedRef.current && document.activeElement instanceof HTMLElement) {
+      previouslyFocusedRef.current = document.activeElement;
+    }
+
+    if (!activeModalStack.includes(resolvedId)) {
+      activeModalStack.push(resolvedId);
+    }
+
+    const focusRaf = requestAnimationFrame(() => {
+      const card = dialogCardRef.current;
+      if (card && !card.contains(document.activeElement)) {
+        card.focus({ preventScroll: true });
+      }
+    });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (activeModalStack[activeModalStack.length - 1] !== resolvedId) return;
+
+      const card = dialogCardRef.current;
+      if (!card) return;
+
+      const focusable = getVisibleFocusableElements(card);
+      if (focusable.length === 0) {
+        e.preventDefault();
+        card.focus({ preventScroll: true });
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey) {
+        if (!active || active === first || active === card || !card.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (!active || active === last || !card.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      cancelAnimationFrame(focusRaf);
+      document.removeEventListener('keydown', handleKeyDown);
+      const idx = activeModalStack.lastIndexOf(resolvedId);
+      if (idx !== -1) {
+        activeModalStack.splice(idx, 1);
+      }
+    };
+  }, [isOpen, isRendered, resolvedId]);
+
+  useEffect(() => {
+    if (!isRendered && previouslyFocusedRef.current) {
+      const target = previouslyFocusedRef.current;
+      previouslyFocusedRef.current = null;
+      if (target.isConnected) {
+        target.focus({ preventScroll: true });
+      }
+    }
+  }, [isRendered]);
+
+  useEffect(() => {
+    return () => {
+      if (previouslyFocusedRef.current && previouslyFocusedRef.current.isConnected) {
+        previouslyFocusedRef.current.focus({ preventScroll: true });
+      }
+      previouslyFocusedRef.current = null;
+    };
+  }, []);
 
   // Фиксация максимальной высоты вьюпорта без клавиатуры и состояния фокуса на инпутах
   const maxSeenHeightRef = useRef<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
@@ -543,6 +645,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       }}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={!title ? 'Диалоговое окно' : undefined}
       data-testid={resolvedId}
     >
       {/* Изолированный слой бэкдропа с размытием */}
@@ -556,7 +660,8 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       {/* Карточка модалки в изолированном контексте наложения */}
       <div
         ref={dialogCardRef}
-        className={`relative z-10 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
+        tabIndex={-1}
+        className={`relative z-10 outline-none bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-2xl ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col overflow-hidden w-full ${getMaxWidthClass()} ${
           isBottomSheetScreen
             ? viewportStyle.isFullHeightNeeded
               ? 'rounded-t-2xl sm:rounded-3xl h-full'
@@ -592,7 +697,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
                   {icon}
                 </div>
               )}
-              <div className="min-w-0 flex-1">
+              <div id={title ? titleId : undefined} className="min-w-0 flex-1">
                 {title && (
                   typeof title === 'string' ? (
                     <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white leading-tight truncate">

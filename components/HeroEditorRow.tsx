@@ -4,6 +4,7 @@ import { Hero } from '../types';
 import { RankSelect } from './RankSelect';
 import { Avatar } from './common/Avatar';
 import { normalizeHeroKey } from '../utils/heroNormalization';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 
 
 // --- COMPONENT FOR EDITING HERO ---
@@ -103,10 +104,15 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
 
     return (
         <div
-            className={`flex items-center gap-2 mb-1.5 transition-opacity duration-200
-                ${isFocused || (isInputFocused && activeSuggestions.length > 0) ? 'relative z-50 scale-[1.01]' : 'relative z-0'}
+            className={`flex items-center gap-2 mb-1.5 transition-opacity duration-200 relative
+                ${isFocused || (isInputFocused && activeSuggestions.length > 0) ? 'scale-[1.01]' : ''}
                 ${isDimmed ? 'opacity-30 pointer-events-none' : ''}
             `}
+            style={{
+                zIndex: isFocused || (isInputFocused && activeSuggestions.length > 0)
+                    ? Z_INDEX_BASE.OVERLAY_POPOVER
+                    : 0,
+            }}
         >
             {/* Rank Select */}
             <div className="w-14 h-9 shrink-0 relative">
@@ -156,7 +162,10 @@ export const HeroEditorRow: React.FC<HeroEditorRowProps> = memo(({
 
                 {/* Suggestions Dropdown */}
                 {isInputFocused && activeSuggestions.length > 0 && (
-                    <div className="suggestions-dropdown absolute top-[100%] left-0 right-0 mt-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div
+                        className="suggestions-dropdown absolute top-[100%] left-0 right-0 mt-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150"
+                        style={{ zIndex: Z_INDEX_BASE.OVERLAY_POPOVER }}
+                    >
                         <div className="p-1 flex flex-col gap-0.5 max-h-none overflow-hidden">
                             {activeSuggestions.map((item) => (
                                 <button

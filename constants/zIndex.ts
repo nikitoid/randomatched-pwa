@@ -3,12 +3,22 @@
  * Обеспечивает строгую иерархию и отсутствие конфликтов визуального наложения.
  */
 export const Z_INDEX_BASE = {
-  NAVBAR: 30,
-  OVERLAY: 40,        // Экранные полноэкранные панели (ListsOverlay, SettingsOverlay)
-  MODAL: 50,          // Базовый уровень обычных модальных окон
-  ALERT: 70,          // Базовый уровень диалогов подтверждения и критических окон
-  TOAST: 90,          // Уведомления и тосты
-  TOOLTIP: 100,       // Выпадающие списки и тултипы
+  BASE: 1,
+  HEADER: 10,
+  CONTENT_ELEVATED: 20, // Закрытые выпадающие блоки на главном экране (SourceSelector, PlayerNameInput)
+  NAVBAR: 30,           // Нижняя панель навигации и локальные sticky-шапки
+  BACKDROP: 35,         // Затемнение дропдаунов главного экрана
+  DROPDOWN: 38,         // Открытые дропдауны главного экрана (поверх BACKDROP, ниже OVERLAY)
+  OVERLAY: 40,          // Полноэкранные экраны (ScreenOverlay: Lists, Stats, Settings, Result)
+  OVERLAY_NESTED: 45,   // Вложенный полноэкранный экран поверх OVERLAY (ChangelogOverlay)
+  OVERLAY_BACKDROP: 46, // Бэкдропы внутренних меню поверх OVERLAY
+  OVERLAY_POPOVER: 48,  // Попапы/контекстные меню внутри OVERLAY (ниже MODAL)
+  MODAL: 50,            // Базовый уровень обычных модальных окон (50 + priority + depth*2)
+  ALERT: 70,            // Базовый уровень диалогов подтверждения (70 + priority + depth*2)
+  TOOLTIP: 200,         // Портальные дропдауны поверх модалок (RankSelect, floating drag card)
+  TOAST: 220,           // Тост-уведомления (всегда поверх модалок и алертов)
+  UPDATE_BANNER: 225,   // Баннер обновления PWA
+  PRANK: 240,           // Секретное послание PrankOverlay
 } as const;
 
 /**

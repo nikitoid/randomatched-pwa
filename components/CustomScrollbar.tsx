@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Z_INDEX_BASE } from '../constants/zIndex';
 
 interface CustomScrollbarProps {
     containerRef: React.RefObject<HTMLDivElement>;
@@ -140,8 +141,8 @@ export const CustomScrollbar: React.FC<CustomScrollbarProps> = ({ containerRef, 
 
     return (
         <div
-            className={`absolute right-1 top-0 bottom-0 w-3 pointer-events-none transition-opacity duration-300 z-50 ${className}`}
-            style={{ opacity: isVisible ? 1 : 0 }}
+            className={`absolute right-1 top-0 bottom-0 w-3 pointer-events-none transition-opacity duration-300 ${className}`}
+            style={{ opacity: isVisible ? 1 : 0, zIndex: Z_INDEX_BASE.NAVBAR }}
         >
             <div
                 ref={trackRef}

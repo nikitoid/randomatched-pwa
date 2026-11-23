@@ -20,7 +20,7 @@ export const UpdateBanner: React.FC<UpdateBannerProps> = ({
             className="fixed top-0 left-0 w-full p-4 animate-in fade-in slide-in-from-top animate-duration-500 pointer-events-none"
             style={{ 
                 paddingTop: 'calc(1rem + env(safe-area-inset-top))',
-                zIndex: Z_INDEX_BASE.TOAST + 5
+                zIndex: Z_INDEX_BASE.UPDATE_BANNER
             }}
         >
             <div className="max-w-md mx-auto bg-primary-600 dark:bg-primary-600 rounded-2xl shadow-2xl shadow-primary-600/40 p-4 flex items-center gap-4 text-white pointer-events-auto border border-white/15 backdrop-blur-md">

@@ -499,7 +499,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                     {/* Top Heroes Section */}
                     <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                         <div
-                            className="flex items-center justify-between cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={heroesState !== 'collapsed'}
+                            className="flex items-center justify-between cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setHeroesState(prev => {
@@ -507,6 +510,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setHeroesState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -645,7 +659,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                     {/* Top Partners Section */}
                     <div className="bg-white dark:bg-slate-900 glass-card-gradient border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs">
                         <div
-                            className="flex items-center justify-between cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={partnersState !== 'collapsed'}
+                            className="flex items-center justify-between cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setPartnersState(prev => {
@@ -653,6 +670,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setPartnersState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">
@@ -791,7 +819,10 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                     {/* Match History Section */}
                     <div>
                         <div
-                            className="flex items-center justify-between mb-3 cursor-pointer select-none"
+                            role="button"
+                            tabIndex={0}
+                            aria-expanded={matchesState !== 'collapsed'}
+                            className="flex items-center justify-between mb-3 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 rounded-xl"
                             onClick={() => {
                                 triggerHaptic(10);
                                 setMatchesState(prev => {
@@ -799,6 +830,17 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
                                     if (prev === 'partial') return 'expanded';
                                     return 'collapsed';
                                 });
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    triggerHaptic(10);
+                                    setMatchesState(prev => {
+                                        if (prev === 'collapsed') return 'partial';
+                                        if (prev === 'partial') return 'expanded';
+                                        return 'collapsed';
+                                    });
+                                }
                             }}
                         >
                             <div className="flex items-center gap-2">

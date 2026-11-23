@@ -11,6 +11,7 @@ import { useHistoryInput } from './hooks/useHistoryInput';
 import { useTeamGeneration } from './hooks/useTeamGeneration';
 import { useSeasons } from './hooks/useSeasons';
 import { Header } from './components/Header';
+import { Z_INDEX_BASE } from './constants/zIndex';
 import { SourceSelector } from './components/SourceSelector';
 import { PlayerNameInput } from './components/PlayerNameInput';
 import { MainControls } from './components/MainControls';
@@ -509,15 +510,15 @@ const App: React.FC = () => {
                     }}
                 />
 
-                <main className="flex-1 flex flex-col items-center main-content-layout px-6 pt-6 pb-28 w-full max-w-lg mx-auto relative z-1">
-
+                <main className="flex-1 flex flex-col items-center main-content-layout px-6 pt-6 pb-28 w-full max-w-lg mx-auto relative">
                     <div
-                        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-40 transition-all duration-300 ${isListSelectorOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
-                        onClick={() => setIsListSelectorOpen(false)}
-                    />
-                    <div
-                        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-40 transition-all duration-300 ${isNamesOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
-                        onClick={() => setIsNamesOpen(false)}
+                        aria-hidden="true"
+                        className={`fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] transition-all duration-300 ${isListSelectorOpen || isNamesOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}
+                        style={{ zIndex: Z_INDEX_BASE.BACKDROP }}
+                        onClick={() => {
+                            setIsListSelectorOpen(false);
+                            setIsNamesOpen(false);
+                        }}
                     />
 
                     <SourceSelector
