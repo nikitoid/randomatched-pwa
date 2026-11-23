@@ -1,24 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { 
-    X, Plus, Edit2, Trash2, Filter, Cloud, UploadCloud, Database, 
-    Wifi, WifiOff, Loader2, Files, ArrowDownAZ, ArrowUpAZ, Save, AlertCircle, 
-    BarChart3, Dice5, Check, GripVertical, MoreVertical, FileJson, FileText, 
-    ArrowLeftRight, Download, Upload, Copy, AlertTriangle, ChevronDown, 
-    SquareStack, Info, SlidersHorizontal, Clock
-} from 'lucide-react';
+import { SquareStack } from 'lucide-react';
 import { useBackHandler } from '../hooks/useBackHandler';
 import { HeroList, Hero, MatchRecord } from '../types';
 import { RANKS, RANK_VALUES } from '../constants';
 import { Z_INDEX_BASE } from '../constants/zIndex';
-import { RankSelect } from './RankSelect';
-import { ListItem } from './ListItem';
-import { CustomScrollbar } from './CustomScrollbar';
-import { HeroEditorRow, HeroViewRow } from './HeroEditorRow';
-import { BaseModal } from './common/BaseModal';
 import { ConfirmModal } from './common/ConfirmModal';
 import { ScreenOverlay } from './common/ScreenOverlay';
 import { DuplicateResolutionModal } from './DuplicateResolutionModal';
+import { ListsSubHeader, ListsCollectionView } from './lists/ListsCollectionView';
+import { ListEditorHeaderActions, ListEditorView } from './lists/ListEditorView';
+import { ListContextMenu } from './lists/ListContextMenu';
+import { ListNameModal } from './lists/ListNameModal';
+import { ListImportExportModals, ListImportMode } from './lists/ListImportExportModals';
 import { generateUUID } from '../utils/uuid';
 import { normalizeHeroKey, findDuplicateOrSimilarHeroGroups, DuplicateGroup, KNOWN_HERO_ALIASES } from '../utils/heroNormalization';
 
@@ -47,7 +40,6 @@ interface ListsOverlayProps {
 }
 
 type SortOrder = 'asc' | 'desc' | 'custom';
-type ImportMode = 'none' | 'text_import' | 'text_export' | 'rank_import' | 'file_import_confirm' | 'rank_import_confirm';
 
 export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     isOpen,
@@ -88,12 +80,10 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
 
     // Import/Export States
-    const [importMode, setImportMode] = useState<ImportMode>('none');
+    const [importMode, setImportMode] = useState<ListImportMode>('none');
     const [importTextValue, setImportTextValue] = useState('');
     const [rankSourceListId, setRankSourceListId] = useState('');
     const [rankSourceType, setRankSourceType] = useState<'list' | 'stats'>('list');
-    const [isRankSourceDropdownOpen, setIsRankSourceDropdownOpen] = useState(false);
-    const [isRankInfoOpen, setIsRankInfoOpen] = useState(false);
     const [pendingFileHeroes, setPendingFileHeroes] = useState<Hero[] | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const createListFileInputRef = useRef<HTMLInputElement>(null);
@@ -108,7 +98,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     // Menu State
     const [contextMenuTargetId, setContextMenuTargetId] = useState<string | null>(null);
     const [isEditorMenuOpen, setIsEditorMenuOpen] = useState(false);
-    const [menuPosition, setMenuPosition] = useState<{ top?: number, bottom?: number, right: number, origin: 'top' | 'bottom' } | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top?: number; bottom?: number; right: number; origin: 'top' | 'bottom' } | null>(null);
     const [activeItemRect, setActiveItemRect] = useState<DOMRect | null>(null);
     const [editorMenuRect, setEditorMenuRect] = useState<DOMRect | null>(null);
 
@@ -116,7 +106,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     const [editorHeroes, setEditorHeroes] = useState<Hero[]>([]);
     const [editorIsGroupable, setEditorIsGroupable] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
-
 
     // Sort State
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -137,7 +126,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
 
         const map = new Map<string, { name: string; norm: string; lower: string; rank?: string }>();
 
-        // 1. From all lists
         lists.forEach(l => {
             l.heroes.forEach(h => {
                 const name = (h.name || '').trim();
@@ -148,7 +136,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             });
         });
 
-        // 2. From match history
         if (history && history.length > 0) {
             history.forEach(m => {
                 [...m.team1, ...m.team2].forEach(p => {
@@ -161,7 +148,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             });
         }
 
-        // 3. From known canonical hero aliases
         Object.keys(KNOWN_HERO_ALIASES).forEach(aliasKey => {
             const norm = normalizeHeroKey(aliasKey);
             if (norm && !map.has(norm)) {
@@ -193,17 +179,15 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     // Drag/Scroll refs
     const dragItem = useRef<number | null>(null);
     const dragOverItem = useRef<number | null>(null);
-    const [isListDragging, setIsListDragging] = useState(false);
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const sortButtonRef = useRef<HTMLButtonElement>(null);
 
-    // Determine if current editor session is read-only (offline cloud list or not in edit mode)
     const currentList = lists.find(l => l.id === editingListId);
     const isPermanentlyReadOnly = !!(currentList?.isCloud && !isOnline);
     const isReadOnly = !isEditMode || isPermanentlyReadOnly;
 
-    // --- CHANGE DETECTION LOGIC ---
     const hasFieldUpdate = (heroId: string, field: 'name' | 'rank') => {
         if (localHeroUpdates.has(`${heroId}:${field}`)) return true;
         if (editingListId && updatedHeroIds) {
@@ -213,7 +197,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         return false;
     };
 
-    // --- DIRTY CHECK LOGIC ---
     const getCleanHeroes = (heroes: Hero[]) => {
         return heroes
             .filter(h => h.name.trim() !== '' || h.rank !== '')
@@ -236,9 +219,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
 
     useEffect(() => {
         if (!isOpen) return;
-        // Откладываем синхронизацию до завершения анимации выезда (300мс),
-        // чтобы исключить микрофризы и блокировку основного потока на смартфонах.
-        // Запускается строго один раз при открытии окна (зависимость только от isOpen).
         const timer = setTimeout(() => {
             if (onSyncRef.current) {
                 onSyncRef.current();
@@ -246,6 +226,44 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         }, 350);
         return () => clearTimeout(timer);
     }, [isOpen]);
+
+    const manualGoBack = () => {
+        if (editingListId) {
+            if (onDismissHeroUpdates) {
+                onDismissHeroUpdates(editingListId);
+            }
+            if (editorContainerRef.current) {
+                editorContainerRef.current.scrollTop = 0;
+            }
+            setLocalHeroUpdates(new Set());
+            setEditingListId(null);
+            setEditorHeroes([]);
+            setEditorIsGroupable(false);
+            setOriginalHeroesJson('');
+            setIsEditMode(false);
+        }
+    };
+
+    const handleCloseMenu = useCallback(() => {
+        setContextMenuTargetId(null);
+        setMenuPosition(null);
+        setActiveItemRect(null);
+    }, []);
+
+    const handleCancelEditor = () => {
+        if (isEditMode) {
+            if (isDirty) {
+                if (window.history.state?.id !== 'list-editing') {
+                    window.history.pushState({ type: 'modal', id: 'list-editing' }, '');
+                }
+                setDiscardModalOpen(true);
+            } else {
+                setIsEditMode(false);
+            }
+        } else {
+            manualGoBack();
+        }
+    };
 
     // --- BACK BUTTON NAVIGATION (PWA/Android) ---
     useBackHandler(isOpen && !!editingListId, () => {
@@ -272,7 +290,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         setIsSortMenuOpen(false);
     }, { id: 'list-sort-menu', priority: 25 });
 
-    // Сброс скролла списка при открытии, закрытии или смене списка
     useEffect(() => {
         if (editingListId) {
             if (editorContainerRef.current) {
@@ -286,33 +303,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             return () => cancelAnimationFrame(rafId);
         }
     }, [editingListId]);
-
-    const manualGoBack = () => {
-        if (editingListId) {
-            if (onDismissHeroUpdates) {
-                onDismissHeroUpdates(editingListId);
-            }
-            if (editorContainerRef.current) {
-                editorContainerRef.current.scrollTop = 0;
-            }
-            setLocalHeroUpdates(new Set());
-            setEditingListId(null);
-            setEditorHeroes([]);
-            setEditorIsGroupable(false);
-            setOriginalHeroesJson('');
-            setIsEditMode(false);
-        }
-    };
-
-    const getStatsEligibleHelpers = () => {
-        const currentHeroes = editorHeroes.filter(h => h.name.trim() !== '');
-        let eligibleCount = 0;
-        currentHeroes.forEach(h => {
-            const { matches } = getHeroStats(h.name.trim());
-            if (matches >= 3) eligibleCount++;
-        });
-        return { eligibleCount, total: currentHeroes.length };
-    };
 
     const getHeroStats = (heroName: string) => {
         let wins = 0;
@@ -331,6 +321,16 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             }
         });
         return { wins, matches };
+    };
+
+    const getStatsEligibleHelpers = () => {
+        const currentHeroes = editorHeroes.filter(h => h.name.trim() !== '');
+        let eligibleCount = 0;
+        currentHeroes.forEach(h => {
+            const { matches } = getHeroStats(h.name.trim());
+            if (matches >= 3) eligibleCount++;
+        });
+        return { eligibleCount, total: currentHeroes.length };
     };
 
     const calculateRank = (wins: number, matches: number) => {
@@ -361,12 +361,12 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             }
             setLocalHeroUpdates(new Set());
         }
-    }, [isOpen, editingListId, onDismissHeroUpdates]);
+    }, [isOpen, editingListId, onDismissHeroUpdates, handleCloseMenu]);
 
     useEffect(() => {
         if (contextMenuTargetId) document.body.style.overflow = 'hidden';
         else document.body.style.overflow = '';
-        return () => { document.body.style.overflow = ''; }
+        return () => { document.body.style.overflow = ''; };
     }, [contextMenuTargetId]);
 
     // --- IMPORT / EXPORT HANDLERS ---
@@ -446,7 +446,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                     if (fileInputRef.current) fileInputRef.current.value = '';
                     setImportMode('file_import_confirm');
                 } else { if (addToast) addToast("Неверный формат файла", "error"); }
-            } catch (err) { if (addToast) addToast("Ошибка чтения файла", "error"); }
+            } catch { if (addToast) addToast("Ошибка чтения файла", "error"); }
         };
         reader.readAsText(file);
     };
@@ -476,7 +476,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                     if (createListFileInputRef.current) createListFileInputRef.current.value = '';
                     if (addToast) addToast(`Список "${name}" создан`, "success");
                 } else { if (addToast) addToast("Неверный формат файла", "error"); }
-            } catch (err) { if (addToast) addToast("Ошибка чтения файла", "error"); }
+            } catch { if (addToast) addToast("Ошибка чтения файла", "error"); }
         };
         reader.readAsText(file);
     };
@@ -555,8 +555,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     const openRankImport = () => {
         setRankSourceListId('');
         setRankSourceType('list');
-        setIsRankSourceDropdownOpen(false);
-        setIsRankInfoOpen(false);
         setImportMode('rank_import');
     };
 
@@ -590,7 +588,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             setImportMode('none');
             if (addToast) addToast(`Обновлено рангов: ${changesCount}`, "success", 2000);
         } else {
-            // Stats Import
             if (importMode !== 'rank_import_confirm') {
                 const { eligibleCount, total } = getStatsEligibleHelpers();
                 if (eligibleCount < total && eligibleCount > 0) {
@@ -603,7 +600,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                 }
             }
 
-            // Execute Import
             newHeroes.forEach((hero, idx) => {
                 const name = hero.name.trim();
                 if (!name) return;
@@ -644,12 +640,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         triggerHaptic(10);
         setIsReorderMode(prev => !prev);
     }, [triggerHaptic]);
-
-    const handleCloseMenu = useCallback(() => {
-        setContextMenuTargetId(null);
-        setMenuPosition(null);
-        setActiveItemRect(null);
-    }, []);
 
     const handleOpenMenu = useCallback((id: string, buttonRect: DOMRect, cardRect: DOMRect) => {
         triggerHaptic(10);
@@ -728,7 +718,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         const heroes = JSON.parse(JSON.stringify(list.heroes));
         const isGroupable = !!list.isGroupable;
         setEditorIsGroupable(isGroupable);
-        setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(heroes), isGroupable: isGroupable }));
+        setOriginalHeroesJson(JSON.stringify({ heroes: getCleanHeroes(heroes), isGroupable }));
         const isReadOnlyLocal = !!(list.isCloud && !isOnline);
         if (!isReadOnlyLocal) {
             const last = heroes[heroes.length - 1];
@@ -806,8 +796,8 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         if (isReadOnly) return;
         triggerHaptic(20);
         if (editingListId) {
-            const currentList = lists.find(l => l.id === editingListId);
-            if (currentList?.isCloud && checkConnectivity && addToast && !(await checkConnectivity())) { addToast("Нет интернета", "error"); return; }
+            const targetList = lists.find(l => l.id === editingListId);
+            if (targetList?.isCloud && checkConnectivity && addToast && !(await checkConnectivity())) { addToast("Нет интернета", "error"); return; }
             const activeHeroes = editorHeroes.filter(h => h.name.trim() !== '' || h.rank !== '');
             if (activeHeroes.length > 0) {
                 const hasEmptyNames = activeHeroes.some(h => !h.name.trim());
@@ -844,24 +834,6 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
 
     const handleCancelModal = () => { setNameModalOpen(false); setListToDelete(null); };
 
-    const handleCancelEditor = () => {
-        if (isEditMode) {
-            if (isDirty) {
-                // Если мы попали сюда через системную кнопку "Назад", история уже вернулась к 'list-details'.
-                // Чтобы при отмене модали подтверждения мы могли вернуться в редактор,
-                // восстанавливаем состояние редактора в истории перед показом модали.
-                if (window.history.state?.id !== 'list-editing') {
-                    window.history.pushState({ type: 'modal', id: 'list-editing' }, '');
-                }
-                setDiscardModalOpen(true);
-            } else {
-                setIsEditMode(false);
-            }
-        } else {
-            manualGoBack();
-        }
-    };
-
     const handleDiscardConfirm = () => {
         if (editingListId) {
             const originalData = JSON.parse(originalHeroesJson);
@@ -879,22 +851,9 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
 
     const handleDiscardCancel = () => { setDiscardModalOpen(false); };
 
-    const activeListForMenu = lists.find(l => l.id === contextMenuTargetId);
-    const getListIcon = (list: HeroList) => { if (list.isTemporary) return <Filter size={22} className="text-primary-500" />; if (list.isCloud) return <Cloud size={22} className="text-sky-500" />; return <Database size={22} className="text-slate-400" />; };
-    const getStats = () => { const counts: Record<string, number> = {}; let total = 0; editorHeroes.forEach(h => { if (h.name.trim() !== '' || h.rank !== '') { if (h.rank) counts[h.rank] = (counts[h.rank] || 0) + 1; total++; } }); const max = Math.max(...Object.values(counts), 1); return { counts, max, total }; };
-    const getRankBarColor = (rank: string) => {
-        if (rank === 'S+') return 'bg-yellow-500 dark:bg-yellow-500'; if (rank === 'S-') return 'bg-yellow-400 dark:bg-yellow-400'; if (rank.startsWith('S')) return 'bg-yellow-500 dark:bg-yellow-500';
-        if (rank === 'A+') return 'bg-violet-600 dark:bg-violet-600'; if (rank === 'A-') return 'bg-violet-500 dark:bg-violet-500'; if (rank.startsWith('A')) return 'bg-violet-600 dark:bg-violet-600';
-        if (rank === 'B+') return 'bg-blue-600 dark:bg-blue-600'; if (rank === 'B-') return 'bg-blue-500 dark:bg-blue-500'; if (rank.startsWith('B')) return 'bg-blue-600 dark:bg-blue-600';
-        if (rank === 'C+') return 'bg-green-600 dark:bg-green-600'; if (rank === 'C-') return 'bg-green-500 dark:bg-green-500'; if (rank.startsWith('C')) return 'bg-green-600 dark:bg-green-600';
-        if (rank === 'D+') return 'bg-slate-300 dark:bg-slate-200'; if (rank === 'D-') return 'bg-slate-200 dark:bg-slate-300'; if (rank.startsWith('D')) return 'bg-slate-300 dark:bg-slate-200';
-        if (rank === 'E+') return 'bg-gray-600 dark:bg-gray-500'; if (rank === 'E-') return 'bg-gray-500 dark:bg-gray-600'; if (rank.startsWith('E')) return 'bg-gray-600 dark:bg-gray-500';
-        return 'bg-slate-200 dark:bg-slate-700';
-    };
-
     const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, index: number) => {
         dragItem.current = index;
-        setIsListDragging(true);
+        setDraggedIndex(index);
         handleCloseMenu();
         if (sortOrder !== 'custom') setSortOrder('custom');
         if ('touches' in e) document.body.style.overflow = 'hidden';
@@ -910,6 +869,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
             newLists.splice(dragItem.current, 1);
             newLists.splice(index, 0, draggedListContent);
             dragItem.current = index;
+            setDraggedIndex(index);
             reorderLists(newLists);
             if (sortOrder !== 'custom') setSortOrder('custom');
             triggerHaptic(5);
@@ -919,7 +879,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
     const handleDragEnd = useCallback((e: React.DragEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
         dragItem.current = null;
         dragOverItem.current = null;
-        setIsListDragging(false);
+        setDraggedIndex(null);
         if ('changedTouches' in e) document.body.style.overflow = '';
     }, []);
 
@@ -936,6 +896,7 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                 newLists.splice(dragItem.current, 1);
                 newLists.splice(index, 0, draggedListContent);
                 dragItem.current = index;
+                setDraggedIndex(index);
                 reorderLists(newLists);
                 if (sortOrder !== 'custom') setSortOrder('custom');
                 triggerHaptic(5);
@@ -943,542 +904,226 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
         }
     }, [lists, reorderLists, sortOrder, triggerHaptic]);
 
-    const editorHeaderActions = editingListId ? (
-        <>
-            <button
-                type="button"
-                ref={sortButtonRef}
-                onClick={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); triggerHaptic(10); }}
-                className={`w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 active:scale-95 transition-all ${isSortMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white ring-2 ring-primary-500/30' : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'}`}
-                aria-label="Сортировка списка"
-                title="Сортировка"
-            >
-                {heroSortType === 'name' ? (
-                    heroSortDirection === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />
-                ) : (
-                    <ArrowLeftRight size={18} className="rotate-90" />
-                )}
-            </button>
-            <button
-                type="button"
-                onClick={handleToggleEditorMenu}
-                className={`w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 active:scale-95 transition-all ${isEditorMenuOpen ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white ring-2 ring-primary-500/30' : 'hover:bg-slate-200/60 dark:hover:bg-slate-700/60'}`}
-                aria-label="Дополнительные функции списка"
-                title="Опции списка"
-            >
-                <SlidersHorizontal size={18} />
-            </button>
-            {!isReadOnly ? (
-                <button
-                    type="button"
-                    onClick={handleSaveEditor}
-                    className="h-10 min-h-[40px] w-10 sm:w-32 flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold text-xs shadow-md shadow-primary-600/20 active:scale-95 transition-all shrink-0"
-                    aria-label="Сохранить изменения"
-                    title="Сохранить изменения"
-                >
-                    <Save size={17} />
-                    <span className="hidden sm:inline">Сохранить</span>
-                </button>
-            ) : (
-                !isPermanentlyReadOnly && (
-                    <button
-                        type="button"
-                        onClick={() => { setIsEditMode(true); triggerHaptic(10); }}
-                        className="h-10 min-h-[40px] w-10 sm:w-32 flex items-center justify-center gap-1.5 rounded-xl bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30 text-primary-600 dark:text-primary-300 font-bold text-xs active:scale-95 transition-all shrink-0"
-                        aria-label="Редактировать список"
-                        title="Редактировать список"
-                    >
-                        <Edit2 size={17} />
-                        <span className="hidden sm:inline">Редактировать</span>
-                    </button>
-                )
-            )}
-            <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileChange} />
-        </>
-    ) : undefined;
-
-    const listsSubHeader = !editingListId ? (
-        <div
-            className="flex items-center justify-between px-4 py-3 border-t border-slate-200/60 dark:border-slate-800/60 bg-white/40 dark:bg-slate-900/40"
-        >
-            <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-2xs ${isOnline ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300' : 'bg-slate-200/80 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'}`}>
-                {isSyncing ? <><Loader2 size={11} className="animate-spin text-amber-500" /> Sync</> : isOnline ? <><Wifi size={11} className="text-emerald-500" /> Online</> : <><WifiOff size={11} className="text-slate-400" /> Offline</>}
-            </div>
-            <div className="flex items-center gap-1.5 xs:gap-2">
-                {onOpenInactiveModal && (
-                    <button
-                        type="button"
-                        onClick={() => { triggerHaptic(10); onOpenInactiveModal(); }}
-                        className="h-9 px-3 flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 rounded-full shadow-2xs active:scale-95 transition-all font-bold text-xs"
-                        title="Сформировать список из давно не игравших героев"
-                    >
-                        <Clock size={15} />
-                        <span className="hidden xs:inline">Забытые</span>
-                    </button>
-                )}
-                <button
-                    type="button"
-                    onClick={handleToggleReorderMode}
-                    aria-label="Переупорядочить списки"
-                    className={`w-9 h-9 flex items-center justify-center rounded-full border shadow-2xs transition-all ${isReorderMode ? 'bg-primary-500/15 text-primary-600 border-primary-500/40 dark:bg-primary-900/40 dark:text-primary-300' : 'bg-white/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                >
-                    <GripVertical size={18} />
-                </button>
-                <button
-                    type="button"
-                    onClick={handleToggleSort}
-                    aria-label="Сортировать списки"
-                    className="w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 shadow-2xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all"
-                >
-                    {sortOrder === 'desc' ? <ArrowUpAZ size={18} /> : <ArrowDownAZ size={18} />}
-                </button>
-                <button
-                    type="button"
-                    onClick={handleOpenCreate}
-                    className="h-9 px-3.5 sm:px-4 flex items-center gap-1.5 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-full shadow-md shadow-primary-600/25 active:scale-95 transition-all font-bold text-xs"
-                    data-testid="new-list-btn"
-                >
-                    <Plus size={17} /> <span>Новый</span>
-                </button>
-            </div>
-        </div>
-    ) : undefined;
+    const activeListForMenu = lists.find(l => l.id === contextMenuTargetId);
 
     return (
         <>
-        <ScreenOverlay
-            isOpen={isOpen}
-            onClose={onClose}
-            screenId="lists-screen"
-            priority={20}
-            testId="lists-overlay"
-            headerAlign={editingListId ? 'left' : 'center'}
-            onBackClick={editingListId ? handleCancelEditor : onClose}
-            closeButtonAriaLabel={editingListId ? 'Назад' : 'Закрыть списки'}
-            closeButtonTestId={editingListId ? undefined : 'lists-close-btn'}
-            headerClassName={focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}
-            overlayTopSlot={
-                focusedRowIndex !== null ? (
-                    <div
-                        className="fixed inset-0 bg-transparent"
-                        style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }}
-                        onPointerDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setFocusedRowIndex(null);
-                        }}
-                    />
-                ) : null
-            }
-            title={
-                editingListId ? (
-                    <h2
-                        className="font-heading text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate leading-tight"
-                        title={lists.find(l => l.id === editingListId)?.name}
-                    >
-                        {lists.find(l => l.id === editingListId)?.name}
-                    </h2>
-                ) : (
-                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Списки героев</h2>
-                )
-            }
-            subtitle={
-                editingListId ? (
-                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">Героев: {getCleanHeroes(editorHeroes).length}</span>
-                        <span
-                            className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg font-bold border shrink-0 whitespace-nowrap ${
-                                editorIsGroupable
-                                    ? 'bg-violet-500/10 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-500/20'
-                                    : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 border-slate-200/70 dark:border-slate-700/70'
-                            }`}
-                            title={editorIsGroupable ? "Список включен в групповой режим" : "Список не включен в групповой режим"}
+            <ScreenOverlay
+                isOpen={isOpen}
+                onClose={onClose}
+                screenId="lists-screen"
+                priority={20}
+                testId="lists-overlay"
+                headerAlign={editingListId ? 'left' : 'center'}
+                onBackClick={editingListId ? handleCancelEditor : onClose}
+                closeButtonAriaLabel={editingListId ? 'Назад' : 'Закрыть списки'}
+                closeButtonTestId={editingListId ? undefined : 'lists-close-btn'}
+                headerClassName={focusedRowIndex !== null ? 'opacity-25 pointer-events-none' : ''}
+                overlayTopSlot={
+                    focusedRowIndex !== null ? (
+                        <div
+                            className="fixed inset-0 bg-transparent"
+                            style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }}
+                            onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setFocusedRowIndex(null);
+                            }}
+                        />
+                    ) : null
+                }
+                title={
+                    editingListId ? (
+                        <h2
+                            className="font-heading text-base sm:text-lg font-bold text-slate-900 dark:text-white truncate leading-tight"
+                            title={currentList?.name}
                         >
-                            <SquareStack size={11} className={editorIsGroupable ? "text-violet-600 dark:text-violet-400" : "opacity-60"} />
-                            <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
-                        </span>
-                    </div>
-                ) : undefined
-            }
-            headerActions={editorHeaderActions}
-            subHeader={listsSubHeader}
-            bodyScrollable={false}
-        >
-                {/* Editor Container */}
-                <div 
-                    className={`absolute inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 bg-grid-pattern ${editingListId ? 'block pointer-events-auto' : 'hidden pointer-events-none'}`}
-                >
-                    <div ref={editorContainerRef} className="absolute inset-0 overflow-y-auto no-scrollbar">
-                        <div className="pb-safe-area-bottom px-4 pt-4">
-                            {!isReadOnly && (
-                                <div className="mb-3.5 p-3 rounded-2xl bg-white/75 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/70 dark:border-slate-800/70 flex items-center justify-between shadow-2xs">
-                                    <div className="flex items-center gap-3 min-w-0 mr-2">
-                                        <div className={`w-10 h-10 min-w-[40px] rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                                            editorIsGroupable 
-                                                ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/30' 
-                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200/60 dark:border-slate-700/60'
-                                        }`}>
-                                            <SquareStack size={20} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                                                Групповой режим
-                                            </div>
-                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                                                {editorIsGroupable ? 'Список участвует в подборе' : 'Список скрыт из подбора'}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setEditorIsGroupable(!editorIsGroupable);
-                                            triggerHaptic(10);
-                                        }}
-                                        className={`h-10 min-h-[40px] px-3.5 flex items-center gap-2 rounded-xl text-xs font-bold transition-all active:scale-95 shrink-0 ${
-                                            editorIsGroupable
-                                                ? 'bg-gradient-to-r from-violet-600 to-violet-500 hover:from-violet-500 hover:to-violet-400 text-white shadow-md shadow-violet-600/20'
-                                                : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80'
-                                        }`}
-                                        aria-label={editorIsGroupable ? 'Список в группе' : 'Список не в группе'}
-                                        title="Переключить участие списка в групповом режиме"
-                                    >
-                                        <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
-                                        <span className={`w-2 h-2 rounded-full ${editorIsGroupable ? 'bg-white shadow-xs' : 'bg-slate-400 dark:bg-slate-500'}`} />
-                                    </button>
-                                </div>
-                            )}
-
-                            {!isReadOnly && currentEditorDuplicateGroups.length > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        triggerHaptic(20);
-                                        setPendingDuplicatesData({
-                                            groups: currentEditorDuplicateGroups,
-                                            originalHeroes: editorHeroes.filter(h => h.name.trim() !== ''),
-                                            onApply: (resolvedHeroes) => {
-                                                setEditorHeroes(resolvedHeroes);
-                                                setPendingDuplicatesData(null);
-                                                if (addToast) addToast("Дубликаты в списке объединены", "success");
-                                            }
-                                        });
-                                    }}
-                                    className="w-full mb-3.5 p-3 rounded-2xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-300/80 dark:border-amber-700/80 flex items-center justify-between gap-3 text-amber-900 dark:text-amber-200 active:scale-[0.99] transition-all shadow-2xs"
-                                >
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                        <div className="p-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
-                                            <AlertTriangle size={18} />
-                                        </div>
-                                        <div className="text-left min-w-0">
-                                            <div className="text-xs sm:text-sm font-bold truncate">
-                                                Найдено дубликатов: {currentEditorDuplicateGroups.length}
-                                            </div>
-                                            <div className="text-[11px] text-amber-700 dark:text-amber-400/90 font-medium truncate">
-                                                Нажмите для объединения похожих героев
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span className="px-3 py-1.5 text-xs font-extrabold bg-amber-500 hover:bg-amber-600 text-white rounded-xl shrink-0 shadow-xs flex items-center gap-1">
-                                        <Check size={14} />
-                                        <span>Объединить</span>
-                                    </span>
-                                </button>
-                            )}
-
-                            {editorHeroes.map((hero, index) => {
-                                if (isReadOnly && index === editorHeroes.length - 1 && hero.name.trim() === '' && hero.rank === '') {
-                                    return null;
-                                }
-
-                                const isFocused = focusedRowIndex === index;
-                                const isDimmed = focusedRowIndex !== null && !isFocused;
-                                const isPlaceholderRow = !isReadOnly && index === editorHeroes.length - 1;
-
-                                if (isReadOnly) {
-                                    return (
-                                        <HeroViewRow
-                                            key={hero.id}
-                                            hero={hero}
-                                            hasRankUpdate={hasFieldUpdate(hero.id, 'rank')}
-                                            hasNameUpdate={hasFieldUpdate(hero.id, 'name')}
-                                            hasLocalUpdate={localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`)}
-                                        />
-                                    );
-                                }
-
-                                return (
-                                    <HeroEditorRow
-                                        key={hero.id}
-                                        hero={hero}
-                                        index={index}
-                                        isReadOnly={isReadOnly}
-                                        isFocused={isFocused}
-                                        isDimmed={isDimmed}
-                                        isPlaceholderRow={isPlaceholderRow}
-                                        hasRankUpdate={hasFieldUpdate(hero.id, 'rank')}
-                                        hasNameUpdate={hasFieldUpdate(hero.id, 'name')}
-                                        hasLocalUpdate={localHeroUpdates.has(`${hero.id}:name`) || localHeroUpdates.has(`${hero.id}:rank`)}
-                                        onChange={handleHeroChange}
-                                        onRemove={handleRemoveHero}
-                                        setFocusedRowIndex={setFocusedRowIndex}
-                                        allHeroSuggestions={allHeroSuggestions}
-                                    />
-                                );
-                            })}
-                            <div className="h-20" />
-                        </div>
-                    </div>
-                    <CustomScrollbar containerRef={editorContainerRef} />
-                </div>
-
-                {/* Lists Main Screen */}
-                <div ref={listContainerRef} onTouchMove={handleTouchMove} className={`absolute inset-0 overflow-y-auto no-scrollbar ${editingListId ? 'hidden pointer-events-none' : 'block pointer-events-auto'}`}>
-                    <div className="pb-safe-area-bottom">
-                        <div className="px-4 pt-4 pb-4">
-                                {lists.length === 0 && (
-                                    <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
-                                        <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-center text-slate-400 dark:text-slate-500 mb-4 shadow-inner">
-                                            <Files size={32} />
-                                        </div>
-                                        <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">Нет списков</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mb-5">Создайте свой первый список героев для генерации команд и отслеживания статистики</p>
-                                        <button onClick={handleOpenCreate} className="h-10 px-5 flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl shadow-md shadow-primary-600/20 font-bold text-xs active:scale-95 transition-all">
-                                            <Plus size={16} /> Создать список
-                                        </button>
-                                    </div>
-                                )}
-                                {lists.map((list, idx) => (
-                                    <ListItem 
-                                        key={list.id} 
-                                        list={list} 
-                                        index={idx} 
-                                        total={lists.length} 
-                                        isOnline={isOnline} 
-                                        contextMenuTargetId={contextMenuTargetId} 
-                                        onOpenMenu={handleOpenMenu} 
-                                        onEdit={handleOpenEditor} 
-                                        onDragStart={handleDragStart} 
-                                        onDragEnter={handleDragEnter} 
-                                        onDragEnd={handleDragEnd} 
-                                        isDragging={dragItem.current === idx} 
-                                        hasUpdate={updatedListIds ? updatedListIds.has(list.id) : false} 
-                                        onMarkSeen={onMarkSeen} 
-                                        isReorderMode={isReorderMode} 
-                                    />
-                                ))}
-                        </div>
-                    </div>
-                </div>
-        </ScreenOverlay>
-
-            {/* Sort Menu Portal */}
-            {isSortMenuOpen && sortButtonRef.current && createPortal(
-                <>
-                    <div className="fixed inset-0 bg-transparent" style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }} onClick={() => setIsSortMenuOpen(false)} />
-                    <div 
-                        className="fixed w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200 p-1.5" 
-                        style={{ 
-                            zIndex: Z_INDEX_BASE.OVERLAY_POPOVER,
-                            top: sortButtonRef.current.getBoundingClientRect().bottom + 8, 
-                            right: window.innerWidth - sortButtonRef.current.getBoundingClientRect().right, 
-                        }}
-                    >
-                        <button 
-                            onClick={() => { handleSort('name', 'asc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
-                        >
-                            <span className="flex items-center gap-2.5">
-                                <ArrowDownAZ size={16} className="text-slate-500" />
-                                Имя: А-Я
-                            </span>
-                            {heroSortType === 'name' && heroSortDirection === 'asc' && <Check size={16} className="text-primary-600 dark:text-primary-400 font-bold" />}
-                        </button>
-                        <button 
-                            onClick={() => { handleSort('name', 'desc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
-                        >
-                            <span className="flex items-center gap-2.5">
-                                <ArrowUpAZ size={16} className="text-slate-500" />
-                                Имя: Я-А
-                            </span>
-                            {heroSortType === 'name' && heroSortDirection === 'desc' && <Check size={16} className="text-primary-600 dark:text-primary-400 font-bold" />}
-                        </button>
-                        <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" />
-                        <button 
-                            onClick={() => { handleSort('rank', 'desc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
-                        >
-                            <span className="flex items-center gap-2.5">
-                                <ArrowLeftRight size={16} className="rotate-90 text-slate-500" />
-                                Ранг: по убыванию
-                            </span>
-                            {heroSortType === 'rank' && heroSortDirection === 'desc' && <Check size={16} className="text-primary-600 dark:text-primary-400 font-bold" />}
-                        </button>
-                        <button 
-                            onClick={() => { handleSort('rank', 'asc'); setIsSortMenuOpen(false); }} 
-                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
-                        >
-                            <span className="flex items-center gap-2.5">
-                                <ArrowLeftRight size={16} className="rotate-90 text-slate-500" />
-                                Ранг: по возрастанию
-                            </span>
-                            {heroSortType === 'rank' && heroSortDirection === 'asc' && <Check size={16} className="text-primary-600 dark:text-primary-400 font-bold" />}
-                        </button>
-                    </div>
-                </>,
-                document.body
-            )}
-
-            {/* Editor Menu Portal */}
-            {isEditorMenuOpen && editorMenuRect && createPortal(
-                <>
-                    <div className="fixed inset-0 bg-transparent" style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }} onClick={() => setIsEditorMenuOpen(false)} /> 
-                    <div 
-                        className="fixed w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-menu-in origin-top-right animate-in fade-in zoom-in-95 duration-200 p-1.5" 
-                        style={{ zIndex: Z_INDEX_BASE.OVERLAY_POPOVER, top: editorMenuRect.bottom + 8, right: window.innerWidth - editorMenuRect.right }}
-                    > 
-                        <button onClick={() => handleEditorMenuAction(() => setIsStatsModalOpen(true))} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <BarChart3 size={16} className="text-violet-500" /> <span>Баланс героев</span> </button>
-                        <button
-                            onClick={() => handleEditorMenuAction(() => {
-                                const activeHeroes = editorHeroes.filter(h => h.name.trim() !== '');
-                                const groups = findDuplicateOrSimilarHeroGroups(activeHeroes.map(h => h.name));
-                                if (groups.length === 0) {
-                                    if (addToast) addToast("В списке нет дубликатов", "info");
-                                    return;
-                                }
-                                setPendingDuplicatesData({
-                                    groups,
-                                    originalHeroes: activeHeroes,
-                                    onApply: (resolved) => {
-                                        setEditorHeroes(resolved);
-                                        setPendingDuplicatesData(null);
-                                        if (addToast) addToast("Дубликаты объединены", "success");
-                                    }
-                                });
-                            })}
-                            className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
-                        >
-                            <AlertTriangle size={16} className="text-amber-500" />
-                            <div className="flex items-center justify-between flex-1">
-                                <span>Слияние дубликатов</span>
-                                {currentEditorDuplicateGroups.length > 0 && (
-                                    <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500 text-white font-extrabold">
-                                        {currentEditorDuplicateGroups.length}
-                                    </span>
-                                )}
-                            </div>
-                        </button>
-                        <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" />
-                        <button onClick={() => handleEditorMenuAction(handleFileExport)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <FileJson size={16} className="text-slate-500" /> <span>Экспорт в файл</span> </button> 
-                        {!isReadOnly && !currentList?.isTemporary && (
-                            <button onClick={() => handleEditorMenuAction(triggerFileUpload)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <Upload size={16} className="text-slate-500" /> <span>Импорт из файла</span> </button> 
-                        )} 
-                        <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" /> 
-                        <button onClick={() => handleEditorMenuAction(() => openTextExport(undefined))} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <Copy size={16} className="text-slate-500" /> <span>Экспорт (Текст)</span> </button> 
-                        {!isReadOnly && !currentList?.isTemporary && (
-                            <> 
-                                <button onClick={() => handleEditorMenuAction(openTextImport)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <FileText size={16} className="text-slate-500" /> <span>Импорт (Текст)</span> </button> 
-                                <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" /> 
-                                <button onClick={() => handleEditorMenuAction(openRankImport)} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-violet-50 dark:hover:bg-violet-900/30 active:bg-violet-100 dark:active:bg-violet-900/50 text-violet-600 dark:text-violet-300 text-xs font-semibold transition-colors"> <ArrowLeftRight size={16} /> <span>Импорт рангов</span> </button> 
-                            </>
-                        )} 
-                    </div> 
-                </>, 
-                document.body
-            )}
-
-            {/* Context Menu Portal */}
-            {contextMenuTargetId && menuPosition && activeListForMenu && activeItemRect && createPortal(
-                <>
-                    <div className="fixed inset-0 bg-slate-950/30 backdrop-blur-[2px] animate-in fade-in duration-200" style={{ zIndex: Z_INDEX_BASE.OVERLAY_BACKDROP }} onClick={(e) => { e.stopPropagation(); handleCloseMenu(); }} /> 
-                    <div onClick={() => handleCloseMenu()} className="fixed bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl p-4 rounded-2xl flex items-center shadow-2xl ring-1 ring-black/5 dark:ring-white/10" style={{ zIndex: Z_INDEX_BASE.OVERLAY_POPOVER, top: activeItemRect.top, left: activeItemRect.left, width: activeItemRect.width, height: activeItemRect.height, transformOrigin: 'center center' }}> 
-                        <div className="mr-3.5 flex items-center justify-center w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200/60 dark:border-slate-700/60 relative"> 
-                            {getListIcon(activeListForMenu)} 
-                            {updatedListIds && updatedListIds.has(activeListForMenu.id) && (<span className="absolute -top-1 -right-1 w-3 h-3 bg-sky-500 rounded-full border-2 border-white dark:border-slate-900"></span>)} 
-                        </div> 
-                        <div className="flex-1 min-w-0 mr-3"> 
-                            <h3 className={`font-bold text-base leading-snug truncate mb-0.5 ${activeListForMenu.isTemporary ? 'text-primary-900 dark:text-primary-300 italic' : 'text-slate-900 dark:text-slate-100'}`}> {activeListForMenu.name} </h3> 
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2"> 
-                                <span>Героев: {activeListForMenu.heroes.length}</span> 
-                                {activeListForMenu.isTemporary && <span className="text-primary-500 dark:text-primary-400 font-bold">временный</span>} 
-                                {activeListForMenu.isCloud && !isOnline && <span className="px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px]">Offline</span>} 
-                            </p> 
-                        </div> 
-                        <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-xl bg-primary-500/10 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 flex items-center justify-center shrink-0"> 
-                            <MoreVertical size={18} /> 
-                        </div> 
-                    </div> 
-                    <div className={`fixed w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden ring-1 ring-black/5 dark:ring-white/10 p-1.5 ${menuPosition.origin === 'bottom' ? 'animate-menu-in-up origin-bottom-right' : 'animate-menu-in origin-top-right'}`} style={{ zIndex: Z_INDEX_BASE.OVERLAY_POPOVER + 1, top: menuPosition.top, bottom: menuPosition.bottom, right: menuPosition.right }}> 
-                        {!activeListForMenu.isCloud && !activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleUpload(activeListForMenu.id); }} disabled={!isOnline} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors border-b border-slate-100 dark:border-slate-800/60 mb-1 ${!isOnline ? 'opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-500' : 'hover:bg-sky-50 dark:hover:bg-sky-950/30 text-sky-600 dark:text-sky-400'}`}> <UploadCloud size={16} /> Выгрузить в облако </button>)} 
-                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleOpenRename(activeListForMenu); }} disabled={(!isOnline && activeListForMenu.isCloud)} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors ${(!isOnline && activeListForMenu.isCloud) ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200'}`}> <Edit2 size={16} className="text-slate-500" /> Переименовать </button>)} 
-                        {!activeListForMenu.isTemporary && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCloseMenu();
-                                    const groups = findDuplicateOrSimilarHeroGroups(activeListForMenu.heroes.map(h => h.name));
-                                    if (groups.length === 0) {
-                                        if (addToast) addToast("В этом списке нет дубликатов", "info");
-                                        return;
-                                    }
-                                    setPendingDuplicatesData({
-                                        groups,
-                                        originalHeroes: activeListForMenu.heroes,
-                                        onApply: (resolved) => {
-                                            const clean = getCleanHeroes(resolved);
-                                            onUpdateList(activeListForMenu.id, { heroes: clean });
-                                            setPendingDuplicatesData(null);
-                                            if (addToast) addToast("Дубликаты в списке объединены", "success");
-                                        }
-                                    });
-                                }}
-                                className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
+                            {currentList?.name}
+                        </h2>
+                    ) : (
+                        <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">Списки героев</h2>
+                    )
+                }
+                subtitle={
+                    editingListId ? (
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium shrink-0">Героев: {getCleanHeroes(editorHeroes).length}</span>
+                            <span
+                                className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-lg font-bold border shrink-0 whitespace-nowrap ${
+                                    editorIsGroupable
+                                        ? 'bg-violet-500/10 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border-violet-500/20'
+                                        : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 border-slate-200/70 dark:border-slate-700/70'
+                                }`}
+                                title={editorIsGroupable ? "Список включен в групповой режим" : "Список не включен в групповой режим"}
                             >
-                                <AlertTriangle size={16} className="text-amber-500" />
-                                <span>Слияние дубликатов</span>
-                            </button>
-                        )}
-                        <button onClick={(e) => { e.stopPropagation(); openTextExport(activeListForMenu); }} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <Copy size={16} className="text-slate-500" /> Экспорт (Текст) </button> 
-                        {!activeListForMenu.isTemporary && (<button onClick={(e) => { e.stopPropagation(); handleExternalFileExport(activeListForMenu); }} className="w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 dark:active:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"> <FileJson size={16} className="text-slate-500" /> Экспорт в файл </button>)} 
-                        <div className="h-px bg-slate-100 dark:bg-slate-800/80 my-1 mx-2" /> 
-                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(activeListForMenu); }} disabled={activeListForMenu.isCloud && !isOnline} className={`w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 text-xs font-semibold transition-colors ${activeListForMenu.isCloud && !isOnline ? 'opacity-40 cursor-not-allowed text-slate-400' : 'hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400'}`}> <Trash2 size={16} /> {activeListForMenu.isCloud ? 'Удалить из облака' : 'Удалить'} </button> 
-                    </div> 
-                </>, 
-                document.body
-            )}
-
-            {/* Name Modal */}
-            <BaseModal
-                isOpen={isNameModalOpen}
-                onClose={handleCancelModal}
-                title={nameModalMode === 'create' ? 'Новый список' : 'Переименовать'}
-                maxWidth="xs"
-                variant="auto"
-                modalId="list-name-modal"
-                priority={40}
-                showCloseButton={false}
-            >
-                <form onSubmit={handleNameSubmit} className="space-y-4"> 
-                    <input autoFocus={isNameModalOpen} type="text" value={nameInputValue} onChange={(e) => setNameInputValue(e.target.value)} className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white select-text" placeholder="Название..." /> 
-                    {nameModalMode === 'create' && (
-                        <div className="mb-4"> 
-                            <div className="flex items-center gap-2 mb-2"> 
-                                <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800"></div> 
-                                <span className="text-[10px] uppercase text-slate-400 font-bold">Или</span> 
-                                <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800"></div> 
-                            </div> 
-                            <button type="button" onClick={triggerCreateListFileUpload} className="w-full py-2.5 flex items-center justify-center gap-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-bold border border-slate-200 dark:border-slate-700 active:bg-slate-100 dark:active:bg-slate-700 transition-colors"> <Upload size={16} /> Загрузить из файла </button> 
-                            <input type="file" ref={createListFileInputRef} className="hidden" accept=".json" onChange={handleNewListImport} /> 
+                                <SquareStack size={11} className={editorIsGroupable ? "text-violet-600 dark:text-violet-400" : "opacity-60"} />
+                                <span>{editorIsGroupable ? 'В группе' : 'Не в группе'}</span>
+                            </span>
                         </div>
-                    )} 
-                    <div className="grid grid-cols-2 gap-3 pt-2"> 
-                        <button type="button" onClick={handleCancelModal} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
-                        <button type="submit" disabled={!nameInputValue.trim()} className="py-3 font-bold text-white bg-primary-600 rounded-xl" data-testid="name-submit-btn">ОК</button> 
-                    </div> 
-                </form> 
-            </BaseModal>
+                    ) : undefined
+                }
+                headerActions={
+                    editingListId ? (
+                        <ListEditorHeaderActions
+                            heroSortType={heroSortType}
+                            heroSortDirection={heroSortDirection}
+                            isSortMenuOpen={isSortMenuOpen}
+                            isEditorMenuOpen={isEditorMenuOpen}
+                            isReadOnly={isReadOnly}
+                            isPermanentlyReadOnly={isPermanentlyReadOnly}
+                            sortButtonRef={sortButtonRef}
+                            fileInputRef={fileInputRef}
+                            onToggleSortMenu={(e) => { e.stopPropagation(); setIsSortMenuOpen(!isSortMenuOpen); triggerHaptic(10); }}
+                            onToggleEditorMenu={handleToggleEditorMenu}
+                            onSaveEditor={handleSaveEditor}
+                            onEnableEditMode={() => { setIsEditMode(true); triggerHaptic(10); }}
+                            onFileChange={handleFileChange}
+                        />
+                    ) : undefined
+                }
+                subHeader={
+                    !editingListId ? (
+                        <ListsSubHeader
+                            isOnline={isOnline}
+                            isSyncing={isSyncing}
+                            isReorderMode={isReorderMode}
+                            sortOrder={sortOrder}
+                            onOpenInactiveModal={onOpenInactiveModal}
+                            onToggleReorderMode={handleToggleReorderMode}
+                            onToggleSort={handleToggleSort}
+                            onOpenCreate={handleOpenCreate}
+                            triggerHaptic={triggerHaptic}
+                        />
+                    ) : undefined
+                }
+                bodyScrollable={false}
+            >
+                <ListEditorView
+                    isVisible={!!editingListId}
+                    isReadOnly={isReadOnly}
+                    currentList={currentList}
+                    editorHeroes={editorHeroes}
+                    editorIsGroupable={editorIsGroupable}
+                    setEditorIsGroupable={setEditorIsGroupable}
+                    currentEditorDuplicateGroups={currentEditorDuplicateGroups}
+                    focusedRowIndex={focusedRowIndex}
+                    setFocusedRowIndex={setFocusedRowIndex}
+                    localHeroUpdates={localHeroUpdates}
+                    hasFieldUpdate={hasFieldUpdate}
+                    allHeroSuggestions={allHeroSuggestions}
+                    editorContainerRef={editorContainerRef}
+                    onChangeHero={handleHeroChange}
+                    onRemoveHero={handleRemoveHero}
+                    onOpenDuplicatesModal={() => {
+                        triggerHaptic(20);
+                        setPendingDuplicatesData({
+                            groups: currentEditorDuplicateGroups,
+                            originalHeroes: editorHeroes.filter(h => h.name.trim() !== ''),
+                            onApply: (resolvedHeroes) => {
+                                setEditorHeroes(resolvedHeroes);
+                                setPendingDuplicatesData(null);
+                                if (addToast) addToast("Дубликаты в списке объединены", "success");
+                            }
+                        });
+                    }}
+                    isSortMenuOpen={isSortMenuOpen}
+                    setIsSortMenuOpen={setIsSortMenuOpen}
+                    sortButtonRef={sortButtonRef}
+                    heroSortType={heroSortType}
+                    heroSortDirection={heroSortDirection}
+                    onSort={handleSort}
+                    isEditorMenuOpen={isEditorMenuOpen}
+                    setIsEditorMenuOpen={setIsEditorMenuOpen}
+                    editorMenuRect={editorMenuRect}
+                    onEditorMenuAction={handleEditorMenuAction}
+                    onOpenBalanceStats={() => setIsStatsModalOpen(true)}
+                    onTriggerMergeDuplicates={() => {
+                        const activeHeroes = editorHeroes.filter(h => h.name.trim() !== '');
+                        const groups = findDuplicateOrSimilarHeroGroups(activeHeroes.map(h => h.name));
+                        if (groups.length === 0) {
+                            if (addToast) addToast("В списке нет дубликатов", "info");
+                            return;
+                        }
+                        setPendingDuplicatesData({
+                            groups,
+                            originalHeroes: activeHeroes,
+                            onApply: (resolved) => {
+                                setEditorHeroes(resolved);
+                                setPendingDuplicatesData(null);
+                                if (addToast) addToast("Дубликаты объединены", "success");
+                            }
+                        });
+                    }}
+                    onFileExport={handleFileExport}
+                    onTriggerFileUpload={triggerFileUpload}
+                    onOpenTextExport={() => openTextExport(undefined)}
+                    onOpenTextImport={openTextImport}
+                    onOpenRankImport={openRankImport}
+                    triggerHaptic={triggerHaptic}
+                />
+
+                <ListsCollectionView
+                    isHidden={!!editingListId}
+                    lists={lists}
+                    isOnline={isOnline}
+                    contextMenuTargetId={contextMenuTargetId}
+                    draggedIndex={draggedIndex}
+                    updatedListIds={updatedListIds}
+                    isReorderMode={isReorderMode}
+                    listContainerRef={listContainerRef}
+                    onTouchMove={handleTouchMove}
+                    onOpenMenu={handleOpenMenu}
+                    onEdit={handleOpenEditor}
+                    onDragStart={handleDragStart}
+                    onDragEnter={handleDragEnter}
+                    onDragEnd={handleDragEnd}
+                    onMarkSeen={onMarkSeen}
+                    onOpenCreate={handleOpenCreate}
+                />
+            </ScreenOverlay>
+
+            <ListContextMenu
+                list={contextMenuTargetId && menuPosition && activeItemRect ? activeListForMenu : undefined}
+                menuPosition={menuPosition}
+                activeItemRect={activeItemRect}
+                isOnline={isOnline}
+                hasUpdate={!!(activeListForMenu && updatedListIds && updatedListIds.has(activeListForMenu.id))}
+                onClose={handleCloseMenu}
+                onUpload={handleUpload}
+                onRename={handleOpenRename}
+                onMergeDuplicates={(list) => {
+                    const groups = findDuplicateOrSimilarHeroGroups(list.heroes.map(h => h.name));
+                    if (groups.length === 0) {
+                        if (addToast) addToast("В этом списке нет дубликатов", "info");
+                        return;
+                    }
+                    setPendingDuplicatesData({
+                        groups,
+                        originalHeroes: list.heroes,
+                        onApply: (resolved) => {
+                            const clean = getCleanHeroes(resolved);
+                            onUpdateList(list.id, { heroes: clean });
+                            setPendingDuplicatesData(null);
+                            if (addToast) addToast("Дубликаты в списке объединены", "success");
+                        }
+                    });
+                }}
+                onTextExport={openTextExport}
+                onFileExport={handleExternalFileExport}
+                onDelete={handleDeleteClick}
+            />
+
+            <ListNameModal
+                isOpen={isNameModalOpen}
+                mode={nameModalMode}
+                nameInputValue={nameInputValue}
+                setNameInputValue={setNameInputValue}
+                createListFileInputRef={createListFileInputRef}
+                onTriggerCreateListFileUpload={triggerCreateListFileUpload}
+                onNewListImport={handleNewListImport}
+                onSubmit={handleNameSubmit}
+                onCancel={handleCancelModal}
+            />
 
             {/* Delete Modal */}
             <ConfirmModal
@@ -1494,244 +1139,28 @@ export const ListsOverlay: React.FC<ListsOverlayProps> = React.memo(({
                 priority={45}
             />
 
-            {/* Text Export Modal */}
-            <BaseModal
-                isOpen={importMode === 'text_export'}
-                onClose={() => setImportMode('none')}
-                title="Экспорт текста"
-                subtitle="Формат: Имя|Ранг (одна строка - один герой)"
-                maxWidth="md"
-                variant="auto"
-                modalId="list-export-modal"
-                priority={40}
-                showCloseButton={false}
-                footer={() => (
-                    <div className="flex gap-3 w-full"> 
-                        <button onClick={handleCopyText} className="flex-1 py-3 font-bold text-white bg-primary-600 rounded-xl">Копировать</button> 
-                        <button onClick={() => setImportMode('none')} className="px-6 py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Закрыть</button> 
-                    </div> 
-                )}
-            >
-                <textarea value={importTextValue} readOnly className="w-full h-64 p-4 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-mono border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 select-text" /> 
-            </BaseModal>
-
-            {/* Text Import Modal */}
-            <BaseModal
-                isOpen={importMode === 'text_import'}
-                onClose={() => setImportMode('none')}
-                title="Внимание!"
-                subtitle="Текущий список героев будет полностью заменен данными из текстового поля."
-                icon={<AlertCircle size={20} className="text-orange-500" />}
-                maxWidth="md"
-                variant="auto"
-                modalId="list-import-modal"
-                priority={40}
-                showCloseButton={false}
-                footer={() => (
-                    <div className="grid grid-cols-2 gap-3 w-full"> 
-                        <button onClick={() => setImportMode('none')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button> 
-                        <button onClick={confirmTextImport} className="py-3 font-bold text-white bg-orange-500 rounded-xl">Заменить</button> 
-                    </div> 
-                )}
-            >
-                <textarea value={importTextValue} onChange={(e) => setImportTextValue(e.target.value)} placeholder="Вставьте список героев (Имя|Ранг)" className="w-full h-48 p-4 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs font-mono border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-primary-500 select-text" /> 
-            </BaseModal>
-
-            {/* Rank Import Modal */}
-            <BaseModal
-                isOpen={importMode === 'rank_import'}
-                onClose={() => setImportMode('none')}
-                title="Импорт рангов"
-                icon={<ArrowLeftRight size={20} className="text-violet-600 dark:text-violet-400" />}
-                maxWidth="sm"
-                variant="auto"
-                modalId="rank-import-modal"
-                priority={40}
-                showCloseButton={false}
-                footer={() => (
-                    <div className="grid grid-cols-2 gap-3 w-full">
-                        <button onClick={() => setImportMode('none')} className="py-3 font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl">Отмена</button>
-                        <button
-                            onClick={confirmRankImport}
-                            disabled={rankSourceType === 'list' && !rankSourceListId}
-                            className="py-3 font-bold text-white bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
-                        >
-                            Импорт
-                        </button>
-                    </div>
-                )}
-            >
-                <div>
-                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-6">
-                        <button
-                            onClick={() => setRankSourceType('list')}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${rankSourceType === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}
-                        >
-                            Из списка
-                        </button>
-                        <button
-                            onClick={() => setRankSourceType('stats')}
-                            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${rankSourceType === 'stats' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}
-                        >
-                            Из статистики
-                        </button>
-                    </div>
-
-                    {rankSourceType === 'list' ? (
-                        <>
-                            <p className="text-sm text-slate-600 dark:text-slate-300 mb-6"> Выберите список, из которого нужно скопировать ранги. Если имена совпадут, ранг текущего героя будет обновлен. </p>
-                            <div className="mb-6 relative">
-                                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 block">Источник</label>
-                                <div className="relative">
-                                    <button onClick={() => setIsRankSourceDropdownOpen(!isRankSourceDropdownOpen)} className={`w-full p-3 flex items-center justify-between bg-slate-100 dark:bg-slate-800 rounded-xl border transition-all outline-none font-medium text-sm ${isRankSourceDropdownOpen ? 'border-violet-500 ring-1 ring-violet-500/20' : 'border-transparent'}`} >
-                                        <span className={rankSourceListId ? 'text-slate-900 dark:text-white' : 'text-slate-400'}> {lists.find(l => l.id === rankSourceListId)?.name || "Выберите список..."} </span>
-                                        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isRankSourceDropdownOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    {isRankSourceDropdownOpen && (
-                                        <>
-                                            <div className="fixed inset-0 z-10" onClick={() => setIsRankSourceDropdownOpen(false)} />
-                                            <div className="absolute top-full left-0 mt-2 w-full max-h-48 overflow-y-auto no-scrollbar bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 z-20 animate-in fade-in zoom-in-95 duration-200">
-                                                {lists.filter(l => l.id !== editingListId).length > 0 ? (
-                                                    lists.filter(l => l.id !== editingListId).map(list => (
-                                                        <button
-                                                            key={list.id}
-                                                            onClick={() => { setRankSourceListId(list.id); setIsRankSourceDropdownOpen(false); }}
-                                                            className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors flex items-center justify-between ${rankSourceListId === list.id ? 'bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-slate-200 active:bg-slate-50 dark:active:bg-slate-700'}`}
-                                                        >
-                                                            <span className="truncate">{list.name}</span>
-                                                            {rankSourceListId === list.id && <Check size={14} className="text-violet-500" />}
-                                                        </button>
-                                                    ))
-                                                ) : (
-                                                    <div className="px-4 py-6 text-center text-xs text-slate-400">Нет доступных списков</div>
-                                                )}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="flex justify-between items-start mb-6">
-                                <p className="text-sm text-slate-600 dark:text-slate-300">
-                                    Ранги будут рассчитаны автоматически на основе <strong>винрейта</strong>. <br />
-                                    <span className="text-xs text-slate-400 mt-2 block">Минимум 3 матча для получения ранга.</span>
-                                </p>
-                                <button
-                                    onClick={() => setIsRankInfoOpen(!isRankInfoOpen)}
-                                    className={`p-2 rounded-xl transition-colors ${isRankInfoOpen ? 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800 active:text-slate-600 dark:active:text-slate-300'}`}
-                                >
-                                    <Info size={18} />
-                                </button>
-                            </div>
-
-                            {isRankInfoOpen && (
-                                <div className="mb-6 bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
-                                        <div className="flex justify-between px-2 py-1 rounded bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 font-bold"><span>S+</span><span>≥ 80%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-yellow-400/10 text-yellow-600 dark:text-yellow-300 font-bold"><span>S-</span><span>70-79%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-violet-600/10 text-violet-700 dark:text-violet-400 font-bold"><span>A+</span><span>65-69%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-violet-500/10 text-violet-600 dark:text-violet-300 font-bold"><span>A-</span><span>60-64%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-blue-600/10 text-blue-700 dark:text-blue-400 font-bold"><span>B+</span><span>55-59%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-blue-500/10 text-blue-600 dark:text-blue-300 font-bold"><span>B-</span><span>50-54%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-green-600/10 text-green-700 dark:text-green-400 font-bold"><span>C+</span><span>45-49%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-green-500/10 text-green-600 dark:text-green-300 font-bold"><span>C-</span><span>40-44%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-slate-300/20 text-slate-700 dark:text-slate-300 font-bold"><span>D+</span><span>35-39%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-slate-200/20 text-slate-600 dark:text-slate-400 font-bold"><span>D-</span><span>30-34%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-gray-600/10 text-gray-700 dark:text-gray-400 font-bold"><span>E+</span><span>20-29%</span></div>
-                                        <div className="flex justify-between px-2 py-1 rounded bg-gray-500/10 text-gray-600 dark:text-gray-500 font-bold"><span>E-</span><span>&lt; 20%</span></div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {!isRankInfoOpen && (
-                                <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                                    <div className="flex justify-between text-sm mb-1">
-                                        <span className="text-slate-500 dark:text-slate-400">Доступно статистики:</span>
-                                        <span className="font-bold text-slate-900 dark:text-white">
-                                            {getStatsEligibleHelpers().eligibleCount} <span className="text-slate-400 font-normal">/ {getStatsEligibleHelpers().total}</span>
-                                        </span>
-                                    </div>
-                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 mt-2 overflow-hidden">
-                                        <div
-                                            className="bg-violet-500 h-full rounded-full transition-all duration-500"
-                                            style={{ width: `${getStatsEligibleHelpers().total > 0 ? (getStatsEligibleHelpers().eligibleCount / getStatsEligibleHelpers().total) * 100 : 0}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-            </BaseModal>
-
-            {/* Rank Import Confirm Modal */}
-            <ConfirmModal
-                isOpen={importMode === 'rank_import_confirm'}
-                onCancel={() => setImportMode('rank_import')}
-                onConfirm={confirmRankImport}
-                title="Неполные данные"
-                description={`Статистика доступна не для всех героев. Будут изменены ранги только у ${getStatsEligibleHelpers().eligibleCount} из ${getStatsEligibleHelpers().total} героев.`}
-                confirmText="Продолжить"
-                cancelText="Назад"
-                confirmVariant="warning"
-                modalId="rank-import-confirm-modal"
-                priority={45}
+            <ListImportExportModals
+                importMode={importMode}
+                setImportMode={setImportMode}
+                importTextValue={importTextValue}
+                setImportTextValue={setImportTextValue}
+                onCopyText={handleCopyText}
+                onConfirmTextImport={confirmTextImport}
+                rankSourceType={rankSourceType}
+                setRankSourceType={setRankSourceType}
+                rankSourceListId={rankSourceListId}
+                setRankSourceListId={setRankSourceListId}
+                lists={lists}
+                editingListId={editingListId}
+                onConfirmRankImport={confirmRankImport}
+                statsEligibleHelpers={getStatsEligibleHelpers()}
+                editorHeroes={editorHeroes}
+                pendingFileHeroes={pendingFileHeroes}
+                onCancelFileImport={() => { setImportMode('none'); setPendingFileHeroes(null); }}
+                onConfirmFileImport={confirmFileImport}
+                isStatsModalOpen={isStatsModalOpen}
+                onCloseStatsModal={() => setIsStatsModalOpen(false)}
             />
-
-            {/* File Import Confirm Modal */}
-            <ConfirmModal
-                isOpen={importMode === 'file_import_confirm'}
-                onCancel={() => { setImportMode('none'); setPendingFileHeroes(null); }}
-                onConfirm={confirmFileImport}
-                title="Заменить список?"
-                description={`Текущие герои (${editorHeroes.length - (editorHeroes.some(h => !h.name) ? 1 : 0)}) будут заменены данными из файла (${pendingFileHeroes?.length}).`}
-                confirmText="Заменить"
-                cancelText="Отмена"
-                confirmVariant="warning"
-                modalId="file-import-confirm-modal"
-                priority={45}
-            />
-
-            {/* Hero Stats Modal (Balance) */}
-            <BaseModal
-                isOpen={isStatsModalOpen}
-                onClose={() => setIsStatsModalOpen(false)}
-                title="Баланс героев"
-                icon={<BarChart3 size={20} className="text-violet-600 dark:text-violet-400" />}
-                maxWidth="sm"
-                variant="auto"
-                modalId="list-stats-modal"
-                priority={40}
-            >
-                <div className="overflow-y-auto no-scrollbar flex-1"> 
-                    {(() => { 
-                        const { counts, max, total } = getStats(); 
-                        return (
-                            <> 
-                                <div className="text-xs font-medium text-slate-400 dark:text-slate-500 mb-4 text-center"> Всего героев: <span className="text-slate-900 dark:text-white font-bold">{total}</span> </div> 
-                                {RANKS.map((rank, idx) => { 
-                                    const count = counts[rank] || 0; 
-                                    const percent = max > 0 ? (count / max) * 100 : 0; 
-                                    const colorClass = getRankBarColor(rank); 
-                                    return (
-                                        <div key={rank} className="mb-3 last:mb-0"> 
-                                            <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 mb-1"> 
-                                                <span>{rank}</span> 
-                                                <span>{count}</span> 
-                                            </div> 
-                                            <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"> 
-                                                <div className={`h-full rounded-full transition-all duration-1000 ease-out ${colorClass} ${percent === 0 ? 'opacity-0' : 'opacity-100'}`} style={{ width: isStatsModalOpen ? `${percent}%` : '0%', transitionDelay: `${idx * 50}ms` }} /> 
-                                            </div> 
-                                        </div>
-                                    ); 
-                                })} 
-                            </>
-                        ); 
-                    })()} 
-                </div> 
-            </BaseModal>
 
             {/* Discard Modal */}
             <ConfirmModal
