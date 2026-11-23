@@ -1,17 +1,49 @@
-
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   server: {
     host: '0.0.0.0',
+  },
+  esbuild:
+    mode === 'production'
+      ? {
+          drop: ['debugger'],
+          pure: ['console.log'],
+        }
+      : undefined,
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalizedId = id.replace(/\\/g, '/');
+          if (!normalizedId.includes('/node_modules/')) return undefined;
+          if (
+            normalizedId.includes('/node_modules/react/') ||
+            normalizedId.includes('/node_modules/react-dom/') ||
+            normalizedId.includes('/node_modules/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+          if (
+            normalizedId.includes('/node_modules/firebase/') ||
+            normalizedId.includes('/node_modules/@firebase/')
+          ) {
+            return 'vendor-firebase';
+          }
+          if (normalizedId.includes('/node_modules/lucide-react/')) {
+            return 'vendor-lucide';
+          }
+          return undefined;
+        },
+      },
+    },
   },
   plugins: [
     react(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg', '**/*.{png,jpg,jpeg,svg}'],
       manifest: {
         name: 'Randomatched: Unmatched Team Generator',
         short_name: 'Randomatched',
@@ -59,11 +91,29 @@ export default defineConfig({
         ]
       },
       workbox: {
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,jpg,jpeg,svg}'],
+        globIgnores: ['**/heic2any*.js', 'screenshots/**'],
         navigateFallback: '/index.html',
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        cleanupOutdatedCaches: true
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            urlPattern: /heic2any.*\.js$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'heic2any-cache',
+              expiration: {
+                maxEntries: 2,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       }
     })
   ],
-});
+}));

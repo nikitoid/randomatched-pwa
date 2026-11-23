@@ -3,7 +3,8 @@ import { HeroStat, MatchRecord } from '../types';
 import { ChevronLeft, User, Calendar, TrendingUp, ChevronDown, ChevronUp, Edit2, Check, X, Skull, Shield, Swords, Trophy, Sparkles, Merge } from 'lucide-react';
 import { calculateWilsonScore } from './stats/hooks/useStatsCalculations';
 import { Avatar } from './common/Avatar';
-import { AvatarCropperModal } from './common/AvatarCropperModal';
+import { LazyOverlayBoundary } from './common/ErrorBoundary';
+import { LazyAvatarCropperModal as AvatarCropperModal } from '../utils/lazyScreens';
 import { normalizeHeroKey, formatPlural } from '../utils/heroNormalization';
 import { BaseModal } from './common/BaseModal';
 import { useHaptics } from '../hooks/useHaptics';
@@ -880,13 +881,19 @@ export const HeroDetails: React.FC<HeroDetailsProps> = ({
             </BaseModal>
 
             {/* Avatar Cropper Modal */}
-            <AvatarCropperModal
+            <LazyOverlayBoundary
                 isOpen={isCropperOpen}
                 onClose={() => setIsCropperOpen(false)}
-                entityType="hero"
-                entityId={hero.name}
-                entityName={hero.name}
-            />
+                fallbackTitle="Ошибка редактора аватара"
+            >
+                <AvatarCropperModal
+                    isOpen={isCropperOpen}
+                    onClose={() => setIsCropperOpen(false)}
+                    entityType="hero"
+                    entityId={hero.name}
+                    entityName={hero.name}
+                />
+            </LazyOverlayBoundary>
         </>
     );
 };

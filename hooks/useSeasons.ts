@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Season, ToastType } from '../types';
-import { db } from '../firebase';
+import { collection, doc, getDocs, setDoc } from '../services/firestore';
 import { useConnectivity } from './useConnectivity';
 import { generateUUID } from '../utils/uuid';
 import { withTimeout } from '../utils/connectivity';
@@ -196,7 +196,7 @@ export const useSeasons = (
             // 1. Push local tombstones (deleted items) to Firestore
             if (deletedSeasonIds.size > 0) {
                 for (const deletedId of deletedSeasonIds) {
-                    await withTimeout(db.collection('seasons').doc(deletedId).set({
+                    await withTimeout(setDoc(doc('seasons', deletedId), {
                         id: deletedId,
                         deleted: true,
                         lastUpdated: Date.now()
@@ -205,15 +205,15 @@ export const useSeasons = (
             }
 
             // 2. Fetch remote seasons from cloud
-            const snapshot = await withTimeout<any>(db.collection('seasons').get(), 6000);
+            const snapshot = await withTimeout<any>(getDocs(collection('seasons')), 6000);
             const remoteSeasonsMap = new Map<string, Season & { deleted?: boolean }>();
             const remoteByNameMap = new Map<string, Season>();
 
             if (snapshot && snapshot.docs) {
-                snapshot.docs.forEach((doc: any) => {
-                    const data = doc.data() as Season & { deleted?: boolean };
-                    const seasonObj = { ...data, id: doc.id };
-                    remoteSeasonsMap.set(doc.id, seasonObj);
+                snapshot.docs.forEach((docSnap: any) => {
+                    const data = docSnap.data() as Season & { deleted?: boolean };
+                    const seasonObj = { ...data, id: docSnap.id };
+                    remoteSeasonsMap.set(docSnap.id, seasonObj);
                     if (!data.deleted && data.name) {
                         const normName = data.name.trim().toLowerCase();
                         remoteByNameMap.set(normName, seasonObj);
@@ -266,7 +266,7 @@ export const useSeasons = (
                         if (localTime > remoteTime) {
                             // Local updated after remote delete -> resurrect
                             mergedSeasonsMap.set(id, local);
-                            await withTimeout(db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local)), 6000);
+                            await withTimeout(setDoc(doc('seasons', id), cleanSeasonForFirestore(local)), 6000);
                             nextDeletedIds.delete(id);
                             hasChanges = true;
                         } else {
@@ -285,7 +285,7 @@ export const useSeasons = (
                     const remoteTime = remote.lastUpdated || 0;
                     if (localTime > remoteTime) {
                         mergedSeasonsMap.set(id, local);
-                        await withTimeout(db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local)), 6000);
+                        await withTimeout(setDoc(doc('seasons', id), cleanSeasonForFirestore(local)), 6000);
                         hasChanges = true;
                     } else {
                         mergedSeasonsMap.set(id, remote);
@@ -294,13 +294,13 @@ export const useSeasons = (
                 } else if (local) {
                     // Local only -> push to cloud
                     mergedSeasonsMap.set(id, local);
-                    await withTimeout(db.collection('seasons').doc(id).set(cleanSeasonForFirestore(local)), 6000);
+                    await withTimeout(setDoc(doc('seasons', id), cleanSeasonForFirestore(local)), 6000);
                     hasChanges = true;
                 } else if (remote) {
                     // Remote only
                     if (nextDeletedIds.has(id)) {
                         // We locally deleted this season, but remote wasn't marked deleted yet -> mark deleted in cloud
-                        await withTimeout(db.collection('seasons').doc(id).set({
+                        await withTimeout(setDoc(doc('seasons', id), {
                             id,
                             deleted: true,
                             lastUpdated: Date.now()

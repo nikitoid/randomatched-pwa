@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { db, isTestEnvironment } from '../firebase';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+} from '../services/firestore';
 import { ClientData, ClientPrank } from '../types';
 import { getOrCreateClientId, getDeviceInfo, generateDefaultClientName } from '../utils/clientId';
 import { APP_VERSION } from '../utils/changelog';
@@ -34,45 +42,44 @@ export const useClientSync = (): UseClientSyncReturn => {
 
     let unsubscribe: (() => void) | undefined;
     try {
-      if (db && typeof db.collection === 'function') {
-        const clientDocRef = db.collection('clients').doc(clientId);
+      const clientDocRef = doc('clients', clientId);
 
-        unsubscribe = clientDocRef.onSnapshot(
-          (docSnap: any) => {
-            if (!docSnap) return;
+      unsubscribe = onSnapshot(
+        clientDocRef,
+        (docSnap: any) => {
+          if (!docSnap) return;
 
-            if (docSnap.exists) {
-              const data = docSnap.data() as ClientData;
-              setClientData({
-                ...data,
-                clientId: data?.clientId || docSnap.id || clientId
-              });
-            } else if (!hasRegisteredRef.current && isOnline) {
-              // Документа ещё нет в базе — регистрируем новое устройство
-              hasRegisteredRef.current = true;
-              const device = getDeviceInfo();
-              const initialData: ClientData = {
-                clientId,
-                customName: generateDefaultClientName(device, clientId),
-                device,
-                firstSeen: Date.now(),
-                lastSeen: Date.now(),
-                isAdmin: false,
-                appVersion: APP_VERSION,
-                activePrank: null
-              };
+          if (docSnap.exists()) {
+            const data = docSnap.data() as ClientData;
+            setClientData({
+              ...data,
+              clientId: data?.clientId || docSnap.id || clientId
+            });
+          } else if (!hasRegisteredRef.current && isOnline) {
+            // Документа ещё нет в базе — регистрируем новое устройство
+            hasRegisteredRef.current = true;
+            const device = getDeviceInfo();
+            const initialData: ClientData = {
+              clientId,
+              customName: generateDefaultClientName(device, clientId),
+              device,
+              firstSeen: Date.now(),
+              lastSeen: Date.now(),
+              isAdmin: false,
+              appVersion: APP_VERSION,
+              activePrank: null
+            };
 
-              clientDocRef.set(initialData).catch((err: any) => {
-                console.warn('[useClientSync] Failed to register client doc:', err);
-              });
-              setClientData(initialData);
-            }
-          },
-          (err: any) => {
-            console.warn('[useClientSync] Snapshot offline or blocked:', err);
+            setDoc(clientDocRef, initialData).catch((err: any) => {
+              console.warn('[useClientSync] Failed to register client doc:', err);
+            });
+            setClientData(initialData);
           }
-        );
-      }
+        },
+        (err: any) => {
+          console.warn('[useClientSync] Snapshot offline or blocked:', err);
+        }
+      );
     } catch (e) {
       console.warn('[useClientSync] Firebase initialization error:', e);
     }
@@ -88,9 +95,9 @@ export const useClientSync = (): UseClientSyncReturn => {
 
     const updatePresence = async () => {
       try {
-        if (!db || typeof db.collection !== 'function') return;
         const device = getDeviceInfo();
-        await db.collection('clients').doc(clientId).set(
+        await setDoc(
+          doc('clients', clientId),
           {
             clientId,
             lastSeen: Date.now(),
@@ -104,11 +111,17 @@ export const useClientSync = (): UseClientSyncReturn => {
       }
     };
 
-    // Обновляем статус сразу при появлении сети
-    updatePresence();
+    // Обновляем статус сразу при появлении сети, если вкладка видима
+    if (document.visibilityState === 'visible') {
+      updatePresence();
+    }
 
-    // Heartbeat каждые 60 секунд
-    const intervalId = setInterval(updatePresence, 60000);
+    // Heartbeat каждые 60 секунд только для видимой вкладки
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        updatePresence();
+      }
+    }, 60000);
 
     // Обновляем при возврате вкладки из фона
     const handleVisibilityChange = () => {
@@ -126,12 +139,11 @@ export const useClientSync = (): UseClientSyncReturn => {
 
   // 3. Подписка администратора на список всех клиентов
   const subscribeToAllClients = useCallback(() => {
-    if (!db || typeof db.collection !== 'function') return () => {};
-
     setIsLoadingAllClients(true);
     try {
-      const clientsRef = db.collection('clients').orderBy('lastSeen', 'desc');
-      const unsubscribe = clientsRef.onSnapshot(
+      const clientsRef = query(collection('clients'), orderBy('lastSeen', 'desc'));
+      const unsubscribe = onSnapshot(
+        clientsRef,
         (snapshot: any) => {
           setIsLoadingAllClients(false);
           if (!snapshot || !snapshot.docs) return;
@@ -163,8 +175,8 @@ export const useClientSync = (): UseClientSyncReturn => {
   const updateClientName = useCallback(async (targetClientId: string, newName: string): Promise<boolean> => {
     if (!targetClientId || !newName.trim()) return false;
     try {
-      if (!db || typeof db.collection !== 'function') return false;
-      await db.collection('clients').doc(targetClientId).set(
+      await setDoc(
+        doc('clients', targetClientId),
         { customName: newName.trim() },
         { merge: true }
       );
@@ -178,8 +190,8 @@ export const useClientSync = (): UseClientSyncReturn => {
   const setClientAdmin = useCallback(async (targetClientId: string, newIsAdmin: boolean): Promise<boolean> => {
     if (!targetClientId) return false;
     try {
-      if (!db || typeof db.collection !== 'function') return false;
-      await db.collection('clients').doc(targetClientId).set(
+      await setDoc(
+        doc('clients', targetClientId),
         { isAdmin: newIsAdmin },
         { merge: true }
       );
@@ -193,8 +205,8 @@ export const useClientSync = (): UseClientSyncReturn => {
   const setClientPrank = useCallback(async (targetClientId: string, prank: ClientPrank | null): Promise<boolean> => {
     if (!targetClientId) return false;
     try {
-      if (!db || typeof db.collection !== 'function') return false;
-      await db.collection('clients').doc(targetClientId).set(
+      await setDoc(
+        doc('clients', targetClientId),
         { activePrank: prank },
         { merge: true }
       );
@@ -212,8 +224,7 @@ export const useClientSync = (): UseClientSyncReturn => {
   const deleteClient = useCallback(async (targetClientId: string): Promise<boolean> => {
     if (!targetClientId) return false;
     try {
-      if (!db || typeof db.collection !== 'function') return false;
-      await db.collection('clients').doc(targetClientId).delete();
+      await deleteDoc(doc('clients', targetClientId));
       return true;
     } catch (e) {
       console.error('[useClientSync] Failed to delete client:', e);

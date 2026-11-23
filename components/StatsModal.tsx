@@ -415,7 +415,8 @@ export const StatsModal: React.FC<StatsModalProps> = ({
     const checkConnectivityRef = useRef(checkConnectivity);
     const syncWithAnimationRef = useRef(syncWithAnimation);
     const onSyncRef = useRef(onSync);
-    const prevIsOpenRef = useRef(isOpen);
+    const prevIsOpenRef = useRef(false);
+    const hasAutoSyncedOpenRef = useRef(false);
 
     useEffect(() => {
         checkConnectivityRef.current = checkConnectivity;
@@ -431,25 +432,29 @@ export const StatsModal: React.FC<StatsModalProps> = ({
 
         let autoSyncTimer: NodeJS.Timeout | null = null;
 
-        if (!wasOpen && isOpen) {
-            // Modal just opened -> defer auto-sync until entrance animation (300ms) has completed
+        if (isOpen) {
+            // Modal is open -> defer auto-sync until entrance animation (300ms) has completed
             // to ensure 60fps/120fps smooth opening without Main Thread jank on mobile devices
-            if (!isDebugMode && isOnline) {
+            if (!hasAutoSyncedOpenRef.current && !isDebugMode && isOnline) {
                 autoSyncTimer = setTimeout(() => {
+                    hasAutoSyncedOpenRef.current = true;
                     syncWithAnimation({ silentIfNoChanges: true, silentErrors: true });
                 }, 400);
             }
-        } else if (wasOpen && !isOpen) {
-            // Modal just closed -> if there were mutations, trigger quiet background sync
-            if (hasLocalMutationsRef.current && !isDebugMode) {
-                hasLocalMutationsRef.current = false;
-                (async () => {
-                    const checkFn = checkConnectivityRef.current;
-                    const hasNet = checkFn ? await checkFn(2500) : isOnline;
-                    if (hasNet && onSyncRef.current) {
-                        await onSyncRef.current({ silentIfNoChanges: true, silentErrors: true });
-                    }
-                })().catch(e => console.warn('Background auto-sync on close failed:', e));
+        } else {
+            hasAutoSyncedOpenRef.current = false;
+            if (wasOpen) {
+                // Modal just closed -> if there were mutations, trigger quiet background sync
+                if (hasLocalMutationsRef.current && !isDebugMode) {
+                    hasLocalMutationsRef.current = false;
+                    (async () => {
+                        const checkFn = checkConnectivityRef.current;
+                        const hasNet = checkFn ? await checkFn(2500) : isOnline;
+                        if (hasNet && onSyncRef.current) {
+                            await onSyncRef.current({ silentIfNoChanges: true, silentErrors: true });
+                        }
+                    })().catch(e => console.warn('Background auto-sync on close failed:', e));
+                }
             }
         }
 

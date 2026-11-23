@@ -8,7 +8,7 @@ import {
   getAllAvatarRecordsFromStorage,
   saveAllAvatarsToStorage,
 } from '../utils/avatarStorage';
-import { db } from '../firebase';
+import { collection, doc, getDocs, onSnapshot, setDoc } from '../services/firestore';
 import { checkConnectivity as checkConnectivityUtil, withTimeout } from '../utils/connectivity';
 
 
@@ -75,52 +75,51 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     try {
-      if (db && typeof db.collection === 'function') {
-        const avatarsRef = db.collection('avatars');
-        unsubscribe = avatarsRef.onSnapshot(
-          (snapshot: any) => {
-            if (!snapshot || !snapshot.docs) return;
-            const pendingDeletes = getPendingDeletes();
+      const avatarsRef = collection('avatars');
+      unsubscribe = onSnapshot(
+        avatarsRef,
+        (snapshot: any) => {
+          if (!snapshot || !snapshot.docs) return;
+          const pendingDeletes = getPendingDeletes();
 
-            snapshot.docs.forEach((doc: any) => {
-              const data = doc.data();
-              if (!data || !data.id) return;
-              const key = data.id;
+          snapshot.docs.forEach((docSnap: any) => {
+            const data = docSnap.data();
+            if (!data || !data.id) return;
+            const key = data.id;
 
-              // Check if deleted in Cloud OR pending delete locally
-              if (data.deleted || pendingDeletes.has(key)) {
-                setAvatars((prev) => {
-                  if (!prev[key]) return prev;
-                  const copy = { ...prev };
-                  delete copy[key];
+            // Check if deleted in Cloud OR pending delete locally
+            if (data.deleted || pendingDeletes.has(key)) {
+              setAvatars((prev) => {
+                if (!prev[key]) return prev;
+                const copy = { ...prev };
+                delete copy[key];
 
-                  const parts = key.split('_');
-                  const entityType = parts[0] as 'player' | 'hero';
-                  const entityId = parts.slice(1).join('_');
-                  if (entityType && entityId) {
-                    deleteAvatarFromStorage(entityType, entityId);
-                  }
-                  return copy;
-                });
-              } else if (data.dataUrl) {
-                setAvatars((prev) => {
-                  if (prev[key] === data.dataUrl) return prev;
-                  const parts = key.split('_');
-                  const entityType = parts[0] as 'player' | 'hero';
-                  const entityId = parts.slice(1).join('_');
-                  if (entityType && entityId) {
-                    saveAvatarToStorage(entityType, entityId, data.dataUrl);
-                  }
-                  return { ...prev, [key]: data.dataUrl };
-                });
-              }
-            });
-          },
-          (err: any) => {
-            console.warn('[AvatarContext] Firestore snapshot offline or blocked:', err);
-          }
-        );
-      }
+                const parts = key.split('_');
+                const entityType = parts[0] as 'player' | 'hero';
+                const entityId = parts.slice(1).join('_');
+                if (entityType && entityId) {
+                  deleteAvatarFromStorage(entityType, entityId);
+                }
+                return copy;
+              });
+            } else if (data.dataUrl) {
+              setAvatars((prev) => {
+                if (prev[key] === data.dataUrl) return prev;
+                const parts = key.split('_');
+                const entityType = parts[0] as 'player' | 'hero';
+                const entityId = parts.slice(1).join('_');
+                if (entityType && entityId) {
+                  saveAvatarToStorage(entityType, entityId, data.dataUrl);
+                }
+                return { ...prev, [key]: data.dataUrl };
+              });
+            }
+          });
+        },
+        (err: any) => {
+          console.warn('[AvatarContext] Firestore snapshot offline or blocked:', err);
+        }
+      );
     } catch (e) {
       console.warn('[AvatarContext] Firebase sync not initialized:', e);
     }
@@ -160,19 +159,17 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             return;
           }
 
-          if (db && typeof db.collection === 'function') {
-            await withTimeout(
-              db.collection('avatars').doc(key).set({
-                id: key,
-                entityType,
-                entityId: entityId.trim(),
-                dataUrl,
-                deleted: false,
-                updatedAt: Date.now(),
-              }),
-              3500
-            );
-          }
+          await withTimeout(
+            setDoc(doc('avatars', key), {
+              id: key,
+              entityType,
+              entityId: entityId.trim(),
+              dataUrl,
+              deleted: false,
+              updatedAt: Date.now(),
+            }),
+            3500
+          );
         } catch (e) {
           console.warn('[AvatarContext] Background push skipped:', e);
         }
@@ -203,17 +200,15 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           const isConnected = await checkConnectivityUtil(3000);
           if (!isConnected) return;
 
-          if (db && typeof db.collection === 'function') {
-            await withTimeout(
-              db.collection('avatars').doc(key).set({
-                id: key,
-                deleted: true,
-                updatedAt: Date.now(),
-              }),
-              3500
-            );
-            removePendingDelete(key);
-          }
+          await withTimeout(
+            setDoc(doc('avatars', key), {
+              id: key,
+              deleted: true,
+              updatedAt: Date.now(),
+            }),
+            3500
+          );
+          removePendingDelete(key);
         } catch (e) {
           console.warn('[AvatarContext] Background delete skipped:', e);
         }
@@ -224,8 +219,6 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const syncAvatarsToCloud = useCallback(async (): Promise<boolean> => {
     try {
-      if (!db || typeof db.collection !== 'function') return false;
-
       const isConnected = await checkConnectivityUtil(4000);
       if (!isConnected) {
         console.log('[AvatarContext] Skip sync: no internet connectivity');
@@ -238,7 +231,7 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         for (const key of Array.from(pendingDeletes)) {
           try {
             await withTimeout(
-              db.collection('avatars').doc(key).set({
+              setDoc(doc('avatars', key), {
                 id: key,
                 deleted: true,
                 updatedAt: Date.now(),
@@ -255,10 +248,10 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // 2. Fetch current Cloud avatar records for conflict resolution
       const cloudMap = new Map<string, any>();
       try {
-        const cloudSnapshot: any = await withTimeout(db.collection('avatars').get(), 4000);
+        const cloudSnapshot = await withTimeout<any>(getDocs(collection('avatars')), 4000);
         if (cloudSnapshot && cloudSnapshot.docs) {
-          cloudSnapshot.docs.forEach((doc: any) => {
-            cloudMap.set(doc.id, doc.data());
+          cloudSnapshot.docs.forEach((docSnap: any) => {
+            cloudMap.set(docSnap.id, docSnap.data());
           });
         }
       } catch (cloudFetchErr) {
@@ -310,7 +303,7 @@ export const AvatarProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (rec.dataUrl) {
           try {
             await withTimeout(
-              db.collection('avatars').doc(key).set({
+              setDoc(doc('avatars', key), {
                 id: key,
                 entityType: rec.entityType,
                 entityId: rec.entityId,

@@ -10,30 +10,34 @@ import { useGroupSelection } from './hooks/useGroupSelection';
 import { useHistoryInput } from './hooks/useHistoryInput';
 import { useTeamGeneration } from './hooks/useTeamGeneration';
 import { useSeasons } from './hooks/useSeasons';
-import { ResultOverlay } from './components/ResultOverlay';
-import { SettingsOverlay } from './components/SettingsOverlay';
-import { ListsOverlay } from './components/ListsOverlay';
-import { StatsModal } from './components/StatsModal';
 import { Header } from './components/Header';
 import { SourceSelector } from './components/SourceSelector';
 import { PlayerNameInput } from './components/PlayerNameInput';
 import { MainControls } from './components/MainControls';
 import { AppNavigation } from './components/AppNavigation';
 import { ResetConfirmModal } from './components/ResetConfirmModal';
-import { GroupStatsModal } from './components/GroupStatsModal';
 import { UpdateBanner } from './components/UpdateBanner';
 import { GenConfirmModal } from './components/GenConfirmModal';
 import { getUniqueHeroesFromLists } from './utils/generator';
 import { NavigationProvider } from './context/NavigationContext';
-import { AddHeroesModal } from './components/AddHeroesModal';
-import { InactiveHeroesModal } from './components/InactiveHeroesModal';
-import { ChangelogOverlay } from './components/ChangelogOverlay';
-import { AdminModal } from './components/AdminModal';
 import { PrankOverlay } from './components/PrankOverlay';
 import { useAvatars } from './context/AvatarContext';
 import { useClientSync } from './hooks/useClientSync';
 import { usePranks } from './hooks/usePranks';
 import { APP_VERSION, getInitialLastSeenVersion } from './utils/changelog';
+import { LazyOverlayBoundary } from './components/common/ErrorBoundary';
+import {
+    LazyResultOverlay as ResultOverlay,
+    LazySettingsOverlay as SettingsOverlay,
+    LazyListsOverlay as ListsOverlay,
+    LazyStatsModal as StatsModal,
+    LazyGroupStatsModal as GroupStatsModal,
+    LazyAddHeroesModal as AddHeroesModal,
+    LazyInactiveHeroesModal as InactiveHeroesModal,
+    LazyChangelogOverlay as ChangelogOverlay,
+    LazyAdminModal as AdminModal,
+    preloadAllScreens,
+} from './utils/lazyScreens';
 
 import { Hero } from './types';
 
@@ -52,6 +56,34 @@ const App: React.FC = () => {
     } = useTheme();
     const { addToast } = useToast();
     const { trigger: triggerHaptic, toggle: toggleHaptics, isEnabled: hapticsEnabled, forceAudioMode, toggleForceAudioMode, setForceAudioMode } = useHaptics();
+
+    // Background preload all lazy screens after initial paint so offline navigation works without network
+    useEffect(() => {
+        let cancelled = false;
+        let timerId: ReturnType<typeof setTimeout> | null = null;
+
+        const rafId = requestAnimationFrame(() => {
+            timerId = setTimeout(() => {
+                if (!cancelled) {
+                    void preloadAllScreens();
+                }
+            }, 50);
+        });
+
+        const handleOnline = () => {
+            if (!cancelled) {
+                void preloadAllScreens();
+            }
+        };
+        window.addEventListener('online', handleOnline);
+
+        return () => {
+            cancelled = true;
+            cancelAnimationFrame(rafId);
+            if (timerId !== null) clearTimeout(timerId);
+            window.removeEventListener('online', handleOnline);
+        };
+    }, []);
 
     const {
         lists, addList, updateList, deleteList, forkList, createTemporaryList,
@@ -550,149 +582,177 @@ const App: React.FC = () => {
                     onOpenSettings={() => { setIsSettingsOpen(true); triggerHaptic(10); }}
                 />
 
-                <ResultOverlay
+                <LazyOverlayBoundary
                     isOpen={showResult}
                     onClose={() => setShowResult(false)}
-                    assignments={assignments}
-                    onRerollSpecific={handleRerollHero}
-                    onRerollAllHeroes={handleRerollAllHeroes}
-                    onShuffleTeams={handleShuffleTeams}
-                    onBanSpecific={handleBanHero}
-                    onBanAll={handleBanAllCurrent}
-                    onRevealHeroes={handleRevealHeroes}
-                    generationMode={generationMode}
-                    setGenerationMode={setGenerationMode}
-                    balanceThreshold={balanceThreshold}
-                    setBalanceThreshold={setBalanceThreshold}
-                    playerNames={playerNames}
-                    onSwapPositions={handleSwapPositions}
-                    onRecordResult={handleRecordResult}
-                    onManualSelect={handleManualHeroSelect}
-                    availableHeroes={getAvailableHeroesPool()}
-                    extraMode={extraMode}
-                    setExtraMode={setExtraMode}
-                    prioritizeUnplayed={prioritizeUnplayed}
-                    setPrioritizeUnplayed={setPrioritizeUnplayed}
-                    isDebugMode={isDebugMode}
-                    history={history}
-                    bgGradient={bgGradient}
-                />
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка экрана результатов"
+                >
+                    <ResultOverlay
+                        isOpen={showResult}
+                        onClose={() => setShowResult(false)}
+                        assignments={assignments}
+                        onRerollSpecific={handleRerollHero}
+                        onRerollAllHeroes={handleRerollAllHeroes}
+                        onShuffleTeams={handleShuffleTeams}
+                        onBanSpecific={handleBanHero}
+                        onBanAll={handleBanAllCurrent}
+                        onRevealHeroes={handleRevealHeroes}
+                        generationMode={generationMode}
+                        setGenerationMode={setGenerationMode}
+                        balanceThreshold={balanceThreshold}
+                        setBalanceThreshold={setBalanceThreshold}
+                        playerNames={playerNames}
+                        onSwapPositions={handleSwapPositions}
+                        onRecordResult={handleRecordResult}
+                        onManualSelect={handleManualHeroSelect}
+                        availableHeroes={getAvailableHeroesPool()}
+                        extraMode={extraMode}
+                        setExtraMode={setExtraMode}
+                        prioritizeUnplayed={prioritizeUnplayed}
+                        setPrioritizeUnplayed={setPrioritizeUnplayed}
+                        isDebugMode={isDebugMode}
+                        history={history}
+                        bgGradient={bgGradient}
+                    />
+                </LazyOverlayBoundary>
 
-                <ListsOverlay
+                <LazyOverlayBoundary
                     isOpen={isListsOpen}
                     onClose={handleCloseLists}
-                    lists={lists}
-                    onAddList={addList}
-                    onUpdateList={updateList}
-                    onDeleteList={deleteList}
-                    onUploadToCloud={uploadToCloud}
-                    onSync={syncWithCloud}
-                    reorderLists={reorderLists}
-                    sortLists={sortLists}
-                    isOnline={isOnline}
-                    isSyncing={isSyncing}
-                    checkConnectivity={checkConnectivity}
-                    addToast={addToast}
-                    updatedListIds={updatedListIds}
-                    onMarkSeen={markListAsSeen}
-                    updatedHeroIds={updatedHeroIds}
-                    onDismissHeroUpdates={dismissHeroUpdates}
-                    triggerHaptic={triggerHaptic}
-                    history={history}
-                    onOpenInactiveModal={handleOpenInactiveModal}
-                />
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка экрана списков"
+                >
+                    <ListsOverlay
+                        isOpen={isListsOpen}
+                        onClose={handleCloseLists}
+                        lists={lists}
+                        onAddList={addList}
+                        onUpdateList={updateList}
+                        onDeleteList={deleteList}
+                        onUploadToCloud={uploadToCloud}
+                        onSync={syncWithCloud}
+                        reorderLists={reorderLists}
+                        sortLists={sortLists}
+                        isOnline={isOnline}
+                        isSyncing={isSyncing}
+                        checkConnectivity={checkConnectivity}
+                        addToast={addToast}
+                        updatedListIds={updatedListIds}
+                        onMarkSeen={markListAsSeen}
+                        updatedHeroIds={updatedHeroIds}
+                        onDismissHeroUpdates={dismissHeroUpdates}
+                        triggerHaptic={triggerHaptic}
+                        history={history}
+                        onOpenInactiveModal={handleOpenInactiveModal}
+                    />
+                </LazyOverlayBoundary>
 
-                <SettingsOverlay
+                <LazyOverlayBoundary
                     isOpen={isSettingsOpen}
                     onClose={() => setIsSettingsOpen(false)}
-                    lists={lists}
-                    colorScheme={colorScheme}
-                    setColorScheme={setColorScheme}
-                    roundness={roundness}
-                    setRoundness={setRoundness}
-                    bgPattern={bgPattern}
-                    setBgPattern={setBgPattern}
-                    bgGradient={bgGradient}
-                    setBgGradient={setBgGradient}
-                    checkForUpdate={checkForUpdate}
-                    isCheckingUpdate={isCheckingUpdate}
-                    isUpdateAvailable={isUpdateAvailable}
-                    onUpdateApp={handleUpdateApp}
-                    isDebugMode={isDebugMode}
-                    onToggleDebug={setIsDebugMode}
-                    hapticsEnabled={hapticsEnabled}
-                    onToggleHaptics={toggleHaptics}
-                    forceAudioMode={forceAudioMode}
-                    onToggleForceAudioMode={toggleForceAudioMode}
-                    triggerHaptic={triggerHaptic}
-                    history={history}
-                    onImportData={handleImportDataCombined}
-                    addToast={addToast}
-                    onOpenChangelog={() => setIsChangelogOpen(true)}
-                    lastSeenVersion={lastSeenVersion}
-                    onSetLastSeenVersion={handleSetLastSeenVersion}
-                    clientId={clientId}
-                    isAdmin={isAdmin}
-                />
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка экрана настроек"
+                >
+                    <SettingsOverlay
+                        isOpen={isSettingsOpen}
+                        onClose={() => setIsSettingsOpen(false)}
+                        lists={lists}
+                        colorScheme={colorScheme}
+                        setColorScheme={setColorScheme}
+                        roundness={roundness}
+                        setRoundness={setRoundness}
+                        bgPattern={bgPattern}
+                        setBgPattern={setBgPattern}
+                        bgGradient={bgGradient}
+                        setBgGradient={setBgGradient}
+                        checkForUpdate={checkForUpdate}
+                        isCheckingUpdate={isCheckingUpdate}
+                        isUpdateAvailable={isUpdateAvailable}
+                        onUpdateApp={handleUpdateApp}
+                        isDebugMode={isDebugMode}
+                        onToggleDebug={setIsDebugMode}
+                        hapticsEnabled={hapticsEnabled}
+                        onToggleHaptics={toggleHaptics}
+                        forceAudioMode={forceAudioMode}
+                        onToggleForceAudioMode={toggleForceAudioMode}
+                        triggerHaptic={triggerHaptic}
+                        history={history}
+                        onImportData={handleImportDataCombined}
+                        addToast={addToast}
+                        onOpenChangelog={() => setIsChangelogOpen(true)}
+                        lastSeenVersion={lastSeenVersion}
+                        onSetLastSeenVersion={handleSetLastSeenVersion}
+                        clientId={clientId}
+                        isAdmin={isAdmin}
+                    />
+                </LazyOverlayBoundary>
 
-                <StatsModal
+                <LazyOverlayBoundary
                     isOpen={isHistoryStatsOpen}
                     onClose={() => setIsHistoryStatsOpen(false)}
-                    history={history}
-                    onDeleteMatch={deleteMatch}
-                    onUpdateMatch={updateMatch}
-                    onAddMatch={addManualMatch}
-                    onRenamePlayer={renamePlayer}
-                    onRenameHero={handleRenameHero}
-                    onMergeHeroes={handleMergeHeroes}
-                    onSync={async (options) => {
-                        const historySuccess = await syncHistory(options);
-                        await syncSeasons(options);
-                        await syncAvatarsToCloud();
-                        return historySuccess;
-                    }}
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка экрана статистики"
+                >
+                    <StatsModal
+                        isOpen={isHistoryStatsOpen}
+                        onClose={() => setIsHistoryStatsOpen(false)}
+                        history={history}
+                        onDeleteMatch={deleteMatch}
+                        onUpdateMatch={updateMatch}
+                        onAddMatch={addManualMatch}
+                        onRenamePlayer={renamePlayer}
+                        onRenameHero={handleRenameHero}
+                        onMergeHeroes={handleMergeHeroes}
+                        onSync={async (options) => {
+                            const historySuccess = await syncHistory(options);
+                            await syncSeasons(options);
+                            await syncAvatarsToCloud();
+                            return historySuccess;
+                        }}
 
-                    isSyncing={isSyncingHistory}
-                    isOnline={isOnline}
-                    isDebugMode={isDebugMode}
-                    addToast={addToast}
+                        isSyncing={isSyncingHistory}
+                        isOnline={isOnline}
+                        isDebugMode={isDebugMode}
+                        addToast={addToast}
 
-                    seasons={seasons}
-                    latestSeasonId={latestSeason?.id}
-                    userDefaultSeasonId={userDefaultSeasonId}
-                    onSetUserDefaultSeason={setUserDefaultSeasonId}
-                    onAddSeason={addSeason}
-                    onUpdateSeason={updateSeason}
-                    onDeleteSeason={deleteSeason}
+                        seasons={seasons}
+                        latestSeasonId={latestSeason?.id}
+                        userDefaultSeasonId={userDefaultSeasonId}
+                        onSetUserDefaultSeason={setUserDefaultSeasonId}
+                        onAddSeason={addSeason}
+                        onUpdateSeason={updateSeason}
+                        onDeleteSeason={deleteSeason}
 
-                    lists={lists}
-                    triggerHaptic={triggerHaptic}
-                    deletedHistory={deletedHistory}
-                    onRestoreMatch={restoreMatch}
-                    onPermanentDeleteMatch={permanentDeleteMatch}
-                    onClearTrash={clearTrash}
+                        lists={lists}
+                        triggerHaptic={triggerHaptic}
+                        deletedHistory={deletedHistory}
+                        onRestoreMatch={restoreMatch}
+                        onPermanentDeleteMatch={permanentDeleteMatch}
+                        onClearTrash={clearTrash}
 
-                    onImportData={handleImportDataCombined}
-                    checkConnectivity={checkConnectivity}
-                    // Облачный бэкап
-                    cloudBackups={cloudBackups}
-                    isCreatingBackup={isCreatingBackup}
-                    isLoadingBackups={isLoadingBackups}
-                    isRestoringBackup={isRestoringBackup}
-                    onCreateCloudBackup={createCloudBackup}
-                    onListCloudBackups={listCloudBackups}
-                    onRestoreFromCloudBackup={async (id) => {
-                        const backup = await getCloudBackupDetails(id);
-                        const res = await restoreFromCloudBackup(id);
-                        if (res && backup && Array.isArray(backup.seasons)) {
-                            importSeasons(backup.seasons);
-                        }
-                        return res;
-                    }}
-                    onDeleteCloudBackup={deleteCloudBackup}
-                    onGetCloudBackupDetails={getCloudBackupDetails}
-                    onOpenInactiveModal={handleOpenInactiveModal}
-                />
+                        onImportData={handleImportDataCombined}
+                        checkConnectivity={checkConnectivity}
+                        // Облачный бэкап
+                        cloudBackups={cloudBackups}
+                        isCreatingBackup={isCreatingBackup}
+                        isLoadingBackups={isLoadingBackups}
+                        isRestoringBackup={isRestoringBackup}
+                        onCreateCloudBackup={createCloudBackup}
+                        onListCloudBackups={listCloudBackups}
+                        onRestoreFromCloudBackup={async (id) => {
+                            const backup = await getCloudBackupDetails(id);
+                            const res = await restoreFromCloudBackup(id);
+                            if (res && backup && Array.isArray(backup.seasons)) {
+                                importSeasons(backup.seasons);
+                            }
+                            return res;
+                        }}
+                        onDeleteCloudBackup={deleteCloudBackup}
+                        onGetCloudBackupDetails={getCloudBackupDetails}
+                        onOpenInactiveModal={handleOpenInactiveModal}
+                    />
+                </LazyOverlayBoundary>
 
                 <ResetConfirmModal
                     isOpen={isResetConfirmOpen}
@@ -707,12 +767,19 @@ const App: React.FC = () => {
                     checkConnectivity={checkConnectivity}
                 />
 
-                <GroupStatsModal
+                <LazyOverlayBoundary
                     isOpen={isGroupStatsOpen}
                     onClose={() => setIsGroupStatsOpen(false)}
-                    getSelectionStats={getSelectionStats}
-                    getRankBarColor={getRankBarColor}
-                />
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка баланса героев"
+                >
+                    <GroupStatsModal
+                        isOpen={isGroupStatsOpen}
+                        onClose={() => setIsGroupStatsOpen(false)}
+                        getSelectionStats={getSelectionStats}
+                        getRankBarColor={getRankBarColor}
+                    />
+                </LazyOverlayBoundary>
 
                 <GenConfirmModal
                     isOpen={isGenConfirmOpen}
@@ -720,25 +787,39 @@ const App: React.FC = () => {
                     onConfirm={confirmGenerate}
                 />
 
-                <AddHeroesModal
+                <LazyOverlayBoundary
                     isOpen={isAddHeroesOpen}
                     onClose={() => setIsAddHeroesOpen(false)}
-                    lists={lists}
-                    excludeListIds={isGroupMode ? selectedGroupIds : new Set(activeList ? [activeList.id] : [])}
-                    onAddHeroes={handleAppendHeroesToSelected}
-                    triggerHaptic={triggerHaptic}
-                />
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка добавления героев"
+                >
+                    <AddHeroesModal
+                        isOpen={isAddHeroesOpen}
+                        onClose={() => setIsAddHeroesOpen(false)}
+                        lists={lists}
+                        excludeListIds={isGroupMode ? selectedGroupIds : new Set(activeList ? [activeList.id] : [])}
+                        onAddHeroes={handleAppendHeroesToSelected}
+                        triggerHaptic={triggerHaptic}
+                    />
+                </LazyOverlayBoundary>
 
-                <InactiveHeroesModal
+                <LazyOverlayBoundary
                     isOpen={isInactiveHeroesOpen}
                     onClose={() => setIsInactiveHeroesOpen(false)}
-                    lists={lists}
-                    history={history}
-                    onCreateTemporaryList={createTemporaryList}
-                    onSelectList={setSelectedListId}
-                    triggerHaptic={triggerHaptic}
-                    addToast={addToast}
-                />
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка фильтра забытых героев"
+                >
+                    <InactiveHeroesModal
+                        isOpen={isInactiveHeroesOpen}
+                        onClose={() => setIsInactiveHeroesOpen(false)}
+                        lists={lists}
+                        history={history}
+                        onCreateTemporaryList={createTemporaryList}
+                        onSelectList={setSelectedListId}
+                        triggerHaptic={triggerHaptic}
+                        addToast={addToast}
+                    />
+                </LazyOverlayBoundary>
 
                 <UpdateBanner
                     isVisible={showUpdateBanner}
@@ -746,28 +827,42 @@ const App: React.FC = () => {
                     onClose={() => setShowUpdateBanner(false)}
                 />
 
-                <ChangelogOverlay
+                <LazyOverlayBoundary
                     isOpen={isChangelogOpen}
                     onClose={handleCloseChangelog}
-                    lastSeenVersion={lastSeenVersion}
-                    triggerHaptic={triggerHaptic}
-                />
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка списка изменений"
+                >
+                    <ChangelogOverlay
+                        isOpen={isChangelogOpen}
+                        onClose={handleCloseChangelog}
+                        lastSeenVersion={lastSeenVersion}
+                        triggerHaptic={triggerHaptic}
+                    />
+                </LazyOverlayBoundary>
 
-                <AdminModal
+                <LazyOverlayBoundary
                     isOpen={isAdminModalOpen}
                     onClose={() => setIsAdminModalOpen(false)}
-                    currentClientId={clientId}
-                    allClients={allClients}
-                    isLoadingClients={isLoadingAllClients}
-                    onSubscribeToClients={subscribeToAllClients}
-                    onUpdateClientName={updateClientName}
-                    onSetClientAdmin={setClientAdmin}
-                    onSetClientPrank={setClientPrank}
-                    onClearClientPrank={clearClientPrank}
-                    onDeleteClient={deleteClient}
-                    isOnline={isOnline}
-                    addToast={addToast}
-                />
+                    showDetails={isDebugMode}
+                    fallbackTitle="Ошибка панели администратора"
+                >
+                    <AdminModal
+                        isOpen={isAdminModalOpen}
+                        onClose={() => setIsAdminModalOpen(false)}
+                        currentClientId={clientId}
+                        allClients={allClients}
+                        isLoadingClients={isLoadingAllClients}
+                        onSubscribeToClients={subscribeToAllClients}
+                        onUpdateClientName={updateClientName}
+                        onSetClientAdmin={setClientAdmin}
+                        onSetClientPrank={setClientPrank}
+                        onClearClientPrank={clearClientPrank}
+                        onDeleteClient={deleteClient}
+                        isOnline={isOnline}
+                        addToast={addToast}
+                    />
+                </LazyOverlayBoundary>
 
                 <PrankOverlay
                     isUpsideDown={isUpsideDown}

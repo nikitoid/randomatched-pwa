@@ -5,6 +5,7 @@ import './index.css';
 import { ConnectivityProvider } from './context/ConnectivityContext';
 import { AvatarProvider } from './context/AvatarContext';
 import { ToastProvider } from './context/ToastContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -14,12 +15,14 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <ToastProvider>
-      <ConnectivityProvider>
-        <AvatarProvider>
-          <App />
-        </AvatarProvider>
-      </ConnectivityProvider>
-    </ToastProvider>
+    <ErrorBoundary variant="fullscreen">
+      <ToastProvider>
+        <ConnectivityProvider>
+          <AvatarProvider>
+            <App />
+          </AvatarProvider>
+        </ConnectivityProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

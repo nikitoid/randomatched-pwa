@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useConnectivity } from './useConnectivity';
 import { HeroList, Hero, ToastType } from '../types';
-import { db } from '../firebase';
+import { collection, deleteDoc, doc, getDocs, setDoc } from '../services/firestore';
 import { generateUUID } from '../utils/uuid';
 import { normalizeHeroKey, mergeHeroInList } from '../utils/heroNormalization';
 import { RANK_VALUES } from '../constants';
@@ -120,7 +120,7 @@ export const useHeroLists = (
     setIsSyncing(true);
 
     try {
-      const querySnapshot = await db.collection("lists").get();
+      const querySnapshot = await getDocs(collection("lists"));
       const cloudListsMap = new Map<string, HeroList>();
 
       querySnapshot.forEach((docSnap: any) => {
@@ -278,7 +278,7 @@ export const useHeroLists = (
 
     try {
       setIsSyncing(true);
-      await db.collection("lists").doc(listToUpload.id).set({
+      await setDoc(doc("lists", listToUpload.id), {
         name: listToUpload.name,
         heroes: listToUpload.heroes,
         isGroupable: listToUpload.isGroupable || false
@@ -329,7 +329,7 @@ export const useHeroLists = (
 
     if (updatedData.isCloud) {
       try {
-        await db.collection("lists").doc(id).set({
+        await setDoc(doc("lists", id), {
           name: updatedData.name,
           heroes: updatedData.heroes,
           isGroupable: updatedData.isGroupable || false,
@@ -353,7 +353,7 @@ export const useHeroLists = (
       }
 
       try {
-        await db.collection("lists").doc(id).delete();
+        await deleteDoc(doc("lists", id));
         setLists(prev => prev.map(l => {
           if (l.id === id) {
             return { ...l, isCloud: false, isLocal: true };
@@ -465,7 +465,7 @@ export const useHeroLists = (
         const hasNet = await checkConnectivity();
         if (hasNet) {
           const batchPromises = listsToUpdateInCloud.map(cloudList =>
-            db.collection("lists").doc(cloudList.id).set({
+            setDoc(doc("lists", cloudList.id), {
               name: cloudList.name,
               heroes: cloudList.heroes,
               isGroupable: cloudList.isGroupable || false,

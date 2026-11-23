@@ -1,5 +1,5 @@
 
-import { isTestEnvironment } from '../firebase';
+import { isTestEnvironment } from '../services/firestore';
 
 /**
  * Checks for actual internet connectivity by pinging reliable endpoints.

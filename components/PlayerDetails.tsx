@@ -3,7 +3,8 @@ import { Trophy, ChevronLeft, Shield, Calendar, Skull, TrendingUp, TrendingDown,
 import { PlayerStat, MatchRecord } from '../types';
 import { calculateWilsonScore, getPlayerWeightedBreakdown } from './stats/hooks/useStatsCalculations';
 import { Avatar } from './common/Avatar';
-import { AvatarCropperModal } from './common/AvatarCropperModal';
+import { LazyOverlayBoundary } from './common/ErrorBoundary';
+import { LazyAvatarCropperModal as AvatarCropperModal } from '../utils/lazyScreens';
 import { calculatePlayerLevel } from '../utils/playerLevel';
 import { formatPlural } from '../utils/heroNormalization';
 import { RanksInfoModal } from './stats/RanksInfoModal';
@@ -1025,13 +1026,19 @@ export const PlayerDetails: React.FC<PlayerDetailsProps> = ({
             </BaseModal>
 
             {/* Avatar Cropper Modal */}
-            <AvatarCropperModal
+            <LazyOverlayBoundary
                 isOpen={isCropperOpen}
                 onClose={() => setIsCropperOpen(false)}
-                entityType="player"
-                entityId={player.name}
-                entityName={player.name}
-            />
+                fallbackTitle="Ошибка редактора аватара"
+            >
+                <AvatarCropperModal
+                    isOpen={isCropperOpen}
+                    onClose={() => setIsCropperOpen(false)}
+                    entityType="player"
+                    entityId={player.name}
+                    entityName={player.name}
+                />
+            </LazyOverlayBoundary>
 
             {/* Ranks Info Modal */}
             <RanksInfoModal
